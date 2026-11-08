@@ -35,7 +35,7 @@ public sealed partial class HospitalSimulation
     /// <summary>After endoscopy the patient needs half an hour to come round: in a free recovery bay, or else on the trolley, which keeps the room out of use.</summary>
     private void StartRecovery(Patient patient, string endoscopyRoomId)
     {
-        var bay = SpacesOfKind(CareSpaceKind.EndoscopyRecovery).FirstOrDefault(b => b.OccupantId is null);
+        var bay = SpacesOfKind(CareSpaceKind.EndoscopyRecovery).FirstOrDefault(IsVacant);
         if (bay is not null)
         {
             bay.OccupantId = patient.Id;

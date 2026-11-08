@@ -382,6 +382,19 @@ public sealed partial class HospitalSimulation
 
     internal void ReleaseSeat(Patient patient) => patient.Seat = null;
 
+    /// <summary>
+    /// True if someone is still lying on this bed: a patient who has been given somewhere else to go
+    /// keeps their old bed until a porter wheels them away, so nobody else is put in it on top of them.
+    /// </summary>
+    public bool SomeoneLyingOn(GridCoord spot) =>
+        _patients.Values.Any(p => p.Tile == spot && !p.IsMoving && p.Stage != PatientStage.Gone);
+
+    /// <summary>A cubicle or bay that is not booked for anyone and has nobody still lying in it.</summary>
+    public bool IsVacant(CareSpace space) => space.IsFree && !SomeoneLyingOn(space.PatientSpot);
+
+    /// <summary>A ward bed that is not booked for anyone and has nobody still lying in it.</summary>
+    public bool IsVacant(WardBed bed) => bed.OccupantId is null && !SomeoneLyingOn(bed.PatientSpot);
+
     private void RemoveDepartedPatients()
     {
         foreach (var patient in _patients.Values.Where(p => p.Stage == PatientStage.Gone).ToList())
