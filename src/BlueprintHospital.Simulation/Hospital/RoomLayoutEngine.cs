@@ -20,6 +20,7 @@ public static class RoomLayoutEngine
     public static IReadOnlyList<string> RequiredFurniture(RoomLayoutKind layout) => layout switch
     {
         RoomLayoutKind.BedSpace => new[] { "hospital_bed", "obs_monitor" },
+        RoomLayoutKind.Ward => new[] { "hospital_bed" },
         RoomLayoutKind.Triage => new[] { "staff_chair", "visitor_chair", "obs_monitor" },
         RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair", "waiting_seat" },
         _ => Array.Empty<string>(),
@@ -71,6 +72,9 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.BedSpace:
                 BedSpace(plan, template);
                 break;
+            case RoomLayoutKind.Ward:
+                Ward(plan, template);
+                break;
             case RoomLayoutKind.Triage:
                 Triage(plan, template);
                 break;
@@ -107,6 +111,7 @@ public static class RoomLayoutEngine
             PatientSpot = plan.PatientSpot,
             StaffSpot = plan.StaffSpot,
             Seats = plan.Seats,
+            Beds = plan.Beds,
             QueueTiles = plan.Queue,
             Furniture = plan.Items,
             BuildCost = Cost(template, database, rect, plan.Items),
@@ -143,6 +148,59 @@ public static class RoomLayoutEngine
         plan.AddWorld("obs_monitor", cx + (side * 1.4) - 0.3, cy - 1.6 - 0.3, 0.6, 0.6);
 
         foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "obs_monitor"))
+        {
+            plan.TryPlaceAgainstWalls(item);
+        }
+    }
+
+    /// <summary>
+    /// Beds stand in a row along the north wall (the south wall when the door is in the north wall),
+    /// heads to the wall, 2.5 m apart (bed centres), with a bedside locker in each gap. From 7.5 m deep
+    /// a second row stands along the opposite wall, facing the first across a clear aisle. Beds keep their real size, so a longer ward simply holds more of them.
+    /// Staff work from the foot of each bed, in the aisle.
+    /// </summary>
+    private static void Ward(Plan plan, RoomTemplate template)
+    {
+        var r = plan.Frame.Rect;
+        const int pitch = BedTilesX + 2;
+        var north = (r.Y + 1, false);
+        var south = (r.Bottom - 1 - BedTilesY, true);
+        var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
+        if (r.Length >= 15)
+        {
+            rows.Add(plan.Frame.Side == WallSide.North ? north : south);
+        }
+
+        var door = plan.DoorApproach(4);
+        var locker = template.Furniture.Contains("bedside_locker");
+        foreach (var (rowY, headSouth) in rows)
+        {
+            for (var x = r.X + 1; x + BedTilesX <= r.Right - 1; x += pitch)
+            {
+                if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
+                {
+                    continue;
+                }
+
+                var spot = new GridCoord(x + 1, rowY + 2);
+                var staff = new GridCoord(x + 1, headSouth ? rowY - 1 : rowY + BedTilesY);
+                plan.AddWorld("hospital_bed", x, rowY, BedTilesX, BedTilesY);
+                plan.Beds.Add(new WardBed { PatientSpot = spot, StaffSpot = staff, HeadSouth = headSouth });
+                plan.Reserve(spot);
+                plan.Reserve(staff);
+
+                if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1, 0.9, 0.9);
+                }
+            }
+        }
+
+        // Staff gather just inside the door, where they can see down the ward.
+        plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
+        plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
+
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker"))
         {
             plan.TryPlaceAgainstWalls(item);
         }
@@ -335,6 +393,12 @@ public static class RoomLayoutEngine
         public List<GridCoord> Seats { get; } = new();
 
         public List<GridCoord> Queue { get; set; } = new();
+
+        public List<WardBed> Beds { get; } = new();
+
+        /// <summary>The tiles just inside each doorway, in site coordinates, which furniture must keep clear.</summary>
+        public (double X, double Y, double W, double L) DoorApproach(int depth) =>
+            Frame.ToWorld(DoorOffset - 1, Frame.D - depth, DoorWidth + 2, depth);
 
         public GridCoord PatientSpot { get; set; }
 

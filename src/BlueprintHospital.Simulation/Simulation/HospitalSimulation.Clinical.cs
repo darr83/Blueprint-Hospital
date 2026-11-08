@@ -49,6 +49,18 @@ public sealed partial class HospitalSimulation
             case TaskKind.EscortToTransfer:
                 CompleteTransfer(member, patient);
                 break;
+            case TaskKind.EscortToWard:
+                CompleteEscortToWard(member, patient);
+                break;
+            case TaskKind.WardClerking:
+                CompleteClerking(member, patient);
+                break;
+            case TaskKind.WardRound:
+                CompleteWardRound(member, patient);
+                break;
+            case TaskKind.WardDischarge:
+                CompleteWardDischarge(member, patient);
+                break;
         }
     }
 
@@ -330,14 +342,12 @@ public sealed partial class HospitalSimulation
                 AddTask(TaskKind.Discharge, StaffRole.Nurse, patient, 5, "Discharge with advice");
                 break;
 
+            case Disposition.Admit:
+                RequestWardBed(patient, diagnosed);
+                break;
+
             default:
-                patient.Stage = PatientStage.AwaitingTransfer;
-                // Time-critical transfers (e.g. a heart attack going for PCI) get an emergency ambulance.
-                var timeCritical = diagnosed.CanBeFatal && patient.Triage == TriageCategory.Red;
-                var wait = timeCritical ? Random.Range(10, 25) : Random.Range(30, 75);
-                patient.TransferAmbulanceDueAt = Now.AddMinutes(wait);
-                patient.Log(Now, $"{diagnosed.DispositionNote} Ambulance expected in about {wait} minutes.", important: true);
-                Notifications.Add(Now, NotificationLevel.Info, $"Transfer arranged for {patient.FullName}: {diagnosed.DispositionNote}", patient.Id, patient.CareSpaceId, patient.Triage);
+                ArrangeTransfer(patient, diagnosed);
                 break;
         }
     }

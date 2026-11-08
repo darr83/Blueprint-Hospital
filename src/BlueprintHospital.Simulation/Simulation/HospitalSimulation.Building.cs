@@ -195,6 +195,11 @@ public sealed partial class HospitalSimulation
             CheckDoors(room, replacing, problems);
         }
 
+        if (template.Layout == RoomLayoutKind.Ward && room.Beds.Count == 0)
+        {
+            problems.Add("No space for a bed here. Make the ward longer.");
+        }
+
         if (replacing is not null)
         {
             problems.AddRange(CheckRoomIsClear(replacing));
@@ -283,6 +288,10 @@ public sealed partial class HospitalSimulation
         {
             yield return $"{space.Name} has a patient in it.";
         }
+        else if (space.Beds.Any(b => b.OccupantId is not null) || _patients.Values.Any(p => p.ReservedWardId == space.Id))
+        {
+            yield return $"A bed on {space.Name} is booked for a patient in A&E.";
+        }
         else if (space.ReservedByStaffId is not null || _tasks.Values.Any(t => t.SpaceId == space.Id))
         {
             yield return $"{space.Name} is being used.";
@@ -322,7 +331,8 @@ public sealed partial class HospitalSimulation
 
         foreach (var space in spaces.Where(s => s.Kind != CareSpaceKind.Corridor))
         {
-            var spots = new[] { space.StaffSpot, space.PatientSpot }.Concat(space.Seats).Concat(space.QueueTiles);
+            var spots = new[] { space.StaffSpot, space.PatientSpot }.Concat(space.Seats).Concat(space.QueueTiles)
+                .Concat(space.Beds.SelectMany(b => new[] { b.PatientSpot, b.StaffSpot }));
             if (spots.Any(t => !reached.Contains(t)))
             {
                 yield return $"{space.Name} could not be reached.";
@@ -575,6 +585,7 @@ public sealed partial class HospitalSimulation
             CareSpaceKind.Majors => "Majors",
             CareSpaceKind.Resus => "Resus",
             CareSpaceKind.Triage => "Triage",
+            CareSpaceKind.Ward => "Ward",
             _ => template.Name,
         };
         var n = 1;
@@ -590,6 +601,7 @@ public sealed partial class HospitalSimulation
     private void AfterLayoutChange()
     {
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        SyncWardStaff();
 
         foreach (var agent in _patients.Values.Cast<Agent>().Concat(_staff))
         {
@@ -670,6 +682,7 @@ public sealed partial class HospitalSimulation
 
         Balance = state.Balance;
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        SyncWardStaff();
         foreach (var member in _staff)
         {
             member.PlaceAt(HomeTile(member));

@@ -20,6 +20,9 @@ public enum RoomLayoutKind
     /// <summary>No furniture: corridors.</summary>
     None,
 
+    /// <summary>Rows of beds along the walls with a clear aisle between; more beds the bigger the ward.</summary>
+    Ward,
+
     /// <summary>One patient bed with an obs monitor and room-specific equipment (Minors, Majors, Resus).</summary>
     BedSpace,
 

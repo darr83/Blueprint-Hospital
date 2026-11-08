@@ -75,6 +75,10 @@ public partial class OverlayLayer : Node2D
         {
             detail = space.IsFree ? $"{detail} · free" : $"{detail} · in use";
         }
+        else if (space.IsWard)
+        {
+            detail = $"{detail} · {space.Beds.Count(b => b.OccupantId is not null)}/{space.Beds.Count} beds";
+        }
 
         const int titleSize = 22;
         const int detailSize = 15;

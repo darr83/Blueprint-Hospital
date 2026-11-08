@@ -105,7 +105,7 @@ public sealed partial class HospitalSimulation
                     _ => GreenRoutine,
                 };
 
-                if (task.Kind is TaskKind.Discharge)
+                if (task.Kind is TaskKind.Discharge or TaskKind.WardDischarge)
                 {
                     band -= 50;
                 }
@@ -195,7 +195,7 @@ public sealed partial class HospitalSimulation
     private void ChooseTask(StaffMember member)
     {
         var candidates = _tasks.Values
-            .Where(t => t.AssignedStaffId is null && t.Role == member.Role && CanStart(t))
+            .Where(t => t.AssignedStaffId is null && t.Role == member.Role && TeamFor(t) == member.WardId && CanStart(t))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
@@ -229,6 +229,10 @@ public sealed partial class HospitalSimulation
             ReleaseSeat(patient);
             WalkTo(patient, triage.PatientSpot);
             patient.Log(Now, "Called through to triage.");
+        }
+        else if (best.Kind == TaskKind.EscortToWard)
+        {
+            StartEscortToWard(patient);
         }
         else if (best.Kind == TaskKind.EscortToTransfer && AmbulanceFor(patient) is { BaySlot: { } slot })
         {
@@ -285,6 +289,11 @@ public sealed partial class HospitalSimulation
                 return Waiting.StaffSpot;
             case TaskKind.Triage when task.SpaceId is { } triageId && FindSpace(triageId) is { } triage:
                 return triage.StaffSpot;
+        }
+
+        if (BedOf(patient) is { } bed)
+        {
+            return bed.StaffSpot;
         }
 
         if (patient.CareSpaceId is { } spaceId && task.Kind != TaskKind.EscortToTransfer && FindSpace(spaceId) is { } space)

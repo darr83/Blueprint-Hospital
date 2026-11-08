@@ -1,12 +1,186 @@
 [
-  { "id": "aspirin", "name": "Aspirin", "drug_class": "Antiplatelet", "route": "oral", "typical_dose": "300 mg loading dose", "indications": "Suspected acute coronary syndrome.", "contraindications": "Aspirin allergy, active bleeding.", "allergy_groups": ["aspirin", "nsaid"], "common_side_effects": ["Indigestion", "Bleeding"], "cost_per_dose": 1 },
-  { "id": "ticagrelor", "name": "Ticagrelor", "drug_class": "P2Y12 antiplatelet", "route": "oral", "typical_dose": "180 mg loading dose", "indications": "Acute coronary syndrome, with aspirin.", "contraindications": "Active bleeding, previous intracranial haemorrhage.", "allergy_groups": [], "common_side_effects": ["Breathlessness", "Bleeding"], "cost_per_dose": 4 },
-  { "id": "glyceryl_trinitrate", "name": "Glyceryl trinitrate (GTN)", "drug_class": "Nitrate", "route": "sublingual", "typical_dose": "400 micrograms spray", "indications": "Ischaemic chest pain.", "contraindications": "Systolic blood pressure below 90 mmHg.", "allergy_groups": [], "common_side_effects": ["Headache", "Low blood pressure"], "cost_per_dose": 1 },
-  { "id": "morphine", "name": "Morphine", "drug_class": "Opioid analgesic", "route": "intravenous", "typical_dose": "2.5–5 mg, titrated to pain", "indications": "Severe pain.", "contraindications": "Respiratory depression, opioid allergy.", "allergy_groups": ["opioid"], "common_side_effects": ["Nausea", "Drowsiness", "Constipation"], "cost_per_dose": 2 },
-  { "id": "paracetamol", "name": "Paracetamol", "drug_class": "Analgesic", "route": "oral", "typical_dose": "1 g", "indications": "Mild to moderate pain, fever.", "contraindications": "Severe liver disease.", "allergy_groups": ["paracetamol"], "common_side_effects": [], "cost_per_dose": 1 },
-  { "id": "ibuprofen", "name": "Ibuprofen", "drug_class": "NSAID", "route": "oral", "typical_dose": "400 mg", "indications": "Musculoskeletal pain and inflammation.", "contraindications": "NSAID allergy, active peptic ulcer, severe kidney impairment.", "allergy_groups": ["nsaid"], "common_side_effects": ["Indigestion"], "cost_per_dose": 1 },
-  { "id": "ondansetron", "name": "Ondansetron", "drug_class": "Antiemetic", "route": "intravenous", "typical_dose": "4 mg", "indications": "Nausea and vomiting.", "contraindications": "Long QT syndrome.", "allergy_groups": [], "common_side_effects": ["Headache", "Constipation"], "cost_per_dose": 2 },
-  { "id": "omeprazole", "name": "Omeprazole", "drug_class": "Proton pump inhibitor", "route": "oral", "typical_dose": "20 mg", "indications": "Gastro-oesophageal reflux disease.", "contraindications": "", "allergy_groups": [], "common_side_effects": ["Headache", "Diarrhoea"], "cost_per_dose": 1 },
-  { "id": "alginate_antacid", "name": "Alginate antacid", "drug_class": "Antacid", "route": "oral", "typical_dose": "10–20 mL", "indications": "Heartburn and reflux.", "contraindications": "", "allergy_groups": [], "common_side_effects": [], "cost_per_dose": 1 },
-  { "id": "compound_sodium_lactate", "name": "Compound sodium lactate (Hartmann's)", "drug_class": "Intravenous fluid", "route": "intravenous", "typical_dose": "500 mL bolus", "indications": "Dehydration, fluid resuscitation.", "contraindications": "Fluid overload.", "allergy_groups": [], "common_side_effects": [], "cost_per_dose": 3 }
+  {
+    "id": "aspirin",
+    "name": "Aspirin",
+    "drug_class": "Antiplatelet",
+    "route": "oral",
+    "typical_dose": "300 mg loading dose",
+    "indications": "Suspected acute coronary syndrome.",
+    "contraindications": "Aspirin allergy, active bleeding.",
+    "allergy_groups": [
+      "aspirin",
+      "nsaid"
+    ],
+    "common_side_effects": [
+      "Indigestion",
+      "Bleeding"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "ticagrelor",
+    "name": "Ticagrelor",
+    "drug_class": "P2Y12 antiplatelet",
+    "route": "oral",
+    "typical_dose": "180 mg loading dose",
+    "indications": "Acute coronary syndrome, with aspirin.",
+    "contraindications": "Active bleeding, previous intracranial haemorrhage.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Breathlessness",
+      "Bleeding"
+    ],
+    "cost_per_dose": 4
+  },
+  {
+    "id": "glyceryl_trinitrate",
+    "name": "Glyceryl trinitrate (GTN)",
+    "drug_class": "Nitrate",
+    "route": "sublingual",
+    "typical_dose": "400 micrograms spray",
+    "indications": "Ischaemic chest pain.",
+    "contraindications": "Systolic blood pressure below 90 mmHg.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Headache",
+      "Low blood pressure"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "morphine",
+    "name": "Morphine",
+    "drug_class": "Opioid analgesic",
+    "route": "intravenous",
+    "typical_dose": "2.5–5 mg, titrated to pain",
+    "indications": "Severe pain.",
+    "contraindications": "Respiratory depression, opioid allergy.",
+    "allergy_groups": [
+      "opioid"
+    ],
+    "common_side_effects": [
+      "Nausea",
+      "Drowsiness",
+      "Constipation"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "paracetamol",
+    "name": "Paracetamol",
+    "drug_class": "Analgesic",
+    "route": "oral",
+    "typical_dose": "1 g",
+    "indications": "Mild to moderate pain, fever.",
+    "contraindications": "Severe liver disease.",
+    "allergy_groups": [
+      "paracetamol"
+    ],
+    "common_side_effects": [],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "ibuprofen",
+    "name": "Ibuprofen",
+    "drug_class": "NSAID",
+    "route": "oral",
+    "typical_dose": "400 mg",
+    "indications": "Musculoskeletal pain and inflammation.",
+    "contraindications": "NSAID allergy, active peptic ulcer, severe kidney impairment.",
+    "allergy_groups": [
+      "nsaid"
+    ],
+    "common_side_effects": [
+      "Indigestion"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "ondansetron",
+    "name": "Ondansetron",
+    "drug_class": "Antiemetic",
+    "route": "intravenous",
+    "typical_dose": "4 mg",
+    "indications": "Nausea and vomiting.",
+    "contraindications": "Long QT syndrome.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Headache",
+      "Constipation"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "omeprazole",
+    "name": "Omeprazole",
+    "drug_class": "Proton pump inhibitor",
+    "route": "oral",
+    "typical_dose": "20 mg",
+    "indications": "Gastro-oesophageal reflux disease.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Headache",
+      "Diarrhoea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "alginate_antacid",
+    "name": "Alginate antacid",
+    "drug_class": "Antacid",
+    "route": "oral",
+    "typical_dose": "10–20 mL",
+    "indications": "Heartburn and reflux.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "compound_sodium_lactate",
+    "name": "Compound sodium lactate (Hartmann's)",
+    "drug_class": "Intravenous fluid",
+    "route": "intravenous",
+    "typical_dose": "500 mL bolus",
+    "indications": "Dehydration, fluid resuscitation.",
+    "contraindications": "Fluid overload.",
+    "allergy_groups": [],
+    "common_side_effects": [],
+    "cost_per_dose": 3
+  },
+  {
+    "id": "amoxicillin",
+    "name": "Amoxicillin",
+    "drug_class": "Penicillin antibiotic",
+    "route": "oral",
+    "typical_dose": "500 mg three times a day",
+    "indications": "Community-acquired pneumonia, other chest infections.",
+    "contraindications": "Penicillin allergy.",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Diarrhoea",
+      "Rash"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "clarithromycin",
+    "name": "Clarithromycin",
+    "drug_class": "Macrolide antibiotic",
+    "route": "oral",
+    "typical_dose": "500 mg twice a day",
+    "indications": "Pneumonia (with amoxicillin, or alone in penicillin allergy).",
+    "contraindications": "Long QT syndrome.",
+    "allergy_groups": [
+      "macrolide"
+    ],
+    "common_side_effects": [
+      "Nausea",
+      "Taste disturbance"
+    ],
+    "cost_per_dose": 2
+  }
 ]

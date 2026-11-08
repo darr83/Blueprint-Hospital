@@ -10,6 +10,16 @@
     "opening_cost": 0
   },
   {
+    "id": "general_medicine",
+    "name": "Acute and General Medicine",
+    "short_name": "MED",
+    "description": "Admits patients from A&E who need hospital care for more than a few hours: infections, breathing problems and frailty.",
+    "colour": "#1E88E5",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 0
+  },
+  {
     "id": "cardiology",
     "name": "Cardiology",
     "short_name": "CARD",

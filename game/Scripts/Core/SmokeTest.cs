@@ -34,6 +34,7 @@ public partial class SmokeTest : Node
         PatientRecord,
         BuildPreview,
         RoomPanel,
+        Ward,
         WaitForLoad,
         Done,
     }
@@ -150,6 +151,14 @@ public partial class SmokeTest : Node
 
             case Stage.RoomPanel when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("06_room_panel");
+                hospital.Hud.RoomInfo.Close();
+                BuildWardAndAdmit(hospital);
+                _frame = 0;
+                _stage = Stage.Ward;
+                break;
+
+            case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
+                Screenshot("07_ward");
                 var clock = hospital.Session.Clock;
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
@@ -216,9 +225,9 @@ public partial class SmokeTest : Node
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
         hospital.Hud.Record.Visible = false;
 
-        var extension = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 10, b.Y, 10, 20));
+        var extension = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 30, b.Y, 30, 34));
         Check(extension.CanBuild, "Extension refused: " + string.Join("; ", extension.Problems));
-        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 10, b.Y + 9, 14, 8), Simulation.World.WallSide.South));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 30, b.Y + 9, 34, 8), Simulation.World.WallSide.South));
         Check(corridor.CanBuild, "Corridor refused: " + string.Join("; ", corridor.Problems));
 
         hospital.Hud.ToggleBuild();
@@ -228,6 +237,30 @@ public partial class SmokeTest : Node
         Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
+    }
+
+    /// <summary>Builds a ward south of the new corridor, then sends in patients with pneumonia and runs the clock until some are on it.</summary>
+    private static void BuildWardAndAdmit(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        var ward = sim.BuildRoom(sim.AutoPlan("medical_ward", new Simulation.World.GridRect(b.X - 30, b.Y + 17, 26, 15)));
+        Check(ward.CanBuild, "Ward refused: " + string.Join("; ", ward.Problems));
+        var built = sim.Wards.Single();
+        Check(built.Beds.Count >= 8, $"Ward should have two rows of beds, has {built.Beds.Count}.");
+        Check(sim.Staff.Any(s => s.WardId == built.Id), "Ward team not hired.");
+
+        var patients = Enumerable.Range(0, 4).Select(_ => sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "community_acquired_pneumonia")).ToList();
+        var clock = hospital.Session.Clock;
+        for (var i = 0; i < 12 * 3600 && patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) < 2; i++)
+        {
+            clock.Step();
+        }
+
+        var onWard = sim.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
+        Check(onWard >= 1, "No patient was admitted to the ward.");
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(built.Rect.X + (built.Rect.Width / 2.0), built.Rect.Y + (built.Rect.Length / 2.0)), 1.1f);
+        GD.Print($"[smoke] Built {built.Name} with {built.Beds.Count} beds; {onWard} admitted, Admitted stat {sim.Stats.Admitted}.");
     }
 
     private static void OpenARecord(HospitalScene hospital)

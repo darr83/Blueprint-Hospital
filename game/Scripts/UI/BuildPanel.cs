@@ -223,6 +223,7 @@ public partial class BuildPanel : PanelContainer
     private static string Capacity(RoomTemplate template, CareSpace room) => template.Layout switch
     {
         RoomLayoutKind.BedSpace => "1 patient on a bed",
+        RoomLayoutKind.Ward => room.Beds.Count == 1 ? "1 bed" : $"{room.Beds.Count} beds",
         RoomLayoutKind.Triage => "1 patient at a time",
         RoomLayoutKind.Waiting => $"{room.Seats.Count} seats, queue of {room.QueueTiles.Count}",
         RoomLayoutKind.Office or RoomLayoutKind.StaffRoom => $"{room.Seats.Count} staff",

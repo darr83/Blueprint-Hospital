@@ -78,6 +78,9 @@ public static class Looks
         _ => new Color("#DCE3E9"),
     };
 
+    /// <summary>Ward patients have an ordinary hospital blanket: the ward isn't triaged.</summary>
+    public static readonly Color WardBlanket = new("#5C8FC4");
+
     public static Color TriageRing(TriageCategory? category) => category switch
     {
         TriageCategory.Red => Red,

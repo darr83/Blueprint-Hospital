@@ -14,7 +14,7 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
 | 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
-| 4. Departments, wards, pharmacy, surgery, finances | Next |
+| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards done |
 
 ## Repository layout
 
@@ -138,6 +138,26 @@ Press **B** to open the build menu. Every room is built from a **template** in
   resize it (it keeps its name), or demolish it for a 50% refund. Rooms in use can't be moved or
   demolished, and the department always keeps at least one waiting room and one triage room.
 - **Money:** a new hospital has £750,000 to build with, shown in the top bar.
+
+### Wards
+
+Build a **Medical ward** (Build → Wards) to admit patients who need more than a few hours of care,
+such as pneumonia. Drag it out like any room: beds go in a row along the wall opposite the door,
+2.5 m apart, each with a bedside locker. From **7.5 m deep** a second row faces the first across
+the aisle, so a longer or deeper ward holds more beds. The build menu shows how many beds each size
+gives.
+
+- **Ward team:** each ward brings one nurse for every 6 beds (the first is the ward sister) and a
+  ward doctor. They look after that ward's patients only, and leave if the ward is demolished.
+- **Admission:** when an A&E doctor decides a patient needs admitting, the patient waits in their
+  cubicle until a bed is free, then a nurse takes them up. Leaving A&E for the ward stops the
+  4-hour clock. A full ward blocks A&E cubicles, as in a real hospital; the A&E board shows ward
+  beds and anyone waiting for one. After 6 hours without a bed, or if there is no ward at all, the
+  patient is transferred to a neighbouring hospital.
+- **On the ward:** the ward doctor clerks each admission (and may spot and correct a wrong A&E
+  diagnosis), nurses do observations, and a ward round decides when the patient is well enough to
+  go home. Each condition sets its usual length of stay (`length_of_stay_hours`).
+- A ward with a booked bed or a patient in it can't be moved or demolished.
 
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
 staff rooms. Saves (format 2) keep the rooms, corridors, extensions and balance.

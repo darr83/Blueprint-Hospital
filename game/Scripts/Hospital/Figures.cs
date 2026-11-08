@@ -136,12 +136,13 @@ public static class Figures
     /// A patient lying on their back under a blanket, head at the north end. (gx, gy) is the
     /// centre of the mattress in grid tiles; <paramref name="lift"/> is the mattress height in pixels.
     /// </summary>
-    public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift)
+    public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift, bool headSouth = false)
     {
         // One flat cover, rounded at the corners, lying on the mattress with the head showing at the top.
         var up = new Vector2(0, -lift - 1);
         const double r = 0.2;
-        var corners = new[] { (gx - 0.55 + r, gy - 0.95 + r, Math.PI), (gx + 0.55 - r, gy - 0.95 + r, 1.5 * Math.PI), (gx + 0.55 - r, gy + 1.75 - r, 0.0), (gx - 0.55 + r, gy + 1.75 - r, 0.5 * Math.PI) };
+        var (top, bottom) = headSouth ? (gy - 1.75, gy + 0.95) : (gy - 0.95, gy + 1.75);
+        var corners = new[] { (gx - 0.55 + r, top + r, Math.PI), (gx + 0.55 - r, top + r, 1.5 * Math.PI), (gx + 0.55 - r, bottom - r, 0.0), (gx - 0.55 + r, bottom - r, 0.5 * Math.PI) };
         var cover = new Vector2[corners.Length * 5];
         var i = 0;
         foreach (var (cx, cy, start) in corners)
@@ -157,13 +158,13 @@ public static class Figures
         c.DrawColoredPolygon(cover, blanket);
 
         // Head on the pillow.
-        var head = IsoDraw.ToScreen(gx, gy - 1.45) + up + new Vector2(0, -3);
+        var head = IsoDraw.ToScreen(gx, headSouth ? gy + 1.45 : gy - 1.45) + up + new Vector2(0, -3);
         c.DrawCircle(head, 7.5f, look.Skin);
         c.DrawColoredPolygon(HairCap(head), look.Hair);
     }
 
     /// <summary>A hospital bed (about 0.8 m by 2.1 m) with its head against the north. Returns the mattress height.</summary>
-    public static float Bed(CanvasItem c, double gx, double gy, bool made)
+    public static float Bed(CanvasItem c, double gx, double gy, bool made, bool headSouth = false)
     {
         const float frameHeight = 12f;
         const float mattress = 6f;
@@ -178,6 +179,19 @@ public static class Figures
 
         IsoDraw.Box(c, x, y, 1.6, 4.2, frameHeight - 4, new Color("#AEB8C1"), 4);
         IsoDraw.Box(c, x + 0.05, y + 0.05, 1.5, 4.1, mattress, new Color("#EEF2F5"), frameHeight);
+        if (headSouth)
+        {
+            // Pillow and folded blanket first, then the headboard nearest the viewer.
+            IsoDraw.Box(c, x + 0.25, y + 4.2 - 0.25 - 0.8, 1.1, 0.8, 4, Colors.White, frameHeight + mattress);
+            if (made)
+            {
+                IsoDraw.Box(c, x + 0.15, y + 0.3, 1.3, 0.7, 3, new Color("#BFD3E6"), frameHeight + mattress);
+            }
+
+            IsoDraw.Box(c, x - 0.05, y + 4.2 - 0.15, 1.7, 0.25, 26, new Color("#8F9BA6"));
+            return frameHeight + mattress;
+        }
+
         IsoDraw.Box(c, x - 0.05, y - 0.1, 1.7, 0.25, 26, new Color("#8F9BA6"));
         IsoDraw.Box(c, x + 0.25, y + 0.25, 1.1, 0.8, 4, Colors.White, frameHeight + mattress);
 

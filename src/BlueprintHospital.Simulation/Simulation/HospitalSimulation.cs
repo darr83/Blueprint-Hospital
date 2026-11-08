@@ -167,6 +167,7 @@ public sealed partial class HospitalSimulation
         UpdateAmbulances();
         UpdatePhysiology(dt);
         UpdatePatientFlow();
+        UpdateWards();
         ProcessScheduledResults();
         CheckOutcomeReviews();
         ScheduleObservations();
@@ -317,7 +318,13 @@ public sealed partial class HospitalSimulation
             space.OccupantId = null;
         }
 
+        if (BedOf(patient) is { } bed && bed.OccupantId == patient.Id)
+        {
+            bed.OccupantId = null;
+        }
+
         patient.CareSpaceId = null;
+        patient.BedIndex = null;
     }
 
     internal void ReleaseSeat(Patient patient) => patient.Seat = null;
@@ -340,28 +347,8 @@ public sealed partial class HospitalSimulation
 
     private void CreateStartingStaff()
     {
-        var names = Database.Names.Values.First();
-        StaffMember Make(StaffRole role, string grade, double skill, double speed, int years, int salary)
-        {
-            var female = Random.Chance(0.6);
-            var first = Random.Pick(female ? names.FemaleFirstNames : names.MaleFirstNames);
-            var surname = Random.Pick(names.Surnames);
-            var title = role == StaffRole.Doctor ? "Dr " : string.Empty;
-            return new StaffMember
-            {
-                Id = _nextStaffId++,
-                Name = $"{title}{first} {surname}",
-                Role = role,
-                Grade = grade,
-                DepartmentId = EmergencyDepartmentLayout.Department,
-                Skill = skill,
-                Speed = speed,
-                YearsExperience = years,
-                Age = 23 + years + Random.Range(0, 6),
-                Salary = salary,
-                Fatigue = Random.Range(0.0, 0.15),
-            };
-        }
+        StaffMember Make(StaffRole role, string grade, double skill, double speed, int years, int salary) =>
+            MakeStaff(role, grade, skill, speed, years, salary, EmergencyDepartmentLayout.Department, null);
 
         _staff.Add(Make(StaffRole.Receptionist, "Receptionist", 0.5, 1.0, 4, 23_000));
         _staff.Add(Make(StaffRole.Nurse, "Senior emergency nurse", 0.85, 1.1, 12, 47_000));
@@ -377,8 +364,37 @@ public sealed partial class HospitalSimulation
         }
     }
 
+    private StaffMember MakeStaff(StaffRole role, string grade, double skill, double speed, int years, int salary, string department, string? wardId)
+    {
+        var names = Database.Names.Values.First();
+        var female = Random.Chance(0.6);
+        var first = Random.Pick(female ? names.FemaleFirstNames : names.MaleFirstNames);
+        var surname = Random.Pick(names.Surnames);
+        var title = role == StaffRole.Doctor ? "Dr " : string.Empty;
+        return new StaffMember
+        {
+            Id = _nextStaffId++,
+            Name = $"{title}{first} {surname}",
+            Role = role,
+            Grade = grade,
+            DepartmentId = department,
+            WardId = wardId,
+            Skill = skill,
+            Speed = speed,
+            YearsExperience = years,
+            Age = 23 + years + Random.Range(0, 6),
+            Salary = salary,
+            Fatigue = Random.Range(0.0, 0.15),
+        };
+    }
+
     internal GridCoord HomeTile(StaffMember member)
     {
+        if (member.WardId is { } wardId && FindSpace(wardId) is { } ward)
+        {
+            return WardHome(member, ward);
+        }
+
         switch (member.Role)
         {
             case StaffRole.Receptionist:
@@ -394,7 +410,7 @@ public sealed partial class HospitalSimulation
     private GridCoord BaseSeat(StaffMember member, CareSpaceKind kind)
     {
         var seats = SpacesOfKind(kind).SelectMany(s => s.Seats).ToList();
-        var index = Math.Max(0, _staff.Where(s => s.Role == member.Role).ToList().IndexOf(member));
+        var index = Math.Max(0, _staff.Where(s => s.Role == member.Role && s.WardId is null).ToList().IndexOf(member));
         if (seats.Count > 0)
         {
             return seats[index % seats.Count];

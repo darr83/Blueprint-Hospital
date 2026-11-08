@@ -151,9 +151,10 @@ public sealed partial class HospitalSimulation
     private void PatientDied(Patient patient)
     {
         patient.Outcome = PatientOutcome.Died;
-        patient.OutcomeNote = $"Died in A&E. Underlying condition: {patient.Condition.Name.ToLowerInvariant()}.";
+        var where = patient.Stage == PatientStage.OnWard && patient.CareSpaceId is { } wardId ? $"on {FindSpace(wardId)?.Name ?? "the ward"}" : "in A&E";
+        patient.OutcomeNote = $"Died {where}. Underlying condition: {patient.Condition.Name.ToLowerInvariant()}.";
         patient.Log(Now, $"Cardiac arrest. Resuscitation was unsuccessful; time of death {Now:HH:mm}.", important: true);
-        Notifications.Add(Now, NotificationLevel.Critical, $"{patient.FullName} has sadly died in the department. Their care can be reviewed in their record.", patient.Id, patient.CareSpaceId, patient.Triage);
+        Notifications.Add(Now, NotificationLevel.Critical, $"{patient.FullName} has sadly died {where}. Their care can be reviewed in their record.", patient.Id, patient.CareSpaceId, patient.Triage);
         EndVisit(patient, PatientOutcome.Died);
         patient.StopMoving();
     }
@@ -164,6 +165,7 @@ public sealed partial class HospitalSimulation
         patient.Outcome = outcome;
         patient.LeftAt = Now;
         ReleaseSpace(patient);
+        ReleaseReservedBed(patient);
         ReleaseSeat(patient);
         _receptionQueue.Remove(patient.Id);
         CancelTasksFor(patient);
@@ -304,13 +306,13 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            if (patient.Stage is not (PatientStage.WaitingForSpace or PatientStage.InTreatmentSpace or PatientStage.AwaitingTransfer or PatientStage.InAmbulanceQueue))
+            if (patient.Stage is not (PatientStage.WaitingForSpace or PatientStage.InTreatmentSpace or PatientStage.AwaitingTransfer or PatientStage.InAmbulanceQueue or PatientStage.AwaitingBed or PatientStage.OnWard))
             {
                 continue;
             }
 
             var interval = News2.ObservationInterval(latest.News2);
-            if (patient.Triage == TriageCategory.Red)
+            if (patient.Triage == TriageCategory.Red && patient.Stage != PatientStage.OnWard)
             {
                 interval = TimeSpan.FromMinutes(Math.Min(interval.TotalMinutes, 15));
             }

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "medical_ward",
+    "name": "Medical ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted from A&E. Beds go in rows along the walls, 2.5 m apart; from 7.5 m deep a second row faces the first across the aisle.",
+    "kind": "ward",
+    "department": "general_medicine",
+    "layout": "ward",
+    "sizes": [
+      { "name": "4 beds", "width_m": 10.5, "length_m": 5.5 },
+      { "name": "10 beds", "width_m": 13, "length_m": 8 },
+      { "name": "18 beds", "width_m": 23, "length_m": 8 }
+    ],
+    "min_width_m": 5, "min_length_m": 5, "max_width_m": 30, "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000, "cost_per_square_metre": 1200,
+    "staffing": "One ward nurse for every 6 beds and a ward doctor join when the ward opens. They look after the ward's patients only.",
+    "furniture": ["hospital_bed", "bedside_locker", "station_counter", "clinical_cupboard", "hand_basin", "visitor_chair"]
+  }
+]

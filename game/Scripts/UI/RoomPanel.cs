@@ -139,6 +139,13 @@ public partial class RoomPanel : PanelContainer
             return $"{member.Name}";
         }
 
+        if (room.IsWard)
+        {
+            var used = room.Beds.Count(b => b.OccupantId is not null);
+            var team = _sim.Staff.Where(s => s.WardId == room.Id).Select(s => s.Name);
+            return $"{used} of {room.Beds.Count} beds\n[color=#B8C4CE]Ward team[/color]  {string.Join(", ", team)}";
+        }
+
         var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => room.Rect.Contains(s.Tile));
         return room.Kind switch
         {

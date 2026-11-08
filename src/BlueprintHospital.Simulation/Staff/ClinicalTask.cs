@@ -15,6 +15,10 @@ public enum TaskKind
     Procedure,
     Discharge,
     EscortToTransfer,
+    EscortToWard,
+    WardClerking,
+    WardRound,
+    WardDischarge,
 }
 
 /// <summary>

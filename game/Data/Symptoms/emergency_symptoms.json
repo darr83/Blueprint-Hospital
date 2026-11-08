@@ -1,11 +1,72 @@
 [
-  { "id": "sweating", "name": "Sweating", "patient_description": "I'm cold and clammy and sweating.", "body_system": "general", "is_red_flag": false },
-  { "id": "nausea", "name": "Nausea", "patient_description": "I feel sick.", "body_system": "gastrointestinal", "is_red_flag": false },
-  { "id": "radiating_pain", "name": "Pain radiating to arm or jaw", "patient_description": "The pain is going down my arm and into my jaw.", "body_system": "cardiovascular", "is_red_flag": true },
-  { "id": "chest_wall_tenderness", "name": "Chest wall tenderness", "patient_description": "It hurts more when I press on my chest or twist.", "body_system": "musculoskeletal", "is_red_flag": false },
-  { "id": "heartburn", "name": "Heartburn", "patient_description": "I've got a burning feeling behind my breastbone after eating.", "body_system": "gastrointestinal", "is_red_flag": false },
-  { "id": "loss_of_appetite", "name": "Loss of appetite", "patient_description": "I haven't wanted to eat anything.", "body_system": "gastrointestinal", "is_red_flag": false },
-  { "id": "right_iliac_fossa_pain", "name": "Right lower abdominal pain", "patient_description": "The pain started around my belly button and moved down to the right.", "body_system": "gastrointestinal", "is_red_flag": false },
-  { "id": "limb_pain", "name": "Limb pain", "patient_description": "I've hurt my ankle and it's really painful.", "body_system": "musculoskeletal", "is_red_flag": false },
-  { "id": "bleeding_wound", "name": "Bleeding wound", "patient_description": "I've cut myself and it won't stop bleeding.", "body_system": "skin", "is_red_flag": false }
+  {
+    "id": "sweating",
+    "name": "Sweating",
+    "patient_description": "I'm cold and clammy and sweating.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "nausea",
+    "name": "Nausea",
+    "patient_description": "I feel sick.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "radiating_pain",
+    "name": "Pain radiating to arm or jaw",
+    "patient_description": "The pain is going down my arm and into my jaw.",
+    "body_system": "cardiovascular",
+    "is_red_flag": true
+  },
+  {
+    "id": "chest_wall_tenderness",
+    "name": "Chest wall tenderness",
+    "patient_description": "It hurts more when I press on my chest or twist.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "heartburn",
+    "name": "Heartburn",
+    "patient_description": "I've got a burning feeling behind my breastbone after eating.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "loss_of_appetite",
+    "name": "Loss of appetite",
+    "patient_description": "I haven't wanted to eat anything.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "right_iliac_fossa_pain",
+    "name": "Right lower abdominal pain",
+    "patient_description": "The pain started around my belly button and moved down to the right.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "limb_pain",
+    "name": "Limb pain",
+    "patient_description": "I've hurt my ankle and it's really painful.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "bleeding_wound",
+    "name": "Bleeding wound",
+    "patient_description": "I've cut myself and it won't stop bleeding.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "cough",
+    "name": "Cough",
+    "patient_description": "I can't stop coughing and I'm bringing up green phlegm.",
+    "body_system": "respiratory",
+    "is_red_flag": false
+  }
 ]

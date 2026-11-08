@@ -25,6 +25,7 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.DoctorsOffice] = new Color("#DDE3E8"),
         [CareSpaceKind.StaffRoom] = new Color("#EADFCF"),
         [CareSpaceKind.Corridor] = new Color("#ECEAE5"),
+        [CareSpaceKind.Ward] = new Color("#DCE8F0"),
     };
 
     private HospitalSimulation _sim = null!;
@@ -84,6 +85,7 @@ public partial class DepartmentRenderer : Node2D
                 CareSpaceKind.Majors => new Color("#F9A825"),
                 CareSpaceKind.Minors => new Color("#43A047"),
                 CareSpaceKind.Triage => new Color("#7E57C2"),
+                CareSpaceKind.Ward => new Color("#1E88E5"),
                 _ => (Color?)null,
             };
             if (colour is not { } c)

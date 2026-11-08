@@ -158,14 +158,19 @@ public partial class WorldLayer : Node2D
             return false;
         }
 
-        return patient.Stage == PatientStage.InAmbulanceQueue || BedOf(patient) is not null;
+        return patient.Stage == PatientStage.InAmbulanceQueue || InBed(patient);
     }
 
-    /// <summary>The treatment space whose bed the patient is lying on, if any.</summary>
-    public CareSpace? BedOf(Patient patient) =>
-        !patient.IsMoving && patient.CareSpaceId is { } id && _sim.FindSpace(id) is { IsTreatmentSpace: true } space && patient.Tile == space.PatientSpot
-            ? space
-            : null;
+    /// <summary>Lying on the bed of a treatment space or a ward.</summary>
+    public bool InBed(Patient patient)
+    {
+        if (patient.IsMoving || patient.CareSpaceId is not { } id || _sim.FindSpace(id) is not { } space)
+        {
+            return false;
+        }
+
+        return space.IsTreatmentSpace ? patient.Tile == space.PatientSpot : _sim.BedOf(patient) is { } bed && patient.Tile == bed.PatientSpot;
+    }
 
     public bool IsSeated(Agent agent) => !agent.IsMoving && _seatTiles.Contains(agent.Tile);
 
@@ -307,8 +312,15 @@ public partial class WorldLayer : Node2D
                 var colour = new Color(def.Colour);
                 switch (def.Style)
                 {
+                    case FurnitureStyle.Bed when space.IsWard:
+                        if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
+                        {
+                            AddBed(wardBed.PatientSpot, wardBed.HeadSouth, () => wardBed.OccupantId, onWard: true);
+                        }
+
+                        break;
                     case FurnitureStyle.Bed:
-                        AddBed(space);
+                        AddBed(space.PatientSpot, false, () => space.OccupantId);
                         break;
                     case FurnitureStyle.Monitor:
                         AddObsMonitor(space, item.CentreX, item.CentreY);
@@ -324,26 +336,25 @@ public partial class WorldLayer : Node2D
         }
     }
 
-    private void AddBed(CareSpace space)
+    private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false)
     {
-        var spot = space.PatientSpot;
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
 
         // Bed and whoever is lying on it are one object, anchored at the middle of the bed.
         AddProp(IsoDraw.ToScreen(cx, cy), c =>
         {
-            var occupant = space.OccupantId is { } id ? _sim.FindPatient(id) : null;
-            var lying = occupant is not null && BedOf(occupant) == space;
+            var occupant = occupantId() is { } id ? _sim.FindPatient(id) : null;
+            var lying = occupant is not null && InBed(occupant) && occupant.Tile == spot;
             if (lying && ReferenceEquals(Selected, occupant))
             {
                 var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);
                 c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
             }
 
-            var lift = Figures.Bed(c, cx, cy, made: !lying);
+            var lift = Figures.Bed(c, cx, cy, made: !lying, headSouth);
             if (lying)
             {
-                Figures.Lying(c, cx, cy, Looks.Patient(occupant!), Looks.Blanket(occupant!.Triage), lift);
+                Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
             }
         }, animated: true);
     }
@@ -419,7 +430,7 @@ public partial class WorldLayer : Node2D
             var foot = world.FootPosition(agent);
             Visible = agent switch
             {
-                Patient p => world.IsOnMap(p) && world.BedOf(p) is null,
+                Patient p => world.IsOnMap(p) && !world.InBed(p),
                 _ => true,
             };
 

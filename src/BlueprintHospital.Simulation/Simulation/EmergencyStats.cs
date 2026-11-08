@@ -23,6 +23,23 @@ public sealed class EmergencyStats
 
     public int Transferred { get; private set; }
 
+    /// <summary>Patients who left A&amp;E for a ward bed.</summary>
+    public int Admitted { get; private set; }
+
+    /// <summary>Patients discharged home from a ward.</summary>
+    public int WardDischarges { get; private set; }
+
+    public int WardDeaths { get; private set; }
+
+    public int WardDiagnosesCorrected { get; set; }
+
+    /// <summary>Patients in A&amp;E waiting for a ward bed.</summary>
+    public int AwaitingBed { get; private set; }
+
+    public int OnWards { get; private set; }
+
+    public (int Used, int Total) WardBeds { get; private set; }
+
     public int Deaths { get; private set; }
 
     public int LeftWithoutBeingSeen { get; private set; }
@@ -97,8 +114,34 @@ public sealed class EmergencyStats
 
     internal void RecordHandoverTime(TimeSpan time) => Push(_recentHandoverMinutes, time.TotalMinutes);
 
+    /// <summary>Leaving A&amp;E for a ward stops the 4-hour clock.</summary>
+    internal void RecordAdmission(Patient patient, DateTime now)
+    {
+        DepartedTotal++;
+        Admitted++;
+        if (now - patient.ArrivedAt <= TimeSpan.FromHours(4))
+        {
+            DepartedWithinFourHours++;
+        }
+    }
+
     internal void RecordDeparture(Patient patient, DateTime now)
     {
+        if (patient.LeftEmergencyAt is not null)
+        {
+            // Already counted when they went up to the ward.
+            if (patient.Outcome == PatientOutcome.Died)
+            {
+                WardDeaths++;
+            }
+            else
+            {
+                WardDischarges++;
+            }
+
+            return;
+        }
+
         DepartedTotal++;
         if (now - patient.ArrivedAt <= TimeSpan.FromHours(4))
         {
@@ -125,7 +168,11 @@ public sealed class EmergencyStats
 
     internal void Update(HospitalSimulation sim)
     {
-        var present = sim.Patients.Where(p => p.IsInDepartment).ToList();
+        var present = sim.Patients.Where(p => p.IsInEmergency).ToList();
+        AwaitingBed = present.Count(p => p.Stage == PatientStage.AwaitingBed);
+        OnWards = sim.Patients.Count(p => p.Stage == PatientStage.OnWard && p.IsAlive);
+        var beds = sim.Spaces.Where(s => s.IsWard).SelectMany(s => s.Beds).ToList();
+        WardBeds = (beds.Count(b => b.OccupantId is not null), beds.Count);
         PatientsInDepartment = present.Count;
         AwaitingTriage = present.Count(p => p.Triage is null);
 

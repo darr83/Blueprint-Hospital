@@ -155,6 +155,9 @@ public sealed class ConditionDefinition : IDataRecord
 
     public string DispositionNote { get; init; } = string.Empty;
 
+    /// <summary>For admitted patients: [shortest, longest] stay on the ward in hours.</summary>
+    public double[] LengthOfStayHours { get; init; } = { 24, 72 };
+
     public double ChanceOf(string symptomId) =>
         Symptoms.FirstOrDefault(s => s.Symptom == symptomId)?.Probability ?? 0;
 
@@ -215,5 +218,9 @@ public sealed class ConditionDefinition : IDataRecord
         }
 
         context.RequireText("disposition_note", DispositionNote);
+        if (LengthOfStayHours.Length != 2 || LengthOfStayHours[0] < 1 || LengthOfStayHours[1] < LengthOfStayHours[0] || LengthOfStayHours[1] > 24 * 60)
+        {
+            context.Error("length_of_stay_hours", "must be [shortest, longest] in hours, between 1 and 1440.");
+        }
     }
 }

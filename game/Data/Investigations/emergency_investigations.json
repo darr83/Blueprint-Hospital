@@ -1,251 +1,273 @@
 [
-  {
-    "id": "ecg",
-    "name": "12-lead ECG",
-    "category": "bedside",
-    "performed_by": "nurse",
-    "procedure_minutes": 10,
-    "turnaround_minutes": 0,
-    "cost": 30,
-    "applies_to_sex": "any",
-    "normal": {
-      "summaries": [
-        "Sinus rhythm. No acute ST-segment or T-wave changes."
-      ]
-    },
-    "false_positive_rate": 0.05,
-    "false_positive": {
-      "summaries": [
-        "Sinus rhythm with non-specific T-wave flattening."
-      ]
-    },
-    "abnormal": [
-      {
-        "condition": "acute_myocardial_infarction",
-        "probability": 0.85,
-        "summaries": [
-          "ST-segment elevation in leads II, III and aVF (inferior STEMI).",
-          "ST-segment elevation in leads V1–V4 (anterior STEMI).",
-          "ST-segment depression and T-wave inversion in V4–V6."
-        ]
-      }
-    ],
-    "escalate_to_red_if_abnormal": true
+ {
+  "id": "ecg",
+  "name": "12-lead ECG",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 0,
+  "cost": 30,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Sinus rhythm. No acute ST-segment or T-wave changes."
+   ]
   },
-  {
-    "id": "troponin",
-    "name": "High-sensitivity troponin",
-    "category": "blood",
-    "performed_by": "nurse",
-    "procedure_minutes": 5,
-    "turnaround_minutes": 60,
-    "cost": 25,
-    "applies_to_sex": "any",
-    "unit": "ng/L",
-    "normal": {
-      "value_range": [
-        2,
-        14
-      ],
-      "summaries": [
-        "Troponin {value} ng/L (normal, below 14)."
-      ]
-    },
-    "false_positive_rate": 0.03,
-    "false_positive": {
-      "value_range": [
-        15,
-        40
-      ],
-      "summaries": [
-        "Troponin {value} ng/L (mildly raised)."
-      ]
-    },
-    "abnormal": [
-      {
-        "condition": "acute_myocardial_infarction",
-        "probability": 0.95,
-        "value_range": [
-          60,
-          3000
-        ],
-        "summaries": [
-          "Troponin {value} ng/L (markedly raised)."
-        ]
-      }
-    ],
-    "escalate_to_red_if_abnormal": false
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "summaries": [
+    "Sinus rhythm with non-specific T-wave flattening."
+   ]
   },
-  {
-    "id": "full_blood_count",
-    "name": "Full blood count",
-    "category": "blood",
-    "performed_by": "nurse",
-    "procedure_minutes": 5,
-    "turnaround_minutes": 30,
-    "cost": 5,
-    "applies_to_sex": "any",
-    "unit": "x10^9/L",
-    "normal": {
-      "value_range": [
-        4.5,
-        10.5
-      ],
-      "summaries": [
-        "White cell count {value} x10^9/L. Haemoglobin and platelets normal."
-      ]
-    },
-    "false_positive_rate": 0.08,
-    "false_positive": {
-      "value_range": [
-        11.2,
-        12.5
-      ],
-      "summaries": [
-        "White cell count {value} x10^9/L (mildly raised)."
-      ]
-    },
-    "abnormal": [
-      {
-        "condition": "acute_appendicitis",
-        "probability": 0.8,
-        "value_range": [
-          12.5,
-          19
-        ],
-        "summaries": [
-          "White cell count {value} x10^9/L (raised, neutrophilia)."
-        ]
-      },
-      {
-        "condition": "acute_myocardial_infarction",
-        "probability": 0.3,
-        "value_range": [
-          11,
-          14
-        ],
-        "summaries": [
-          "White cell count {value} x10^9/L (mildly raised)."
-        ]
-      }
-    ],
-    "escalate_to_red_if_abnormal": false
+  "abnormal": [
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.85,
+    "summaries": [
+     "ST-segment elevation in leads II, III and aVF (inferior STEMI).",
+     "ST-segment elevation in leads V1–V4 (anterior STEMI).",
+     "ST-segment depression and T-wave inversion in V4–V6."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": true
+ },
+ {
+  "id": "troponin",
+  "name": "High-sensitivity troponin",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 60,
+  "cost": 25,
+  "applies_to_sex": "any",
+  "unit": "ng/L",
+  "normal": {
+   "value_range": [
+    2,
+    14
+   ],
+   "summaries": [
+    "Troponin {value} ng/L (normal, below 14)."
+   ]
   },
-  {
-    "id": "c_reactive_protein",
-    "name": "C-reactive protein (CRP)",
-    "category": "blood",
-    "performed_by": "nurse",
-    "procedure_minutes": 5,
-    "turnaround_minutes": 30,
-    "cost": 5,
-    "applies_to_sex": "any",
-    "unit": "mg/L",
-    "normal": {
-      "value_range": [
-        0.5,
-        5
-      ],
-      "summaries": [
-        "CRP {value} mg/L (normal)."
-      ]
-    },
-    "false_positive_rate": 0.08,
-    "false_positive": {
-      "value_range": [
-        6,
-        15
-      ],
-      "summaries": [
-        "CRP {value} mg/L (slightly raised)."
-      ]
-    },
-    "abnormal": [
-      {
-        "condition": "acute_appendicitis",
-        "probability": 0.85,
-        "value_range": [
-          25,
-          180
-        ],
-        "summaries": [
-          "CRP {value} mg/L (raised)."
-        ]
-      },
-      {
-        "condition": "gastroenteritis",
-        "probability": 0.4,
-        "value_range": [
-          6,
-          40
-        ],
-        "summaries": [
-          "CRP {value} mg/L (mildly raised)."
-        ]
-      }
-    ],
-    "escalate_to_red_if_abnormal": false
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "value_range": [
+    15,
+    40
+   ],
+   "summaries": [
+    "Troponin {value} ng/L (mildly raised)."
+   ]
   },
-  {
-    "id": "urea_electrolytes",
-    "name": "Urea and electrolytes",
-    "category": "blood",
-    "performed_by": "nurse",
-    "procedure_minutes": 5,
-    "turnaround_minutes": 30,
-    "cost": 5,
-    "applies_to_sex": "any",
-    "unit": "mmol/L",
-    "normal": {
-      "value_range": [
-        3,
-        7.5
-      ],
-      "summaries": [
-        "Urea {value} mmol/L. Sodium, potassium and creatinine normal."
-      ]
-    },
-    "false_positive_rate": 0.05,
-    "false_positive": {
-      "value_range": [
-        7.9,
-        9
-      ],
-      "summaries": [
-        "Urea {value} mmol/L (slightly raised)."
-      ]
-    },
-    "abnormal": [
-      {
-        "condition": "gastroenteritis",
-        "probability": 0.5,
-        "value_range": [
-          8.5,
-          14
-        ],
-        "summaries": [
-          "Urea {value} mmol/L (raised, consistent with dehydration)."
-        ]
-      }
+  "abnormal": [
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.95,
+    "value_range": [
+     60,
+     3000
     ],
-    "escalate_to_red_if_abnormal": false
+    "summaries": [
+     "Troponin {value} ng/L (markedly raised)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "full_blood_count",
+  "name": "Full blood count",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "x10^9/L",
+  "normal": {
+   "value_range": [
+    4.5,
+    10.5
+   ],
+   "summaries": [
+    "White cell count {value} x10^9/L. Haemoglobin and platelets normal."
+   ]
   },
-  {
-    "id": "pregnancy_test",
-    "name": "Urine pregnancy test",
-    "category": "bedside",
-    "performed_by": "nurse",
-    "procedure_minutes": 5,
-    "turnaround_minutes": 0,
-    "cost": 2,
-    "applies_to_sex": "female",
-    "normal": {
-      "summaries": [
-        "Urine hCG negative."
-      ]
-    },
-    "false_positive_rate": 0.0,
-    "abnormal": [],
-    "escalate_to_red_if_abnormal": false
-  }
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "value_range": [
+    11.2,
+    12.5
+   ],
+   "summaries": [
+    "White cell count {value} x10^9/L (mildly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_appendicitis",
+    "probability": 0.8,
+    "value_range": [
+     12.5,
+     19
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   },
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.3,
+    "value_range": [
+     11,
+     14
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.75,
+    "value_range": [
+     13,
+     24
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "c_reactive_protein",
+  "name": "C-reactive protein (CRP)",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "mg/L",
+  "normal": {
+   "value_range": [
+    0.5,
+    5
+   ],
+   "summaries": [
+    "CRP {value} mg/L (normal)."
+   ]
+  },
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "value_range": [
+    6,
+    15
+   ],
+   "summaries": [
+    "CRP {value} mg/L (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_appendicitis",
+    "probability": 0.85,
+    "value_range": [
+     25,
+     180
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "gastroenteritis",
+    "probability": 0.4,
+    "value_range": [
+     6,
+     40
+    ],
+    "summaries": [
+     "CRP {value} mg/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.9,
+    "value_range": [
+     60,
+     300
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "urea_electrolytes",
+  "name": "Urea and electrolytes",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "mmol/L",
+  "normal": {
+   "value_range": [
+    3,
+    7.5
+   ],
+   "summaries": [
+    "Urea {value} mmol/L. Sodium, potassium and creatinine normal."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "value_range": [
+    7.9,
+    9
+   ],
+   "summaries": [
+    "Urea {value} mmol/L (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "gastroenteritis",
+    "probability": 0.5,
+    "value_range": [
+     8.5,
+     14
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised, consistent with dehydration)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "pregnancy_test",
+  "name": "Urine pregnancy test",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 0,
+  "cost": 2,
+  "applies_to_sex": "female",
+  "normal": {
+   "summaries": [
+    "Urine hCG negative."
+   ]
+  },
+  "false_positive_rate": 0.0,
+  "abnormal": [],
+  "escalate_to_red_if_abnormal": false
+ }
 ]

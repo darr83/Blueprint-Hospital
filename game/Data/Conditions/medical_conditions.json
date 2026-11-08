@@ -1,0 +1,121 @@
+[
+  {
+    "id": "community_acquired_pneumonia",
+    "name": "Community-acquired pneumonia",
+    "department": "general_medicine",
+    "description": "An infection of the lung tissue picked up outside hospital. Older or frailer patients usually need admitting for antibiotics, oxygen and fluids.",
+    "prevalence": 3,
+    "age_range": [
+      45,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.55,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.85
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.7
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.3
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        16
+      ],
+      "diastolic_bp": [
+        70,
+        9
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        92,
+        2
+      ],
+      "temperature": [
+        38.3,
+        0.5
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.55
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -35,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -8,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Oxygen therapy",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "amoxicillin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "clarithromycin",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "length_of_stay_hours": [
+      30,
+      96
+    ],
+    "disposition_note": "Admitted under the medical team for antibiotics and oxygen."
+  }
+]

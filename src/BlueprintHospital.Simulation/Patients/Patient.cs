@@ -27,6 +27,12 @@ public enum PatientStage
     WaitingForSpace,
     InTreatmentSpace,
     AwaitingTransfer,
+
+    /// <summary>Treated in A&amp;E and referred for admission; waiting in their cubicle for a ward bed.</summary>
+    AwaitingBed,
+
+    /// <summary>Admitted to a ward bed.</summary>
+    OnWard,
     Leaving,
     Gone,
 }
@@ -202,6 +208,29 @@ public sealed class Patient : Agent
     public bool IsAlive => Outcome != PatientOutcome.Died;
 
     public bool IsInDepartment => Stage is not (PatientStage.Gone or PatientStage.Leaving) && IsAlive;
+
+    /// <summary>Still in A&amp;E (in the hospital and not yet on a ward).</summary>
+    public bool IsInEmergency => IsInDepartment && Stage != PatientStage.OnWard && LeftEmergencyAt is null;
+
+    /// <summary>The ward bed (index into the ward's beds) when the patient is on, or going to, a ward.</summary>
+    public int? BedIndex { get; set; }
+
+    /// <summary>A ward bed held for the patient while they wait to be taken up.</summary>
+    public string? ReservedWardId { get; set; }
+
+    public int? ReservedBedIndex { get; set; }
+
+    /// <summary>When the doctor asked for a ward bed.</summary>
+    public DateTime? BedRequestedAt { get; set; }
+
+    /// <summary>When the patient left A&amp;E for a ward (this ends the A&amp;E 4-hour clock).</summary>
+    public DateTime? LeftEmergencyAt { get; set; }
+
+    /// <summary>When the patient arrived on the ward.</summary>
+    public DateTime? AdmittedAt { get; set; }
+
+    /// <summary>The earliest the ward team expect the patient to be ready to go home.</summary>
+    public DateTime? DischargeDueAt { get; set; }
 
     public IReadOnlyList<TimelineEntry> Timeline => _timeline;
 

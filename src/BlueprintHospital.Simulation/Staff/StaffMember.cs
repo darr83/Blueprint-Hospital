@@ -30,6 +30,9 @@ public sealed class StaffMember : Agent
 
     public required string DepartmentId { get; init; }
 
+    /// <summary>The ward this member of staff works on; null for A&amp;E staff.</summary>
+    public string? WardId { get; init; }
+
     public int Age { get; init; }
 
     public int YearsExperience { get; init; }

@@ -14,10 +14,27 @@ public enum CareSpaceKind
     DoctorsOffice,
     StaffRoom,
     Corridor,
+    Ward,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
 public sealed record Doorway(WallSide Side, int Offset, int Width);
+
+/// <summary>
+/// One bed on a ward. <see cref="PatientSpot"/> is the middle of the bed, <see cref="StaffSpot"/> where
+/// staff stand (at the foot of the bed) and <see cref="HeadSouth"/> says which way the bed points.
+/// </summary>
+public sealed class WardBed
+{
+    public required GridCoord PatientSpot { get; init; }
+
+    public required GridCoord StaffSpot { get; init; }
+
+    public bool HeadSouth { get; init; }
+
+    /// <summary>The patient in (or on their way to) this bed.</summary>
+    public int? OccupantId { get; set; }
+}
 
 /// <summary>
 /// A piece of furniture standing in a room. <see cref="X"/>/<see cref="Y"/> is its corner on the
@@ -82,6 +99,11 @@ public sealed class CareSpace
 
     /// <summary>Seats for waiting patients.</summary>
     public IReadOnlyList<GridCoord> Seats { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>The beds on a ward, in a stable order. Empty for every other kind of room.</summary>
+    public IReadOnlyList<WardBed> Beds { get; init; } = Array.Empty<WardBed>();
+
+    public bool IsWard => Kind == CareSpaceKind.Ward;
 
     /// <summary>Patient currently in (or on their way to) this space.</summary>
     public int? OccupantId { get; set; }

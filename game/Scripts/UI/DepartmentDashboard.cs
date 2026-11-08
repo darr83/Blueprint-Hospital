@@ -88,6 +88,18 @@ public partial class DepartmentDashboard : PanelContainer
         sb.Append(Capacity("Resus", s.Resus));
         sb.Append(Capacity("Majors", s.Majors));
         sb.Append(Capacity("Minors", s.Minors));
+        if (s.WardBeds.Total > 0 || s.AwaitingBed > 0)
+        {
+            var wardFull = s.WardBeds.Used >= s.WardBeds.Total;
+            var wardHex = wardFull ? ClinicalText.AmberHex : "#E8EDEE";
+            sb.Append($"[color={wardHex}]Ward beds {s.WardBeds.Used}/{s.WardBeds.Total}[/color]");
+            if (s.AwaitingBed > 0)
+            {
+                sb.Append($" [color={ClinicalText.AmberHex}]· {s.AwaitingBed} waiting in A&E for a bed[/color]");
+            }
+
+            sb.Append('\n');
+        }
 
         var four = s.FourHourPerformance;
         var fourHex = four >= 0.95 ? ClinicalText.GreenHex : four >= 0.76 ? ClinicalText.AmberHex : ClinicalText.RedHex;
@@ -95,7 +107,13 @@ public partial class DepartmentDashboard : PanelContainer
         sb.Append($"Time to doctor [b]{s.AverageTimeToDoctorMinutes:0} min[/b]\n");
         sb.Append($"Diagnostic accuracy [b]{s.DiagnosticAccuracy:P0}[/b]\n");
         sb.Append($"\n[color=#9FB0BC]Since opening: {s.ArrivalsTotal} arrivals ({s.AmbulanceArrivalsTotal} by ambulance)\n");
-        sb.Append($"{s.Discharged} discharged · {s.Transferred} transferred · {s.LeftWithoutBeingSeen} left unseen · {s.Deaths} died[/color]");
+        sb.Append($"{s.Discharged} discharged · {s.Admitted} admitted · {s.Transferred} transferred · {s.LeftWithoutBeingSeen} left unseen · {s.Deaths} died");
+        if (s.Admitted > 0)
+        {
+            sb.Append($"\nWards: {s.WardDischarges} home · {s.WardDeaths} died");
+        }
+
+        sb.Append("[/color]");
 
         _text.Text = sb.ToString();
     }
