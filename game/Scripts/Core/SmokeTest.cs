@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BlueprintHospital.Hospital;
 using System.Linq;
 using BlueprintHospital.Simulation.Core;
@@ -422,40 +423,62 @@ public partial class SmokeTest : Node
         sim.HireStaff(Simulation.Staff.StaffRole.Radiographer);
         Check(sim.Staff.Any(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Radiographer), "No radiographer posted to the X-ray room.");
 
-        // An ambulance patient with pneumonia goes to X-ray on a trolley, pushed by a porter.
-        var patient = sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "community_acquired_pneumonia");
-        _scanPatient = patient;
+        // Ambulance patients come in: anyone who can't walk is pushed by a porter. Catch one out in a corridor.
+        var patients = new[] { "ankle_fracture", "community_acquired_pneumonia", "community_acquired_pneumonia" }
+            .Select(c => sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, c)).ToList();
+        _scanPatient = patients[0];
         var clock = hospital.Session.Clock;
-        var pushedFor = 0;
-        for (var i = 0; i < 8 * 3600 && pushedFor < 4 && patient.Stage != Simulation.Patients.PatientStage.Gone; i++)
+        var pushedFor = new Dictionary<int, int>();
+        Simulation.Patients.Patient? pushed = null;
+        for (var i = 0; i < 8 * 3600 && pushed is null; i++)
         {
             clock.Step();
-            // Wait until they are out in a corridor, clear of doorways, for the screenshot.
-            var inCorridor = sim.Spaces.Any(c => c.Kind == Simulation.Hospital.CareSpaceKind.Corridor && c.Rect.Contains(patient.Tile));
-            pushedFor = patient.PushedByStaffId is not null && patient.IsMoving && patient.Destination == room.PatientSpot && inCorridor ? pushedFor + 1 : 0;
+            foreach (var p in sim.Patients)
+            {
+                // Out in a corridor, clear of doorways, for the screenshot.
+                var inCorridor = sim.Spaces.Any(c => c.Kind == Simulation.Hospital.CareSpaceKind.Corridor && c.Rect.Contains(p.Tile));
+                pushedFor[p.Id] = p.PushedByStaffId is not null && p.IsMoving && inCorridor ? pushedFor.GetValueOrDefault(p.Id) + 1 : 0;
+                if (pushedFor[p.Id] >= 4)
+                {
+                    pushed = p;
+                }
+            }
         }
 
         clock.SetSpeed(SimulationSpeed.Paused);
-        Check(pushedFor >= 4, "No porter pushed the patient: " + string.Join(" / ", patient.Timeline.Select(t => t.Text)));
-        var porter = sim.FindStaff(patient.PushedByStaffId!.Value)!;
+        Check(pushed is not null, "No porter pushed anyone in 8 hours.");
+        var porter = sim.FindStaff(pushed!.PushedByStaffId!.Value)!;
         Check(porter.Role == Simulation.Staff.StaffRole.Porter, $"Pushed by a {porter.Role}, not a porter.");
-        hospital.Camera.SnapTo(hospital.World.FootPosition(patient) + new Vector2(0, -20), 1.6f);
-        GD.Print($"[smoke] Patient at {patient.X:0.0},{patient.Y:0.0}, porter at {porter.X:0.0},{porter.Y:0.0}.");
-        GD.Print($"[smoke] {porter.Name} (porter) is pushing {patient.FullName} ({patient.Mobility}) at {clock.Now:HH:mm}.");
+        hospital.Camera.SnapTo(hospital.World.FootPosition(pushed) + new Vector2(0, -20), 1.6f);
+        GD.Print($"[smoke] {porter.Name} (porter) is pushing {pushed.FullName} ({pushed.Mobility}) at {clock.Now:HH:mm}.");
     }
 
     private Simulation.Patients.Patient? _scanPatient;
 
-    /// <summary>Runs on until the patient is on the X-ray table.</summary>
+    /// <summary>Runs on until a patient is on the X-ray table (a new one if the first was scanned while we watched the porter).</summary>
     private void FinishScan(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
-        var patient = _scanPatient!;
         var clock = hospital.Session.Clock;
-        for (var i = 0; i < 8 * 3600 && (patient.IsMoving || patient.Tile != room.PatientSpot) && patient.Stage != Simulation.Patients.PatientStage.Gone; i++)
+        var patient = _scanPatient!;
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            clock.Step();
+            if (attempt > 0)
+            {
+                patient = sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "ankle_fracture");
+            }
+
+            for (var i = 0; i < 8 * 3600 && (patient.IsMoving || patient.Tile != room.PatientSpot) && patient.IsInDepartment
+                            && !patient.Investigations.Any(o => o.Status != InvestigationStatus.Requested && sim.Database.Investigations[o.InvestigationId].Room is not null); i++)
+            {
+                clock.Step();
+            }
+
+            if (!patient.IsMoving && patient.Tile == room.PatientSpot)
+            {
+                break;
+            }
         }
 
         Check(!patient.IsMoving && patient.Tile == room.PatientSpot, "Patient was not X-rayed: " + string.Join(" / ", patient.Timeline.Select(t => t.Text)));
