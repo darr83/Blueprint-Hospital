@@ -14,6 +14,9 @@ using Godot;
 
 namespace BlueprintHospital.Hospital;
 
+/// <summary>Where an obs monitor stands, and the room whose patient it is connected to.</summary>
+public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y);
+
 /// <summary>
 /// Everything that stands up from the floor: walls, furniture, equipment, people and vehicles.
 /// Each object is its own node positioned at its depth anchor, and Godot's Y-sort draws them
@@ -32,6 +35,7 @@ public partial class WorldLayer : Node2D
 
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
     private readonly HashSet<GridCoord> _seatTiles = new();
+    private readonly List<ObsMonitorInfo> _monitors = new();
     private HospitalSimulation _sim = null!;
     private SimulationClock _clock = null!;
 
@@ -342,20 +346,20 @@ public partial class WorldLayer : Node2D
 
     private void AddObsMonitor(CareSpace space, double gx, double gy)
     {
-        AddProp(IsoDraw.ToScreen(gx, gy), c =>
-        {
-            var patient = space.OccupantId is { } id ? _sim.FindPatient(id) : null;
-            if (space.Kind == CareSpaceKind.Triage)
-            {
-                // The triage machine is connected to whoever is in the triage chair.
-                patient = _sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == space.PatientSpot);
-            }
+        _monitors.Add(new ObsMonitorInfo(space, gx, gy));
+        AddProp(IsoDraw.ToScreen(gx, gy), c => Figures.MonitorStand(c, gx, gy));
+    }
 
-            var connected = patient is not null && patient.Tile == space.PatientSpot && !patient.IsMoving;
-            var latest = connected ? patient!.LatestObservations : null;
-            var obs = connected ? patient!.CurrentObservations() : null;
-            Figures.ObsMonitor(c, gx, gy, Time, obs?.HeartRate, obs?.OxygenSaturation, latest?.News2.Total ?? 0);
-        }, animated: true);
+    /// <summary>Every obs monitor's position and room; their screens are drawn above the world so they are never hidden.</summary>
+    public IReadOnlyList<ObsMonitorInfo> Monitors => _monitors;
+
+    /// <summary>The patient connected to a monitor: whoever is on the bed (or in the triage chair).</summary>
+    public Patient? ConnectedPatient(CareSpace space)
+    {
+        var patient = space.Kind == CareSpaceKind.Triage
+            ? _sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == space.PatientSpot)
+            : space.OccupantId is { } id ? _sim.FindPatient(id) : null;
+        return patient is not null && !patient.IsMoving && patient.Tile == space.PatientSpot ? patient : null;
     }
 
     private void Chair(GridCoord tile, Color colour)

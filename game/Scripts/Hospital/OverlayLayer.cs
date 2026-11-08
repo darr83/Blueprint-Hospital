@@ -41,6 +41,14 @@ public partial class OverlayLayer : Node2D
             RoomCard(space);
         }
 
+        // Obs monitor screens, always visible above walls and beds.
+        foreach (var monitor in _world.Monitors)
+        {
+            var patient = _world.ConnectedPatient(monitor.Space);
+            var obs = patient?.CurrentObservations();
+            Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, obs?.HeartRate, obs?.OxygenSaturation, obs?.BloodPressure, patient?.LatestObservations?.News2.Total ?? 0);
+        }
+
         foreach (var patient in sim.Patients.Where(p => _world.IsOnMap(p) && !_world.IsLying(p)))
         {
             TriageMarker(patient, _world.FootPosition(patient) + new Vector2(0, _world.IsSeated(patient) ? -64 : -71));

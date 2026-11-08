@@ -139,25 +139,22 @@ public static class Figures
     public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift)
     {
         var up = new Vector2(0, -lift);
+        var gown = new Color("#9CC3E6");
 
-        // Shoulders, then the blanket over the body with a turned-down white edge and the shape of the feet.
-        var shoulders = IsoDraw.ToScreen(gx, gy - 0.9) + up;
-        c.DrawLine(shoulders + new Vector2(-10, -5), shoulders + new Vector2(10, -5), look.Top, 7f);
-        IsoDraw.Box(c, gx - 0.62, gy - 0.75, 1.24, 2.65, 7, blanket, lift);
-        IsoDraw.Box(c, gx - 0.64, gy - 0.8, 1.28, 0.25, 8, new Color("#F7F9FA"), lift);
-        IsoDraw.Box(c, gx - 0.45, gy + 1.3, 0.9, 0.5, 4, blanket.Lightened(0.08f), lift + 7);
+        // Lying flat on their back: head on the pillow, shoulders in a hospital gown, and the
+        // rest of the body under the blanket from the chest down to the feet.
+        IsoDraw.Box(c, gx - 0.55, gy - 1.2, 1.1, 0.5, 5, gown, lift);
+        IsoDraw.Box(c, gx - 0.66, gy - 0.75, 1.32, 2.75, 5, blanket, lift);
 
-        // An arm resting on top of the blanket, along the body.
-        var armTop = new Vector2(0, -lift - 9);
-        var shoulder = IsoDraw.ToScreen(gx + 0.42, gy - 0.6) + armTop;
-        var elbow = IsoDraw.ToScreen(gx + 0.46, gy + 0.05) + armTop;
-        var hand = IsoDraw.ToScreen(gx + 0.4, gy + 0.6) + armTop;
-        c.DrawLine(shoulder, elbow, look.Top, 4.5f);
-        c.DrawLine(elbow, hand, look.Skin, 3.5f);
-        c.DrawCircle(hand, 2.3f, look.Skin);
+        // The shape of the body and feet under the blanket.
+        IsoDraw.Box(c, gx - 0.4, gy - 0.7, 0.8, 1.6, 3, blanket.Lightened(0.06f), lift + 5);
+        IsoDraw.Box(c, gx - 0.4, gy + 1.45, 0.8, 0.45, 4, blanket.Lightened(0.06f), lift + 5);
 
-        // Head on the pillow, drawn last so it sits above the sheet.
-        var head = IsoDraw.ToScreen(gx, gy - 1.5) + up + new Vector2(0, -8);
+        // Turned-down white sheet across the chest.
+        IsoDraw.Box(c, gx - 0.68, gy - 0.82, 1.36, 0.22, 6, new Color("#F7F9FA"), lift);
+
+        // Head on the pillow, drawn last so nothing covers the face.
+        var head = IsoDraw.ToScreen(gx, gy - 1.5) + up + new Vector2(0, -9);
         if (look.LongHair)
         {
             c.DrawCircle(head + new Vector2(0, -3), 8.5f, look.Hair);
@@ -195,56 +192,79 @@ public static class Figures
         return frameHeight + mattress;
     }
 
-    /// <summary>
-    /// An observations monitor on a stand, screen facing the viewer. Shows a live ECG trace,
-    /// heart rate and SpO₂ when connected; the frame turns amber or flashes red for high NEWS2.
-    /// </summary>
-    public static void ObsMonitor(CanvasItem c, double gx, double gy, double time, int? heartRate, int? spo2, int news2)
+    /// <summary>Height of the obs monitor screen's bottom edge above the floor, in pixels.</summary>
+    public const float MonitorHeight = 52f;
+
+    /// <summary>An observations monitor's stand: weighted base and pole. The screen is drawn by <see cref="ObsScreen"/>.</summary>
+    public static void MonitorStand(CanvasItem c, double gx, double gy)
     {
         IsoDraw.Box(c, gx - 0.3, gy - 0.3, 0.6, 0.6, 3, new Color("#4A545D"));
         var basePoint = IsoDraw.ToScreen(gx, gy);
-        c.DrawLine(basePoint, basePoint + new Vector2(0, -46), new Color("#7D8891"), 2.5f);
+        c.DrawLine(basePoint, basePoint + new Vector2(0, -MonitorHeight), new Color("#7D8891"), 2.5f);
+    }
 
-        var screen = new Rect2(basePoint + new Vector2(-15, -66), new Vector2(30, 21));
+    /// <summary>
+    /// The monitor screen, facing the viewer at the top of its pole. It cycles every five seconds
+    /// between heart rate (with an ECG trace), oxygen saturation (with a pleth wave) and blood
+    /// pressure. The frame turns amber at NEWS2 5 and flashes red at 7 or more.
+    /// </summary>
+    public static void ObsScreen(CanvasItem c, double gx, double gy, double time, int? heartRate, int? spo2, string? bloodPressure, int news2)
+    {
+        var top = IsoDraw.ToScreen(gx, gy) + new Vector2(0, -MonitorHeight);
+        var screen = new Rect2(top + new Vector2(-24, -32), new Vector2(48, 32));
         var alarm = news2 >= 7 ? ((int)(time * 3) % 2 == 0 ? new Color("#E53935") : new Color("#5A1A1A"))
             : news2 >= 5 ? new Color("#F9A825")
             : new Color("#3A4650");
-        c.DrawRect(screen.Grow(2), alarm);
+        c.DrawRect(new Rect2(screen.Position + new Vector2(2, 3), screen.Size), new Color(0, 0, 0, 0.2f));
+        c.DrawRect(screen.Grow(2.5f), alarm);
         c.DrawRect(screen, new Color("#0E1A22"));
 
         if (heartRate is not { } hr)
         {
             // Standby: a flat line.
-            c.DrawLine(screen.Position + new Vector2(3, 12), screen.Position + new Vector2(27, 12), new Color("#2C5E44"), 1f);
+            c.DrawLine(screen.Position + new Vector2(4, 18), screen.Position + new Vector2(44, 18), new Color("#2C5E44"), 1f);
             return;
         }
 
-        // ECG: a QRS spike every beat, scrolling left to right.
-        var beat = 60.0 / Math.Max(30, hr);
-        var points = new Vector2[24];
-        for (var i = 0; i < points.Length; i++)
+        var font = ThemeDB.FallbackFont;
+        var page = (int)(time / 5) % 3;
+        var (label, value, colour) = page switch
         {
-            var t = time - ((points.Length - i) * 0.04);
-            var phase = (t % beat) / beat;
-            var yOffset = phase switch
+            0 => ("HR", hr.ToString(), new Color("#3EE07A")),
+            1 => ("SpO₂", spo2 is { } s ? $"{s}%" : "--", new Color("#4FC3F7")),
+            _ => ("BP", bloodPressure ?? "--", new Color("#F2F2F2")),
+        };
+
+        // Waveform across the top half: ECG on the heart rate page, pleth on the SpO2 page.
+        if (page < 2)
+        {
+            var beat = 60.0 / Math.Max(30, hr);
+            var points = new Vector2[40];
+            for (var i = 0; i < points.Length; i++)
             {
-                < 0.04 => -1.5,
-                < 0.08 => 3.0,
-                < 0.12 => -7.5,
-                < 0.16 => 4.0,
-                > 0.45 and < 0.6 => -1.5,
-                _ => 0.0,
-            };
-            points[i] = screen.Position + new Vector2(2 + (i * 0.75f), 9 + (float)yOffset);
+                var t = time - ((points.Length - i) * 0.03);
+                var phase = (t % beat) / beat;
+                var y = page == 0
+                    ? phase switch
+                    {
+                        < 0.04 => -1.5,
+                        < 0.08 => 2.5,
+                        < 0.12 => -7.0,
+                        < 0.16 => 3.5,
+                        > 0.45 and < 0.6 => -1.5,
+                        _ => 0.0,
+                    }
+                    : -5 * Math.Max(0, Math.Sin(phase * Math.PI * 1.6)) + 1;
+                points[i] = screen.Position + new Vector2(3 + (i * 1.05f), 11 + (float)y);
+            }
+
+            c.DrawPolyline(points, colour, 1.2f);
         }
 
-        c.DrawPolyline(points, new Color("#3EE07A"), 1.2f);
-        var font = ThemeDB.FallbackFont;
-        c.DrawString(font, screen.Position + new Vector2(20, 9), hr.ToString(), HorizontalAlignment.Left, -1, 8, new Color("#3EE07A"));
-        if (spo2 is { } sat)
-        {
-            c.DrawString(font, screen.Position + new Vector2(20, 19), sat.ToString(), HorizontalAlignment.Left, -1, 8, new Color("#4FC3F7"));
-        }
+        c.DrawString(font, screen.Position + new Vector2(3, 29), label, HorizontalAlignment.Left, -1, 8, new Color(colour, 0.8f));
+        var size = value.Length > 4 ? 11 : 13;
+        var width = font.GetStringSize(value, HorizontalAlignment.Left, -1, size).X;
+        c.DrawString(font, screen.Position + new Vector2(45 - width, 30), value, HorizontalAlignment.Left, -1, size, colour);
     }
 
     private static Color A(Color colour, float alpha) => new(colour, colour.A * alpha);
