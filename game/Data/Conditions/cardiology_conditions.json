@@ -110,8 +110,10 @@
       }
     ],
     "recovery_per_hour": 0.25,
-    "disposition": "transfer",
-    "disposition_note": "Transfer to the regional heart attack centre for primary PCI."
+    "disposition": "surgery",
+    "disposition_note": "Needs primary PCI to open the blocked coronary artery.",
+    "operation": { "name": "Primary PCI", "minutes": 75, "room": "cath_lab" },
+    "length_of_stay_hours": [48, 96]
   },
   {
     "id": "musculoskeletal_chest_pain",

@@ -32,6 +32,11 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.Pharmacy] = new Color("#E0EDDC"),
         [CareSpaceKind.Clinic] = new Color("#E3E9F3"),
         [CareSpaceKind.OutpatientReception] = new Color("#D6E4F2"),
+        [CareSpaceKind.Echo] = new Color("#EBDDE3"),
+        [CareSpaceKind.Eeg] = new Color("#E4DDEE"),
+        [CareSpaceKind.Ultrasound] = new Color("#DCE7EC"),
+        [CareSpaceKind.Endoscopy] = new Color("#DDE6EA"),
+        [CareSpaceKind.CathLab] = new Color("#DFE3E8"),
     };
 
     private HospitalSimulation _sim = null!;
@@ -52,7 +57,7 @@ public partial class DepartmentRenderer : Node2D
         foreach (var space in _sim.Spaces.OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
         {
             var r = space.Rect;
-            var colour = FloorColours[space.Kind];
+            var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
             IsoDraw.FloorQuad(this, r.X, r.Y, r.Width, r.Length, colour);
 
             // A subtle half-metre tile pattern.
@@ -96,6 +101,10 @@ public partial class DepartmentRenderer : Node2D
                 CareSpaceKind.Theatre => new Color("#00897B"),
                 CareSpaceKind.Pharmacy => new Color("#7CB342"),
                 CareSpaceKind.Clinic => new Color("#5C6BC0"),
+                CareSpaceKind.Echo or CareSpaceKind.CathLab => new Color("#AD1457"),
+                CareSpaceKind.Eeg => new Color("#6A1B9A"),
+                CareSpaceKind.Ultrasound => new Color("#00838F"),
+                CareSpaceKind.Endoscopy => new Color("#455A64"),
                 _ => (Color?)null,
             };
             if (colour is not { } c)

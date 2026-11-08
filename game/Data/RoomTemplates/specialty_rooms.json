@@ -1,0 +1,181 @@
+[
+  {
+    "id": "echo_room",
+    "name": "Echo room",
+    "category": "Specialty rooms",
+    "description": "Echocardiograms: an ultrasound of the heart to check how well it pumps and how the valves work. Patients are brought here from A&E.",
+    "kind": "echo",
+    "department": "cardiology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 7,
+    "max_length_m": 7,
+    "door_width_m": 1.5,
+    "base_cost": 8000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a cardiac physiologist from Recruitment (H) to run it.",
+    "furniture": [
+      "scan_couch",
+      "ultrasound_machine",
+      "staff_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "cath_lab",
+    "name": "Cath lab",
+    "category": "Specialty rooms",
+    "description": "Cardiac catheter laboratory. Heart attack patients have primary PCI here (a balloon and stent to open the blocked artery) instead of being transferred, then recover on a cardiology ward.",
+    "kind": "cath_lab",
+    "department": "cardiology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 7,
+        "length_m": 6.5
+      },
+      {
+        "name": "Large",
+        "width_m": 8,
+        "length_m": 7
+      }
+    ],
+    "min_width_m": 6,
+    "min_length_m": 6,
+    "max_width_m": 12,
+    "max_length_m": 10,
+    "door_width_m": 2.0,
+    "base_cost": 60000,
+    "cost_per_square_metre": 2400,
+    "staffing": "Hire a cardiac physiologist from Recruitment (H) to run it with the cardiology team.",
+    "furniture": [
+      "cath_lab_table",
+      "c_arm",
+      "lead_screen",
+      "obs_monitor",
+      "instrument_trolley",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "eeg_room",
+    "name": "EEG room",
+    "category": "Specialty rooms",
+    "description": "Records brain waves (EEG) to look for epilepsy after a seizure.",
+    "kind": "eeg",
+    "department": "neurology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 7,
+    "max_length_m": 7,
+    "door_width_m": 1.5,
+    "base_cost": 8000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a neurophysiologist from Recruitment (H) to run it.",
+    "furniture": [
+      "scan_couch",
+      "eeg_machine",
+      "staff_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "early_pregnancy_unit",
+    "name": "Early pregnancy unit",
+    "category": "Specialty rooms",
+    "description": "Ultrasound scans for bleeding or pain in early pregnancy: finds ectopic pregnancies and checks the baby's heartbeat.",
+    "kind": "ultrasound",
+    "department": "gynaecology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4.5,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5.5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 9000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a sonographer from Recruitment (H) to run it.",
+    "furniture": [
+      "scan_couch",
+      "ultrasound_machine",
+      "staff_chair",
+      "visitor_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "endoscopy_room",
+    "name": "Endoscopy room",
+    "category": "Specialty rooms",
+    "description": "Camera tests of the gullet, stomach and duodenum (OGD). Finds and treats the cause of bleeding from the stomach.",
+    "kind": "endoscopy",
+    "department": "gastroenterology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 5,
+        "length_m": 4.5
+      },
+      {
+        "name": "Large",
+        "width_m": 6,
+        "length_m": 5
+      }
+    ],
+    "min_width_m": 4.5,
+    "min_length_m": 4,
+    "max_width_m": 9,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 20000,
+    "cost_per_square_metre": 1500,
+    "staffing": "Hire an endoscopist from Recruitment (H) to run it.",
+    "furniture": [
+      "scan_couch",
+      "endoscopy_stack",
+      "obs_monitor",
+      "clinical_cupboard",
+      "hand_basin"
+    ]
+  }
+]

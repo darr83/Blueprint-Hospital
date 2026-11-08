@@ -286,6 +286,24 @@ Build these from **Build → Services**. Each room opens once you hire someone t
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
 staff rooms.
 
+### Specialty rooms and wards
+
+Build these from **Build → Specialty rooms** and **Build → Wards** once their department is unlocked.
+Each specialty room opens when you hire its specialist (posted to the room).
+
+| Room | Department | Run by | What it does |
+| --- | --- | --- | --- |
+| Echo room | Cardiology | Cardiac physiologist | Echocardiograms for heart failure, AF and heart attacks |
+| Cath lab | Cardiology | Cardiac physiologist | Primary PCI for heart attacks on site instead of transfer; they then recover on a cardiology ward or the CCU |
+| EEG room | Neurology | Neurophysiologist | EEGs after a seizure |
+| Early pregnancy unit | Gynaecology | Sonographer | Pelvic ultrasound for suspected ectopic pregnancy and threatened miscarriage |
+| Endoscopy room | Gastroenterology | Endoscopist | OGD for bleeding from the stomach |
+
+The doctors in A&E order these tests when they help with the diagnosis and the room is staffed;
+the patient is taken there and the report follows. The **Coronary care unit** (Cardiology),
+**Stroke unit** (Neurology) and **Acute medical unit** (General Medicine) are wards for that
+department's patients.
+
 ### Outpatient clinics
 
 Build these from **Build → Clinics**: an **Outpatients reception** (desk and seats) and one or more
@@ -326,7 +344,8 @@ balance goes below zero. Money and the finances are still counted and shown as n
 
 - **Grades:** nurses are Band 5, 6, 7, 8 or 9 by how good they are (Band 7 and above wear navy);
   doctors are Junior Doctor, Doctor, Registrar or Consultant. Radiographers, surgeons, pharmacists,
-  porters and receptionists have one grade each. Any nurse or doctor can work in A&E or on any ward.
+  cardiac physiologists, neurophysiologists, sonographers, endoscopists, porters and receptionists
+  have one grade each. Any nurse or doctor can work in A&E or on any ward.
 - **Recruitment** (H) lists eight candidates, refreshed every morning at 08:00, with their grade,
   skill, experience, pace and salary. Choose where each will work and press Hire. Rooms never come
   with staff: everyone is hired by you.

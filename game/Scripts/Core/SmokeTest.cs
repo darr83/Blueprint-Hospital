@@ -56,6 +56,7 @@ public partial class SmokeTest : Node
         Clinics,
         ClinicChair,
         ClinicCalendar,
+        Specialty,
         Rotate,
         Ambulance,
         Finances,
@@ -291,6 +292,13 @@ public partial class SmokeTest : Node
 
             case Stage.ClinicCalendar when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09e_clinic_calendar");
+                BuildSpecialtyRooms(hospital);
+                _frame = 0;
+                _stage = Stage.Specialty;
+                break;
+
+            case Stage.Specialty when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09f_specialty_rooms");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -539,11 +547,52 @@ public partial class SmokeTest : Node
         var booked = sim.CalendarFor(clinic.Id, clock.Now).Count();
         GD.Print($"[smoke] Clinic at {clock.Now:HH:mm}: {booked} booked today, {sim.Appointments.Count(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)} seen, {sim.Outpatients.Count} outpatients in the building.");
         Check(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen), "No clinic patient was seen.");
-        Check(sim.Today[Simulation.Simulation.MoneyCategory.Clinics] > 0, "Clinic income was not booked.");
+        Check(sim.Accounts.Take(2).Any(d => d[Simulation.Simulation.MoneyCategory.Clinics] > 0), "Clinic income was not booked.");
         clock.SetSpeed(SimulationSpeed.Paused);
         hospital.SetMode(GameMode.Play);
         hospital.Hud.HideRightPanels();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 14, b.Y - 7), 0.95f);
+    }
+
+    /// <summary>A cardiology wing north of the theatre: a cath lab, an echo room and an early pregnancy unit, each with its specialist.</summary>
+    private static void BuildSpecialtyRooms(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.HideRightPanels();
+        sim.AdjustBalance(2_000_000);
+        Check(sim.UnlockDepartment("cardiology").CanBuild, "Could not unlock cardiology.");
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 32, b.Y - 28, 32, 14));
+        Check(wing.CanBuild, "Specialty wing refused: " + string.Join("; ", wing.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 20, b.Y - 28, 6, 15), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Specialty corridor refused: " + string.Join("; ", corridor.Problems));
+        foreach (var (template, rect) in new[]
+        {
+            ("cath_lab", new Simulation.World.GridRect(b.X - 32, b.Y - 28, 12, 13)),
+            ("echo_room", new Simulation.World.GridRect(b.X - 14, b.Y - 28, 8, 7)),
+            ("early_pregnancy_unit", new Simulation.World.GridRect(b.X - 14, b.Y - 21, 9, 7)),
+        })
+        {
+            var built = sim.BuildRoom(sim.AutoPlan(template, rect));
+            Check(built.CanBuild, $"{template} refused: " + string.Join("; ", built.Problems));
+        }
+
+        var lab = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.CathLab);
+        var echo = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.Echo);
+        sim.HireStaff(Simulation.Staff.StaffRole.CardiacPhysiologist, lab.Id, skill: 0.7);
+        sim.HireStaff(Simulation.Staff.StaffRole.CardiacPhysiologist, echo.Id, skill: 0.7);
+        sim.HireStaff(Simulation.Staff.StaffRole.Sonographer, skill: 0.7);
+        Check(sim.CanDo(hospital.Session.Database.Investigations["echocardiogram"]), "Echocardiograms can't be done with a staffed echo room.");
+        Check(sim.CanDo(hospital.Session.Database.Investigations["pelvic_ultrasound"]), "Pelvic ultrasound can't be done with a staffed early pregnancy unit.");
+        Check(sim.HasProcedureRoomFor(hospital.Session.Database.Conditions["acute_myocardial_infarction"].Operation!, "cardiology"), "The cath lab can't do primary PCI.");
+        for (var i = 0; i < 60; i++)
+        {
+            hospital.Session.Clock.Step();
+        }
+
+        GD.Print($"[smoke] Built {lab.Name}, {echo.Name} and the early pregnancy unit with their specialists.");
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 21, b.Y - 22), 0.8f);
     }
 
     /// <summary>Build mode: clicking a corridor chair opens it with a Remove button.</summary>

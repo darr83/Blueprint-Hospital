@@ -217,7 +217,7 @@ public sealed partial class HospitalSimulation
                     addedBlood = true;
                     break;
                 case InvestigationCategory.Imaging:
-                    AddTask(TaskKind.Imaging, StaffRole.Radiographer, patient, test.ProcedureMinutes, test.Name, id);
+                    AddTask(TaskKind.Imaging, RoleForRoom(test.Room!.Value), patient, test.ProcedureMinutes, test.Name, id);
                     break;
                 default:
                     AddTask(TaskKind.BedsideTest, test.PerformedBy == ClinicalRole.Doctor ? StaffRole.Doctor : StaffRole.Nurse, patient, test.ProcedureMinutes, test.Name, id);

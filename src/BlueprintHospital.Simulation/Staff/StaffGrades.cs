@@ -24,6 +24,10 @@ public static class StaffGrades
         new Grade(StaffRole.Surgeon, "Consultant surgeon", 0.80, 0.97, 10, 25, 112_000, 1),
         new Grade(StaffRole.Pharmacist, "Pharmacist", 0.60, 0.85, 1, 15, 46_000, 1.5),
         new Grade(StaffRole.Porter, "Porter", 0.30, 0.50, 0, 15, 24_000, 2.5),
+        new Grade(StaffRole.CardiacPhysiologist, "Cardiac physiologist", 0.55, 0.85, 1, 15, 38_000, 1),
+        new Grade(StaffRole.Neurophysiologist, "Clinical neurophysiologist", 0.55, 0.85, 1, 15, 38_000, 1),
+        new Grade(StaffRole.Sonographer, "Sonographer", 0.55, 0.85, 1, 15, 42_000, 1),
+        new Grade(StaffRole.Endoscopist, "Consultant endoscopist", 0.75, 0.95, 6, 25, 95_000, 0.8),
         new Grade(StaffRole.Receptionist, "Receptionist", 0.40, 0.60, 0, 15, 24_000, 1.5),
     };
 
@@ -56,7 +60,15 @@ public static class StaffGrades
         (StaffRole.Pharmacist, false) => "pharmacist",
         (StaffRole.Pharmacist, true) => "pharmacists",
         (StaffRole.Porter, false) => "porter",
-        _ => "porters",
+        (StaffRole.Porter, true) => "porters",
+        (StaffRole.CardiacPhysiologist, false) => "cardiac physiologist",
+        (StaffRole.CardiacPhysiologist, true) => "cardiac physiologists",
+        (StaffRole.Neurophysiologist, false) => "neurophysiologist",
+        (StaffRole.Neurophysiologist, true) => "neurophysiologists",
+        (StaffRole.Sonographer, false) => "sonographer",
+        (StaffRole.Sonographer, true) => "sonographers",
+        (StaffRole.Endoscopist, false) => "endoscopist",
+        _ => "endoscopists",
     };
 }
 

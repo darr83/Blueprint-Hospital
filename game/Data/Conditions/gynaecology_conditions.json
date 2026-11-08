@@ -79,7 +79,8 @@
     "can_be_fatal": true,
     "key_investigations": [
       "pregnancy_test",
-      "full_blood_count"
+      "full_blood_count",
+      "pelvic_ultrasound"
     ],
     "treatment": [
       {
@@ -184,7 +185,8 @@
     "can_be_fatal": false,
     "key_investigations": [
       "pregnancy_test",
-      "full_blood_count"
+      "full_blood_count",
+      "pelvic_ultrasound"
     ],
     "treatment": [
       {

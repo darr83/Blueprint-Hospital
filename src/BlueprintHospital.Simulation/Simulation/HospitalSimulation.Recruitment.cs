@@ -42,7 +42,23 @@ public sealed partial class HospitalSimulation
         StaffRole.Radiographer => new[] { CareSpaceKind.XRay, CareSpaceKind.CT },
         StaffRole.Surgeon => new[] { CareSpaceKind.Theatre },
         StaffRole.Pharmacist => new[] { CareSpaceKind.Pharmacy },
+        StaffRole.CardiacPhysiologist => new[] { CareSpaceKind.Echo, CareSpaceKind.CathLab },
+        StaffRole.Neurophysiologist => new[] { CareSpaceKind.Eeg },
+        StaffRole.Sonographer => new[] { CareSpaceKind.Ultrasound },
+        StaffRole.Endoscopist => new[] { CareSpaceKind.Endoscopy },
         _ => Array.Empty<CareSpaceKind>(),
+    };
+
+    /// <summary>Who runs a service room.</summary>
+    public static StaffRole RoleForRoom(CareSpaceKind kind) => kind switch
+    {
+        CareSpaceKind.Theatre => StaffRole.Surgeon,
+        CareSpaceKind.Pharmacy => StaffRole.Pharmacist,
+        CareSpaceKind.Echo or CareSpaceKind.CathLab => StaffRole.CardiacPhysiologist,
+        CareSpaceKind.Eeg => StaffRole.Neurophysiologist,
+        CareSpaceKind.Ultrasound => StaffRole.Sonographer,
+        CareSpaceKind.Endoscopy => StaffRole.Endoscopist,
+        _ => StaffRole.Radiographer,
     };
 
     private static bool IsSpecialist(StaffRole role) => RoomKindsFor(role).Count > 0;
@@ -92,7 +108,7 @@ public sealed partial class HospitalSimulation
             new("A&E", null, StaffRole.Doctor, Math.Max(2, (int)Math.Ceiling(treatment / 5.0)), Have(StaffRole.Doctor, null)),
         };
 
-        var movesTo = _spaces.Values.Count(s => s.IsWard || s.Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre);
+        var movesTo = _spaces.Values.Count(s => s.IsWard || (s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy));
         needs.Add(new("Whole hospital", null, StaffRole.Porter, 1 + (int)Math.Ceiling(movesTo / 2.0), Have(StaffRole.Porter, null)));
 
         foreach (var ward in Wards)
@@ -103,12 +119,7 @@ public sealed partial class HospitalSimulation
 
         foreach (var room in _spaces.Values.Where(s => s.IsServiceRoom).OrderBy(s => s.Id, StringComparer.Ordinal))
         {
-            var role = room.Kind switch
-            {
-                CareSpaceKind.Theatre => StaffRole.Surgeon,
-                CareSpaceKind.Pharmacy => StaffRole.Pharmacist,
-                _ => StaffRole.Radiographer,
-            };
+            var role = RoleForRoom(room.Kind);
             needs.Add(new(room.Name, room.Id, role, 1, Have(role, room.Id)));
         }
 
@@ -190,7 +201,7 @@ public sealed partial class HospitalSimulation
         return new JobCandidate
         {
             Id = _nextCandidateId++,
-            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon ? "Dr " : string.Empty)}{first} {surname}",
+            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist ? "Dr " : string.Empty)}{first} {surname}",
             Role = grade.Role,
             Grade = grade.Title,
             Skill = skill,

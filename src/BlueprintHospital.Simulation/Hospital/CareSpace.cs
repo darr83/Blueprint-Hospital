@@ -33,6 +33,21 @@ public enum CareSpaceKind
 
     /// <summary>Where clinic patients check in and wait; run by a receptionist.</summary>
     OutpatientReception,
+
+    /// <summary>Echocardiograms (heart ultrasound), done by a cardiac physiologist.</summary>
+    Echo,
+
+    /// <summary>EEG (brain wave recording), done by a neurophysiologist.</summary>
+    Eeg,
+
+    /// <summary>Early pregnancy unit: pelvic ultrasound scans, done by a sonographer.</summary>
+    Ultrasound,
+
+    /// <summary>Endoscopy (camera tests of the gut), done by an endoscopist.</summary>
+    Endoscopy,
+
+    /// <summary>Cardiac catheter lab: primary PCI for heart attacks, run by a cardiac physiologist with the cardiology team.</summary>
+    CathLab,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -127,7 +142,12 @@ public sealed class CareSpace
     public HashSet<string> AllowedDepartments { get; } = new();
 
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
-    public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy;
+    public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
+        or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab;
+
+    /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
+    public static bool IsTestRoom(CareSpaceKind kind) =>
+        kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy;
 
     /// <summary>Patient currently in (or on their way to) this space.</summary>
     public int? OccupantId { get; set; }

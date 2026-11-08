@@ -1,3 +1,5 @@
+using BlueprintHospital.Simulation.Hospital;
+
 namespace BlueprintHospital.Simulation.Data.Models;
 
 /// <summary>How a patient leaves A&amp;E once treated.</summary>
@@ -24,13 +26,16 @@ public enum TreatmentStepType
     Procedure,
 }
 
-/// <summary>An operation done in theatre.</summary>
+/// <summary>An operation or procedure, done in theatre (or another procedure room such as the cath lab).</summary>
 public sealed class OperationDefinition
 {
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>Time in theatre for an average surgeon.</summary>
+    /// <summary>Time in the room for an average team.</summary>
     public int Minutes { get; init; }
+
+    /// <summary>Where it is done: an operating theatre unless it says otherwise (cath_lab).</summary>
+    public CareSpaceKind Room { get; init; } = CareSpaceKind.Theatre;
 }
 
 public sealed class SymptomChance
@@ -249,6 +254,10 @@ public sealed class ConditionDefinition : IDataRecord
             {
                 context.RequireText("operation.name", Operation.Name);
                 context.RequireRange("operation.minutes", Operation.Minutes, 10, 600);
+                if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab))
+                {
+                    context.Error("operation.room", "must be theatre or cath_lab.");
+                }
             }
         }
 

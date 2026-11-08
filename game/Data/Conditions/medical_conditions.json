@@ -403,7 +403,8 @@
       "ecg",
       "troponin",
       "urea_electrolytes",
-      "chest_xray"
+      "chest_xray",
+      "echocardiogram"
     ],
     "treatment": [
       {
@@ -508,7 +509,8 @@
     "key_investigations": [
       "ecg",
       "urea_electrolytes",
-      "troponin"
+      "troponin",
+      "echocardiogram"
     ],
     "treatment": [
       {

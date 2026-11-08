@@ -10,7 +10,10 @@ public enum InvestigationCategory
     /// <summary>A sample is taken at the bedside and sent to the laboratory.</summary>
     Blood,
 
-    /// <summary>Done by a radiographer in an X-ray or CT room; a radiologist reports it after the turnaround time.</summary>
+    /// <summary>
+    /// Done in its own room by that room's specialist (X-ray, CT, echo, EEG, ultrasound, endoscopy);
+    /// the patient is taken there and the report follows after the turnaround time.
+    /// </summary>
     Imaging,
 }
 
@@ -98,9 +101,9 @@ public sealed class InvestigationDefinition : IDataRecord
         context.RequireRange("false_positive_rate", FalsePositiveRate, 0, 1);
         CheckTemplate(context, "normal", Normal);
 
-        if ((Category == InvestigationCategory.Imaging) != Room is CareSpaceKind.XRay or CareSpaceKind.CT)
+        if ((Category == InvestigationCategory.Imaging) != (Room is { } room && CareSpace.IsTestRoom(room)))
         {
-            context.Error("room", "imaging tests, and only imaging tests, name their room: x_ray or ct.");
+            context.Error("room", "imaging tests, and only imaging tests, name their room: x_ray, ct, echo, eeg, ultrasound or endoscopy.");
         }
 
         if (FalsePositiveRate > 0)

@@ -161,7 +161,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Departments whose patients can need an operation (the ones a theatre can be opened to).</summary>
     public IReadOnlyList<DepartmentDefinition> SurgicalDepartments =>
         Database.Departments.Values
-            .Where(d => Database.Conditions.Values.Any(c => c.Disposition == Disposition.Surgery && c.Department == d.Id))
+            .Where(d => Database.Conditions.Values.Any(c => c.Disposition == Disposition.Surgery && c.Operation?.Room == CareSpaceKind.Theatre && c.Department == d.Id))
             .OrderBy(d => d.Name)
             .ToList();
 

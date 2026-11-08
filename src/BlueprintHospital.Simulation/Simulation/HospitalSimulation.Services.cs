@@ -28,7 +28,7 @@ public sealed partial class HospitalSimulation
     private CareSpaceKind? ServiceRoomKind(ClinicalTask task) => task.Kind switch
     {
         TaskKind.Imaging => Database.Investigations[task.Detail!].Room,
-        TaskKind.Surgery => CareSpaceKind.Theatre,
+        TaskKind.Surgery => OperationRoom(task.Detail),
         TaskKind.DispenseMedicines => CareSpaceKind.Pharmacy,
         _ => null,
     };
@@ -48,7 +48,7 @@ public sealed partial class HospitalSimulation
 
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
                && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
-               && (task.Kind != TaskKind.Surgery || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept)));
+               && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept)));
     }
 
     /// <summary>The member of staff starts work in their room; for a scan or an operation the patient is taken there.</summary>
@@ -98,7 +98,8 @@ public sealed partial class HospitalSimulation
         order.SampleTakenAt = Now;
         order.ResultDueAt = Now.AddMinutes(test.TurnaroundMinutes);
         Stats.ScansDone++;
-        patient.Log(Now, $"{test.Name} done by {radiographer.Name}; waiting for the radiologist's report.");
+        var reporter = test.Room is CareSpaceKind.XRay or CareSpaceKind.CT ? "the radiologist's report" : "the report";
+        patient.Log(Now, $"{test.Name} done by {radiographer.Name}; waiting for {reporter}.");
     }
 
     // ---------------------------------------------------------------- theatres
@@ -107,35 +108,39 @@ public sealed partial class HospitalSimulation
     private void RequestSurgery(Patient patient, ConditionDefinition diagnosed)
     {
         var operation = diagnosed.Operation!;
-        if (!HasTheatreFor(diagnosed.Department))
+        var place = operation.Room == CareSpaceKind.CathLab ? "the cath lab" : "theatre";
+        if (!HasProcedureRoomFor(operation, diagnosed.Department))
         {
-            var why = SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed)
-                ? $"no theatre here takes {DepartmentName(diagnosed.Department)} patients"
-                : "there is no operating theatre on site";
-            ArrangeTransfer(patient, diagnosed, $"Needs {operation.Name.ToLowerInvariant()}, but {why}, so they are being transferred to a neighbouring hospital.");
+            var why = operation.Room != CareSpaceKind.Theatre
+                ? "there is no staffed cath lab on site"
+                : SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed)
+                    ? $"no theatre here takes {DepartmentName(diagnosed.Department)} patients"
+                    : "there is no operating theatre on site";
+            ArrangeTransfer(patient, diagnosed, $"Needs {LowerFirst(operation.Name)}, but {why}, so they are being transferred to a neighbouring hospital.");
             return;
         }
 
         patient.Stage = PatientStage.AwaitingSurgery;
-        patient.Log(Now, $"{diagnosed.DispositionNote} Booked for theatre.", important: true);
-        Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} is waiting for theatre ({operation.Name.ToLowerInvariant()}).", patient.Id, patient.CareSpaceId, patient.Triage);
-        AddTask(TaskKind.Surgery, StaffRole.Surgeon, patient, operation.Minutes, operation.Name, diagnosed.Id);
+        patient.Log(Now, $"{diagnosed.DispositionNote} Booked for {place}.", important: true);
+        Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} is waiting for {place} ({LowerFirst(operation.Name)}).", patient.Id, patient.CareSpaceId, patient.Triage);
+        AddTask(TaskKind.Surgery, RoleForRoom(operation.Room), patient, operation.Minutes, operation.Name, diagnosed.Id);
     }
 
     private void CompleteSurgery(StaffMember surgeon, Patient patient)
     {
         var planned = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
         var operation = planned.Operation!;
+        var inTheatre = operation.Room == CareSpaceKind.Theatre;
         if (planned.Id == patient.Condition.Id)
         {
-            patient.Log(Now, $"{operation.Name} performed by {surgeon.Name}. The operation went well.", important: true);
+            patient.Log(Now, $"{operation.Name} performed by {surgeon.Name}. The {(inTheatre ? "operation" : "procedure")} went well.", important: true);
         }
         else
         {
             // The surgeon finds what is really wrong and the team change the plan.
             patient.WorkingDiagnosis = new Diagnosis(patient.Condition.Id, 0.95, Now, surgeon.Id);
-            patient.Log(Now, $"{operation.Name} by {surgeon.Name}: the findings did not fit {planned.Name.ToLowerInvariant()}. The surgeon found {patient.Condition.Name.ToLowerInvariant()}.", important: true);
-            Notifications.Add(Now, NotificationLevel.Warning, $"Wrong diagnosis found in theatre: {patient.FullName} actually had {patient.Condition.Name.ToLowerInvariant()}.", patient.Id);
+            patient.Log(Now, $"{operation.Name} by {surgeon.Name}: the findings did not fit {planned.Name.ToLowerInvariant()}. The {(inTheatre ? "surgeon" : "team")} found {patient.Condition.Name.ToLowerInvariant()}.", important: true);
+            Notifications.Add(Now, NotificationLevel.Warning, $"Wrong diagnosis found in {(inTheatre ? "theatre" : "the cath lab")}: {patient.FullName} actually had {patient.Condition.Name.ToLowerInvariant()}.", patient.Id);
         }
 
         patient.EffectiveTreatmentGiven = true;
@@ -144,7 +149,7 @@ public sealed partial class HospitalSimulation
         Stats.OperationsDone++;
         Book(MoneyCategory.Operations, OperationTariff);
         ReturnFromServiceRoom(patient);
-        RequestWardBed(patient, Database.Conditions[patient.WorkingDiagnosis.ConditionId], "Back from theatre; needs a ward bed to recover.");
+        RequestWardBed(patient, Database.Conditions[patient.WorkingDiagnosis.ConditionId], $"Back from {(inTheatre ? "theatre" : "the cath lab")}; needs a ward bed to recover.");
     }
 
     // ---------------------------------------------------------------- pharmacy
@@ -174,7 +179,7 @@ public sealed partial class HospitalSimulation
     private void CancelUnavailableWork()
     {
         bool CanStillBeDone(ClinicalTask t) => t.Kind == TaskKind.Surgery
-            ? SurgeryDepartment(t.Detail) is { } dept && HasTheatreFor(dept)
+            ? t.Detail is { } id && Database.Conditions.TryGetValue(id, out var c) && c.Operation is { } op && HasProcedureRoomFor(op, c.Department)
             : ServiceRoomKind(t) is not { } kind || SpacesOfKind(kind).Any(IsStaffed);
 
         foreach (var task in _tasks.Values.Where(t => t.AssignedStaffId is null && !CanStillBeDone(t)).ToList())
@@ -193,7 +198,7 @@ public sealed partial class HospitalSimulation
                     RequestReviewIfResultsComplete(patient);
                     break;
                 case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery:
-                    ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "No operating theatre here can take them any more, so they are being transferred to a neighbouring hospital.");
+                    ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "No operating theatre or cath lab here can take them any more, so they are being transferred to a neighbouring hospital.");
                     break;
                 case TaskKind.DispenseMedicines:
                     patient.MedicinesReadyAt = Now + OutsidePharmacyDelay;
@@ -202,6 +207,17 @@ public sealed partial class HospitalSimulation
             }
         }
     }
+
+    /// <summary>The room an operation is done in (theatre unless the condition says otherwise).</summary>
+    private CareSpaceKind OperationRoom(string? conditionId) =>
+        conditionId is not null && Database.Conditions.TryGetValue(conditionId, out var condition) && condition.Operation is { } op ? op.Room : CareSpaceKind.Theatre;
+
+    /// <summary>Whether a staffed room can do this operation for this department's patient.</summary>
+    public bool HasProcedureRoomFor(OperationDefinition operation, string departmentId) =>
+        operation.Room == CareSpaceKind.Theatre ? HasTheatreFor(departmentId) : SpacesOfKind(operation.Room).Any(IsStaffed);
+
+    /// <summary>"Primary PCI" becomes "primary PCI", "Appendicectomy" becomes "appendicectomy".</summary>
+    private static string LowerFirst(string text) => text.Length == 0 ? text : char.ToLowerInvariant(text[0]) + text[1..];
 
     /// <summary>Where a service room's staff wait between tasks.</summary>
     private static GridCoord ServiceRoomHome(CareSpace room) => room.StaffSpot;

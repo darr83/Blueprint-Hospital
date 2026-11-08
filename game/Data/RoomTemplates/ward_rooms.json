@@ -292,5 +292,131 @@
       "hand_basin",
       "visitor_chair"
     ]
+  },
+  {
+    "id": "coronary_care_unit",
+    "name": "Coronary care unit",
+    "category": "Wards",
+    "description": "Closely monitored beds for heart attack patients after primary PCI and for unstable heart rhythms. Needs the Cardiology department unlocked.",
+    "kind": "ward",
+    "department": "cardiology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "stroke_unit",
+    "name": "Stroke unit",
+    "category": "Wards",
+    "description": "Specialist beds for stroke patients: close monitoring in the first days, then rehabilitation. Needs the Neurology department unlocked.",
+    "kind": "ward",
+    "department": "neurology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "acute_medical_unit",
+    "name": "Acute medical unit",
+    "category": "Wards",
+    "description": "The medical admissions unit: A&E sends medical patients here for their first day or two.",
+    "kind": "ward",
+    "department": "general_medicine",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
   }
 ]

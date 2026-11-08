@@ -137,6 +137,10 @@ public partial class RosterPanel : PanelContainer
                     StaffRole.Radiographer => new Color("#8E2448"),
                     StaffRole.Surgeon => new Color("#00897B"),
                     StaffRole.Pharmacist => new Color("#43A047"),
+                    StaffRole.CardiacPhysiologist => new Color("#7A2E4A"),
+                    StaffRole.Neurophysiologist => new Color("#5A3D7A"),
+                    StaffRole.Sonographer => new Color("#2F5D73"),
+                    StaffRole.Endoscopist => new Color("#2C4F7C"),
                     StaffRole.Porter => new Color("#3C6E47"),
                     _ => new Color("#6E5A8C"),
                 };

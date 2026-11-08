@@ -13,6 +13,18 @@ public enum StaffRole
 
     /// <summary>Moves patients who can't walk: wheelchairs and trolleys.</summary>
     Porter,
+
+    /// <summary>Does echocardiograms and runs the cath lab.</summary>
+    CardiacPhysiologist,
+
+    /// <summary>Records EEGs.</summary>
+    Neurophysiologist,
+
+    /// <summary>Does ultrasound scans in the early pregnancy unit.</summary>
+    Sonographer,
+
+    /// <summary>Does endoscopies (OGD).</summary>
+    Endoscopist,
 }
 
 public enum StaffActivity

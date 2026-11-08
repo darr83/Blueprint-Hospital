@@ -1163,5 +1163,168 @@
    }
   ],
   "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "echocardiogram",
+  "name": "Echocardiogram",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 30,
+  "turnaround_minutes": 15,
+  "cost": 120,
+  "applies_to_sex": "any",
+  "room": "echo",
+  "normal": {
+   "summaries": [
+    "Normal left ventricular size and function. Valves look normal."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "summaries": [
+    "Mildly thickened aortic valve, not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.9,
+    "summaries": [
+     "Severely impaired left ventricular function, ejection fraction about 30%."
+    ]
+   },
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.6,
+    "summaries": [
+     "New regional wall motion abnormality in the anterior wall."
+    ]
+   },
+   {
+    "condition": "atrial_fibrillation",
+    "probability": 0.5,
+    "summaries": [
+     "Dilated left atrium; left ventricle works normally."
+    ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.35,
+    "summaries": [
+     "Dilated, strained right ventricle."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "eeg",
+  "name": "EEG",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 40,
+  "turnaround_minutes": 60,
+  "cost": 150,
+  "applies_to_sex": "any",
+  "room": "eeg",
+  "normal": {
+   "summaries": [
+    "Normal background rhythm. No epileptiform activity."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Some non-specific slowing, of uncertain significance."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "breakthrough_seizure",
+    "probability": 0.6,
+    "summaries": [
+     "Frequent epileptiform discharges: supports epilepsy."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "pelvic_ultrasound",
+  "name": "Pelvic ultrasound",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 10,
+  "cost": 90,
+  "applies_to_sex": "female",
+  "room": "ultrasound",
+  "normal": {
+   "summaries": [
+    "Normal uterus and ovaries. No free fluid."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Small simple ovarian cyst, probably not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "ectopic_pregnancy",
+    "probability": 0.85,
+    "summaries": [
+     "Empty uterus with a mass beside the left ovary and free fluid in the pelvis: ectopic pregnancy."
+    ]
+   },
+   {
+    "condition": "threatened_miscarriage",
+    "probability": 0.8,
+    "summaries": [
+     "Live pregnancy in the womb with a heartbeat; small bleed beside the sac."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ogd",
+  "name": "OGD (endoscopy)",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 30,
+  "turnaround_minutes": 10,
+  "cost": 450,
+  "applies_to_sex": "any",
+  "room": "endoscopy",
+  "normal": {
+   "summaries": [
+    "Normal gullet, stomach and duodenum."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Mild redness of the stomach lining."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.9,
+    "summaries": [
+     "Bleeding duodenal ulcer, treated with clips and adrenaline injection."
+    ]
+   },
+   {
+    "condition": "gastro_oesophageal_reflux",
+    "probability": 0.5,
+    "summaries": [
+     "Inflamed lower gullet (oesophagitis)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
  }
 ]

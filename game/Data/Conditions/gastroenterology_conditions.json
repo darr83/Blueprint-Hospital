@@ -708,7 +708,8 @@
     "key_investigations": [
       "full_blood_count",
       "urea_electrolytes",
-      "venous_blood_gas"
+      "venous_blood_gas",
+      "ogd"
     ],
     "treatment": [
       {

@@ -175,7 +175,8 @@
     "can_be_fatal": false,
     "key_investigations": [
       "capillary_glucose",
-      "urea_electrolytes"
+      "urea_electrolytes",
+      "eeg"
     ],
     "treatment": [
       {
