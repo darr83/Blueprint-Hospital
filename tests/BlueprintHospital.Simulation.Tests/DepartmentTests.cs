@@ -193,9 +193,12 @@ public class DepartmentTests
         h.Sim.SetTheatreAccess(theatre.Id, "gastroenterology", true);
         h.StaffToRecommended();
 
-        // Keep the surgeon busy so the patient waits on the list.
-        var surgeon = h.Sim.Staff.Single(s => s.Role == StaffRole.Surgeon);
-        h.Sim.Fire(surgeon.Id);
+        // With no surgeons (day or night) the patient waits on the list.
+        foreach (var surgeon in h.Sim.Staff.Where(s => s.Role == StaffRole.Surgeon).ToList())
+        {
+            h.Sim.Fire(surgeon.Id);
+        }
+
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
         h.RunUntil(() => patient.Stage is PatientStage.AwaitingTransfer or PatientStage.Gone, TimeSpan.FromHours(16), "appendicitis to be transferred");
         if (patient.WorkingDiagnosis?.ConditionId == "acute_appendicitis")

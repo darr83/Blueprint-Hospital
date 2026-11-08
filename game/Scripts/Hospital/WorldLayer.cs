@@ -218,7 +218,8 @@ public partial class WorldLayer : Node2D
             present.Add(p);
         }
 
-        foreach (var s in _sim.Staff)
+        // Off-duty staff are at home, so they aren't drawn.
+        foreach (var s in _sim.Staff.Where(s => s.IsInBuilding))
         {
             present.Add(s);
         }

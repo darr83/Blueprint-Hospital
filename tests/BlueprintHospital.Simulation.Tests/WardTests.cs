@@ -82,7 +82,8 @@ public class WardTests
         var (h, ward) = WithWard();
         var team = h.Sim.Staff.Where(s => s.BaseRoomId == ward.Id).ToList();
         Assert.Contains(team, s => s.Role == StaffRole.Doctor);
-        Assert.Equal((ward.Beds.Count + 5) / 6, team.Count(s => s.Role == StaffRole.Nurse));
+        Assert.Equal((ward.Beds.Count + 5) / 6, team.Count(s => s.Role == StaffRole.Nurse && s.Shift == StaffShift.Day));
+        Assert.Equal((ward.Beds.Count + 5) / 6, team.Count(s => s.Role == StaffRole.Nurse && s.Shift == StaffShift.Night));
         Assert.All(h.Sim.RecommendedStaffing(), n => Assert.Equal(0, n.Short));
 
         // Demolishing the ward moves its nurses and doctor to A&E rather than losing them.

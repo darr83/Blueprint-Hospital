@@ -206,6 +206,8 @@ public partial class StaffPanel : PanelContainer
         _now.Heading.Text = m.Activity switch
         {
             StaffActivity.OnBreak or StaffActivity.WalkingToBreak => "On a break",
+            StaffActivity.GoingHome => "Going home",
+            StaffActivity.OffDuty => "Off duty",
             StaffActivity.Idle => "Free",
             _ => "Doing now",
         };
@@ -229,7 +231,7 @@ public partial class StaffPanel : PanelContainer
         _tasks.Value.Text = m.TasksCompleted.ToString();
         _skill.Value.Text = $"{m.Skill:P0}";
         _experience.Value.Text = m.YearsExperience == 1 ? "1 year" : $"{m.YearsExperience} years";
-        _footer.Text = $"Age {m.Age} · £{m.Salary:N0} a year · shifts change at 08:00 and 20:00";
+        _footer.Text = $"Age {m.Age} · £{m.Salary:N0} a year · {HospitalSimulation.ShiftName(m.Shift)} team, {HospitalSimulation.ShiftHoursText(m.Shift)} (rota: T)";
 
         RefreshQueue(m);
     }

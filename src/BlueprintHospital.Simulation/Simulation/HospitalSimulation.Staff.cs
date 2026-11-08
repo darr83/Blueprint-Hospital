@@ -135,8 +135,8 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- staff loop
 
-    /// <summary>Shifts change at 08:00 and 20:00. Each post is covered by a fresh team member.</summary>
-    private static readonly int[] ShiftChangeHours = { 8, 20 };
+    /// <summary>Shifts change at 08:00 and 20:00: the outgoing team hand over and go home (see the shifts file).</summary>
+    private static readonly int[] ShiftChangeHours = { DayShiftStartHour, NightShiftStartHour };
 
     private void HandleShiftChange()
     {
@@ -145,12 +145,10 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        foreach (var member in _staff)
-        {
-            member.Fatigue = Math.Min(member.Fatigue, Random.Range(0.0, 0.1));
-        }
-
-        Notifications.Add(Now, NotificationLevel.Info, Now.Hour == 8 ? "Day shift has started: staff handed over and are refreshed." : "Night shift has started: staff handed over and are refreshed.");
+        var coming = _staff.Count(s => s.Shift == CurrentShift);
+        Notifications.Add(Now, NotificationLevel.Info, Now.Hour == DayShiftStartHour
+            ? $"Day shift has started: {coming} staff are coming in and the night team are handing over."
+            : $"Night shift has started: {coming} staff are coming in and the day team are handing over.");
     }
 
     private void UpdateStaff(double dt)
@@ -158,6 +156,11 @@ public sealed partial class HospitalSimulation
         HandleShiftChange();
         foreach (var member in _staff)
         {
+            if (UpdateDuty(member))
+            {
+                continue;
+            }
+
             var working = member.CurrentTaskId is not null || member.Activity == StaffActivity.Working;
             member.Fatigue = Math.Clamp(member.Fatigue + ((working ? FatigueWhenWorkingPerHour : FatigueWhenIdlePerHour) * dt / 3600.0), 0, 1);
 
@@ -165,13 +168,14 @@ public sealed partial class HospitalSimulation
             {
                 case StaffActivity.WalkingToBreak when !member.IsMoving:
                     member.Activity = StaffActivity.OnBreak;
-                    member.StatusText = "On a break";
-                    break;
+                    member.StatusText = $"On a break · back at {member.BreakEndsAt:HH:mm}";
+                    continue;
 
                 case StaffActivity.OnBreak:
                     member.Fatigue = Math.Max(0.1, member.Fatigue - (dt / BreakLength.TotalSeconds * 0.7));
                     if (Now >= member.BreakEndsAt)
                     {
+                        FinishBreak(member);
                         member.Activity = StaffActivity.Idle;
                         member.StatusText = "Available";
                         member.BreakEndsAt = null;
@@ -221,6 +225,12 @@ public sealed partial class HospitalSimulation
             .ThenBy(t => t.Id);
 
         var best = candidates.FirstOrDefault();
+
+        if (DueBreak(member) is { } due && CanTakeBreak(member, due, best))
+        {
+            TakeBreak(member, due);
+            return;
+        }
 
         if (member.Role != StaffRole.Receptionist && member.Fatigue >= BreakThreshold && (best is null || best.Priority < RedOngoing))
         {
@@ -287,13 +297,22 @@ public sealed partial class HospitalSimulation
     private bool NurseCanCover(ClinicalTask task, StaffMember member) =>
         task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseCoversPorterAfter;
 
-    private void TakeBreak(StaffMember member)
+    /// <summary>Goes to the staff room for a planned break, or (with none given) an extra break because they're worn out.</summary>
+    private void TakeBreak(StaffMember member, PlannedBreak? planned = null)
     {
+        if (planned is null)
+        {
+            planned = new PlannedBreak { Start = Now, Minutes = (int)BreakLength.TotalMinutes + RotaRandom.Range(0, 5) };
+            member.Breaks.Add(planned);
+            member.Breaks.Sort((a, b) => a.Start.CompareTo(b.Start));
+        }
+
+        planned.TakenAt = Now;
         var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
         var seat = seats.Count > 0 ? seats[(member.Id - 1) % seats.Count] : HomeTile(member);
         member.Activity = StaffActivity.WalkingToBreak;
-        member.BreakEndsAt = Now + BreakLength + TimeSpan.FromMinutes(Random.Range(0, 5));
-        member.StatusText = "Going on a break";
+        member.BreakEndsAt = Now + TimeSpan.FromMinutes(planned.Minutes);
+        member.StatusText = planned.IsMeal ? $"Meal break · back at {member.BreakEndsAt:HH:mm}" : $"Tea break · back at {member.BreakEndsAt:HH:mm}";
         WalkTo(member, seat);
     }
 

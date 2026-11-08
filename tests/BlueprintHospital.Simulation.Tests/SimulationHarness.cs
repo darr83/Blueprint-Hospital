@@ -66,7 +66,7 @@ internal sealed class SimulationHarness
         {
             for (var i = 0; i < need.Short; i++)
             {
-                Sim.HireStaff(need.Role, need.RoomId, skill: 0.7);
+                Sim.HireStaff(need.Role, need.RoomId, skill: 0.7, shift: need.Shift);
             }
         }
     }
