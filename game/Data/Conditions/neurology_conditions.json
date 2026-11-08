@@ -422,6 +422,7 @@
     "recovery_per_hour": 0.006,
     "disposition": "admit",
     "disposition_note": "Admitted to the stroke unit for monitoring and rehabilitation.",
+    "needs_physio": true,
     "length_of_stay_hours": [
       96,
       240

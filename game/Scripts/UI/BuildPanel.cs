@@ -258,6 +258,9 @@ public partial class BuildPanel : PanelContainer
         CareSpaceKind.Pharmacy => "Dispenses for every ward",
         CareSpaceKind.Clinic => "1 booked patient at a time",
         CareSpaceKind.CathLab => "1 procedure at a time",
+        CareSpaceKind.PlasterRoom => "1 patient at a time",
+        CareSpaceKind.PhysioGym => "Physios visit patients on every ward",
+        CareSpaceKind.EndoscopyRecovery => "1 patient coming round",
         CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy => "1 patient at a time",
         _ => LayoutCapacity(template, room),
     };

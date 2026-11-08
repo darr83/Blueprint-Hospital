@@ -37,6 +37,9 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.Ultrasound] = new Color("#DCE7EC"),
         [CareSpaceKind.Endoscopy] = new Color("#DDE6EA"),
         [CareSpaceKind.CathLab] = new Color("#DFE3E8"),
+        [CareSpaceKind.PlasterRoom] = new Color("#E6E4DE"),
+        [CareSpaceKind.PhysioGym] = new Color("#DDE9E2"),
+        [CareSpaceKind.EndoscopyRecovery] = new Color("#E2EAEE"),
     };
 
     private HospitalSimulation _sim = null!;
@@ -104,7 +107,9 @@ public partial class DepartmentRenderer : Node2D
                 CareSpaceKind.Echo or CareSpaceKind.CathLab => new Color("#AD1457"),
                 CareSpaceKind.Eeg => new Color("#6A1B9A"),
                 CareSpaceKind.Ultrasound => new Color("#00838F"),
-                CareSpaceKind.Endoscopy => new Color("#455A64"),
+                CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery => new Color("#455A64"),
+                CareSpaceKind.PlasterRoom => new Color("#8D6E63"),
+                CareSpaceKind.PhysioGym => new Color("#2E7D32"),
                 _ => (Color?)null,
             };
             if (colour is not { } c)

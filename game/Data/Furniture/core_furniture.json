@@ -405,5 +405,71 @@
   "colour": "#DDE3E8",
   "cost": 650000,
   "is_equipment": true
+ },
+ {
+  "id": "treatment_couch",
+  "name": "Treatment couch",
+  "width_m": 0.7,
+  "depth_m": 1.9,
+  "height_m": 0.65,
+  "style": "bed",
+  "colour": "#7FA7C4",
+  "cost": 1800,
+  "is_equipment": true
+ },
+ {
+  "id": "plaster_trolley",
+  "name": "Plaster trolley",
+  "width_m": 0.9,
+  "depth_m": 0.6,
+  "height_m": 0.9,
+  "style": "box",
+  "colour": "#C9CFD4",
+  "cost": 900,
+  "is_equipment": true
+ },
+ {
+  "id": "plaster_sink",
+  "name": "Plaster sink",
+  "width_m": 0.9,
+  "depth_m": 0.6,
+  "height_m": 0.9,
+  "style": "box",
+  "colour": "#B8C4CC",
+  "cost": 1500,
+  "is_equipment": true
+ },
+ {
+  "id": "parallel_bars",
+  "name": "Parallel bars",
+  "width_m": 0.8,
+  "depth_m": 3.0,
+  "height_m": 0.9,
+  "style": "box",
+  "colour": "#9AA7B1",
+  "cost": 2200,
+  "is_equipment": true
+ },
+ {
+  "id": "exercise_mat",
+  "name": "Exercise mat",
+  "width_m": 1.0,
+  "depth_m": 2.0,
+  "height_m": 0.05,
+  "style": "box",
+  "colour": "#5C8FA8",
+  "cost": 150,
+  "is_equipment": true
+ },
+ {
+  "id": "practice_stairs",
+  "name": "Practice stairs",
+  "width_m": 1.0,
+  "depth_m": 1.8,
+  "height_m": 0.8,
+  "style": "box",
+  "colour": "#A8B3BB",
+  "cost": 3500,
+  "is_equipment": true
  }
 ]

@@ -88,7 +88,8 @@
         "name": "Below-knee plaster backslab",
         "performed_by": "nurse",
         "minutes": 20,
-        "essential": true
+        "essential": true,
+        "room": "plaster_room"
       }
     ],
     "recovery_per_hour": 0.5,
@@ -187,6 +188,7 @@
     "recovery_per_hour": 0.008,
     "disposition": "surgery",
     "disposition_note": "Orthopaedic team agree: hip fracture needing an operation.",
+    "needs_physio": true,
     "length_of_stay_hours": [
       120,
       288

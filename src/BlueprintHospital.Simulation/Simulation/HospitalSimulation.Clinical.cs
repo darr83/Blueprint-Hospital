@@ -40,8 +40,19 @@ public sealed partial class HospitalSimulation
                 CompleteReview(member, patient);
                 break;
             case TaskKind.GiveMedication:
+                CompleteTreatmentStep(member, patient, int.Parse(task.Detail!, System.Globalization.CultureInfo.InvariantCulture));
+                break;
             case TaskKind.Procedure:
                 CompleteTreatmentStep(member, patient, int.Parse(task.Detail!, System.Globalization.CultureInfo.InvariantCulture));
+                if (task.SpaceId is { } procedureRoom && FindSpace(procedureRoom) is { IsServiceRoom: true } specialistRoom)
+                {
+                    patient.Log(Now, $"{task.Label} done by {member.Name} in {specialistRoom.Name}.");
+                    ReturnFromServiceRoom(patient);
+                }
+
+                break;
+            case TaskKind.Physio:
+                CompletePhysio(member, patient);
                 break;
             case TaskKind.Discharge:
                 CompleteDischarge(member, patient);
@@ -276,6 +287,11 @@ public sealed partial class HospitalSimulation
                 var med = Database.Medications[step.Medication!];
                 AddTask(TaskKind.GiveMedication, StaffRole.Nurse, patient, 5, $"Give {med.Name.ToLowerInvariant()}", i.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            else if (step.Room is { } room && SpacesOfKind(room).Any(IsStaffed))
+            {
+                // A specialist room does it (a plaster technician puts on a proper cast).
+                AddTask(TaskKind.Procedure, RoleForRoom(room), patient, step.Minutes, step.Name!, i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
             else
             {
                 AddTask(TaskKind.Procedure, step.PerformedBy == ClinicalRole.Doctor ? StaffRole.Doctor : StaffRole.Nurse, patient, step.Minutes, step.Name!, i.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -357,6 +373,9 @@ public sealed partial class HospitalSimulation
 
             case Disposition.Discharge:
                 AddTask(TaskKind.Discharge, StaffRole.Nurse, patient, 5, "Discharge with advice");
+                break;
+
+            case Disposition.Admit when diagnosed.AmbulatoryHours is not null && patient.Triage != TriageCategory.Red && StartSameDayCare(patient, diagnosed):
                 break;
 
             case Disposition.Admit:

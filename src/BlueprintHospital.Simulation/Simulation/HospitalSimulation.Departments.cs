@@ -91,14 +91,19 @@ public sealed partial class HospitalSimulation
     /// </summary>
     private List<CareSpace> WardsFor(Patient patient)
     {
-        var emergency = WardsOf(EmergencyDepartmentId).ToList();
+        if (patient.SameDay)
+        {
+            return Wards.Where(IsSameDayUnit).ToList();
+        }
+
+        var emergency = WardsOf(EmergencyDepartmentId).Where(w => !IsSameDayUnit(w)).ToList();
         if (patient.ForObservation)
         {
             return emergency;
         }
 
         var department = DepartmentOf(patient);
-        var own = department == EmergencyDepartmentId ? new List<CareSpace>() : WardsOf(department).ToList();
+        var own = department == EmergencyDepartmentId ? new List<CareSpace>() : WardsOf(department).Where(w => !IsSameDayUnit(w)).ToList();
         if (own.Count == 0 && !patient.HadSurgery)
         {
             return department == EmergencyDepartmentId ? emergency : own;

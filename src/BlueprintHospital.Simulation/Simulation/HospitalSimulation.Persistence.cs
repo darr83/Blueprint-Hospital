@@ -125,6 +125,12 @@ public sealed class PatientState
 
     public DateTime? MedicinesReadyAt { get; init; }
 
+    public bool SameDay { get; init; }
+
+    public int PhysioSessions { get; init; }
+
+    public DateTime? LastPhysioAt { get; init; }
+
     public List<TimelineEntry> Timeline { get; init; } = new();
 
     public List<ObservationState> ObservationHistory { get; init; } = new();
@@ -307,6 +313,9 @@ public sealed class PeopleState
     public int NextAppointmentId { get; init; }
 
     public int NextOutpatientId { get; init; }
+
+    /// <summary>Patients coming round after endoscopy.</summary>
+    public List<RecoveryState> Recovering { get; init; } = new();
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -358,6 +367,7 @@ public sealed partial class HospitalSimulation
         BookedClinicDays = _bookedClinicDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         NextAppointmentId = _nextAppointmentId,
         NextOutpatientId = _nextOutpatientId,
+        Recovering = _recovering.Values.OrderBy(r => r.PatientId).ToList(),
     };
 
     /// <summary>
@@ -558,6 +568,11 @@ public sealed partial class HospitalSimulation
         _bookedClinicDays.UnionWith(state.BookedClinicDays);
         _nextAppointmentId = Math.Max(state.NextAppointmentId, _appointments.Count == 0 ? 1 : _appointments.Max(a => a.Id) + 1);
         _nextOutpatientId = Math.Max(state.NextOutpatientId, _outpatients.Count == 0 ? 1 : _outpatients.Max(o => o.Id) + 1);
+
+        foreach (var recovery in state.Recovering.Where(r => _patients.ContainsKey(r.PatientId) && FindSpace(r.RoomId) is not null))
+        {
+            _recovering[recovery.PatientId] = recovery;
+        }
     }
 
     // ------------------------------------------------------------------ patients
@@ -579,6 +594,7 @@ public sealed partial class HospitalSimulation
         ForObservation = p.ForObservation, HadSurgery = p.HadSurgery,
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
+        SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -633,6 +649,9 @@ public sealed partial class HospitalSimulation
         p.AdmittedAt = s.AdmittedAt;
         p.DischargeDueAt = s.DischargeDueAt;
         p.MedicinesReadyAt = s.MedicinesReadyAt;
+        p.SameDay = s.SameDay;
+        p.PhysioSessions = s.PhysioSessions;
+        p.LastPhysioAt = s.LastPhysioAt;
         p.RestoreTimeline(s.Timeline);
         foreach (var o in s.ObservationHistory)
         {

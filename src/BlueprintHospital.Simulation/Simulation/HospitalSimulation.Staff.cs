@@ -319,7 +319,7 @@ public sealed partial class HospitalSimulation
                 return Waiting.StaffSpot;
             case TaskKind.Triage when task.SpaceId is { } triageId && FindSpace(triageId) is { } triage:
                 return triage.StaffSpot;
-            case TaskKind.Imaging or TaskKind.Surgery or TaskKind.DispenseMedicines when task.SpaceId is { } roomId && FindSpace(roomId) is { } room:
+            case TaskKind.Imaging or TaskKind.Surgery or TaskKind.DispenseMedicines or TaskKind.Procedure when task.SpaceId is { } roomId && FindSpace(roomId) is { IsServiceRoom: true } room:
                 return room.StaffSpot;
             case TaskKind.MovePatient:
                 // Beside the patient where they are now, not where they are going.
@@ -375,7 +375,7 @@ public sealed partial class HospitalSimulation
     {
         TaskKind.Register => QueueTile(0),
         TaskKind.Triage when task.SpaceId is { } id && FindSpace(id) is { } triage => triage.PatientSpot,
-        TaskKind.Imaging or TaskKind.Surgery when task.SpaceId is { } id && FindSpace(id) is { } room => room.PatientSpot,
+        TaskKind.Imaging or TaskKind.Surgery or TaskKind.Procedure when task.SpaceId is { } id && FindSpace(id) is { IsServiceRoom: true } room => room.PatientSpot,
         _ => patient.PendingMove ?? patient.Destination ?? patient.Tile,
     };
 

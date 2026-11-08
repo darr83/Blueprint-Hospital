@@ -246,6 +246,14 @@ public sealed class Patient : Agent
     /// <summary>Going to the A&amp;E ward only to be observed for a few hours before going home.</summary>
     public bool ForObservation { get; set; }
 
+    /// <summary>Treated in the ambulatory care unit and going home the same day, instead of being admitted.</summary>
+    public bool SameDay { get; set; }
+
+    /// <summary>Physiotherapy sessions on the ward this stay.</summary>
+    public int PhysioSessions { get; set; }
+
+    public DateTime? LastPhysioAt { get; set; }
+
     /// <summary>When the doctor asked for a ward bed.</summary>
     public DateTime? BedRequestedAt { get; set; }
 

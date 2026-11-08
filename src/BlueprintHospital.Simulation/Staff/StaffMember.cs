@@ -25,6 +25,12 @@ public enum StaffRole
 
     /// <summary>Does endoscopies (OGD).</summary>
     Endoscopist,
+
+    /// <summary>Puts on plaster casts in the plaster room.</summary>
+    PlasterTechnician,
+
+    /// <summary>Gets ward patients moving after a broken hip or a stroke, so they go home sooner.</summary>
+    Physiotherapist,
 }
 
 public enum StaffActivity

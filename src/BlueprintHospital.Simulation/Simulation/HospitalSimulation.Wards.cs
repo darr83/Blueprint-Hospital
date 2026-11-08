@@ -188,9 +188,11 @@ public sealed partial class HospitalSimulation
         patient.ReservedBedIndex = null;
         patient.AdmittedAt = Now;
         patient.LeftEmergencyAt = Now;
-        var stay = patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe : diagnosed.LengthOfStayHours;
+        var stay = patient.SameDay && diagnosed.AmbulatoryHours is { } sameDay ? sameDay
+            : patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe
+            : diagnosed.LengthOfStayHours;
         patient.DischargeDueAt = Now.AddHours(Random.Range(stay[0], stay[1]));
-        patient.Log(Now, $"{(patient.ForObservation ? "Moved for observation" : "Admitted")} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
+        patient.Log(Now, $"{(patient.SameDay ? "Moved for same-day care" : patient.ForObservation ? "Moved for observation" : "Admitted")} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
         Stats.RecordAdmission(patient, Now);
         PayForAttendance(patient);
 
@@ -235,6 +237,19 @@ public sealed partial class HospitalSimulation
 
     private void CompleteWardRound(StaffMember doctor, Patient patient)
     {
+        if (patient.SameDay && patient.Severity <= SameDayFitSeverity)
+        {
+            patient.Log(Now, $"Ward round with {doctor.Name}: well enough to finish treatment at home, with a review at the ambulatory unit tomorrow.");
+            ArrangeMedicinesToTakeHome(patient);
+            return;
+        }
+
+        if (patient.SameDay)
+        {
+            patient.SameDay = false;
+            patient.Log(Now, $"Ward round with {doctor.Name}: not well enough for home after same-day care, so admitted after all.", important: true);
+        }
+
         if (patient.Severity <= FitForDischargeSeverity)
         {
             patient.Log(Now, $"Ward round with {doctor.Name}: well enough to go home.");

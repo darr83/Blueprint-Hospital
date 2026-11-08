@@ -177,5 +177,114 @@
       "clinical_cupboard",
       "hand_basin"
     ]
+  },
+  {
+    "id": "plaster_room",
+    "name": "Plaster room",
+    "category": "Specialty rooms",
+    "description": "Plaster casts and backslabs for broken bones, put on by a plaster technician. A&E sends fracture patients here instead of plastering them in the cubicle.",
+    "kind": "plaster_room",
+    "department": "trauma_orthopaedics",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4.5,
+        "length_m": 4
+      },
+      {
+        "name": "Large",
+        "width_m": 5.5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 4,
+    "min_length_m": 3.5,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1100,
+    "staffing": "Hire a plaster technician from Recruitment (H) to run it.",
+    "furniture": [
+      "treatment_couch",
+      "plaster_trolley",
+      "plaster_sink",
+      "staff_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "physio_gym",
+    "name": "Physio gym",
+    "category": "Specialty rooms",
+    "description": "Base for physiotherapists. They visit ward patients after a broken hip or a stroke to get them moving again, so they go home sooner.",
+    "kind": "physio_gym",
+    "department": "trauma_orthopaedics",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 6,
+        "length_m": 5
+      },
+      {
+        "name": "Large",
+        "width_m": 8,
+        "length_m": 6
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 4.5,
+    "max_width_m": 12,
+    "max_length_m": 10,
+    "door_width_m": 1.5,
+    "base_cost": 8000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire physiotherapists from Recruitment (H), posted to the gym.",
+    "furniture": [
+      "treatment_couch",
+      "parallel_bars",
+      "exercise_mat",
+      "practice_stairs",
+      "staff_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "endoscopy_recovery",
+    "name": "Endoscopy recovery bay",
+    "category": "Specialty rooms",
+    "description": "A bed where patients come round from sedation after endoscopy. Without one they recover on the endoscopy trolley and the room can't be used for the next patient.",
+    "kind": "endoscopy_recovery",
+    "department": "gastroenterology",
+    "layout": "bed_space",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 3.5,
+        "length_m": 4
+      },
+      {
+        "name": "Large",
+        "width_m": 4.5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3.5,
+    "max_width_m": 7,
+    "max_length_m": 7,
+    "door_width_m": 1.5,
+    "base_cost": 5000,
+    "cost_per_square_metre": 1100,
+    "staffing": "No staff of its own: the endoscopy team keeps an eye on patients here.",
+    "furniture": [
+      "hospital_bed",
+      "obs_monitor",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
   }
 ]

@@ -46,6 +46,8 @@ public sealed partial class HospitalSimulation
         StaffRole.Neurophysiologist => new[] { CareSpaceKind.Eeg },
         StaffRole.Sonographer => new[] { CareSpaceKind.Ultrasound },
         StaffRole.Endoscopist => new[] { CareSpaceKind.Endoscopy },
+        StaffRole.PlasterTechnician => new[] { CareSpaceKind.PlasterRoom },
+        StaffRole.Physiotherapist => new[] { CareSpaceKind.PhysioGym },
         _ => Array.Empty<CareSpaceKind>(),
     };
 
@@ -58,6 +60,8 @@ public sealed partial class HospitalSimulation
         CareSpaceKind.Eeg => StaffRole.Neurophysiologist,
         CareSpaceKind.Ultrasound => StaffRole.Sonographer,
         CareSpaceKind.Endoscopy => StaffRole.Endoscopist,
+        CareSpaceKind.PlasterRoom => StaffRole.PlasterTechnician,
+        CareSpaceKind.PhysioGym => StaffRole.Physiotherapist,
         _ => StaffRole.Radiographer,
     };
 

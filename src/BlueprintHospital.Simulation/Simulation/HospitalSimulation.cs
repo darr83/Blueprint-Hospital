@@ -202,6 +202,8 @@ public sealed partial class HospitalSimulation
         UpdatePatientFlow();
         UpdateWards();
         UpdateClinics(dt);
+        UpdateRecovery();
+        SchedulePhysio();
         ProcessScheduledResults();
         CheckOutcomeReviews();
         ScheduleObservations();

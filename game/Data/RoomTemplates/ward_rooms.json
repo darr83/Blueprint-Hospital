@@ -418,5 +418,43 @@
       "hand_basin",
       "visitor_chair"
     ]
+  },
+  {
+    "id": "ambulatory_care_unit",
+    "name": "Ambulatory care unit",
+    "category": "Wards",
+    "description": "Same-day emergency care: patients well enough to avoid admission (a clot on the lung, fast AF, a kidney infection) are treated in reclining chairs and beds for a few hours, then go home the same day.",
+    "kind": "ward",
+    "department": "general_medicine",
+    "layout": "ward",
+    "same_day": true,
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 24,
+    "max_length_m": 12,
+    "door_width_m": 2.0,
+    "base_cost": 12000,
+    "cost_per_square_metre": 1100,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
   }
 ]

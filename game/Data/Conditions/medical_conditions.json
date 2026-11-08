@@ -117,7 +117,8 @@
       30,
       96
     ],
-    "disposition_note": "Admitted under the medical team for antibiotics and oxygen."
+    "disposition_note": "Admitted under the medical team for antibiotics and oxygen.",
+    "ambulatory_hours": [6, 10]
   },
   {
     "id": "asthma_exacerbation",
@@ -529,6 +530,7 @@
     "recovery_per_hour": 0.012,
     "disposition": "admit",
     "disposition_note": "Admitted for rate control and to start anticoagulation.",
+    "ambulatory_hours": [4, 8],
     "length_of_stay_hours": [
       18,
       60
@@ -826,6 +828,7 @@
     "recovery_per_hour": 0.015,
     "disposition": "admit",
     "disposition_note": "Admitted on intravenous antibiotics (sepsis six completed).",
+    "ambulatory_hours": [6, 10],
     "length_of_stay_hours": [
       48,
       96
@@ -1351,6 +1354,7 @@
     "recovery_per_hour": 0.012,
     "disposition": "admit",
     "disposition_note": "Admitted on anticoagulation for monitoring.",
+    "ambulatory_hours": [4, 8],
     "length_of_stay_hours": [
       24,
       72

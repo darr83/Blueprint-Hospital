@@ -48,6 +48,15 @@ public enum CareSpaceKind
 
     /// <summary>Cardiac catheter lab: primary PCI for heart attacks, run by a cardiac physiologist with the cardiology team.</summary>
     CathLab,
+
+    /// <summary>Plaster room: casts for broken bones, put on by a plaster technician.</summary>
+    PlasterRoom,
+
+    /// <summary>Physiotherapy gym: base for physiotherapists, who get ward patients moving again.</summary>
+    PhysioGym,
+
+    /// <summary>Recovery bay where patients come round after sedation for endoscopy.</summary>
+    EndoscopyRecovery,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -143,7 +152,8 @@ public sealed class CareSpace
 
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
-        or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab;
+        or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab
+        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym;
 
     /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
     public static bool IsTestRoom(CareSpaceKind kind) =>

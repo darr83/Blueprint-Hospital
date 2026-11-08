@@ -118,6 +118,12 @@ public sealed class TreatmentStep
     /// <summary>Essential steps must be given for the patient to start recovering.</summary>
     public bool Essential { get; init; }
 
+    /// <summary>
+    /// For procedure steps: a specialist room that does it better (plaster_room). When that room is
+    /// staffed, its specialist does it there; otherwise A&amp;E staff do it in the cubicle.
+    /// </summary>
+    public CareSpaceKind? Room { get; init; }
+
     public string Describe() => Type == TreatmentStepType.Medication ? Medication ?? "?" : Name ?? "?";
 }
 
@@ -184,6 +190,15 @@ public sealed class ConditionDefinition : IDataRecord
     /// </summary>
     public double[]? ObserveHours { get; init; }
 
+    /// <summary>
+    /// For patients who would be admitted: [shortest, longest] hours of same-day emergency care in an
+    /// ambulatory care unit instead, when it has room and they are not Red (e.g. a pulmonary embolism).
+    /// </summary>
+    public double[]? AmbulatoryHours { get; init; }
+
+    /// <summary>Ward patients who need physiotherapy to get home (after a broken hip or a stroke).</summary>
+    public bool NeedsPhysio { get; init; }
+
     public double ChanceOf(string symptomId) =>
         Symptoms.FirstOrDefault(s => s.Symptom == symptomId)?.Probability ?? 0;
 
@@ -240,7 +255,16 @@ public sealed class ConditionDefinition : IDataRecord
             {
                 context.RequireText($"treatment[{i}].name", step.Name);
                 context.RequireRange($"treatment[{i}].minutes", step.Minutes, 1, 600);
+                if (step.Room is { } room && room != CareSpaceKind.PlasterRoom)
+                {
+                    context.Error($"treatment[{i}].room", "must be plaster_room.");
+                }
             }
+        }
+
+        if (AmbulatoryHours is { } sameDay && (Disposition != Disposition.Admit || sameDay.Length != 2 || sameDay[0] < 1 || sameDay[1] < sameDay[0] || sameDay[1] > 12))
+        {
+            context.Error("ambulatory_hours", "must be [shortest, longest] in hours, up to 12, and only for admitted conditions.");
         }
 
         context.RequireText("disposition_note", DispositionNote);

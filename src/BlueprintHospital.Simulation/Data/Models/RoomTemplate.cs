@@ -75,6 +75,9 @@ public sealed class RoomTemplate : IDataRecord
 
     public double DoorWidthM { get; init; } = 1.0;
 
+    /// <summary>For wards: a same-day (ambulatory care) unit, used only for patients who can go home the same day.</summary>
+    public bool SameDay { get; init; }
+
     /// <summary>True if the room has a second door opposite the first (the waiting room's street entrance).</summary>
     public bool DoorBothEnds { get; init; }
 

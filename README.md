@@ -298,11 +298,20 @@ Each specialty room opens when you hire its specialist (posted to the room).
 | EEG room | Neurology | Neurophysiologist | EEGs after a seizure |
 | Early pregnancy unit | Gynaecology | Sonographer | Pelvic ultrasound for suspected ectopic pregnancy and threatened miscarriage |
 | Endoscopy room | Gastroenterology | Endoscopist | OGD for bleeding from the stomach |
+| Endoscopy recovery bay | Gastroenterology | No staff of its own | Patients come round from sedation here for 30 minutes; without a free bay they recover on the endoscopy trolley and the room waits |
+| Plaster room | Trauma and Orthopaedics | Plaster technician | Plaster backslabs for broken ankles; without a technician A&E nurses plaster in the cubicle |
+| Physio gym | Trauma and Orthopaedics | Physiotherapist | Physios visit ward patients after a broken hip or a stroke (up to 4 sessions), and each session brings their discharge forward |
 
 The doctors in A&E order these tests when they help with the diagnosis and the room is staffed;
 the patient is taken there and the report follows. The **Coronary care unit** (Cardiology),
 **Stroke unit** (Neurology) and **Acute medical unit** (General Medicine) are wards for that
 department's patients.
+
+The **Ambulatory care unit** (General Medicine, under Wards) gives same-day emergency care. A patient
+who would be admitted with a clot on the lung, fast AF, a kidney infection or a chest infection, and
+who is not Red, goes there instead of a ward when it has a free bed: a few hours of treatment, then
+home to finish it with a review the next day. If they are not well enough by the ward round they are
+admitted after all. Other patients never use the unit's beds.
 
 ### Outpatient clinics
 
@@ -504,6 +513,9 @@ Add an entry to any file in `game/Data/Conditions/`. This is a complete example:
 - `treatment` steps are done in order. `essential` steps must be given for the patient to recover.
 - `disposition` is `discharge`, `transfer`, `admit` or `surgery`, with a note shown in the record.
   `surgery` also needs `"operation": { "name": "Laparoscopic appendicectomy", "minutes": 60 }`.
+  Optional: `"ambulatory_hours": [4, 8]` for an `admit` condition that can be managed the same day in an
+  ambulatory care unit, and `"needs_physio": true` for ward patients who need physiotherapy to get home.
+  A treatment procedure can name `"room": "plaster_room"` to be done there by a plaster technician.
 
 ### How to add an investigation
 

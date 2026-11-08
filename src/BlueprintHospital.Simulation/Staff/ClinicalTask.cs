@@ -31,6 +31,9 @@ public enum TaskKind
 
     /// <summary>A porter pushes a patient's wheelchair or trolley to where they need to be.</summary>
     MovePatient,
+
+    /// <summary>A physiotherapy session at a ward patient's bedside.</summary>
+    Physio,
 }
 
 /// <summary>

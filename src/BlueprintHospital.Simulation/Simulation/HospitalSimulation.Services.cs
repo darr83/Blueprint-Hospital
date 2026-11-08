@@ -30,8 +30,17 @@ public sealed partial class HospitalSimulation
         TaskKind.Imaging => Database.Investigations[task.Detail!].Room,
         TaskKind.Surgery => OperationRoom(task.Detail),
         TaskKind.DispenseMedicines => CareSpaceKind.Pharmacy,
+        TaskKind.Procedure when task.Role is not (StaffRole.Nurse or StaffRole.Doctor) => StepRoom(task),
         _ => null,
     };
+
+    /// <summary>The specialist room a treatment step is done in, if it names one.</summary>
+    private CareSpaceKind? StepRoom(ClinicalTask task) =>
+        FindPatient(task.PatientId) is { } patient
+        && int.TryParse(task.Detail, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index)
+        && index >= 0 && index < patient.TreatmentPlan.Count
+            ? patient.TreatmentPlan[index].Step.Room
+            : null;
 
     /// <summary>Whether this member of staff's team does the task: service work in their own room, ward work on their ward, or A&amp;E work.</summary>
     private bool IsForMember(ClinicalTask task, StaffMember member)
@@ -41,6 +50,11 @@ public sealed partial class HospitalSimulation
             return true;
         }
 
+        if (task.Kind == TaskKind.Physio)
+        {
+            return member.Role == StaffRole.Physiotherapist;
+        }
+
         if (ServiceRoomKind(task) is not { } kind)
         {
             return TeamFor(task) == member.BaseRoomId || CoveredByEmergencyTeam(task, member);
@@ -48,6 +62,7 @@ public sealed partial class HospitalSimulation
 
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
                && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
+               && !_recovering.Values.Any(r => r.RoomId == room.Id)
                && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept)));
     }
 
@@ -61,7 +76,7 @@ public sealed partial class HospitalSimulation
 
         task.SpaceId = room.Id;
         room.ReservedByStaffId = member.Id;
-        if (task.Kind is TaskKind.Imaging or TaskKind.Surgery)
+        if (task.Kind is TaskKind.Imaging or TaskKind.Surgery or TaskKind.Procedure)
         {
             ReleaseSeat(patient);
             WalkTo(patient, room.PatientSpot);
@@ -87,7 +102,15 @@ public sealed partial class HospitalSimulation
     private void CompleteImaging(StaffMember radiographer, Patient patient, string investigationId)
     {
         var order = patient.Investigations.FirstOrDefault(o => o.InvestigationId == investigationId && o.Status == InvestigationStatus.Requested);
-        ReturnFromServiceRoom(patient);
+        if (Database.Investigations[investigationId].Room == CareSpaceKind.Endoscopy && radiographer.BaseRoomId is { } scopeRoom)
+        {
+            StartRecovery(patient, scopeRoom);
+        }
+        else
+        {
+            ReturnFromServiceRoom(patient);
+        }
+
         if (order is null)
         {
             return;
@@ -199,6 +222,11 @@ public sealed partial class HospitalSimulation
                     break;
                 case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery:
                     ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "No operating theatre or cath lab here can take them any more, so they are being transferred to a neighbouring hospital.");
+                    break;
+                case TaskKind.Procedure when int.TryParse(task.Detail, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index) && index < patient.TreatmentPlan.Count:
+                    var step = patient.TreatmentPlan[index].Step;
+                    AddTask(TaskKind.Procedure, step.PerformedBy == ClinicalRole.Doctor ? StaffRole.Doctor : StaffRole.Nurse, patient, step.Minutes, step.Name!, task.Detail);
+                    patient.Log(Now, $"{task.Label} will be done in A&E instead: the specialist room is no longer available.");
                     break;
                 case TaskKind.DispenseMedicines:
                     patient.MedicinesReadyAt = Now + OutsidePharmacyDelay;
