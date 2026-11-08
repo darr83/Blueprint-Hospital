@@ -471,7 +471,7 @@ public partial class WorldLayer : Node2D
             {
                 if (lying)
                 {
-                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
+                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.EdBlanket, lift, headSouth, onWard ? null : Looks.Wristband(occupant!.Triage));
                 }
             });
         }, animated: true);
@@ -638,7 +638,7 @@ public partial class WorldLayer : Node2D
                     }
                     else
                     {
-                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17);
+                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17, away: WalkingAway(outpatient, outpatient.IsMoving));
                     }
 
                     break;
@@ -654,7 +654,7 @@ public partial class WorldLayer : Node2D
                     else
                     {
                         var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
-                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7);
+                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing));
                     }
 
                     break;
@@ -691,8 +691,7 @@ public partial class WorldLayer : Node2D
                     DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
                 }
 
-                IsoDraw.Box(this, gx - 0.7, gy - 2.0, 1.4, 4.0, 14, new Color("#C9D1D8"));
-                Figures.Lying(this, gx, gy, look, Looks.Blanket(patient.Triage), 14);
+                Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, new Color("#B5413B"), Looks.Wristband(patient.Triage));
                 return;
             }
 
@@ -707,7 +706,7 @@ public partial class WorldLayer : Node2D
                 }
 
                 var lift = Figures.Trolley(this, gx, gy, patient.Facing);
-                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.Blanket(patient.Triage), lift);
+                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket, lift, Looks.Wristband(patient.Triage));
                 return;
             }
 
@@ -724,8 +723,20 @@ public partial class WorldLayer : Node2D
             }
             else
             {
-                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha);
+                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving));
             }
+        }
+
+        /// <summary>True when someone walking is heading up the screen, so they are seen from behind.</summary>
+        private static bool WalkingAway(Agent who, bool moving)
+        {
+            if (!moving)
+            {
+                return false;
+            }
+
+            var (fx, fy) = who.Facing;
+            return (IsoDraw.ToScreen(fx, fy) - IsoDraw.ToScreen(0, 0)).Y < -0.01f;
         }
 
         private void DrawRing(Vector2 foot, Color? colour)
