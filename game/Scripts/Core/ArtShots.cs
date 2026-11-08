@@ -48,6 +48,11 @@ public partial class ArtShots : Node
                     cursor.Visible = false;
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-wing") >= 0)
+                {
+                    BuildShowroom(h);
+                }
+
                 // Bring in a few patients so there are people in the beds to look at.
                 for (var i = 0; i < 6; i++)
                 {
@@ -74,12 +79,21 @@ public partial class ArtShots : Node
             return;
         }
 
-        var shots = new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
-        {
-            ("overview", Overview),
-            ("bed", BedCloseUp),
-            ("corner", Corner),
-        };
+        var shots = _wing
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("wing", _ => (IsoDraw.ToScreen(70, 16), 0.62f)),
+                ("wing_west", _ => (IsoDraw.ToScreen(52, 16), 1.25f)),
+                ("wing_east", _ => (IsoDraw.ToScreen(88, 16), 1.25f)),
+                ("clinic", _ => (IsoDraw.ToScreen(60, 7), 2.0f)),
+                ("rooms", _ => (IsoDraw.ToScreen(72, 22), 1.6f)),
+            }
+            : new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("overview", Overview),
+                ("bed", BedCloseUp),
+                ("corner", Corner),
+            };
 
         var rotation = _shot / (shots.Length * 2);
         var index = (_shot / 2) % shots.Length;
@@ -111,6 +125,34 @@ public partial class ArtShots : Node
 
         _shot++;
     }
+
+    private bool _wing;
+
+    /// <summary>Builds a wing of clinics and specialty rooms north of the A&amp;E, to review their decorations.</summary>
+    private void BuildShowroom(HospitalScene h)
+    {
+        _wing = true;
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(10_000_000);
+        foreach (var dept in new[] { "cardiology", "neurology", "gastroenterology", "gynaecology", "trauma_orthopaedics", "outpatients", "radiology", "pharmacy", "theatres" })
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        Report("extension", sim.ExtendBuilding(new Simulation.World.GridRect(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(44, 13, 56, 5), Simulation.World.WallSide.South)));
+        var north = new[] { "fracture_clinic", "cardiology_clinic", "neurology_clinic", "gastro_clinic", "gynaecology_clinic" };
+        var south = new[] { "outpatient_reception", "xray_room", "plaster_room", "physio_gym", "endoscopy_room" };
+        for (var i = 0; i < 5; i++)
+        {
+            Report(north[i], sim.BuildRoom(sim.AutoPlan(north[i], new Simulation.World.GridRect(44 + (i * 11), 2, 11, 11))));
+            Report(south[i], sim.BuildRoom(sim.AutoPlan(south[i], new Simulation.World.GridRect(44 + (i * 11), 18, 11, 12))));
+        }
+    }
+
+    private static void Report(string what, Simulation.Simulation.BuildCheck check) =>
+        GD.Print(check.CanBuild ? $"[art] Built {what}." : $"[art] {what} refused: {string.Join("; ", check.Problems)}");
 
     private static (Vector2, float) Overview(HospitalScene h)
     {
