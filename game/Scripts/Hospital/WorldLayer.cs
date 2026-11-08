@@ -654,8 +654,7 @@ public partial class WorldLayer : Node2D
                     DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
                 }
 
-                IsoDraw.Box(this, gx - 0.7, gy - 2.0, 1.4, 4.0, 14, new Color("#C9D1D8"));
-                Figures.Lying(this, gx, gy, look, Looks.Blanket(patient.Triage), 14);
+                Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, Looks.Blanket(patient.Triage));
                 return;
             }
 

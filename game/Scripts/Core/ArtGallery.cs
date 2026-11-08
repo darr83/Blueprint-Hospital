@@ -202,21 +202,30 @@ public partial class ArtGallery : Node2D
             {
                 var porter = Looks.Staff(new StaffMember { Id = 4, Name = "Porter", Role = StaffRole.Porter, Grade = "Porter", DepartmentId = "ed" });
                 var obs = _patients[0].CurrentObservations() ?? _patients[0].BaselineObservations;
-                Row(230, 300, new (string, Action<CanvasItem>)[]
+                Row(340, 500, new (string, Action<CanvasItem>)[]
                 {
                     ("Empty bed", c => Figures.Bed(c, 0, 0, made: true)),
-                    ("Red", c => Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, P(1), Looks.Red, lift))),
                     ("Amber + monitor", c =>
                     {
                         Figures.MonitorStand(c, -1.6, -2.4);
                         Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, P(2), Looks.Amber, lift));
                         Figures.ObsScreen(c, -1.6, -2.4, time, obs, Looks.Amber, 3);
                     }),
-                    ("Green", c => Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, P(3), Looks.Green, lift))),
                     ("Ward bed", c => Figures.Bed(c, 0, 0, false, true, lift => Figures.Lying(c, 0, 0, P(4), Looks.WardBlanket, lift, true))),
-                }, 1.1f);
-                Row(590, 300, new (string, Action<CanvasItem>)[]
+                }, 2f);
+                Row(700, 500, new (string, Action<CanvasItem>)[]
                 {
+                    ("Trolley + porter", c =>
+                    {
+                        var dir = (1.0, 0.0);
+                        var head = IsoDraw.ToScreen(-2.6, 0);
+                        var headBehind = head.Y <= foot.Y;
+                        if (headBehind) Figures.Standing(c, head, porter, time, true, 5);
+                        var lift = Figures.Trolley(c, 0, 0, dir);
+                        Figures.LyingAlong(c, 0, 0, dir, P(6), Looks.Red, lift);
+                        if (!headBehind) Figures.Standing(c, head, porter, time, true, 5);
+                    }),
+                    ("Ambulance stretcher", c => AmbulanceStretcher(c, P(7))),
                     ("Wheelchair + porter", c =>
                     {
                         var behind = IsoDraw.ToScreen(-0.9, -0.9);
@@ -228,20 +237,7 @@ public partial class ArtGallery : Node2D
                         Figures.WheelchairFront(c, front);
                         if (!back) Figures.Standing(c, behind, porter, time, true, 3);
                     }),
-                    ("Trolley + porter", c =>
-                    {
-                        var dir = (1.0, 0.0);
-                        var head = IsoDraw.ToScreen(-2.5, 0);
-                        var headBehind = head.Y <= foot.Y;
-                        if (headBehind) Figures.Standing(c, head, porter, time, true, 5);
-                        var lift = Figures.Trolley(c, 0, 0, dir);
-                        Figures.LyingAlong(c, 0, 0, dir, P(6), Looks.Amber, lift);
-                        if (!headBehind) Figures.Standing(c, head, porter, time, true, 5);
-                    }),
-                    ("Ambulance stretcher", c => AmbulanceStretcher(c, P(7))),
-                    ("Operating table", c => Figures.Lying(c, 0, 0, P(8), new Color("#4E9C8F"), Figures.Table(c, 0, 0, new Color("#5E7A8C")))),
-                    ("X-ray table", c => Figures.Table(c, 0, 0, new Color("#DDE3E8"))),
-                }, 1.1f);
+                }, 2f);
                 break;
             }
 
@@ -316,9 +312,5 @@ public partial class ArtGallery : Node2D
     }
 
     /// <summary>The ambulance crew's stretcher, as drawn while the patient waits in the ambulance queue.</summary>
-    private static void AmbulanceStretcher(CanvasItem c, PersonLook look)
-    {
-        IsoDraw.Box(c, -0.7, -2.0, 1.4, 4.0, 14, new Color("#C9D1D8"));
-        Figures.Lying(c, 0, 0, look, Looks.Red, 14);
-    }
+    private static void AmbulanceStretcher(CanvasItem c, PersonLook look) => Figures.AmbulanceStretcher(c, 0, 0, (0, 1), look, Looks.Red);
 }
