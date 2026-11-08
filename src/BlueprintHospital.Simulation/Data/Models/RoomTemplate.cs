@@ -40,6 +40,12 @@ public enum RoomLayoutKind
 
     /// <summary>A table, chairs and a kitchenette.</summary>
     StaffRoom,
+
+    /// <summary>A food counter on the back wall, vending machines (up to 4) and a water machine, and tables of four filling the floor.</summary>
+    Cafeteria,
+
+    /// <summary>A row of vending machines (up to 4) and a water machine, with a seat or two if there is room.</summary>
+    Vending,
 }
 
 /// <summary>

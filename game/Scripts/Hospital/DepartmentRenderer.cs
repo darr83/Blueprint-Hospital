@@ -40,6 +40,8 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.PlasterRoom] = new Color("#E6E4DE"),
         [CareSpaceKind.PhysioGym] = new Color("#DDE9E2"),
         [CareSpaceKind.EndoscopyRecovery] = new Color("#E2EAEE"),
+        [CareSpaceKind.Cafeteria] = new Color("#EFE3D2"),
+        [CareSpaceKind.VendingPoint] = new Color("#ECE2D6"),
     };
 
     private HospitalSimulation _sim = null!;

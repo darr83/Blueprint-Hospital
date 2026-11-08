@@ -254,6 +254,9 @@ public sealed class Patient : Agent
 
     public DateTime? LastPhysioAt { get; set; }
 
+    /// <summary>When they last got something to eat or drink from a cafe or vending machine; it keeps them patient for a while.</summary>
+    public DateTime? LastRefreshmentAt { get; set; }
+
     /// <summary>When the doctor asked for a ward bed.</summary>
     public DateTime? BedRequestedAt { get; set; }
 
