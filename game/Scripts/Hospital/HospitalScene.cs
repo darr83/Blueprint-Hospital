@@ -20,7 +20,8 @@ public partial class HospitalScene : Node2D
     private GameSession _session = null!;
     private SiteRenderer _site = null!;
     private DepartmentRenderer _department = null!;
-    private AgentRenderer _agents = null!;
+    private WorldLayer _world = null!;
+    private OverlayLayer _overlay = null!;
     private TileCursor _cursor = null!;
     private IsoCamera _camera = null!;
     private MainHUD _hud = null!;
@@ -31,7 +32,7 @@ public partial class HospitalScene : Node2D
 
     public SiteRenderer SiteView => _site;
 
-    public AgentRenderer Agents => _agents;
+    public WorldLayer World => _world;
 
     public MainHUD Hud => _hud;
 
@@ -57,9 +58,14 @@ public partial class HospitalScene : Node2D
         AddChild(_department);
         _department.Initialise(_session.Simulation);
 
-        _agents = new AgentRenderer { Name = "People" };
-        AddChild(_agents);
-        _agents.Initialise(_session.Simulation, _session.Clock);
+        // Walls, furniture, people and vehicles, depth-sorted together; labels on top.
+        _world = new WorldLayer { Name = "World" };
+        AddChild(_world);
+        _world.Initialise(_session.Simulation, _session.Clock);
+
+        _overlay = new OverlayLayer { Name = "Labels" };
+        AddChild(_overlay);
+        _overlay.Initialise(_world);
 
         _cursor = new TileCursor { Name = "TileCursor" };
         AddChild(_cursor);
@@ -82,7 +88,7 @@ public partial class HospitalScene : Node2D
         {
             // Start looking at the emergency department.
             var footprint = StarterSite.MainBuildingFootprint;
-            _camera.SnapTo(_site.ToScreen(footprint.X + 30, footprint.Y + 21), 0.56f);
+            _camera.SnapTo(_site.ToScreen(footprint.X + 22, footprint.Y + 16), 0.56f);
         }
 
         _hud = new MainHUD { Name = "HUD" };
@@ -92,7 +98,7 @@ public partial class HospitalScene : Node2D
         _hud.MenuRequested += OpenPauseMenu;
         _cursor.HoveredTileChanged += (x, y, onSite) => _hud.ShowHoveredTile(x, y, onSite, _session.Site);
         _hud.Record.CloseRequested += ClearSelection;
-        _hud.Record.FocusRequested += p => _camera.GlideTo(_agents.FootPosition(p));
+        _hud.Record.FocusRequested += p => _camera.GlideTo(_world.FootPosition(p));
         _hud.Feed.PatientClicked += id =>
         {
             if (_session.Simulation.FindPatient(id) is { } patient)
@@ -107,27 +113,27 @@ public partial class HospitalScene : Node2D
     /// <summary>Selects a patient and opens their record.</summary>
     public void SelectPatient(Patient patient, bool centre = false)
     {
-        _agents.Selected = patient;
+        _world.Selected = patient;
         _hud.Roster.Visible = false;
         _hud.Record.Show(patient);
         if (centre && patient.IsInDepartment)
         {
-            _camera.GlideTo(_agents.FootPosition(patient));
+            _camera.GlideTo(_world.FootPosition(patient));
         }
     }
 
     private void SelectStaff(StaffMember member, bool centre)
     {
-        _agents.Selected = member;
+        _world.Selected = member;
         if (centre)
         {
-            _camera.GlideTo(_agents.FootPosition(member));
+            _camera.GlideTo(_world.FootPosition(member));
         }
     }
 
     private void ClearSelection()
     {
-        _agents.Selected = null;
+        _world.Selected = null;
         _hud.Record.Visible = false;
     }
 
@@ -140,7 +146,7 @@ public partial class HospitalScene : Node2D
     {
         if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
         {
-            switch (_agents.HitTest(GetGlobalMousePosition()))
+            switch (_world.HitTest(GetGlobalMousePosition()))
             {
                 case Patient patient:
                     SelectPatient(patient);

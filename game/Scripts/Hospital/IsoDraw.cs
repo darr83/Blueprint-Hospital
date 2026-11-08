@@ -24,10 +24,10 @@ public static class IsoDraw
     }
 
     /// <summary>An axis-aligned box sitting on the floor.</summary>
-    public static void Box(CanvasItem canvas, double x, double y, double w, double l, float height, Color top, float lift = 0)
+    public static void Box(CanvasItem canvas, double x, double y, double w, double l, float height, Color top, float lift = 0, Color? sideColour = null, bool shadow = true)
     {
         var corners = new[] { ToScreen(x, y), ToScreen(x + w, y), ToScreen(x + w, y + l), ToScreen(x, y + l) };
-        BoxFromCorners(canvas, corners, height, top, lift);
+        BoxFromCorners(canvas, corners, height, top, lift, sideColour, shadow);
     }
 
     /// <summary>
@@ -48,18 +48,18 @@ public static class IsoDraw
             ToScreen(cx - (dx * hl) - (nx * hw), cy - (dy * hl) - (ny * hw)),
             ToScreen(cx - (dx * hl) + (nx * hw), cy - (dy * hl) + (ny * hw)),
         };
-        BoxFromCorners(canvas, corners, height, top, lift);
+        BoxFromCorners(canvas, corners, height, top, lift, null, true);
         return corners;
     }
 
-    private static void BoxFromCorners(CanvasItem canvas, Vector2[] corners, float height, Color top, float lift)
+    private static void BoxFromCorners(CanvasItem canvas, Vector2[] corners, float height, Color top, float lift, Color? sideColour, bool shadow)
     {
         var up = new Vector2(0, -height - lift);
         var down = new Vector2(0, -lift);
         var centre = (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
 
         // Shadow on the floor.
-        if (lift <= 0)
+        if (lift <= 0 && shadow && height > 0)
         {
             canvas.DrawColoredPolygon(Array.ConvertAll(corners, c => c + ((c - centre) * 0.08f) + new Vector2(2, 2)), new Color(0, 0, 0, 0.12f));
         }
@@ -75,8 +75,15 @@ public static class IsoDraw
                 continue;
             }
 
-            var shade = mid.X < centre.X ? 0.22f : 0.36f;
-            canvas.DrawColoredPolygon(new[] { a + down, b + down, b + up, a + up }, top.Darkened(shade));
+            if (height <= 0)
+            {
+                continue;
+            }
+
+            // Light comes from the upper left: the left-facing side is lighter than the right.
+            var side = sideColour ?? top;
+            var shade = sideColour is null ? (mid.X < centre.X ? 0.18f : 0.32f) : (mid.X < centre.X ? 0f : 0.1f);
+            canvas.DrawColoredPolygon(new[] { a + down, b + down, b + up, a + up }, side.Darkened(shade));
         }
 
         canvas.DrawColoredPolygon(Array.ConvertAll(corners, c => c + up), top);

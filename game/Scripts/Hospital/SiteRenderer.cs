@@ -5,17 +5,12 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// Draws the hospital site: ground tiles, the building floor, the placement grid and outer walls.
+/// Draws the hospital site: ground tiles, the building floor, the placement grid and entrance mats.
+/// Walls are drawn by <see cref="WorldLayer"/> so they depth-sort with people and furniture.
 /// Geometry is built into meshes once and redrawn only when something changes.
 /// </summary>
 public partial class SiteRenderer : Node2D
 {
-    /// <summary>Height of a full outer wall on screen (about 3 m).</summary>
-    public const float WallHeight = 84f;
-
-    /// <summary>Height of the cut-away front walls, so the inside stays visible.</summary>
-    public const float CutawayWallHeight = 10f;
-
     private static readonly Dictionary<TileKind, Color> GroundColours = new()
     {
         [TileKind.Grass] = new Color("#6E9E57"),
@@ -134,57 +129,10 @@ public partial class SiteRenderer : Node2D
 
     private void DrawBuildingWalls(Building building)
     {
-        var r = building.Footprint;
-        var backNorth = new Color("#D4DCE4");
-        var backWest = new Color("#B8C3CE");
-        var front = new Color("#8E9AA6");
-        var cap = new Color("#5D6873");
-
-        // Back walls (north and west) are drawn full height.
-        for (var x = r.X; x < r.Right; x++)
-        {
-            if (!building.IsOpening(new GridCoord(x, r.Y), WallSide.North))
-            {
-                DrawWall(ToScreen(x, r.Y), ToScreen(x + 1, r.Y), WallHeight, backNorth, cap);
-            }
-        }
-
-        for (var y = r.Y; y < r.Bottom; y++)
-        {
-            if (!building.IsOpening(new GridCoord(r.X, y), WallSide.West))
-            {
-                DrawWall(ToScreen(r.X, y), ToScreen(r.X, y + 1), WallHeight, backWest, cap);
-            }
-        }
-
-        // Front walls (south and east) are cut away so the player can see inside.
-        for (var x = r.X; x < r.Right; x++)
-        {
-            if (!building.IsOpening(new GridCoord(x, r.Bottom - 1), WallSide.South))
-            {
-                DrawWall(ToScreen(x, r.Bottom), ToScreen(x + 1, r.Bottom), CutawayWallHeight, front, cap);
-            }
-        }
-
-        for (var y = r.Y; y < r.Bottom; y++)
-        {
-            if (!building.IsOpening(new GridCoord(r.Right - 1, y), WallSide.East))
-            {
-                DrawWall(ToScreen(r.Right, y), ToScreen(r.Right, y + 1), CutawayWallHeight, front, cap);
-            }
-        }
-
         foreach (var entrance in building.Entrances)
         {
             DrawEntranceMat(entrance);
         }
-    }
-
-    private void DrawWall(Vector2 a, Vector2 b, float height, Color face, Color capColour)
-    {
-        var up = new Vector2(0, -height);
-        DrawColoredPolygon(new[] { a, b, b + up, a + up }, face);
-        DrawLine(a + up, b + up, capColour, 2f);
     }
 
     private void DrawEntranceMat(Entrance entrance)

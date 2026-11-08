@@ -20,6 +20,7 @@ public partial class SmokeTest : Node
     private Stage _stage = Stage.WaitForMenu;
     private DateTime _savedTime;
     private CameraState? _savedCamera;
+    private CameraState? _overview;
     private string? _screenshotDirectory;
 
     private enum Stage
@@ -27,6 +28,7 @@ public partial class SmokeTest : Node
         WaitForMenu,
         WaitForHospital,
         RunSimulation,
+        CloseUp,
         PatientRecord,
         WaitForLoad,
         Done,
@@ -104,6 +106,18 @@ public partial class SmokeTest : Node
 
             case Stage.RunSimulation when scene is HospitalScene hospital && _frame >= 30:
                 Screenshot("02_emergency_department");
+                _overview = hospital.CaptureCamera();
+                // Close up on a bed with a patient in it, if there is one.
+                var sim = hospital.Session.Simulation;
+                var bay = sim.Spaces.Where(sp => sp.IsTreatmentSpace).OrderBy(sp => sp.IsFree).ThenBy(sp => sp.Id).First().Rect;
+                hospital.Camera.SnapTo(IsoDraw.ToScreen(bay.X + 5, bay.Y + 6), 1.5f);
+                _frame = 0;
+                _stage = Stage.CloseUp;
+                break;
+
+            case Stage.CloseUp when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("03_close_up");
+                hospital.Camera.SnapTo(new Vector2((float)_overview!.X, (float)_overview.Y), (float)_overview.Zoom);
                 OpenARecord(hospital);
                 _frame = 0;
                 _stage = Stage.PatientRecord;
@@ -112,7 +126,7 @@ public partial class SmokeTest : Node
             case Stage.PatientRecord when scene is HospitalScene hospital && _frame >= 10:
                 var clock = hospital.Session.Clock;
                 Check(clock.TickCount > 0, "Simulation clock did not advance.");
-                Screenshot("03_patient_record");
+                Screenshot("04_patient_record");
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
                 _savedTime = clock.Now;
