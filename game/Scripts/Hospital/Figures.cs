@@ -138,29 +138,27 @@ public static class Figures
     /// </summary>
     public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift)
     {
-        var up = new Vector2(0, -lift);
-        var gown = new Color("#9CC3E6");
-
-        // Lying flat on their back: head on the pillow, shoulders in a hospital gown, and the
-        // rest of the body under the blanket from the chest down to the feet.
-        IsoDraw.Box(c, gx - 0.55, gy - 1.2, 1.1, 0.5, 5, gown, lift);
-        IsoDraw.Box(c, gx - 0.66, gy - 0.75, 1.32, 2.75, 5, blanket, lift);
-
-        // The shape of the body and feet under the blanket.
-        IsoDraw.Box(c, gx - 0.4, gy - 0.7, 0.8, 1.6, 3, blanket.Lightened(0.06f), lift + 5);
-        IsoDraw.Box(c, gx - 0.4, gy + 1.45, 0.8, 0.45, 4, blanket.Lightened(0.06f), lift + 5);
-
-        // Turned-down white sheet across the chest.
-        IsoDraw.Box(c, gx - 0.68, gy - 0.82, 1.36, 0.22, 6, new Color("#F7F9FA"), lift);
-
-        // Head on the pillow, drawn last so nothing covers the face.
-        var head = IsoDraw.ToScreen(gx, gy - 1.5) + up + new Vector2(0, -9);
-        if (look.LongHair)
+        // One flat cover, rounded at the corners, lying on the mattress with the head showing at the top.
+        var up = new Vector2(0, -lift - 1);
+        const double r = 0.2;
+        var corners = new[] { (gx - 0.55 + r, gy - 0.95 + r, Math.PI), (gx + 0.55 - r, gy - 0.95 + r, 1.5 * Math.PI), (gx + 0.55 - r, gy + 1.75 - r, 0.0), (gx - 0.55 + r, gy + 1.75 - r, 0.5 * Math.PI) };
+        var cover = new Vector2[corners.Length * 5];
+        var i = 0;
+        foreach (var (cx, cy, start) in corners)
         {
-            c.DrawCircle(head + new Vector2(0, -3), 8.5f, look.Hair);
+            // Five points around each corner give a soft rounded outline, going round in order.
+            for (var k = 0; k < 5; k++)
+            {
+                var a = start + (Math.PI / 2 * (k / 4.0));
+                cover[i++] = IsoDraw.ToScreen(cx + (Math.Cos(a) * r), cy + (Math.Sin(a) * r)) + up;
+            }
         }
 
-        c.DrawCircle(head, 7f, look.Skin);
+        c.DrawColoredPolygon(cover, blanket);
+
+        // Head on the pillow.
+        var head = IsoDraw.ToScreen(gx, gy - 1.45) + up + new Vector2(0, -3);
+        c.DrawCircle(head, 7.5f, look.Skin);
         c.DrawColoredPolygon(HairCap(head), look.Hair);
     }
 
