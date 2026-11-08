@@ -7,7 +7,8 @@ namespace BlueprintHospital.UI;
 
 /// <summary>
 /// In-game heads-up display. Top bar: hospital name, date and time, simulation speed.
-/// Bottom-left: what is under the cursor. More panels join it as later milestones add systems.
+/// Left: the A&amp;E board and notifications. Right: the selected patient's record, or the
+/// patient and staff lists. Bottom: what is under the cursor.
 /// </summary>
 public partial class MainHUD : CanvasLayer
 {
@@ -24,6 +25,25 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised when the player opens the menu from the top bar.</summary>
     public event System.Action? MenuRequested;
 
+    public DepartmentDashboard Dashboard { get; } = new() { Name = "Dashboard" };
+
+    public NotificationFeed Feed { get; } = new() { Name = "Notifications" };
+
+    public PatientRecordPanel Record { get; } = new() { Name = "PatientRecord", Visible = false };
+
+    public RosterPanel Roster { get; } = new() { Name = "Roster", Visible = false };
+
+    /// <summary>Opens the patient or staff list, or closes it if that tab is already showing.</summary>
+    public void ToggleRoster(bool staff)
+    {
+        Record.Visible = false;
+        Roster.Visible = !(Roster.Visible && _rosterShowsStaff == staff);
+        _rosterShowsStaff = staff;
+        Roster.ShowTab(staff);
+    }
+
+    private bool _rosterShowsStaff;
+
     public void Initialise(GameSession session)
     {
         _session = session;
@@ -36,6 +56,22 @@ public partial class MainHUD : CanvasLayer
 
         root.AddChild(BuildTopBar());
         root.AddChild(BuildHoverPanel());
+
+        var sim = session.Simulation;
+        var left = new VBoxContainer { Position = new Vector2(12, 58), MouseFilter = Control.MouseFilterEnum.Ignore };
+        left.AddThemeConstantOverride("separation", 8);
+        Dashboard.Initialise(sim);
+        Feed.Initialise(sim, session.Events);
+        left.AddChild(Dashboard);
+        left.AddChild(Feed);
+        root.AddChild(left);
+
+        Record.Initialise(sim);
+        DockRight(Record, 452);
+        root.AddChild(Record);
+        Roster.Initialise(sim);
+        DockRight(Roster, 352);
+        root.AddChild(Roster);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -60,6 +96,14 @@ public partial class MainHUD : CanvasLayer
         var tile = new GridCoord(x, y);
         var building = site.BuildingAt(tile);
         var where = building is null ? Describe(site[tile]) : building.Name;
+        foreach (var space in _session.Simulation.Spaces)
+        {
+            if (space.Rect.Contains(tile) && space.Kind != BlueprintHospital.Simulation.Hospital.CareSpaceKind.Corridor)
+            {
+                where = $"{space.Name} ({space.AreaSquareMetres:0} m²)";
+            }
+        }
+
         _hoverLabel.Text = $"{where}   ·   {Units.TilesToMetres(x):0.0} m, {Units.TilesToMetres(y):0.0} m";
     }
 
@@ -101,6 +145,12 @@ public partial class MainHUD : CanvasLayer
         row.AddChild(speeds);
 
         row.AddChild(new Control { CustomMinimumSize = new Vector2(12, 0) });
+        var patients = UiStyle.Button("Patients", () => ToggleRoster(false), 96);
+        patients.TooltipText = "Everyone in A&E, sickest first (P)";
+        row.AddChild(patients);
+        var staff = UiStyle.Button("Staff", () => ToggleRoster(true), 76);
+        staff.TooltipText = "Who is on shift and what they are doing (T)";
+        row.AddChild(staff);
         var grid = UiStyle.Button("Grid", () => GridToggled?.Invoke(), 70);
         grid.TooltipText = "Show or hide the building grid (G)";
         row.AddChild(grid);
@@ -111,12 +161,26 @@ public partial class MainHUD : CanvasLayer
         return bar;
     }
 
+    private static void DockRight(Control panel, float width)
+    {
+        panel.AnchorLeft = 1;
+        panel.AnchorRight = 1;
+        panel.AnchorTop = 0;
+        panel.AnchorBottom = 1;
+        panel.OffsetLeft = -width;
+        panel.OffsetRight = 0;
+        panel.OffsetTop = 58;
+        panel.OffsetBottom = -12;
+    }
+
     private Control BuildHoverPanel()
     {
         var panel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        panel.SetAnchorsPreset(Control.LayoutPreset.BottomLeft);
+        panel.SetAnchorsPreset(Control.LayoutPreset.CenterBottom);
         panel.GrowVertical = Control.GrowDirection.Begin;
-        panel.Position = new Vector2(12, -12);
+        panel.GrowHorizontal = Control.GrowDirection.Both;
+        panel.OffsetBottom = -12;
+        panel.OffsetTop = -12;
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(UiStyle.TopBarBackground, 0.85f),
@@ -124,7 +188,7 @@ public partial class MainHUD : CanvasLayer
             ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 6, ContentMarginBottom = 6,
         });
         _hoverLabel.AddThemeColorOverride("font_color", Colors.White);
-        _hoverLabel.Text = "Middle mouse: move · Wheel: zoom · WASD: pan";
+        _hoverLabel.Text = "Click a person to inspect · Middle mouse: move · Wheel: zoom · WASD: pan";
         panel.AddChild(_hoverLabel);
         return panel;
     }

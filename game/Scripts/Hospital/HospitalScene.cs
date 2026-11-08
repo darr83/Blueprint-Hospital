@@ -1,5 +1,8 @@
 using BlueprintHospital.Core;
+using BlueprintHospital.Simulation.Agents;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
 using BlueprintHospital.UI;
 using Godot;
@@ -7,14 +10,17 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// The main play scene. Wires the current <see cref="GameSession"/> to the site view,
-/// camera and HUD, and drives the simulation clock every frame.
+/// The main play scene. Wires the current <see cref="GameSession"/> to the site and department
+/// views, the people in them, the camera and HUD, and drives the simulation clock every frame.
+/// Clicking a patient opens their record; clicking a member of staff shows the staff list.
 /// </summary>
 public partial class HospitalScene : Node2D
 {
     private readonly IsoProjection _projection = new();
     private GameSession _session = null!;
     private SiteRenderer _site = null!;
+    private DepartmentRenderer _department = null!;
+    private AgentRenderer _agents = null!;
     private TileCursor _cursor = null!;
     private IsoCamera _camera = null!;
     private MainHUD _hud = null!;
@@ -24,6 +30,10 @@ public partial class HospitalScene : Node2D
     public IsoCamera Camera => _camera;
 
     public SiteRenderer SiteView => _site;
+
+    public AgentRenderer Agents => _agents;
+
+    public MainHUD Hud => _hud;
 
     public override void _Ready()
     {
@@ -42,6 +52,14 @@ public partial class HospitalScene : Node2D
         AddChild(_site);
         _site.Initialise(_session.Site, _projection);
         _site.ShowGrid = settings.ShowGridByDefault;
+
+        _department = new DepartmentRenderer { Name = "Department" };
+        AddChild(_department);
+        _department.Initialise(_session.Simulation);
+
+        _agents = new AgentRenderer { Name = "People" };
+        AddChild(_agents);
+        _agents.Initialise(_session.Simulation, _session.Clock);
 
         _cursor = new TileCursor { Name = "TileCursor" };
         AddChild(_cursor);
@@ -62,8 +80,9 @@ public partial class HospitalScene : Node2D
         }
         else
         {
+            // Start looking at the emergency department.
             var footprint = StarterSite.MainBuildingFootprint;
-            _camera.SnapTo(_site.ToScreen(footprint.X + (footprint.Width / 2.0), footprint.Y + (footprint.Length / 2.0)), 0.45f);
+            _camera.SnapTo(_site.ToScreen(footprint.X + 30, footprint.Y + 21), 0.56f);
         }
 
         _hud = new MainHUD { Name = "HUD" };
@@ -72,6 +91,44 @@ public partial class HospitalScene : Node2D
         _hud.GridToggled += ToggleGrid;
         _hud.MenuRequested += OpenPauseMenu;
         _cursor.HoveredTileChanged += (x, y, onSite) => _hud.ShowHoveredTile(x, y, onSite, _session.Site);
+        _hud.Record.CloseRequested += ClearSelection;
+        _hud.Record.FocusRequested += p => _camera.GlideTo(_agents.FootPosition(p));
+        _hud.Feed.PatientClicked += id =>
+        {
+            if (_session.Simulation.FindPatient(id) is { } patient)
+            {
+                SelectPatient(patient, centre: true);
+            }
+        };
+        _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
+        _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
+    }
+
+    /// <summary>Selects a patient and opens their record.</summary>
+    public void SelectPatient(Patient patient, bool centre = false)
+    {
+        _agents.Selected = patient;
+        _hud.Roster.Visible = false;
+        _hud.Record.Show(patient);
+        if (centre && patient.IsInDepartment)
+        {
+            _camera.GlideTo(_agents.FootPosition(patient));
+        }
+    }
+
+    private void SelectStaff(StaffMember member, bool centre)
+    {
+        _agents.Selected = member;
+        if (centre)
+        {
+            _camera.GlideTo(_agents.FootPosition(member));
+        }
+    }
+
+    private void ClearSelection()
+    {
+        _agents.Selected = null;
+        _hud.Record.Visible = false;
     }
 
     public override void _Process(double delta)
@@ -81,6 +138,31 @@ public partial class HospitalScene : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+        {
+            switch (_agents.HitTest(GetGlobalMousePosition()))
+            {
+                case Patient patient:
+                    SelectPatient(patient);
+                    break;
+                case StaffMember member:
+                    SelectStaff(member, centre: false);
+                    _hud.Record.Visible = false;
+                    if (!_hud.Roster.Visible)
+                    {
+                        _hud.ToggleRoster(staff: true);
+                    }
+
+                    break;
+                default:
+                    ClearSelection();
+                    break;
+            }
+
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event is not InputEventKey { Pressed: true, Echo: false } key)
         {
             return;
@@ -88,8 +170,18 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
+            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible:
+                ClearSelection();
+                _hud.Roster.Visible = false;
+                break;
             case Key.Escape:
                 OpenPauseMenu();
+                break;
+            case Key.P:
+                _hud.ToggleRoster(staff: false);
+                break;
+            case Key.T:
+                _hud.ToggleRoster(staff: true);
                 break;
             case Key.Space:
                 _session.Clock.SetSpeed(_session.Clock.IsPaused ? SimulationSpeed.Normal : SimulationSpeed.Paused);

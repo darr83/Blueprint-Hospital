@@ -1,0 +1,155 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using BlueprintHospital.Simulation.Medical;
+using BlueprintHospital.Simulation.Simulation;
+using Godot;
+
+namespace BlueprintHospital.UI;
+
+/// <summary>
+/// The A&amp;E board: who is in the department by triage category, waits, ambulances,
+/// cubicle capacity and the headline performance figures.
+/// </summary>
+public partial class DepartmentDashboard : PanelContainer
+{
+    private readonly RichTextLabel _text = new()
+    {
+        BbcodeEnabled = true,
+        FitContent = true,
+        ScrollActive = false,
+        MouseFilter = MouseFilterEnum.Ignore,
+        CustomMinimumSize = new Vector2(290, 0),
+    };
+
+    private HospitalSimulation _sim = null!;
+    private double _refresh;
+
+    public void Initialise(HospitalSimulation simulation)
+    {
+        _sim = simulation;
+        MouseFilter = MouseFilterEnum.Stop;
+        AddThemeStyleboxOverride("panel", HudStyle.DarkPanel());
+        _text.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
+        _text.AddThemeFontSizeOverride("normal_font_size", 15);
+        _text.AddThemeFontSizeOverride("bold_font_size", 15);
+        AddChild(_text);
+        Refresh();
+    }
+
+    public override void _Process(double delta)
+    {
+        _refresh -= delta;
+        if (_refresh <= 0)
+        {
+            _refresh = 0.5;
+            Refresh();
+        }
+    }
+
+    private void Refresh()
+    {
+        var s = _sim.Stats;
+        var sb = new StringBuilder();
+        sb.Append("[b][font_size=17]A&E BOARD[/font_size][/b]\n");
+
+        sb.Append($"In department [b]{s.PatientsInDepartment}[/b]");
+        if (s.AwaitingTriage > 0)
+        {
+            sb.Append($" · awaiting triage [b]{s.AwaitingTriage}[/b]");
+        }
+
+        sb.Append('\n');
+
+        foreach (var category in new[] { TriageCategory.Red, TriageCategory.Amber, TriageCategory.Green })
+        {
+            var hex = ClinicalText.TriageHex(category);
+            var count = s.InDepartment.GetValueOrDefault(category);
+            var waiting = s.WaitingForSpace.GetValueOrDefault(category);
+            var longest = s.LongestWaitMinutes.GetValueOrDefault(category);
+            sb.Append($"[bgcolor={hex}][color=#FFFFFF][b] {count,2} [/b][/color][/bgcolor] {category,-6}");
+            if (waiting > 0)
+            {
+                var warn = category == TriageCategory.Red || longest > 120 ? ClinicalText.RedHex : "#E8EDEE";
+                sb.Append($"  [color={warn}]{waiting} waiting, longest {ClinicalText.Duration(TimeSpan.FromMinutes(longest))}[/color]");
+            }
+
+            sb.Append('\n');
+        }
+
+        var ambulanceColour = s.AmbulancesWaiting >= 3 ? ClinicalText.RedHex : "#E8EDEE";
+        sb.Append($"\n[color={ambulanceColour}]Ambulances waiting [b]{s.AmbulancesWaiting}[/b][/color]");
+        if (s.AverageHandoverMinutes > 0)
+        {
+            sb.Append($" · handover {s.AverageHandoverMinutes:0} min");
+        }
+
+        sb.Append('\n');
+        sb.Append(Capacity("Resus", s.Resus));
+        sb.Append(Capacity("Majors", s.Majors));
+        sb.Append(Capacity("Minors", s.Minors));
+
+        var four = s.FourHourPerformance;
+        var fourHex = four >= 0.95 ? ClinicalText.GreenHex : four >= 0.76 ? ClinicalText.AmberHex : ClinicalText.RedHex;
+        sb.Append($"\n4-hour target [color={fourHex}][b]{four:P0}[/b][/color] [color=#9FB0BC](95% standard)[/color]\n");
+        sb.Append($"Time to doctor [b]{s.AverageTimeToDoctorMinutes:0} min[/b]\n");
+        sb.Append($"Diagnostic accuracy [b]{s.DiagnosticAccuracy:P0}[/b]\n");
+        sb.Append($"\n[color=#9FB0BC]Since opening: {s.ArrivalsTotal} arrivals ({s.AmbulanceArrivalsTotal} by ambulance)\n");
+        sb.Append($"{s.Discharged} discharged · {s.Transferred} transferred · {s.LeftWithoutBeingSeen} left unseen · {s.Deaths} died[/color]");
+
+        _text.Text = sb.ToString();
+    }
+
+    private static string Capacity(string name, (int Used, int Total) usage)
+    {
+        var full = usage.Used >= usage.Total;
+        var blocks = new StringBuilder();
+        for (var i = 0; i < usage.Total; i++)
+        {
+            blocks.Append(i < usage.Used ? "■" : "□");
+        }
+
+        var colour = full ? ClinicalText.AmberHex : "#E8EDEE";
+        return $"[color={colour}]{name,-7} {blocks}  {usage.Used}/{usage.Total}[/color]\n";
+    }
+}
+
+/// <summary>Styles for the dark in-game overlay panels.</summary>
+public static class HudStyle
+{
+    public static StyleBoxFlat DarkPanel() => new()
+    {
+        BgColor = new Color(UiStyle.TopBarBackground, 0.9f),
+        CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+        ContentMarginLeft = 14, ContentMarginRight = 14, ContentMarginTop = 10, ContentMarginBottom = 10,
+    };
+
+    public static StyleBoxFlat RowBox(Color colour) => new()
+    {
+        BgColor = colour,
+        CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4, CornerRadiusBottomLeft = 4, CornerRadiusBottomRight = 4,
+        ContentMarginLeft = 8, ContentMarginRight = 8, ContentMarginTop = 4, ContentMarginBottom = 4,
+    };
+
+    /// <summary>A flat, left-aligned button for clickable list rows on dark panels.</summary>
+    public static Button RowButton(string text, Action onPressed)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Alignment = HorizontalAlignment.Left,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            FocusMode = Control.FocusModeEnum.None,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+        };
+        button.AddThemeStyleboxOverride("normal", RowBox(new Color(1, 1, 1, 0.04f)));
+        button.AddThemeStyleboxOverride("hover", RowBox(new Color(1, 1, 1, 0.14f)));
+        button.AddThemeStyleboxOverride("pressed", RowBox(new Color(1, 1, 1, 0.2f)));
+        button.AddThemeColorOverride("font_color", new Color("#E8EDEE"));
+        button.AddThemeColorOverride("font_hover_color", Colors.White);
+        button.AddThemeFontSizeOverride("font_size", 14);
+        button.Pressed += onPressed;
+        return button;
+    }
+}

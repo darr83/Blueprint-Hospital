@@ -1,11 +1,12 @@
 using System;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Data;
+using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.World;
 
 namespace BlueprintHospital.Core;
 
-/// <summary>One game in progress: its clock, event bus and hospital site.</summary>
+/// <summary>One game in progress: its clock, event bus, hospital site and the simulation running on them.</summary>
 public sealed class GameSession
 {
     private GameSession(GameDatabase database, string hospitalName, SaveGame? save)
@@ -21,6 +22,10 @@ public sealed class GameSession
             Clock.RestoreState(save.Clock);
             InitialCamera = save.Camera;
         }
+
+        // Each clock tick advances the hospital by one game second.
+        Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount });
+        Clock.Ticked += _ => Simulation.Tick();
     }
 
     public GameDatabase Database { get; }
@@ -32,6 +37,9 @@ public sealed class GameSession
     public SimulationClock Clock { get; }
 
     public SiteMap Site { get; }
+
+    /// <summary>Patients, staff and everything else happening in the hospital.</summary>
+    public HospitalSimulation Simulation { get; }
 
     /// <summary>Camera to restore when the hospital scene opens, if the game was loaded.</summary>
     public CameraState? InitialCamera { get; }

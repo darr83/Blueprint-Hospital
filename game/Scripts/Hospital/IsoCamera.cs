@@ -43,6 +43,9 @@ public partial class IsoCamera : Camera2D
         Zoom = new Vector2(_targetZoom, _targetZoom);
     }
 
+    /// <summary>Smoothly moves the camera to centre on a world point, keeping the zoom.</summary>
+    public void GlideTo(Vector2 position) => _targetPosition = ClampToBounds(position);
+
     public CameraState CaptureState() => new(_targetPosition.X, _targetPosition.Y, _targetZoom);
 
     public override void _UnhandledInput(InputEvent @event)

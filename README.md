@@ -12,8 +12,8 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | Milestone | State |
 |---|---|
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
-| 2. A&E vertical slice (arrivals, triage, staff, first conditions) | Next |
-| 3. Building system (room templates, corridors) | Planned |
+| 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
+| 3. Building system (room templates, corridors) | Next |
 | 4. Departments, wards, pharmacy, surgery, finances | Planned |
 
 ## Repository layout
@@ -24,19 +24,26 @@ game/                          Godot project (open this folder in Godot)
   BlueprintHospital.csproj     Game scripts; references the simulation library
   BlueprintHospital.sln
   Data/                        All data-driven content (JSON)
-    Departments/
-    Symptoms/
+    Departments/  Symptoms/  Conditions/  Investigations/  Medications/
+    Names/  Arrivals/  PatientBackgrounds/
   Scenes/                      Main menu and hospital scenes
   Scripts/
     Core/                      GameManager (autoload), session, settings, saves, smoke test
-    Hospital/                  Site rendering, isometric camera, tile cursor
-    UI/                        Main menu, HUD, pause/settings/save/load panels
+    Hospital/                  Site, rooms and people rendering, isometric camera, tile cursor
+    UI/                        Main menu, HUD, A&E board, notifications, patient record,
+                               patient/staff lists, pause/settings/save/load panels
 src/BlueprintHospital.Simulation/   Engine-independent game rules (no Godot references)
   Core/                        Simulation clock, event bus, save format
   Data/                        JSON loading and validation, data models
-  World/                       Grid, metres <-> tiles, isometric projection, site map
-  Medical/                     Triage categories (and, later, the whole medical model)
-tests/BlueprintHospital.Simulation.Tests/  xUnit tests for the simulation library
+  World/                       Grid, metres <-> tiles, isometric projection, site map, A* pathfinding
+  Medical/                     Observations and NEWS2, triage, investigations, diagnosis engine
+  Patients/                    Patient record and patient generator
+  Staff/                       Staff members and the clinical task board
+  Hospital/                    Care spaces and the A&E layout
+  Transport/                   Ambulances
+  Simulation/                  HospitalSimulation: arrivals, patient flow, staff AI, clinical work
+tests/BlueprintHospital.Simulation.Tests/  xUnit tests, including whole patient journeys
+tools/SimulationRunner/        Console tool: runs the A&E for days and prints the results
 ```
 
 The rules of the game live in `src/` as plain C#, so they can be tested quickly without
@@ -63,7 +70,42 @@ Then:
 | Pause / resume | Space |
 | Speed 1x / 2x / 4x | 1 / 2 / 3 |
 | Toggle building grid | G |
-| Menu (save, load, settings, quit) | Esc |
+| Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
+| Patients list / Staff list | P / T (or the top-bar buttons) |
+| Close a record or list | Esc |
+| Menu (save, load, settings, quit) | Esc (when nothing is open) |
+
+## How the A&E works
+
+Time runs at **15 game seconds per real second** at 1x (a game hour takes 4 real minutes at 1x,
+1 minute at 4x). Patients arrive on a realistic daily pattern, about 35 a day: quiet overnight,
+busiest from late morning to evening.
+
+- **Walk-ins** queue at reception, are registered, then wait to be called to triage.
+  **Ambulance** patients wait on the crew's trolley in the bay until a nurse takes handover.
+- **Triage** uses observations and **NEWS2** to give a **Red / Amber / Green** category. Some
+  complaints trigger protocol tests at triage (an ECG for chest pain); an abnormal ECG upgrades the
+  patient to Red.
+- Patients go to **Resus** (Red), **Majors** (Amber) or **Minors** (Green) when a space is free.
+  Sicker patients take priority: a Red patient goes to a Majors cubicle if Resus is full, and
+  lower-priority patients are kept out of spaces a sicker patient is waiting for.
+- **Staff choose their own work** from a task board, by clinical priority: Red emergencies,
+  deteriorating Amber patients, ongoing Red care, handovers, triage, routine Amber, Green, then
+  admin. They walk to the patient to do each task, get tired, take breaks, and are refreshed at
+  the 08:00 and 20:00 shift changes.
+- **Doctors** take a history, build a differential diagnosis from what they know (symptoms,
+  observations and results, never the hidden true condition), order tests, wait for results,
+  and commit to a diagnosis. Tired, junior or overloaded doctors make more mistakes, and a missed
+  diagnosis can bring the patient back.
+- **Treatment** follows the diagnosis, with allergy checks before every medicine. Patients are
+  then discharged or transferred (e.g. a heart attack to a heart attack centre for PCI).
+- Untreated patients **deteriorate**. Repeat observations pick this up and upgrade their category.
+
+The **A&E board** (left) shows patients by category, waits, ambulances, cubicle use and the
+4-hour figure. Click any notification to open that patient's record.
+
+> Saves currently store the hospital, date and camera. Patients and staff in the department are
+> not saved yet; a loaded game starts with an empty department at the saved time.
 
 ## Building an executable
 
@@ -78,12 +120,20 @@ Then:
 # Unit tests for the simulation library
 dotnet test tests/BlueprintHospital.Simulation.Tests
 
-# Launch check: starts a game, runs the clock, saves, reloads and verifies, then exits 0/1
+# Launch check: starts a game, checks patients arrive and are triaged and staff work,
+# opens a patient record, saves, reloads and verifies, then exits 0/1
 godot --headless --path game -- --smoke-test
 
-# Same, with screenshots of the main menu and hospital (needs a display, not --headless)
+# Same, with screenshots (needs a display, not --headless)
 godot --path game -- --smoke-test --screenshots=/some/folder
+
+# Run the A&E without graphics: hours, random seed, arrival multiplier, print N patient journeys
+dotnet run --project tools/SimulationRunner -- 72 1 1.0 3
 ```
+
+The simulation runner is the quickest way to check balance after changing content: it prints the
+department each hour, then arrivals, outcomes, 4-hour performance, diagnostic accuracy and how
+hard each member of staff worked.
 
 GitHub Actions runs both on every pull request (`.github/workflows/ci.yml`).
 
@@ -142,11 +192,119 @@ Add an entry to any file in `game/Data/Departments/`:
 Exactly one department (A&E) has `starts_unlocked: true`. Set `is_shared_service` for services such
 as Radiology that serve other departments.
 
-### Conditions, investigations, medications, room templates, furniture
+Add `"triage_investigations": ["ecg"]` to a symptom to make triage nurses request those tests
+whenever a patient has it.
 
-These content types arrive with the milestones that use them (conditions and investigations in
-the A&E vertical slice, room templates and furniture with the building system, medications with
-the pharmacy). Each will get its own section here, following the same rules as above.
+### How to add a condition
+
+Add an entry to any file in `game/Data/Conditions/`. This is a complete example:
+
+```json
+{
+  "id": "simple_laceration",
+  "name": "Simple laceration",
+  "department": "emergency",
+  "description": "A clean cut to the skin that needs cleaning and closing.",
+  "prevalence": 6,
+  "age_range": [4, 85],
+  "female_fraction": 0.4,
+  "ambulance_probability": 0.03,
+  "presenting_complaint": "bleeding_wound",
+  "symptoms": [ { "symptom": "bleeding_wound", "probability": 1.0 } ],
+  "observations": {
+    "heart_rate": [84, 9], "systolic_bp": [126, 11], "diastolic_bp": [78, 8],
+    "respiratory_rate": [15, 2], "oxygen_saturation": [98.5, 0.8],
+    "temperature": [36.7, 0.3], "pain_score": [2, 5]
+  },
+  "initial_severity": [0.05, 0.12],
+  "deterioration_per_hour": 0,
+  "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+  "can_be_fatal": false,
+  "key_investigations": [],
+  "treatment": [
+    { "type": "procedure", "name": "Wound cleaning and closure", "performed_by": "doctor", "minutes": 20, "essential": true },
+    { "type": "medication", "medication": "paracetamol", "essential": false }
+  ],
+  "recovery_per_hour": 0.5,
+  "disposition": "discharge",
+  "disposition_note": "Discharged after wound closure with wound care advice."
+}
+```
+
+- `prevalence` is how common the condition is relative to the others (it is also the doctors'
+  prior belief). `symptoms` lists each symptom with the chance a patient has it; the
+  `presenting_complaint` must be one of them, with probability 1.
+- `observations` give the mean and spread of each vital sign; `pain_score` is a min/max range.
+- `initial_severity` (0–1) and `deterioration_per_hour` control how ill patients are and how fast
+  they get worse untreated; `deterioration_effects` is how much each vital sign shifts at full severity.
+  Severity 1 is fatal if `can_be_fatal` is true.
+- `key_investigations` are the tests doctors order to confirm or rule out this condition.
+- `treatment` steps are done in order. `essential` steps must be given for the patient to recover.
+- `disposition` is `discharge`, `transfer` or `admit`, with a note shown in the record.
+
+### How to add an investigation
+
+Add an entry to any file in `game/Data/Investigations/`:
+
+```json
+{
+  "id": "troponin",
+  "name": "High-sensitivity troponin",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 60,
+  "cost": 25,
+  "applies_to_sex": "any",
+  "unit": "ng/L",
+  "normal": { "value_range": [2, 14], "summaries": ["Troponin {value} ng/L (normal, below 14)."] },
+  "false_positive_rate": 0.03,
+  "false_positive": { "value_range": [15, 40], "summaries": ["Troponin {value} ng/L (mildly raised)."] },
+  "abnormal": [
+    { "condition": "acute_myocardial_infarction", "probability": 0.95,
+      "value_range": [60, 3000], "summaries": ["Troponin {value} ng/L (markedly raised)."] }
+  ],
+  "escalate_to_red_if_abnormal": false
+}
+```
+
+Results are generated from the patient's **true** condition: for each `abnormal` entry,
+`probability` is the test's sensitivity for that condition; otherwise the result is normal, apart
+from `false_positive_rate`. `{value}` in a summary is replaced by a number from `value_range`.
+`category` is `bedside`, `blood` or `imaging`; blood tests are sent to the lab and come back after
+`turnaround_minutes`. `applies_to_sex` can restrict a test (e.g. pregnancy test: `female`).
+
+### How to add a medication
+
+Add an entry to any file in `game/Data/Medications/`:
+
+```json
+{
+  "id": "aspirin",
+  "name": "Aspirin",
+  "drug_class": "Antiplatelet",
+  "route": "oral",
+  "typical_dose": "300 mg loading dose",
+  "indications": "Suspected acute coronary syndrome.",
+  "contraindications": "Aspirin allergy, active bleeding.",
+  "allergy_groups": ["aspirin", "nsaid"],
+  "common_side_effects": ["Indigestion", "Bleeding"],
+  "cost_per_dose": 1
+}
+```
+
+Before giving a medicine, staff check the patient's allergies against `allergy_groups` and
+withhold it if they match. Patient allergies come from `game/Data/PatientBackgrounds/`.
+
+### Names, arrivals and patient backgrounds
+
+- `Names/` holds first names and surnames used for patients and staff.
+- `Arrivals/` sets the expected arrivals for each hour of the day (`hourly_arrivals`, 24 numbers)
+  and a multiplier per weekday.
+- `PatientBackgrounds/` lists past medical history, regular medications and allergies, with how
+  likely each is at different ages.
+
+Room templates and furniture arrive with the building system.
 
 ### Adding a new content type (for developers)
 

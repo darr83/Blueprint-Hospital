@@ -44,7 +44,7 @@ public partial class GameManager : Node
         try
         {
             Database = GameDatabase.Load(new GodotDataSource());
-            GD.Print($"Loaded game data: {Database.Departments.Count} departments, {Database.Symptoms.Count} symptoms.");
+            GD.Print($"Loaded game data: {Database.Departments.Count} departments, {Database.Symptoms.Count} symptoms, {Database.Conditions.Count} conditions, {Database.Investigations.Count} investigations, {Database.Medications.Count} medications.");
         }
         catch (DataLoadException ex)
         {

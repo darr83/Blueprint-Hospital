@@ -331,7 +331,9 @@ public sealed partial class HospitalSimulation
 
             default:
                 patient.Stage = PatientStage.AwaitingTransfer;
-                var wait = Random.Range(30, 75);
+                // Time-critical transfers (e.g. a heart attack going for PCI) get an emergency ambulance.
+                var timeCritical = diagnosed.CanBeFatal && patient.Triage == TriageCategory.Red;
+                var wait = timeCritical ? Random.Range(10, 25) : Random.Range(30, 75);
                 patient.TransferAmbulanceDueAt = Now.AddMinutes(wait);
                 patient.Log(Now, $"{diagnosed.DispositionNote} Ambulance expected in about {wait} minutes.", important: true);
                 Notifications.Add(Now, NotificationLevel.Info, $"Transfer arranged for {patient.FullName}: {diagnosed.DispositionNote}", patient.Id, patient.CareSpaceId, patient.Triage);

@@ -1,13 +1,16 @@
 using System;
 using BlueprintHospital.Hospital;
+using System.Linq;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Patients;
 using Godot;
 
 namespace BlueprintHospital.Core;
 
 /// <summary>
 /// Automated launch check, run with: godot --headless --path game -- --smoke-test
-/// Starts a new game, lets the simulation run, saves, reloads and compares, then exits
+/// Starts a new game, checks patients arrive, are triaged and treated, opens a patient record,
+/// lets the clock run, saves, reloads and compares, then exits
 /// with code 0 on success or 1 on failure. Used to verify each build actually runs.
 /// </summary>
 public partial class SmokeTest : Node
@@ -24,6 +27,7 @@ public partial class SmokeTest : Node
         WaitForMenu,
         WaitForHospital,
         RunSimulation,
+        PatientRecord,
         WaitForLoad,
         Done,
     }
@@ -93,14 +97,22 @@ public partial class SmokeTest : Node
                 Check(hospital.Camera.IsCurrent(), "Camera is not active.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 GD.Print("[smoke] Hospital scene loaded.");
+                CheckPatientJourney(hospital);
                 _frame = 0;
                 _stage = Stage.RunSimulation;
                 break;
 
             case Stage.RunSimulation when scene is HospitalScene hospital && _frame >= 30:
+                Screenshot("02_emergency_department");
+                OpenARecord(hospital);
+                _frame = 0;
+                _stage = Stage.PatientRecord;
+                break;
+
+            case Stage.PatientRecord when scene is HospitalScene hospital && _frame >= 10:
                 var clock = hospital.Session.Clock;
                 Check(clock.TickCount > 0, "Simulation clock did not advance.");
-                Screenshot("02_hospital");
+                Screenshot("03_patient_record");
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
                 _savedTime = clock.Now;
@@ -121,6 +133,47 @@ public partial class SmokeTest : Node
                 GetTree().Quit(0);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Brings in a walk-in and an ambulance patient, runs the simulation for game time and checks
+    /// both are triaged, then opens a record. Background arrivals make the department busy for the screenshot.
+    /// </summary>
+    private static void CheckPatientJourney(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var clock = hospital.Session.Clock;
+        var walkIn = sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration");
+        var ambulance = sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_myocardial_infarction");
+
+        for (var i = 0; i < 3 * 3600 && (walkIn.Triage is null || ambulance.Triage is null); i++)
+        {
+            clock.Step();
+        }
+
+        Check(walkIn.Triage is not null, "Walk-in patient was not triaged: " + string.Join(" / ", walkIn.Timeline.Select(t => t.Text)));
+        Check(ambulance.Triage is not null, "Ambulance patient was not triaged: " + string.Join(" / ", ambulance.Timeline.Select(t => t.Text)));
+        GD.Print($"[smoke] Walk-in triaged {walkIn.Triage}, ambulance patient triaged {ambulance.Triage} by {clock.Now:HH:mm}.");
+
+        // Let the department fill up with ordinary arrivals.
+        for (var i = 0; i < 2 * 3600; i++)
+        {
+            clock.Step();
+        }
+
+        Check(sim.Stats.ArrivalsTotal >= 2, "No patients arrived.");
+        Check(sim.Staff.Sum(s => s.TasksCompleted) > 5, "Staff did not complete any work.");
+        GD.Print($"[smoke] {sim.Stats.ArrivalsTotal} arrivals, {sim.Stats.PatientsInDepartment} in department, {sim.Staff.Sum(s => s.TasksCompleted)} staff tasks done by {clock.Now:HH:mm}.");
+
+    }
+
+    private static void OpenARecord(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var focus = sim.Patients.Where(p => p.IsInDepartment && p.Triage is not null).OrderBy(p => p.Triage).First();
+        hospital.SelectPatient(focus);
+        Check(hospital.Hud.Record.Visible, "Patient record did not open.");
+        GD.Print($"[smoke] Opened the record for {focus.FullName}.");
     }
 
     /// <summary>Saves the current frame when run with "--screenshots=DIR" (needs a real display, not --headless).</summary>
