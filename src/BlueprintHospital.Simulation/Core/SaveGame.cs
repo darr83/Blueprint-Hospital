@@ -9,7 +9,7 @@ namespace BlueprintHospital.Simulation.Core;
 /// </summary>
 public sealed class SaveGame
 {
-    public const int CurrentFormatVersion = 2;
+    public const int CurrentFormatVersion = 3;
 
     public int FormatVersion { get; init; } = CurrentFormatVersion;
 
@@ -24,6 +24,9 @@ public sealed class SaveGame
 
     /// <summary>Rooms, corridors, building extensions and money (format 2 onwards; absent in older saves).</summary>
     public Simulation.LayoutState? Layout { get; init; }
+
+    /// <summary>Patients, staff, tasks, ambulances, statistics and accounts (format 3 onwards).</summary>
+    public Simulation.PeopleState? People { get; init; }
 }
 
 /// <summary>Where the player was looking, so a loaded game opens on the same view.</summary>

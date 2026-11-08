@@ -243,6 +243,9 @@ public sealed class Patient : Agent
 
     public void Log(DateTime time, string text, bool important = false) => _timeline.Add(new TimelineEntry(time, text, important));
 
+    /// <summary>Puts back a saved timeline (loading a game).</summary>
+    internal void RestoreTimeline(IEnumerable<TimelineEntry> entries) => _timeline.AddRange(entries);
+
     public void RecordObservations(DateTime time, Observations obs)
     {
         var score = News2.Calculate(obs);

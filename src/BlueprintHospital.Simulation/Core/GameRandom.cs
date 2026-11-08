@@ -3,9 +3,16 @@ namespace BlueprintHospital.Simulation.Core;
 /// <summary>Seeded random source so a game (and every test) can be replayed exactly.</summary>
 public sealed class GameRandom(int seed)
 {
-    private readonly Random _random = new(seed);
+    private Random _random = new(seed);
 
-    public int Seed { get; } = seed;
+    public int Seed { get; private set; } = seed;
+
+    /// <summary>Starts a fresh sequence, e.g. after loading a game (the old sequence can't be saved).</summary>
+    public void Reseed(int seed)
+    {
+        Seed = seed;
+        _random = new Random(seed);
+    }
 
     public double NextDouble() => _random.NextDouble();
 

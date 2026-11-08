@@ -30,6 +30,11 @@ public sealed class GameSession
             Simulation.RestoreLayout(layout);
         }
 
+        if (save?.People is { } people)
+        {
+            Simulation.RestorePeople(people);
+        }
+
         Clock.Ticked += _ => Simulation.Tick();
     }
 
@@ -61,5 +66,6 @@ public sealed class GameSession
         Clock = Clock.CaptureState(),
         Camera = camera,
         Layout = Simulation.CaptureLayout(),
+        People = Simulation.CapturePeople(),
     };
 }

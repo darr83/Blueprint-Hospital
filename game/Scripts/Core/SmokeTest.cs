@@ -24,6 +24,8 @@ public partial class SmokeTest : Node
     private string? _screenshotDirectory;
     private int _savedRooms;
     private long _savedBalance;
+    private int _savedPatients;
+    private int _savedOnWard;
 
     private enum Stage
     {
@@ -177,6 +179,8 @@ public partial class SmokeTest : Node
                 _savedCamera = hospital.CaptureCamera();
                 _savedRooms = hospital.Session.Simulation.Spaces.Count();
                 _savedBalance = hospital.Session.Simulation.Balance;
+                _savedPatients = hospital.Session.Simulation.Patients.Count();
+                _savedOnWard = hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
                 manager.SaveGame(SlotName, _savedCamera);
                 GD.Print("[smoke] Game saved.");
                 manager.LoadGame(SlotName);
@@ -188,6 +192,9 @@ public partial class SmokeTest : Node
                 Check(hospital.CaptureCamera() == _savedCamera, "Camera not restored.");
                 Check(hospital.Session.Simulation.Spaces.Count() == _savedRooms, "Built rooms not restored.");
                 Check(hospital.Session.Simulation.Balance == _savedBalance, "Balance not restored.");
+                Check(hospital.Session.Simulation.Patients.Count() == _savedPatients, $"Patients not restored ({hospital.Session.Simulation.Patients.Count()} of {_savedPatients}).");
+                Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
+                GD.Print($"[smoke] {_savedPatients} patients restored, {_savedOnWard} on the ward.");
                 SaveManager.Delete(SlotName);
                 GD.Print("[smoke] Save reloaded and verified.");
                 GD.Print("[smoke] PASSED");

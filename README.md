@@ -14,7 +14,7 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
 | 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
-| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards, 33 conditions and finances done |
+| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards, 33 conditions, finances and full saves done |
 
 ## Repository layout
 
@@ -108,8 +108,9 @@ busiest from late morning to evening.
 The **A&E board** (left) shows patients by category, waits, ambulances, cubicle use and the
 4-hour figure. Click any notification to open that patient's record.
 
-> Saves store the hospital, date, camera, rooms, building and money. Patients and staff in the department are
-> not saved yet; a loaded game starts with an empty department at the saved time.
+> Saves store everything: the hospital, date, camera, rooms, building, money and accounts, every
+> patient (with their full record, where they are and what they are waiting for), staff, tasks,
+> ambulances and statistics. A loaded game carries on exactly where it stopped.
 
 ## Building the hospital
 

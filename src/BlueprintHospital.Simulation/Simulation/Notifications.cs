@@ -30,6 +30,20 @@ public sealed class NotificationLog(EventBus events, int capacity = 200)
 
     public int Count => _items.Count;
 
+    public int NextId => _nextId;
+
+    /// <summary>Puts back saved notifications (newest first) without announcing them again.</summary>
+    public void Restore(IEnumerable<Notification> items, int nextId)
+    {
+        _items.Clear();
+        foreach (var n in items)
+        {
+            _items.AddLast(n);
+        }
+
+        _nextId = Math.Max(nextId, _items.Count == 0 ? 1 : _items.Max(n => n.Id) + 1);
+    }
+
     public Notification Add(DateTime time, NotificationLevel level, string text, int? patientId = null, string? spaceId = null, TriageCategory? triage = null)
     {
         var n = new Notification(_nextId++, time, level, text, patientId, spaceId, triage);

@@ -11,42 +11,46 @@ public sealed class EmergencyStats
     private readonly Queue<double> _recentTimeToDoctor = new();
     private readonly Queue<double> _recentHandoverMinutes = new();
 
-    public int ArrivalsTotal { get; private set; }
+    internal Queue<double> RecentTimeToDoctor => _recentTimeToDoctor;
 
-    public int AmbulanceArrivalsTotal { get; private set; }
+    internal Queue<double> RecentHandoverMinutes => _recentHandoverMinutes;
 
-    public int DepartedTotal { get; private set; }
+    public int ArrivalsTotal { get; internal set; }
 
-    public int DepartedWithinFourHours { get; private set; }
+    public int AmbulanceArrivalsTotal { get; internal set; }
 
-    public int Discharged { get; private set; }
+    public int DepartedTotal { get; internal set; }
 
-    public int Transferred { get; private set; }
+    public int DepartedWithinFourHours { get; internal set; }
+
+    public int Discharged { get; internal set; }
+
+    public int Transferred { get; internal set; }
 
     /// <summary>Patients who left A&amp;E for a ward bed.</summary>
-    public int Admitted { get; private set; }
+    public int Admitted { get; internal set; }
 
     /// <summary>Patients discharged home from a ward.</summary>
-    public int WardDischarges { get; private set; }
+    public int WardDischarges { get; internal set; }
 
-    public int WardDeaths { get; private set; }
+    public int WardDeaths { get; internal set; }
 
     public int WardDiagnosesCorrected { get; set; }
 
     /// <summary>Patients in A&amp;E waiting for a ward bed.</summary>
-    public int AwaitingBed { get; private set; }
+    public int AwaitingBed { get; internal set; }
 
-    public int OnWards { get; private set; }
+    public int OnWards { get; internal set; }
 
-    public (int Used, int Total) WardBeds { get; private set; }
+    public (int Used, int Total) WardBeds { get; internal set; }
 
-    public int Deaths { get; private set; }
+    public int Deaths { get; internal set; }
 
-    public int LeftWithoutBeingSeen { get; private set; }
+    public int LeftWithoutBeingSeen { get; internal set; }
 
-    public int DiagnosesMade { get; private set; }
+    public int DiagnosesMade { get; internal set; }
 
-    public int DiagnosesCorrect { get; private set; }
+    public int DiagnosesCorrect { get; internal set; }
 
     public int MissedDiagnoses { get; set; }
 
@@ -65,17 +69,17 @@ public sealed class EmergencyStats
 
     public Dictionary<TriageCategory, double> LongestWaitMinutes { get; } = new();
 
-    public int PatientsInDepartment { get; private set; }
+    public int PatientsInDepartment { get; internal set; }
 
-    public int AwaitingTriage { get; private set; }
+    public int AwaitingTriage { get; internal set; }
 
-    public int AmbulancesWaiting { get; private set; }
+    public int AmbulancesWaiting { get; internal set; }
 
-    public (int Used, int Total) Resus { get; private set; }
+    public (int Used, int Total) Resus { get; internal set; }
 
-    public (int Used, int Total) Majors { get; private set; }
+    public (int Used, int Total) Majors { get; internal set; }
 
-    public (int Used, int Total) Minors { get; private set; }
+    public (int Used, int Total) Minors { get; internal set; }
 
     public double AverageTimeToDoctorMinutes => _recentTimeToDoctor.Count == 0 ? 0 : _recentTimeToDoctor.Average();
 
