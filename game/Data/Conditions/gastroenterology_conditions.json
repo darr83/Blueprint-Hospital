@@ -1,0 +1,120 @@
+[
+  {
+    "id": "gastro_oesophageal_reflux",
+    "name": "Gastro-oesophageal reflux",
+    "department": "gastroenterology",
+    "description": "Stomach acid irritating the oesophagus, causing burning chest pain.",
+    "prevalence": 4,
+    "age_range": [22, 85],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.08,
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      { "symptom": "chest_pain", "probability": 1.0 },
+      { "symptom": "heartburn", "probability": 0.85 },
+      { "symptom": "nausea", "probability": 0.3 }
+    ],
+    "observations": {
+      "heart_rate": [82, 9],
+      "systolic_bp": [130, 13],
+      "diastolic_bp": [80, 8],
+      "respiratory_rate": [16, 2],
+      "oxygen_saturation": [98, 1],
+      "temperature": [36.8, 0.3],
+      "pain_score": [3, 6]
+    },
+    "initial_severity": [0.05, 0.15],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+    "can_be_fatal": false,
+    "key_investigations": ["ecg", "troponin"],
+    "treatment": [
+      { "type": "medication", "medication": "alginate_antacid", "essential": false },
+      { "type": "medication", "medication": "omeprazole", "essential": true }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on omeprazole with GP follow-up."
+  },
+  {
+    "id": "acute_appendicitis",
+    "name": "Acute appendicitis",
+    "department": "gastroenterology",
+    "description": "Inflammation of the appendix. Needs surgical review and usually an appendicectomy.",
+    "prevalence": 3,
+    "age_range": [8, 60],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.2,
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      { "symptom": "abdominal_pain", "probability": 1.0 },
+      { "symptom": "right_iliac_fossa_pain", "probability": 0.75 },
+      { "symptom": "loss_of_appetite", "probability": 0.8 },
+      { "symptom": "nausea", "probability": 0.7 },
+      { "symptom": "vomiting", "probability": 0.45 },
+      { "symptom": "fever", "probability": 0.5 }
+    ],
+    "observations": {
+      "heart_rate": [100, 11],
+      "systolic_bp": [124, 12],
+      "diastolic_bp": [76, 8],
+      "respiratory_rate": [19, 2],
+      "oxygen_saturation": [98, 1],
+      "temperature": [37.9, 0.4],
+      "pain_score": [5, 8]
+    },
+    "initial_severity": [0.3, 0.45],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": { "heart_rate": 30, "systolic_bp": -40, "respiratory_rate": 8, "oxygen_saturation": -3, "temperature": 1.2 },
+    "can_be_fatal": false,
+    "key_investigations": ["full_blood_count", "c_reactive_protein", "urea_electrolytes", "pregnancy_test"],
+    "treatment": [
+      { "type": "medication", "medication": "morphine", "essential": false },
+      { "type": "medication", "medication": "ondansetron", "essential": false },
+      { "type": "medication", "medication": "compound_sodium_lactate", "essential": true }
+    ],
+    "recovery_per_hour": 0.15,
+    "disposition": "transfer",
+    "disposition_note": "Transfer to general surgery for appendicectomy (no operating theatre on site yet)."
+  },
+  {
+    "id": "gastroenteritis",
+    "name": "Gastroenteritis",
+    "department": "gastroenterology",
+    "description": "Infection of the gut causing vomiting and diarrhoea. Usually settles; the main risk is dehydration.",
+    "prevalence": 6,
+    "age_range": [5, 88],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "vomiting",
+    "symptoms": [
+      { "symptom": "vomiting", "probability": 1.0 },
+      { "symptom": "diarrhoea", "probability": 0.85 },
+      { "symptom": "nausea", "probability": 0.9 },
+      { "symptom": "abdominal_pain", "probability": 0.6 },
+      { "symptom": "fever", "probability": 0.3 },
+      { "symptom": "fatigue", "probability": 0.4 }
+    ],
+    "observations": {
+      "heart_rate": [96, 11],
+      "systolic_bp": [116, 12],
+      "diastolic_bp": [72, 8],
+      "respiratory_rate": [17, 2],
+      "oxygen_saturation": [98, 1],
+      "temperature": [37.5, 0.4],
+      "pain_score": [2, 5]
+    },
+    "initial_severity": [0.15, 0.3],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": { "heart_rate": 30, "systolic_bp": -30, "respiratory_rate": 6, "oxygen_saturation": 0, "temperature": 0.5 },
+    "can_be_fatal": false,
+    "key_investigations": ["urea_electrolytes"],
+    "treatment": [
+      { "type": "medication", "medication": "ondansetron", "essential": true },
+      { "type": "medication", "medication": "compound_sodium_lactate", "essential": false }
+    ],
+    "recovery_per_hour": 0.35,
+    "disposition": "discharge",
+    "disposition_note": "Discharged with oral rehydration advice once tolerating fluids."
+  }
+]

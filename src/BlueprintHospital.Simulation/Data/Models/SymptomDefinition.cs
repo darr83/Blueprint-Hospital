@@ -28,10 +28,14 @@ public sealed class SymptomDefinition : IDataRecord
     /// <summary>True if this symptom on its own should make triage nurses consider at least Amber.</summary>
     public bool IsRedFlag { get; init; }
 
+    /// <summary>Tests the triage nurse starts straight away under protocol, e.g. an ECG for chest pain.</summary>
+    public IReadOnlyList<string> TriageInvestigations { get; init; } = Array.Empty<string>();
+
     public void Validate(ValidationContext context)
     {
         context.RequireId("id", Id);
         context.RequireText("name", Name);
         context.RequireText("patient_description", PatientDescription);
+        context.RequireIds("triage_investigations", TriageInvestigations);
     }
 }

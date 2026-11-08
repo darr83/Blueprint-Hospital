@@ -1,0 +1,8 @@
+[
+  {
+    "id": "uk",
+    "female_first_names": ["Olivia", "Amelia", "Isla", "Ava", "Mia", "Grace", "Sophie", "Emily", "Jessica", "Charlotte", "Hannah", "Lucy", "Chloe", "Megan", "Sarah", "Rebecca", "Laura", "Emma", "Rachel", "Claire", "Susan", "Margaret", "Patricia", "Linda", "Elizabeth", "Joan", "Dorothy", "Priya", "Aisha", "Fatima", "Zara", "Siobhan", "Niamh", "Agnieszka", "Maria", "Chinwe"],
+    "male_first_names": ["Oliver", "George", "Harry", "Jack", "Noah", "Charlie", "Thomas", "James", "William", "Daniel", "Joshua", "Samuel", "Ryan", "Liam", "Callum", "Matthew", "David", "Michael", "Paul", "Mark", "Andrew", "Peter", "John", "Robert", "Keith", "Brian", "Mohammed", "Arjun", "Ravi", "Tariq", "Kwame", "Sean", "Rhys", "Piotr", "Luca", "Emeka"],
+    "surnames": ["Smith", "Jones", "Taylor", "Brown", "Williams", "Wilson", "Johnson", "Davies", "Robinson", "Wright", "Thompson", "Evans", "Walker", "White", "Roberts", "Green", "Hall", "Wood", "Jackson", "Clarke", "Patel", "Khan", "Ahmed", "Singh", "Begum", "Hughes", "Edwards", "Murphy", "Kelly", "Campbell", "Stewart", "Morgan", "Okafor", "Mensah", "Kowalski", "Nowak", "Rossi", "Chen", "Lewis", "Harris"]
+  }
+]

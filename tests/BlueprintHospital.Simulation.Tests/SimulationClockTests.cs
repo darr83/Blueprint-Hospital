@@ -14,18 +14,18 @@ public class SimulationClockTests
     }
 
     [Fact]
-    public void One_real_second_at_1x_is_one_game_minute()
+    public void One_real_second_at_1x_is_fifteen_game_seconds()
     {
         var clock = new SimulationClock();
         var ticks = clock.Advance(1.0);
-        Assert.Equal(6, ticks);
-        Assert.Equal(SimulationClock.DefaultStart.AddMinutes(1), clock.Now);
+        Assert.Equal(15, ticks);
+        Assert.Equal(SimulationClock.DefaultStart.AddSeconds(15), clock.Now);
     }
 
     [Theory]
-    [InlineData(SimulationSpeed.Normal, 6)]
-    [InlineData(SimulationSpeed.Fast, 12)]
-    [InlineData(SimulationSpeed.VeryFast, 24)]
+    [InlineData(SimulationSpeed.Normal, 15)]
+    [InlineData(SimulationSpeed.Fast, 30)]
+    [InlineData(SimulationSpeed.VeryFast, 60)]
     public void Speed_multiplies_ticks(SimulationSpeed speed, int expectedTicks)
     {
         var clock = new SimulationClock();
@@ -52,7 +52,7 @@ public class SimulationClockTests
             total += clock.Advance(1.0 / 60.0);
         }
 
-        Assert.Equal(6, total);
+        Assert.Equal(15, total);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class SimulationClockTests
     public void Publishes_tick_day_and_speed_events()
     {
         var bus = new EventBus();
-        var clock = new SimulationClock(bus, new DateTime(2027, 1, 4, 23, 59, 55));
+        var clock = new SimulationClock(bus, new DateTime(2027, 1, 4, 23, 59, 59));
         var ticks = 0;
         var days = new List<DateTime>();
         var speeds = new List<SimulationSpeedChanged>();

@@ -4,7 +4,10 @@
     "name": "Chest pain",
     "patient_description": "My chest hurts.",
     "body_system": "cardiovascular",
-    "is_red_flag": true
+    "is_red_flag": true,
+    "triage_investigations": [
+      "ecg"
+    ]
   },
   {
     "id": "abdominal_pain",

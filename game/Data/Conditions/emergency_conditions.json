@@ -1,0 +1,73 @@
+[
+  {
+    "id": "ankle_sprain",
+    "name": "Ankle sprain",
+    "department": "emergency",
+    "description": "Stretched or torn ankle ligaments. The Ottawa ankle rules decide whether an X-ray is needed.",
+    "prevalence": 7,
+    "age_range": [10, 65],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.02,
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      { "symptom": "limb_pain", "probability": 1.0 },
+      { "symptom": "swelling", "probability": 0.9 }
+    ],
+    "observations": {
+      "heart_rate": [80, 9],
+      "systolic_bp": [126, 11],
+      "diastolic_bp": [78, 8],
+      "respiratory_rate": [15, 2],
+      "oxygen_saturation": [98.5, 0.8],
+      "temperature": [36.7, 0.3],
+      "pain_score": [3, 7]
+    },
+    "initial_severity": [0.05, 0.1],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      { "type": "medication", "medication": "ibuprofen", "essential": false },
+      { "type": "procedure", "name": "Ankle support and RICE advice", "performed_by": "nurse", "minutes": 10, "essential": true }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged with support bandage and advice. Ottawa ankle rules negative, so no X-ray needed."
+  },
+  {
+    "id": "simple_laceration",
+    "name": "Simple laceration",
+    "department": "emergency",
+    "description": "A clean cut to the skin that needs cleaning and closing.",
+    "prevalence": 6,
+    "age_range": [4, 85],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.03,
+    "presenting_complaint": "bleeding_wound",
+    "symptoms": [
+      { "symptom": "bleeding_wound", "probability": 1.0 }
+    ],
+    "observations": {
+      "heart_rate": [84, 9],
+      "systolic_bp": [126, 11],
+      "diastolic_bp": [78, 8],
+      "respiratory_rate": [15, 2],
+      "oxygen_saturation": [98.5, 0.8],
+      "temperature": [36.7, 0.3],
+      "pain_score": [2, 5]
+    },
+    "initial_severity": [0.05, 0.12],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      { "type": "procedure", "name": "Wound cleaning and closure", "performed_by": "doctor", "minutes": 20, "essential": true },
+      { "type": "medication", "medication": "paracetamol", "essential": false }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged after wound closure with wound care advice."
+  }
+]

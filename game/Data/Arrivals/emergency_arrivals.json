@@ -1,0 +1,42 @@
+[
+  {
+    "id": "emergency_default",
+    "department": "emergency",
+    "description": "Attendance pattern for a small starter A&E: quiet overnight, busy from late morning to evening. About 35 patients a day.",
+    "hourly_arrivals": [
+      0.66,
+      0.55,
+      0.44,
+      0.39,
+      0.33,
+      0.39,
+      0.55,
+      0.99,
+      1.65,
+      2.09,
+      2.31,
+      2.31,
+      2.2,
+      2.09,
+      2.04,
+      1.98,
+      1.98,
+      2.04,
+      1.98,
+      1.81,
+      1.59,
+      1.32,
+      1.04,
+      0.83
+    ],
+    "weekday_multipliers": {
+      "monday": 1.15,
+      "tuesday": 1.0,
+      "wednesday": 0.98,
+      "thursday": 0.97,
+      "friday": 1.0,
+      "saturday": 0.95,
+      "sunday": 0.95
+    }
+  }
+]

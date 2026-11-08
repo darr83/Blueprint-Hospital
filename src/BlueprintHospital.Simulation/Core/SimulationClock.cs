@@ -16,10 +16,13 @@ public enum SimulationSpeed
 public sealed class SimulationClock
 {
     /// <summary>Game time that passes in one simulation tick.</summary>
-    public static readonly TimeSpan TickLength = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan TickLength = TimeSpan.FromSeconds(1);
 
-    /// <summary>Game time that passes per real second at 1x speed.</summary>
-    public static readonly TimeSpan GameTimePerRealSecond = TimeSpan.FromMinutes(1);
+    /// <summary>
+    /// Game time that passes per real second at 1x speed. At 1x an hour takes four real minutes;
+    /// at 4x a whole day takes about 24 minutes.
+    /// </summary>
+    public static readonly TimeSpan GameTimePerRealSecond = TimeSpan.FromSeconds(15);
 
     /// <summary>Upper bound on ticks processed in one frame so a long hitch cannot freeze the game.</summary>
     public const int MaxTicksPerAdvance = 240;
@@ -43,6 +46,9 @@ public sealed class SimulationClock
     public SimulationSpeed Speed { get; private set; } = SimulationSpeed.Normal;
 
     public bool IsPaused => Speed == SimulationSpeed.Paused;
+
+    /// <summary>How far (0..1) real time has moved towards the next tick. Used to smooth animation between ticks.</summary>
+    public double TickProgress => Math.Clamp(_accumulatedGameSeconds / TickLength.TotalSeconds, 0, 1);
 
     /// <summary>Raised once per simulation tick, after the clock has moved forward.</summary>
     public event Action<SimulationClock>? Ticked;
