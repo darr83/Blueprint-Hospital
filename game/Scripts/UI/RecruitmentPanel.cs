@@ -8,9 +8,9 @@ using Godot;
 namespace BlueprintHospital.UI;
 
 /// <summary>
-/// Hiring. The recommended team for each place (a guide the player can ignore), then today's
+/// Hiring. The recommended team for each place (a guide the player can ignore), then the latest
 /// candidates: each with their grade, skill, experience and pay, where they would work, and a Hire button.
-/// A new list of candidates arrives every morning at 08:00.
+/// A new list of candidates, with at least one of every kind of staff, arrives every few game hours.
 /// </summary>
 public partial class RecruitmentPanel : PanelContainer
 {
@@ -41,7 +41,7 @@ public partial class RecruitmentPanel : PanelContainer
         title.AddThemeFontSizeOverride("font_size", 22);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         titles.AddChild(title);
-        titles.AddChild(UiStyle.Caption("New candidates arrive every morning at 08:00", 13));
+        titles.AddChild(UiStyle.Caption($"New candidates, every kind of staff, arrive every {HospitalSimulation.CandidatesEveryHours} hours", 13));
         header.AddChild(titles);
         var close = UiStyle.SecondaryButton("✕", () => Visible = false);
         close.TooltipText = "Close (Esc)";
@@ -63,7 +63,7 @@ public partial class RecruitmentPanel : PanelContainer
         body.AddChild(_needs);
 
         body.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) });
-        body.AddChild(HudWidgets.Section("Today's candidates"));
+        body.AddChild(HudWidgets.Section("Latest candidates"));
         _candidatesNote.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         body.AddChild(_candidatesNote);
         _candidates.AddThemeConstantOverride("separation", 8);
@@ -116,10 +116,11 @@ public partial class RecruitmentPanel : PanelContainer
         {
             var row = new PanelContainer();
             row.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color("#F7F9FB"), 10, null, 10));
-            var line = new HBoxContainer();
-            line.AddThemeConstantOverride("separation", 10);
+            // Place name above its chips, so long chips have the panel's full width and never push it off screen.
+            var line = new VBoxContainer();
+            line.AddThemeConstantOverride("separation", 6);
             row.AddChild(line);
-            var name = new Label { Text = place.Key, CustomMinimumSize = new Vector2(120, 0), TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
+            var name = new Label { Text = place.Key, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
             name.AddThemeFontSizeOverride("font_size", 14);
             line.AddChild(name);
             var counts = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -158,6 +159,9 @@ public partial class RecruitmentPanel : PanelContainer
         }
     }
 
+    private string NextCandidatesTime() =>
+        ((_sim.CandidatesDate ?? _sim.Now).AddHours(HospitalSimulation.CandidatesEveryHours)).ToString("HH:mm");
+
     private void RefreshCandidates()
     {
         var candidates = _sim.Candidates.ToList();
@@ -175,8 +179,8 @@ public partial class RecruitmentPanel : PanelContainer
         }
 
         _candidatesNote.Text = candidates.Count == 0
-            ? "Everyone who applied today has been hired. More arrive tomorrow at 08:00."
-            : "Each hire works one 12-hour shift: days 08:00 to 20:00 or nights 20:00 to 08:00.";
+            ? $"Everyone who applied has been hired. More arrive at {NextCandidatesTime()}."
+            : $"More arrive at {NextCandidatesTime()}. Each hire works one 12-hour shift: days 08:00 to 20:00 or nights 20:00 to 08:00.";
 
         var needs = _sim.RecommendedStaffing();
         foreach (var candidate in candidates.OrderBy(c => c.Role).ThenByDescending(c => c.Skill))
@@ -210,8 +214,9 @@ public partial class RecruitmentPanel : PanelContainer
         header.AddChild(pay);
         column.AddChild(header);
 
-        var facts = new HBoxContainer();
-        facts.AddThemeConstantOverride("separation", 6);
+        var facts = new HFlowContainer();
+        facts.AddThemeConstantOverride("h_separation", 6);
+        facts.AddThemeConstantOverride("v_separation", 6);
         foreach (var text in new[]
                  {
                      $"Skill {candidate.Skill:P0}",
@@ -229,7 +234,8 @@ public partial class RecruitmentPanel : PanelContainer
         var action = new HBoxContainer();
         action.AddThemeConstantOverride("separation", 8);
         var postings = _sim.PostingsFor(candidate.Role);
-        var where = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 40), ThemeTypeVariation = UiStyle.Secondary };
+        // Don't let a long room name widen the card past the panel: the button trims instead.
+        var where = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 40), ThemeTypeVariation = UiStyle.Secondary, FitToLongestItem = false, ClipText = true };
         foreach (var posting in postings)
         {
             where.AddItem(posting.Name);

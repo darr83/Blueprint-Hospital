@@ -32,18 +32,33 @@ public class RecruitmentTests
     }
 
     [Fact]
-    public void New_candidates_arrive_every_morning()
+    public void New_candidates_arrive_every_few_hours()
     {
-        var h = new SimulationHarness();
-        Assert.Equal(HospitalSimulation.CandidatesPerDay, h.Sim.Candidates.Count);
+        var h = new SimulationHarness(start: new DateTime(2027, 1, 4, 8, 0, 0));
+        Assert.NotEmpty(h.Sim.Candidates);
         var first = h.Sim.Candidates.Select(c => c.Id).ToHashSet();
 
-        h.RunFor(TimeSpan.FromHours(12));
+        h.RunFor(TimeSpan.FromHours(HospitalSimulation.CandidatesEveryHours - 0.5));
         Assert.Equal(first, h.Sim.Candidates.Select(c => c.Id).ToHashSet());
 
-        h.RunFor(TimeSpan.FromHours(10.5));
-        Assert.Equal(HospitalSimulation.CandidatesPerDay, h.Sim.Candidates.Count);
+        h.RunFor(TimeSpan.FromHours(1));
+        Assert.NotEmpty(h.Sim.Candidates);
         Assert.DoesNotContain(h.Sim.Candidates, c => first.Contains(c.Id));
+    }
+
+    [Theory]
+    [InlineData(StartingHospital.SmallEmergency)]
+    [InlineData(StartingHospital.EmptyBuilding)]
+    public void Every_kind_of_staff_applies_each_time(StartingHospital start)
+    {
+        var h = new SimulationHarness(startWith: start);
+        Assert.Equal(Enum.GetValues<StaffRole>().Length, HospitalSimulation.RecruitableRoles.Count);
+        for (var batch = 0; batch < 3; batch++)
+        {
+            var roles = h.Sim.Candidates.Select(c => c.Role).ToHashSet();
+            Assert.All(HospitalSimulation.RecruitableRoles, r => Assert.Contains(r, roles));
+            h.RunFor(TimeSpan.FromHours(HospitalSimulation.CandidatesEveryHours));
+        }
     }
 
     [Fact]
