@@ -425,8 +425,9 @@ balance goes below zero. Money and the finances are still counted and shown as n
   patients whose monitor has gone red, so doctors are free to review and move on. The recommended
   team is at least one in A&E (more as cubicles grow) and one per ward; the small A&E start has one
   on each shift.
-- **Recruitment** (H) lists eight candidates, refreshed every morning at 08:00, with their grade,
-  skill, experience, pace and salary. Choose where each will work and press Hire. Rooms never come
+- **Recruitment** (H) lists a fresh set of candidates every 4 game hours (00:00, 04:00, 08:00 ...):
+  at least one of every kind of staff, plus a second choice for the kinds you are short of, with their
+  grade, skill, experience, pace and salary. Choose where each will work and press Hire. Rooms never come
   with staff: everyone is hired by you.
 - **Recommended team:** the same panel shows, for A&E, porters and each room, how many of each kind
   of staff it recommends and how many you have. It's a guide only.

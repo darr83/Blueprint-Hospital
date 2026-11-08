@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Patients;
@@ -22,15 +23,23 @@ public sealed record StaffingNeed(string Place, string? RoomId, StaffRole Role, 
 /// </summary>
 public sealed partial class HospitalSimulation
 {
-    /// <summary>How many candidates apply each day.</summary>
-    public const int CandidatesPerDay = 8;
+    /// <summary>A fresh list of candidates arrives every this many game hours (00:00, 04:00, 08:00 ...).</summary>
+    public const int CandidatesEveryHours = 4;
 
-    /// <summary>New candidates arrive at this hour each day.</summary>
-    public const int CandidatesArriveHour = 8;
+    /// <summary>Extra candidates on top of one of each kind of staff, for the kinds the hospital is short of.</summary>
+    public const int ExtraCandidatesForShortages = 4;
+
+    /// <summary>Every kind of staff that can be recruited. Each list of candidates has at least one of each.</summary>
+    public static IReadOnlyList<StaffRole> RecruitableRoles { get; } =
+        Enum.GetValues<StaffRole>().Where(r => StaffGrades.For(r).Any()).ToArray();
 
     private readonly List<JobCandidate> _candidates = new();
     private int _nextCandidateId = 1;
     private DateTime? _candidatesDate;
+    private GameRandom? _recruitRandom;
+
+    /// <summary>Candidates have their own dice, so a new list every few hours doesn't change what happens to patients.</summary>
+    private GameRandom RecruitRandom => _recruitRandom ??= new GameRandom(_options.Seed + 104_729);
 
     public IReadOnlyList<JobCandidate> Candidates => _candidates;
 
@@ -177,44 +186,47 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- candidates
 
-    /// <summary>A fresh list of candidates arrives each morning; anyone not hired has gone elsewhere.</summary>
+    /// <summary>
+    /// A fresh list of candidates arrives every <see cref="CandidatesEveryHours"/> game hours; anyone not
+    /// hired by then has gone elsewhere.
+    /// </summary>
     private void RefreshCandidatesIfDue()
     {
-        var today = Now.Hour >= CandidatesArriveHour ? Now.Date : Now.Date.AddDays(-1);
-        if (_candidatesDate is { } date && date >= today)
+        var slot = Now.Date.AddHours(Now.Hour / CandidatesEveryHours * CandidatesEveryHours);
+        if (_candidatesDate is { } date && date >= slot)
         {
             return;
         }
 
-        RefreshCandidates(today);
-        if (Now.Hour == CandidatesArriveHour && Now.Minute == 0 && Now.Second == 0)
+        RefreshCandidates(slot);
+        if (Now == slot)
         {
             Notifications.Add(Now, NotificationLevel.Info, $"{_candidates.Count} new job candidates are waiting in Recruitment.");
         }
     }
 
-    private void RefreshCandidates(DateTime date)
+    private void RefreshCandidates(DateTime arrived)
     {
         _candidates.Clear();
-        _candidatesDate = date;
+        _candidatesDate = arrived;
 
-        // Someone for each kind of staff the hospital is short of, then a mix of everyone else.
-        var short_ = RecommendedStaffing().Where(n => n.Short > 0).Select(n => n.Role).Distinct().ToList();
-        foreach (var role in short_.Take(CandidatesPerDay / 2))
+        // One of every kind of staff, whether or not there is a room for them yet.
+        foreach (var role in RecruitableRoles)
         {
             _candidates.Add(MakeCandidate(PickGrade(StaffGrades.For(role).ToList())));
         }
 
-        var open = StaffGrades.All.Where(g => !IsSpecialist(g.Role) || RoomKindsFor(g.Role).Any(k => SpacesOfKind(k).Any())).ToList();
-        while (_candidates.Count < CandidatesPerDay)
+        // Then a second choice for the kinds of staff the hospital is short of.
+        var short_ = RecommendedStaffing().Where(n => n.Short > 0).Select(n => n.Role).Distinct();
+        foreach (var role in short_.Take(ExtraCandidatesForShortages))
         {
-            _candidates.Add(MakeCandidate(PickGrade(open)));
+            _candidates.Add(MakeCandidate(PickGrade(StaffGrades.For(role).ToList())));
         }
     }
 
     private StaffGrades.Grade PickGrade(IReadOnlyList<StaffGrades.Grade> grades)
     {
-        var roll = Random.Range(0.0, grades.Sum(g => g.Weight));
+        var roll = RecruitRandom.Range(0.0, grades.Sum(g => g.Weight));
         foreach (var grade in grades)
         {
             roll -= grade.Weight;
@@ -230,9 +242,9 @@ public sealed partial class HospitalSimulation
     private JobCandidate MakeCandidate(StaffGrades.Grade grade)
     {
         var (first, surname) = PickName();
-        var skill = Math.Round(Random.Range(grade.MinSkill, grade.MaxSkill), 2);
-        var years = Random.Range(grade.MinYears, grade.MaxYears + 1);
-        var speed = Math.Round(Random.Range(0.85, 1.15), 2);
+        var skill = Math.Round(RecruitRandom.Range(grade.MinSkill, grade.MaxSkill), 2);
+        var years = RecruitRandom.Range(grade.MinYears, grade.MaxYears + 1);
+        var speed = Math.Round(RecruitRandom.Range(0.85, 1.15), 2);
 
         // Better people ask for a little more.
         var range = Math.Max(0.01, grade.MaxSkill - grade.MinSkill);
@@ -246,7 +258,7 @@ public sealed partial class HospitalSimulation
             Skill = skill,
             Speed = speed,
             YearsExperience = years,
-            Age = 22 + years + Random.Range(0, 8),
+            Age = 22 + years + RecruitRandom.Range(0, 8),
             Salary = salary,
         };
     }
@@ -254,8 +266,8 @@ public sealed partial class HospitalSimulation
     private (string First, string Surname) PickName()
     {
         var names = Database.Names.Values.First();
-        var female = Random.Chance(0.6);
-        return (Random.Pick(female ? names.FemaleFirstNames : names.MaleFirstNames), Random.Pick(names.Surnames));
+        var female = RecruitRandom.Chance(0.6);
+        return (RecruitRandom.Pick(female ? names.FemaleFirstNames : names.MaleFirstNames), RecruitRandom.Pick(names.Surnames));
     }
 
     // ---------------------------------------------------------------- hiring and letting go
