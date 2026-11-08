@@ -252,4 +252,28 @@ public class DepartmentTests
         Assert.False(to.Sim.IsUnlocked("cardiology"));
         Assert.Equal(new[] { "gynaecology" }, to.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.Theatre).AllowedDepartments.ToArray());
     }
+
+    [Fact]
+    public void Unlimited_money_lets_spending_go_into_the_red()
+    {
+        var normal = new SimulationHarness();
+        normal.Sim.AdjustBalance(-normal.Sim.Balance + 1000);
+        Assert.Contains(normal.Sim.CheckUnlock("cardiology").Problems, p => p.StartsWith("Not enough money"));
+
+        var h = new SimulationHarness();
+        h.Sim.UnlimitedMoney = true;
+        h.Sim.AdjustBalance(-h.Sim.Balance + 1000);
+        Assert.True(h.Sim.UnlockDepartment("cardiology").CanBuild);
+        Assert.True(h.Sim.Balance < 0);
+        Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)).CanBuild);
+        Assert.DoesNotContain(h.Sim.Notifications.Recent, n => n.Text.Contains("overdrawn"));
+
+        var json = SaveSerializer.Serialize(new SaveGame { Clock = h.Clock.CaptureState(), Layout = h.Sim.CaptureLayout(), People = h.Sim.CapturePeople() });
+        var save = SaveSerializer.Deserialize(json);
+        var to = new SimulationHarness(seed: 99);
+        to.Sim.RestoreLayout(save.Layout!);
+        to.Sim.RestorePeople(save.People!);
+        Assert.True(to.Sim.UnlimitedMoney);
+        Assert.Equal(h.Sim.Balance, to.Sim.Balance);
+    }
 }

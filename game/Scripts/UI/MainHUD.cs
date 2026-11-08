@@ -714,7 +714,10 @@ public partial class MainHUD : CanvasLayer
     private void RefreshClock()
     {
         var balance = _session.Simulation.Balance;
-        _balanceButton.Text = $"£{balance:N0}";
+        _balanceButton.Text = balance < 0 ? $"-£{-balance:N0}" : $"£{balance:N0}";
+        _balanceButton.TooltipText = _session.Simulation.UnlimitedMoney
+            ? "Money in the bank. Unlimited money is on, so you can keep spending in the red. Click for finances (F)"
+            : "Money in the bank. Click for finances (F)";
         var colour = balance < 0 ? UiStyle.Red : UiStyle.Green;
         foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
         {

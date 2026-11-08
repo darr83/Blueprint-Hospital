@@ -222,7 +222,7 @@ public sealed partial class HospitalSimulation
             problems.AddRange(CheckReachable(trial));
         }
 
-        if (cost > Balance)
+        if (!CanAfford(cost))
         {
             problems.Add($"Not enough money: costs £{cost:N0}, you have £{Balance:N0}.");
         }
@@ -491,7 +491,7 @@ public sealed partial class HospitalSimulation
             problems.Add("Someone is standing there.");
         }
 
-        if (cost > Balance)
+        if (!CanAfford(cost))
         {
             problems.Add($"Not enough money: costs £{cost:N0}, you have £{Balance:N0}.");
         }

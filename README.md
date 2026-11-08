@@ -294,6 +294,9 @@ staff rooms.
   (the A&E board says what it still needs) until it has a triage room, a cubicle or resus bay, an A&E
   nurse and an A&E doctor. It also closes if you take any of these away.
 
+Tick **Unlimited money** on the New Game screen to keep building, unlocking and hiring when the
+balance goes below zero. Money and the finances are still counted and shown as normal.
+
 ### Staff and recruitment
 
 - **Grades:** nurses are Band 5, 6, 7, 8 or 9 by how good they are (Band 7 and above wear navy);

@@ -114,7 +114,25 @@ public partial class MainMenu : Control
         empty.SetPressedNoSignal(false);
         empty.EmitSignal(BaseButton.SignalName.Toggled, false);
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text, start);
+        var unlimited = new CheckBox
+        {
+            Text = "Unlimited money: keep building and hiring when the balance goes into the red",
+            FocusMode = FocusModeEnum.None,
+            TooltipText = "Money and finances are still counted and shown; you just can't run out.",
+        };
+        foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed", "focus" })
+        {
+            unlimited.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
+        }
+
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })
+        {
+            unlimited.AddThemeColorOverride(state, UiStyle.TextDark);
+        }
+
+        panel.Content.AddChild(unlimited);
+
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed);
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };

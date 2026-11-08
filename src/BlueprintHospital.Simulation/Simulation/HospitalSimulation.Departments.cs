@@ -47,7 +47,7 @@ public sealed partial class HospitalSimulation
         {
             problems.Add($"{department.Name} is already unlocked.");
         }
-        else if (Balance < department.OpeningCost)
+        else if (!CanAfford(department.OpeningCost))
         {
             problems.Add($"Not enough money: costs £{department.OpeningCost:N0}, you have £{Balance:N0}.");
         }

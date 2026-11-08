@@ -114,6 +114,15 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>Records money in (positive) or out (negative) and updates the balance.</summary>
+    /// <summary>
+    /// Unlimited money: building, unlocking and hiring never stop for lack of money, so the balance can
+    /// go into the red. Wages, income and the accounts are still counted as normal.
+    /// </summary>
+    public bool UnlimitedMoney { get; set; }
+
+    /// <summary>Whether something costing <paramref name="cost"/> can be paid for now.</summary>
+    public bool CanAfford(long cost) => UnlimitedMoney || cost <= 0 || Balance >= cost;
+
     internal void Book(MoneyCategory category, long amount)
     {
         if (amount == 0)
@@ -124,7 +133,7 @@ public sealed partial class HospitalSimulation
         Balance += amount;
         Day(Now.Date).Add(category, amount);
 
-        if (Balance < 0 && !_overdrawnWarned)
+        if (Balance < 0 && !_overdrawnWarned && !UnlimitedMoney)
         {
             _overdrawnWarned = true;
             Notifications.Add(Now, NotificationLevel.Critical, $"The hospital is overdrawn (£{Balance:N0}). Building is stopped until money comes in. Look at Finances to see where it is going.");

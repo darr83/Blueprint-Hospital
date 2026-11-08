@@ -28,6 +28,9 @@ public sealed class SimulationOptions
 
     /// <summary>What the player starts with.</summary>
     public StartingHospital Start { get; init; } = StartingHospital.SmallEmergency;
+
+    /// <summary>The player can keep spending when the balance is below zero (the money is still counted).</summary>
+    public bool UnlimitedMoney { get; init; }
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -92,6 +95,7 @@ public sealed partial class HospitalSimulation
         AmbulanceParkingTiles = AmbulanceBayPatientTiles.Select(t => new GridCoord(t.X + 6, t.Y)).ToArray();
         AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + 19, site.Length - 1);
 
+        UnlimitedMoney = _options.UnlimitedMoney;
         UnlockStartingDepartments();
         if (_options.Start == StartingHospital.EmptyBuilding)
         {

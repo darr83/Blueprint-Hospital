@@ -53,14 +53,14 @@ public partial class GameManager : Node
         }
     }
 
-    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency)
+    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency, bool unlimitedMoney = false)
     {
         if (Database is null)
         {
             return;
         }
 
-        Session = GameSession.CreateNew(Database, hospitalName, start);
+        Session = GameSession.CreateNew(Database, hospitalName, start, unlimitedMoney);
         ChangeScene(HospitalScene);
     }
 

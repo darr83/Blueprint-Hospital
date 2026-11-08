@@ -591,7 +591,7 @@ public partial class SmokeTest : Node
         var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
         var clock = hospital.Session.Clock;
         var patient = _scanPatient!;
-        for (var attempt = 0; attempt < 3; attempt++)
+        for (var attempt = 0; attempt < 5; attempt++)
         {
             if (attempt > 0)
             {

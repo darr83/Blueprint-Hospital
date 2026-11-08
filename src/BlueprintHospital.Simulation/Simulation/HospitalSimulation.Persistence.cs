@@ -244,6 +244,9 @@ public sealed class PeopleState
 
     public double UnpaidWages { get; init; }
 
+    /// <summary>The game was started with unlimited money (spending can go into the red).</summary>
+    public bool UnlimitedMoney { get; init; }
+
     public double UnpaidUpkeep { get; init; }
 
     public List<Notification> Notifications { get; init; } = new();
@@ -297,6 +300,7 @@ public sealed partial class HospitalSimulation
         Stats = CaptureStats(),
         Accounts = _days.Select(d => new DayAccountsState(d.Date, new Dictionary<MoneyCategory, long>(d.Amounts))).ToList(),
         UnpaidWages = _unpaidWages,
+        UnlimitedMoney = UnlimitedMoney,
         UnpaidUpkeep = _unpaidUpkeep,
         Notifications = Notifications.Recent.Take(60).ToList(),
         NextNotificationId = Notifications.NextId,
@@ -407,6 +411,7 @@ public sealed partial class HospitalSimulation
         }
 
         _unpaidWages = state.UnpaidWages;
+        UnlimitedMoney = state.UnlimitedMoney;
         _unpaidUpkeep = state.UnpaidUpkeep;
         Notifications.Restore(state.Notifications, state.NextNotificationId);
         _generator.SetNextId(state.NextPatientId);
