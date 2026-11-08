@@ -134,6 +134,11 @@ public partial class HospitalScene : Node2D
         _hud = new MainHUD { Name = "HUD" };
         AddChild(_hud);
         _hud.Initialise(_session, _build);
+
+        // Sound: ambience, monitors, machines, chatter, sirens. Only reads the game.
+        var audio = new BlueprintHospital.Audio.HospitalAudio { Name = "Audio" };
+        AddChild(audio);
+        audio.Initialise(_session, _world);
         _hud.RoomInfo.MoveRequested += room =>
         {
             _hud.RoomInfo.Close();
