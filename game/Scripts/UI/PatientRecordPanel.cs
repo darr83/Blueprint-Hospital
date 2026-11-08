@@ -147,10 +147,11 @@ public partial class PatientRecordPanel : PanelContainer
         _now.Detail.Text = p.WorkingDiagnosis is { } dx ? $"Working diagnosis: {_sim.Database.Conditions[dx.ConditionId].Name}" : p.Triage is null ? string.Empty : "No diagnosis yet";
         if (p.MonitorIsRed)
         {
-            var bedside = _sim.DoctorAtBedside(p);
-            var redLine = bedside is not null
-                ? $"Red monitor (NEWS2 {p.LiveNews2}): {bedside.Name} is at the bedside"
-                : $"Red monitor (NEWS2 {p.LiveNews2}): waiting for a doctor, getting worse";
+            var sitter = _sim.CarerAtBedside(p);
+            var with = sitter is not null ? $"{sitter.Name} is sitting with them" : "nobody sitting with them yet";
+            var review = p.RedReviewed ? "doctor has reviewed" : "waiting for a doctor's review";
+            var trend = sitter is not null && p.RedReviewed ? "improving" : "getting worse";
+            var redLine = $"Red monitor (NEWS2 {p.LiveNews2}): {with}, {review}; {trend}";
             _now.Detail.Text = _now.Detail.Text.Length > 0 ? $"{_now.Detail.Text}\n{redLine}" : redLine;
         }
 

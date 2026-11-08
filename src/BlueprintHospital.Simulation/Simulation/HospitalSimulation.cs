@@ -413,6 +413,7 @@ public sealed partial class HospitalSimulation
             HireStaff(StaffRole.Doctor, skill: 0.55, shift: shift);
             HireStaff(StaffRole.Porter, skill: 0.4, shift: shift);
             HireStaff(StaffRole.Porter, skill: 0.4, shift: shift);
+            HireStaff(StaffRole.HealthcareAssistant, skill: 0.5, shift: shift);
         }
 
         foreach (var member in _staff)

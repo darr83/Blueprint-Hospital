@@ -92,7 +92,7 @@ public sealed partial class HospitalSimulation
         }
 
         var postings = new List<StaffPosting> { new(null, role is StaffRole.Porter or StaffRole.Receptionist ? "Whole hospital" : "A&E") };
-        if (role is StaffRole.Nurse or StaffRole.Doctor)
+        if (role is StaffRole.Nurse or StaffRole.Doctor or StaffRole.HealthcareAssistant)
         {
             postings.AddRange(Wards.Select(w => new StaffPosting(w.Id, w.Name)));
         }
@@ -131,6 +131,7 @@ public sealed partial class HospitalSimulation
             new("A&E", null, StaffRole.Receptionist, 1, Have(StaffRole.Receptionist, null)),
             new("A&E", null, StaffRole.Nurse, Math.Max(2, triage + (int)Math.Ceiling(treatment / 4.0)), Have(StaffRole.Nurse, null)),
             new("A&E", null, StaffRole.Doctor, Math.Max(2, (int)Math.Ceiling(treatment / 5.0)), Have(StaffRole.Doctor, null)),
+            new("A&E", null, StaffRole.HealthcareAssistant, Math.Max(1, (int)Math.Ceiling(treatment / 6.0)), Have(StaffRole.HealthcareAssistant, null)),
         };
 
         var movesTo = _spaces.Values.Count(s => s.IsWard || (s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy));
@@ -148,6 +149,7 @@ public sealed partial class HospitalSimulation
             needs.Add(new(ward.Name, ward.Id, StaffRole.Nurse, Math.Max(1, (ward.Beds.Count + perNurse - 1) / perNurse), Have(StaffRole.Nurse, ward.Id)));
             var doctor = unit == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
             needs.Add(new(ward.Name, ward.Id, doctor, 1, Have(doctor, ward.Id)));
+            needs.Add(new(ward.Name, ward.Id, StaffRole.HealthcareAssistant, 1, Have(StaffRole.HealthcareAssistant, ward.Id)));
         }
 
         foreach (var room in _spaces.Values.Where(s => s.IsServiceRoom).OrderBy(s => s.Id, StringComparer.Ordinal))

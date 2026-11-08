@@ -136,9 +136,9 @@ public sealed partial class HospitalSimulation
             var support = CriticalCareFactor(patient, hours);
             if (patient.MonitorIsRed)
             {
-                // A red monitor needs a doctor at the bedside: with one they get better (quickly once the
-                // right treatment is in, slowly otherwise); without one they carry on getting worse.
-                if (DoctorAtBedside(patient) is not null)
+                // A red monitor needs someone sitting with them and a doctor's review: with both they get better
+                // (quickly once the right treatment is in, slowly otherwise); without them they carry on getting worse.
+                if (patient.RedReviewed && CarerAtBedside(patient) is not null)
                 {
                     patient.Severity = Math.Max(0, patient.Severity - (RedRecoveryPerHour(patient) * hours));
                 }

@@ -38,8 +38,11 @@ public enum TaskKind
     /// <summary>The critical care outreach nurse reviews a ward patient who is getting worse.</summary>
     OutreachReview,
 
-    /// <summary>A doctor goes to a patient whose monitor is red and stays at the bedside until it isn't.</summary>
+    /// <summary>A healthcare assistant sits one-to-one with a patient whose monitor is red until it isn't.</summary>
     StayWithPatient,
+
+    /// <summary>A doctor reviews a patient whose monitor has gone red, at the bedside.</summary>
+    RedReview,
 }
 
 /// <summary>

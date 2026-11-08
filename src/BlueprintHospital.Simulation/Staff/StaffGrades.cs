@@ -33,6 +33,7 @@ public static class StaffGrades
         new Grade(StaffRole.Anaesthetist, "Anaesthetic registrar", 0.70, 0.85, 4, 9, 68_000, 1),
         new Grade(StaffRole.Anaesthetist, "Consultant anaesthetist", 0.85, 0.97, 9, 25, 112_000, 0.6),
         new Grade(StaffRole.OutreachNurse, "Outreach nurse", 0.65, 0.90, 5, 20, 49_000, 0.8),
+        new Grade(StaffRole.HealthcareAssistant, "Healthcare assistant (Band 3)", 0.35, 0.60, 0, 15, 25_000, 2.5),
         new Grade(StaffRole.Receptionist, "Receptionist", 0.40, 0.60, 0, 15, 24_000, 1.5),
     };
 
@@ -81,7 +82,9 @@ public static class StaffGrades
         (StaffRole.Anaesthetist, false) => "anaesthetist",
         (StaffRole.Anaesthetist, true) => "anaesthetists",
         (StaffRole.OutreachNurse, false) => "outreach nurse",
-        _ => "outreach nurses",
+        (StaffRole.OutreachNurse, true) => "outreach nurses",
+        (StaffRole.HealthcareAssistant, false) => "healthcare assistant",
+        _ => "healthcare assistants",
     };
 }
 

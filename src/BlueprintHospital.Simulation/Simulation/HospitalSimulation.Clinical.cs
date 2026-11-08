@@ -13,6 +13,12 @@ public sealed partial class HospitalSimulation
 
     private void CompleteTask(StaffMember member, ClinicalTask task, Patient patient)
     {
+        // Any doctor's work at the bedside of a red-monitor patient counts as their review.
+        if (task.Role == StaffRole.Doctor && task.Kind != TaskKind.RedReview && patient.MonitorIsRed && !patient.RedReviewed)
+        {
+            MarkRedReviewed(member, patient);
+        }
+
         switch (task.Kind)
         {
             case TaskKind.Register:
@@ -56,6 +62,9 @@ public sealed partial class HospitalSimulation
                 break;
             case TaskKind.OutreachReview:
                 CompleteOutreachReview(member, patient);
+                break;
+            case TaskKind.RedReview:
+                CompleteRedReview(member, patient);
                 break;
             case TaskKind.Discharge:
                 CompleteDischarge(member, patient);
