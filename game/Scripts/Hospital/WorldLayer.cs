@@ -434,7 +434,7 @@ public partial class WorldLayer : Node2D
             {
                 if (lying)
                 {
-                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
+                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.EdBlanket, lift, headSouth, onWard ? null : Looks.Wristband(occupant!.Triage));
                 }
             });
         }, animated: true);
@@ -654,7 +654,7 @@ public partial class WorldLayer : Node2D
                     DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
                 }
 
-                Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, Looks.Blanket(patient.Triage));
+                Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, new Color("#B5413B"), Looks.Wristband(patient.Triage));
                 return;
             }
 
@@ -669,7 +669,7 @@ public partial class WorldLayer : Node2D
                 }
 
                 var lift = Figures.Trolley(this, gx, gy, patient.Facing);
-                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.Blanket(patient.Triage), lift);
+                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket, lift, Looks.Wristband(patient.Triage));
                 return;
             }
 

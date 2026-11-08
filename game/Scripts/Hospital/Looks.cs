@@ -182,6 +182,12 @@ public static class Looks
         _ => new Color("#DCE3E9"),
     };
 
+    /// <summary>The A&amp;E's blue cellular blanket. The triage colour shows on the wristband, the floor ring and the monitor.</summary>
+    public static readonly Color EdBlanket = new("#8DB3D9");
+
+    /// <summary>The triage colour for a patient's wristband, or null (a plain white band) before triage.</summary>
+    public static Color? Wristband(TriageCategory? category) => category is null ? null : Blanket(category);
+
     /// <summary>Ward patients have an ordinary hospital blanket: the ward isn't triaged.</summary>
     public static readonly Color WardBlanket = new("#5C8FC4");
 

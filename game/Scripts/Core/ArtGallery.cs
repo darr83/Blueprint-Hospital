@@ -215,7 +215,7 @@ public partial class ArtGallery : Node2D
                     ("Amber + monitor", c =>
                     {
                         Figures.MonitorStand(c, -1.6, -2.4);
-                        Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, P(2), Looks.Amber, lift));
+                        Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, P(2), Looks.EdBlanket, lift, false, Looks.Amber));
                         Figures.ObsScreen(c, -1.6, -2.4, time, obs, Looks.Amber, 3);
                     }),
                     ("Ward bed", c => Figures.Bed(c, 0, 0, false, true, lift => Figures.Lying(c, 0, 0, P(4), Looks.WardBlanket, lift, true))),
@@ -229,7 +229,7 @@ public partial class ArtGallery : Node2D
                         var headBehind = head.Y <= foot.Y;
                         if (headBehind) Figures.Standing(c, head, porter, time, true, 5);
                         var lift = Figures.Trolley(c, 0, 0, dir);
-                        Figures.LyingAlong(c, 0, 0, dir, P(6), Looks.Red, lift);
+                        Figures.LyingAlong(c, 0, 0, dir, P(6), Looks.EdBlanket, lift, Looks.Red);
                         if (!headBehind) Figures.Standing(c, head, porter, time, true, 5);
                     }),
                     ("Ambulance stretcher", c => AmbulanceStretcher(c, P(7))),
@@ -319,5 +319,5 @@ public partial class ArtGallery : Node2D
     }
 
     /// <summary>The ambulance crew's stretcher, as drawn while the patient waits in the ambulance queue.</summary>
-    private static void AmbulanceStretcher(CanvasItem c, PersonLook look) => Figures.AmbulanceStretcher(c, 0, 0, (0, 1), look, Looks.Red);
+    private static void AmbulanceStretcher(CanvasItem c, PersonLook look) => Figures.AmbulanceStretcher(c, 0, 0, (0, 1), look, new Color("#B5413B"), Looks.Red);
 }
