@@ -18,9 +18,9 @@ public class FloorTests
     /// <summary>Stairs next to it.</summary>
     private static readonly GridRect StairsRect = new(B.X + 54, B.Y + 17, 5, 8);
 
-    private static SimulationHarness Rich()
+    private static SimulationHarness Rich(int seed = 1234)
     {
-        var h = new SimulationHarness();
+        var h = new SimulationHarness(seed);
         h.Sim.AdjustBalance(5_000_000);
         return h;
     }
@@ -239,7 +239,9 @@ public class FloorTests
     [Fact]
     public void A_porter_takes_a_poorly_patient_up_in_the_lift_to_xray()
     {
-        var h = Rich();
+        // Seed 1: a pneumonia whose doctor wants a chest X-ray. With some seeds the history and exam
+        // alone make the doctor sure enough, no X-ray is ordered and there is no lift trip to test.
+        var h = Rich(seed: 1);
         h.Sim.AddFloor();
         Build(h, "lift", LiftRect);
         Build(h, "stairs", StairsRect);
