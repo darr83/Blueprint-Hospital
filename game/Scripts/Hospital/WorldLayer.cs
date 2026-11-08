@@ -38,6 +38,9 @@ public partial class WorldLayer : Node2D
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
     private readonly HashSet<GridCoord> _seatTiles = new();
     private readonly List<ObsMonitorInfo> _monitors = new();
+
+    /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
+    private readonly HashSet<GridCoord> _bedSpots = new();
     private readonly List<Node> _staticNodes = new();
     private IDisposable? _layoutSubscription;
     private HospitalSimulation _sim = null!;
@@ -76,6 +79,7 @@ public partial class WorldLayer : Node2D
 
         _staticNodes.Clear();
         _monitors.Clear();
+        _bedSpots.Clear();
         _seatTiles.Clear();
 
         foreach (var space in _sim.Spaces)
@@ -187,6 +191,13 @@ public partial class WorldLayer : Node2D
 
         // On an X-ray, CT or operating table.
         if (_sim.Spaces.Any(s => s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy && s.PatientSpot == patient.Tile))
+        {
+            return true;
+        }
+
+        // Still lying on a bed they have been moved out of, waiting for a porter to wheel them away:
+        // they stay in that bed rather than appearing on a trolley on top of it.
+        if (_bedSpots.Contains(patient.Tile) && !IsSeated(patient))
         {
             return true;
         }
@@ -418,12 +429,19 @@ public partial class WorldLayer : Node2D
     private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false)
     {
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
+        _bedSpots.Add(spot);
 
         // Bed and whoever is lying on it are one object, anchored at the middle of the bed.
         AddProp(IsoDraw.ToScreen(cx, cy), c =>
         {
+            // Usually the bed's own patient; otherwise whoever is still lying here waiting to be moved.
             var occupant = occupantId() is { } id ? _sim.FindPatient(id) : null;
-            var lying = occupant is not null && InBed(occupant) && occupant.Tile == spot;
+            if (occupant is null || occupant.Tile != spot || !InBed(occupant))
+            {
+                occupant = _sim.Patients.FirstOrDefault(p => p.Tile == spot && InBed(p));
+            }
+
+            var lying = occupant is not null;
             if (lying && ReferenceEquals(Selected, occupant))
             {
                 var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);

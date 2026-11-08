@@ -462,7 +462,7 @@ public sealed partial class HospitalSimulation
                     continue;
                 }
 
-                target = _spaces.Values.Where(s => s.Kind == kind && s.IsFree).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
+                target = _spaces.Values.Where(s => s.Kind == kind && IsVacant(s)).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
                 if (target is not null)
                 {
                     break;
