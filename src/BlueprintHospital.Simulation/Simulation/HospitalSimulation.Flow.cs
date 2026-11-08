@@ -133,13 +133,14 @@ public sealed partial class HospitalSimulation
         foreach (var patient in _patients.Values.Where(p => p.IsAlive && p.Stage != PatientStage.Gone))
         {
             var condition = patient.Condition;
+            var support = CriticalCareFactor(patient, hours);
             if (patient.EffectiveTreatmentGiven)
             {
                 patient.Severity = Math.Max(0, patient.Severity - (condition.RecoveryPerHour * hours));
             }
             else if (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal)
             {
-                patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * hours));
+                patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
             }
 
             if (condition.CanBeFatal && patient.Severity >= 1.0 && patient.Stage != PatientStage.Leaving)

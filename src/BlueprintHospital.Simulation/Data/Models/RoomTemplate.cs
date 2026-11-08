@@ -42,6 +42,25 @@ public enum RoomLayoutKind
     StaffRoom,
 }
 
+/// <summary>What kind of unit a ward is, when it is more than a plain ward.</summary>
+public enum WardUnit
+{
+    /// <summary>An ordinary ward.</summary>
+    None,
+
+    /// <summary>An assessment unit (e.g. the surgical assessment unit): patients wait here for theatre or a ward bed instead of in A&amp;E.</summary>
+    Assessment,
+
+    /// <summary>A day surgery unit: patients come round after a small operation and go home the same day.</summary>
+    DaySurgery,
+
+    /// <summary>A high dependency unit (HDU): level 2 critical care, a nurse for every two patients.</summary>
+    HighDependency,
+
+    /// <summary>An intensive care unit (ICU): level 3 critical care, a ventilator and a nurse at every bed.</summary>
+    IntensiveCare,
+}
+
 /// <summary>
 /// A room the player can build: what it is for, the sizes it comes in, what it costs and how
 /// it is furnished. Loaded from Data/RoomTemplates.
@@ -80,6 +99,9 @@ public sealed class RoomTemplate : IDataRecord
 
     /// <summary>True if the room has a second door opposite the first (the waiting room's street entrance).</summary>
     public bool DoorBothEnds { get; init; }
+
+    /// <summary>For wards: the kind of unit (assessment, day surgery, HDU or ICU). An ordinary ward if left out.</summary>
+    public WardUnit Unit { get; init; }
 
     /// <summary>Fixed cost to fit out the room, in pounds.</summary>
     public int BaseCost { get; init; }
@@ -122,6 +144,11 @@ public sealed class RoomTemplate : IDataRecord
             context.RequireText($"sizes[{i}].name", size.Name);
             context.RequireRange($"sizes[{i}].width_m", size.WidthM, MinWidthM, MaxWidthM);
             context.RequireRange($"sizes[{i}].length_m", size.LengthM, MinLengthM, MaxLengthM);
+        }
+
+        if (Unit != WardUnit.None && Kind != CareSpaceKind.Ward)
+        {
+            context.Error("unit", "only wards can be a unit.");
         }
 
         if ((Layout == RoomLayoutKind.None) != IsCorridor)

@@ -186,6 +186,6 @@ public sealed partial class HospitalSimulation
     private void PayForAdmission(Patient patient)
     {
         var nights = patient.AdmittedAt is { } admitted ? (int)Math.Floor((Now - admitted).TotalDays) : 0;
-        Book(MoneyCategory.Admissions, AdmissionTariff + (nights * BedDayTariff));
+        Book(MoneyCategory.Admissions, AdmissionTariff + (nights * BedDayTariff) + CriticalCarePayment(patient));
     }
 }

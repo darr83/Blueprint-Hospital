@@ -156,6 +156,11 @@ public sealed partial class HospitalSimulation
         HandleShiftChange();
         foreach (var member in _staff)
         {
+            if (UpdateAssisting(member))
+            {
+                continue;
+            }
+
             if (UpdateDuty(member))
             {
                 continue;
@@ -220,7 +225,7 @@ public sealed partial class HospitalSimulation
     private void ChooseTask(StaffMember member)
     {
         var candidates = _tasks.Values
-            .Where(t => t.AssignedStaffId is null && (t.Role == member.Role || NurseCanCover(t, member)) && IsForMember(t, member) && CanStart(t))
+            .Where(t => t.AssignedStaffId is null && (t.Role == member.Role || NurseCanCover(t, member) || AnaesthetistCanCover(t, member)) && IsForMember(t, member) && CanStart(t))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 

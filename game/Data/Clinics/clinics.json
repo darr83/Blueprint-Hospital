@@ -93,5 +93,18 @@
       "Shoulder fracture check",
       "Finger injury"
     ]
+  },
+  {
+    "id": "surgical_clinic",
+    "appointment_minutes": 20,
+    "tariff": 180,
+    "reasons": [
+      "Wound check after an operation",
+      "Follow-up after appendicectomy",
+      "Gallstones",
+      "Hernia",
+      "Lump to check",
+      "Follow-up after bowel surgery"
+    ]
   }
 ]

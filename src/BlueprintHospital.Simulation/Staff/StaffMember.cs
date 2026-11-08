@@ -31,6 +31,12 @@ public enum StaffRole
 
     /// <summary>Gets ward patients moving after a broken hip or a stroke, so they go home sooner.</summary>
     Physiotherapist,
+
+    /// <summary>Gives the anaesthetic for every operation, and runs the intensive care unit.</summary>
+    Anaesthetist,
+
+    /// <summary>Critical care outreach: reviews ward patients who are getting worse and moves them up to HDU or ICU.</summary>
+    OutreachNurse,
 }
 
 public enum StaffActivity
@@ -117,6 +123,9 @@ public sealed class StaffMember : Agent
     public DateTime? PagedUntil { get; set; }
 
     public int? CurrentTaskId { get; set; }
+
+    /// <summary>An anaesthetist giving the anaesthetic for this operation (the surgeon's task) is held in theatre until it is done.</summary>
+    public int? AssistingTaskId { get; set; }
 
     /// <summary>Game seconds of work left on the current task.</summary>
     public double WorkRemainingSeconds { get; set; }

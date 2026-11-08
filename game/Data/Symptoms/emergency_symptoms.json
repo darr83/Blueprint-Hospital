@@ -264,5 +264,33 @@
     "patient_description": "I've been coughing up blood.",
     "body_system": "respiratory",
     "is_red_flag": true
+  },
+  {
+    "id": "abdominal_distension",
+    "name": "Swollen tummy",
+    "patient_description": "My tummy is all swollen and tight.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "groin_lump",
+    "name": "Painful groin lump",
+    "patient_description": "There's a painful lump in my groin that won't go back in.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": true
+  },
+  {
+    "id": "perianal_pain",
+    "name": "Pain by the back passage",
+    "patient_description": "I've got a really painful swelling by my bottom.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "sudden_severe_abdominal_pain",
+    "name": "Sudden severe tummy pain",
+    "patient_description": "The pain came on all of a sudden, it's the worst I've ever had.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": true
   }
 ]

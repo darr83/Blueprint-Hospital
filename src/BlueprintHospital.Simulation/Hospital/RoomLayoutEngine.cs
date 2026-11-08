@@ -176,7 +176,11 @@ public static class RoomLayoutEngine
     private static void Ward(Plan plan, RoomTemplate template)
     {
         var r = plan.Frame.Rect;
-        const int pitch = BedTilesX + 2;
+
+        // Critical care beds stand further apart, with a ventilator and a monitor beside each one.
+        var ventilated = template.Furniture.Contains("ventilator");
+        var monitored = template.Furniture.Contains("obs_monitor");
+        var pitch = ventilated ? BedTilesX + 4 : BedTilesX + 2;
         var north = (r.Y + 1, false);
         var south = (r.Bottom - 1 - BedTilesY, true);
         var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
@@ -203,9 +207,19 @@ public static class RoomLayoutEngine
                 plan.Reserve(spot);
                 plan.Reserve(staff);
 
-                if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                var headY = headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1;
+                if (ventilated && x + BedTilesX + 3 <= r.Right - 1)
                 {
-                    plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1, 0.9, 0.9);
+                    plan.AddWorld("ventilator", x + BedTilesX + 0.2, headY, 0.8, 0.8);
+                    plan.AddWorld("obs_monitor", x + BedTilesX + 1.4, headY, 0.6, 0.6);
+                }
+                else if (monitored && !locker && x + BedTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("obs_monitor", x + BedTilesX + 0.2, headY, 0.6, 0.6);
+                }
+                else if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headY, 0.9, 0.9);
                 }
             }
         }
@@ -214,7 +228,7 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker"))
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor"))
         {
             plan.TryPlaceAgainstWalls(item);
         }

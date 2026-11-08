@@ -34,6 +34,9 @@ public enum TaskKind
 
     /// <summary>A physiotherapy session at a ward patient's bedside.</summary>
     Physio,
+
+    /// <summary>The critical care outreach nurse reviews a ward patient who is getting worse.</summary>
+    OutreachReview,
 }
 
 /// <summary>

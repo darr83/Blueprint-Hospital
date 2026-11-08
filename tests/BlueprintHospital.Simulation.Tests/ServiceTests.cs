@@ -114,7 +114,7 @@ public class ServiceTests
     [Fact]
     public void Appendicitis_goes_to_theatre_then_recovers_on_a_ward()
     {
-        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("gastro_ward", 16, 10) }, "gastroenterology");
+        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("surgical_ward", 16, 10) }, "general_surgery");
         var theatre = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.Theatre);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
 

@@ -1,0 +1,126 @@
+[
+  {
+    "id": "septic_shock",
+    "name": "Septic shock",
+    "department": "general_medicine",
+    "needs_intensive_care": true,
+    "description": "An infection has spread into the blood and the blood pressure has collapsed. Needs fluids, antibiotics within the hour, and usually intensive care.",
+    "prevalence": 0.8,
+    "age_range": [
+      40,
+      95
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.85,
+    "crew_assessment": "septic, low blood pressure, query septic shock",
+    "presenting_complaint": "confusion",
+    "symptoms": [
+      {
+        "symptom": "confusion",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.8
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.6
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.8
+      },
+      {
+        "symptom": "reduced_urine",
+        "probability": 0.6
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        126,
+        12
+      ],
+      "systolic_bp": [
+        82,
+        10
+      ],
+      "diastolic_bp": [
+        48,
+        8
+      ],
+      "respiratory_rate": [
+        28,
+        3
+      ],
+      "oxygen_saturation": [
+        92,
+        2
+      ],
+      "temperature": [
+        38.9,
+        0.6
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.55,
+      0.78
+    ],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -25,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -6,
+      "temperature": 0.6
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "venous_blood_gas",
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes",
+      "chest_xray",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Oxygen therapy",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "gentamicin",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Referred to intensive care for organ support.",
+    "length_of_stay_hours": [
+      96,
+      240
+    ]
+  }
+]

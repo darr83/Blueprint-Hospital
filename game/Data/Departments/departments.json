@@ -100,6 +100,26 @@
     "opening_cost": 225000
   },
   {
+    "id": "general_surgery",
+    "name": "General Surgery",
+    "short_name": "SURG",
+    "description": "Operates on emergencies of the abdomen such as appendicitis, gallbladder problems, blocked bowels and hernias, and cares for them before and after theatre.",
+    "colour": "#EF6C00",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 225000
+  },
+  {
+    "id": "critical_care",
+    "name": "Critical Care (ICU/HDU)",
+    "short_name": "ICU",
+    "description": "Intensive care and high dependency beds for the sickest patients: from Resus, after big operations, and ward patients who get worse.",
+    "colour": "#5E35B1",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 300000
+  },
+  {
     "id": "outpatients",
     "name": "Outpatients",
     "short_name": "OPD",

@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Staff;
@@ -48,6 +49,8 @@ public sealed partial class HospitalSimulation
         StaffRole.Endoscopist => new[] { CareSpaceKind.Endoscopy },
         StaffRole.PlasterTechnician => new[] { CareSpaceKind.PlasterRoom },
         StaffRole.Physiotherapist => new[] { CareSpaceKind.PhysioGym },
+        StaffRole.Anaesthetist => new[] { CareSpaceKind.Theatre },
+        StaffRole.OutreachNurse => new[] { CareSpaceKind.OutreachOffice },
         _ => Array.Empty<CareSpaceKind>(),
     };
 
@@ -62,13 +65,16 @@ public sealed partial class HospitalSimulation
         CareSpaceKind.Endoscopy => StaffRole.Endoscopist,
         CareSpaceKind.PlasterRoom => StaffRole.PlasterTechnician,
         CareSpaceKind.PhysioGym => StaffRole.Physiotherapist,
+        CareSpaceKind.OutreachOffice => StaffRole.OutreachNurse,
         _ => StaffRole.Radiographer,
     };
 
     private static bool IsSpecialist(StaffRole role) => RoomKindsFor(role).Count > 0;
 
     /// <summary>Whether someone works in the room, so it is open for business.</summary>
-    public bool IsStaffed(CareSpace room) => _staff.Any(s => s.BaseRoomId == room.Id);
+    public bool IsStaffed(CareSpace room) => room.Kind == CareSpaceKind.Theatre
+        ? _staff.Any(s => s.BaseRoomId == room.Id && s.Role == StaffRole.Surgeon) && _staff.Any(s => s.BaseRoomId == room.Id && s.Role == StaffRole.Anaesthetist)
+        : _staff.Any(s => s.BaseRoomId == room.Id);
 
     /// <summary>Where someone in this role could be based.</summary>
     public IReadOnlyList<StaffPosting> PostingsFor(StaffRole role)
@@ -76,6 +82,12 @@ public sealed partial class HospitalSimulation
         if (IsSpecialist(role))
         {
             var rooms = RoomKindsFor(role).SelectMany(SpacesOfKind).Select(r => new StaffPosting(r.Id, r.Name)).ToList();
+            if (role == StaffRole.Anaesthetist)
+            {
+                // Anaesthetists also run intensive care units.
+                rooms.AddRange(Wards.Where(w => UnitOf(w) == WardUnit.IntensiveCare).Select(w => new StaffPosting(w.Id, w.Name)));
+            }
+
             return rooms.Count > 0 ? rooms : new[] { new StaffPosting(null, "No room yet") };
         }
 
@@ -126,14 +138,26 @@ public sealed partial class HospitalSimulation
 
         foreach (var ward in Wards)
         {
-            needs.Add(new(ward.Name, ward.Id, StaffRole.Nurse, Math.Max(1, (ward.Beds.Count + PatientsPerWardNurse - 1) / PatientsPerWardNurse), Have(StaffRole.Nurse, ward.Id)));
-            needs.Add(new(ward.Name, ward.Id, StaffRole.Doctor, 1, Have(StaffRole.Doctor, ward.Id)));
+            var unit = UnitOf(ward);
+            var perNurse = unit switch
+            {
+                WardUnit.IntensiveCare => PatientsPerIntensiveCareNurse,
+                WardUnit.HighDependency => PatientsPerHighDependencyNurse,
+                _ => PatientsPerWardNurse,
+            };
+            needs.Add(new(ward.Name, ward.Id, StaffRole.Nurse, Math.Max(1, (ward.Beds.Count + perNurse - 1) / perNurse), Have(StaffRole.Nurse, ward.Id)));
+            var doctor = unit == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
+            needs.Add(new(ward.Name, ward.Id, doctor, 1, Have(doctor, ward.Id)));
         }
 
         foreach (var room in _spaces.Values.Where(s => s.IsServiceRoom).OrderBy(s => s.Id, StringComparer.Ordinal))
         {
             var role = RoleForRoom(room.Kind);
             needs.Add(new(room.Name, room.Id, role, 1, Have(role, room.Id)));
+            if (room.Kind == CareSpaceKind.Theatre)
+            {
+                needs.Add(new(room.Name, room.Id, StaffRole.Anaesthetist, 1, Have(StaffRole.Anaesthetist, room.Id)));
+            }
         }
 
         foreach (var reception in SpacesOfKind(CareSpaceKind.OutpatientReception).OrderBy(s => s.Id, StringComparer.Ordinal))
@@ -214,7 +238,7 @@ public sealed partial class HospitalSimulation
         return new JobCandidate
         {
             Id = _nextCandidateId++,
-            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist ? "Dr " : string.Empty)}{first} {surname}",
+            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist or StaffRole.Anaesthetist ? "Dr " : string.Empty)}{first} {surname}",
             Role = grade.Role,
             Grade = grade.Title,
             Skill = skill,
@@ -412,5 +436,6 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A ward with nobody of the task's role of its own at work is covered by the A&amp;E team.</summary>
     private bool CoveredByEmergencyTeam(ClinicalTask task, StaffMember member) =>
-        member.BaseRoomId is null && TeamFor(task) is { } ward && !_staff.Any(s => s.BaseRoomId == ward && s.Role == task.Role && s.IsOnDuty);
+        member.BaseRoomId is null && TeamFor(task) is { } ward
+        && !_staff.Any(s => s.BaseRoomId == ward && s.IsOnDuty && (s.Role == task.Role || (task.Role == StaffRole.Doctor && s.Role == StaffRole.Anaesthetist)));
 }

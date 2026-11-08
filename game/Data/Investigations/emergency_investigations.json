@@ -993,6 +993,27 @@
     "summaries": [
      "pH 7.32, pCO2 7.9 kPa: acute-on-chronic respiratory acidosis."
     ]
+   },
+   {
+    "condition": "septic_shock",
+    "probability": 0.95,
+    "summaries": [
+     "pH 7.24, lactate 5.8: severe lactic acidosis."
+    ]
+   },
+   {
+    "condition": "perforated_peptic_ulcer",
+    "probability": 0.5,
+    "summaries": [
+     "pH 7.31, lactate 3.6 (raised)."
+    ]
+   },
+   {
+    "condition": "small_bowel_obstruction",
+    "probability": 0.4,
+    "summaries": [
+     "pH 7.36, lactate 2.4, low potassium."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1046,6 +1067,13 @@
     "probability": 0.2,
     "summaries": [
      "Small wedge-shaped opacity at the right base; small effusion."
+    ]
+   },
+   {
+    "condition": "perforated_peptic_ulcer",
+    "probability": 0.75,
+    "summaries": [
+     "Free air under the right hemidiaphragm on the erect film: perforation."
     ]
    }
   ],
@@ -1159,6 +1187,66 @@
     "summaries": [
      "Filling defects in both main pulmonary arteries: pulmonary emboli.",
      "Segmental pulmonary embolus in the right lower lobe."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ct_abdomen",
+  "name": "CT abdomen and pelvis",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 15,
+  "turnaround_minutes": 60,
+  "cost": 140,
+  "applies_to_sex": "any",
+  "room": "ct",
+  "normal": {
+   "summaries": [
+    "No acute abdominal abnormality."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Small amount of free fluid in the pelvis, probably not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "small_bowel_obstruction",
+    "probability": 0.92,
+    "summaries": [
+     "Dilated loops of small bowel with a transition point: adhesional small bowel obstruction."
+    ]
+   },
+   {
+    "condition": "perforated_peptic_ulcer",
+    "probability": 0.95,
+    "summaries": [
+     "Free air under the diaphragm and free fluid: perforated duodenal ulcer."
+    ]
+   },
+   {
+    "condition": "acute_appendicitis",
+    "probability": 0.9,
+    "summaries": [
+     "Thickened, inflamed appendix with surrounding fat stranding: acute appendicitis."
+    ]
+   },
+   {
+    "condition": "acute_pancreatitis",
+    "probability": 0.8,
+    "summaries": [
+     "Swollen pancreas with surrounding fluid: acute pancreatitis."
+    ]
+   },
+   {
+    "condition": "strangulated_inguinal_hernia",
+    "probability": 0.85,
+    "summaries": [
+     "Loop of small bowel trapped in a right inguinal hernia, with poor enhancement."
     ]
    }
   ],
