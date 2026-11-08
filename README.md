@@ -254,6 +254,17 @@ Build these from **Build → Services**. Each room opens once you hire someone t
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
 staff rooms.
 
+### Starting a new game
+
+**New Game** asks how to start:
+
+- **Small A&E with a team:** cubicles, resus, triage, offices and a starting team of 9 (a receptionist,
+  4 nurses, 2 doctors and 2 porters). Patients arrive straight away.
+- **Empty building:** just the building, the roads and a waiting room with reception, plus the value
+  of the starter rooms in the bank. You build and hire everything. A&E stays closed to new patients
+  (the A&E board says what it still needs) until it has a triage room, a cubicle or resus bay, an A&E
+  nurse and an A&E doctor. It also closes if you take any of these away.
+
 ### Staff and recruitment
 
 - **Grades:** nurses are Band 5, 6, 7, 8 or 9 by how good they are (Band 7 and above wear navy);

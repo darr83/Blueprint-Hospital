@@ -33,6 +33,8 @@ public partial class SmokeTest : Node
     private enum Stage
     {
         WaitForMenu,
+        NewGameChoice,
+        EmptyBuilding,
         WaitForHospital,
         RunSimulation,
         CloseUp,
@@ -107,6 +109,24 @@ public partial class SmokeTest : Node
 
                 GD.Print("[smoke] Settings and Load Game panels open and close.");
                 Check(manager.Database is not null, "Game data failed to load: " + manager.DataLoadError);
+                ((UI.MainMenu)scene).ShowNewGame();
+                _frame = 0;
+                _stage = Stage.NewGameChoice;
+                break;
+
+            case Stage.NewGameChoice when _frame >= 5:
+                Screenshot("01b_new_game");
+                manager.StartNewGame("Smoke Test Empty", Simulation.Simulation.StartingHospital.EmptyBuilding);
+                _frame = 0;
+                _stage = Stage.EmptyBuilding;
+                break;
+
+            case Stage.EmptyBuilding when scene is HospitalScene empty && empty.IsNodeReady() && _frame >= 15:
+                Screenshot("01c_empty_building");
+                Check(empty.Session.Simulation.Spaces.Count() == 1, "The empty building should only have its waiting room.");
+                Check(!empty.Session.Simulation.Staff.Any(), "The empty building should have no staff.");
+                Check(!empty.Session.Simulation.IsEmergencyOpen, "A&E should be closed in an empty building.");
+                GD.Print($"[smoke] Empty building: 1 room, no staff, £{empty.Session.Simulation.Balance:N0}, closed until it has {string.Join(", ", empty.Session.Simulation.ClosedReasons)}.");
                 manager.StartNewGame("Smoke Test General");
                 _stage = Stage.WaitForHospital;
                 break;

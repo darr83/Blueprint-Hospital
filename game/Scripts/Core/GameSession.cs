@@ -9,7 +9,7 @@ namespace BlueprintHospital.Core;
 /// <summary>One game in progress: its clock, event bus, hospital site and the simulation running on them.</summary>
 public sealed class GameSession
 {
-    private GameSession(GameDatabase database, string hospitalName, SaveGame? save)
+    private GameSession(GameDatabase database, string hospitalName, SaveGame? save, StartingHospital start = StartingHospital.SmallEmergency)
     {
         Database = database;
         HospitalName = hospitalName;
@@ -24,7 +24,7 @@ public sealed class GameSession
         }
 
         // Each clock tick advances the hospital by one game second.
-        Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount });
+        Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount, Start = start });
         if (save?.Layout is { } layout)
         {
             Simulation.RestoreLayout(layout);
@@ -54,8 +54,8 @@ public sealed class GameSession
     /// <summary>Camera to restore when the hospital scene opens, if the game was loaded.</summary>
     public CameraState? InitialCamera { get; }
 
-    public static GameSession CreateNew(GameDatabase database, string hospitalName) =>
-        new(database, string.IsNullOrWhiteSpace(hospitalName) ? "Blueprint General Hospital" : hospitalName.Trim(), null);
+    public static GameSession CreateNew(GameDatabase database, string hospitalName, StartingHospital start = StartingHospital.SmallEmergency) =>
+        new(database, string.IsNullOrWhiteSpace(hospitalName) ? "Blueprint General Hospital" : hospitalName.Trim(), null, start);
 
     public static GameSession FromSave(GameDatabase database, SaveGame save) => new(database, save.HospitalName, save);
 

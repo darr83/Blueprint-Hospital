@@ -107,11 +107,17 @@ public class BuildingTests
     }
 
     [Fact]
-    public void Cannot_demolish_the_last_triage_room_or_an_occupied_room()
+    public void Cannot_demolish_the_last_waiting_room_or_an_occupied_room()
     {
         var h = new SimulationHarness();
+        var waiting = h.Sim.SpacesOfKind(CareSpaceKind.Waiting).Single();
+        Assert.Contains(h.Sim.CheckDemolish(waiting.Id).Problems, p => p.Contains("at least one"));
+
+        // The last triage room can go: A&E then closes to new patients until there is another.
         var triage = h.Sim.SpacesOfKind(CareSpaceKind.Triage).Single();
-        Assert.Contains(h.Sim.CheckDemolish(triage.Id).Problems, p => p.Contains("at least one"));
+        Assert.True(h.Sim.DemolishRoom(triage.Id).CanBuild);
+        Assert.False(h.Sim.IsEmergencyOpen);
+        Assert.Contains("a triage room", h.Sim.ClosedReasons);
 
         var cubicle = h.Sim.Space("minors_1");
         cubicle.OccupantId = 999;

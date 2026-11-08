@@ -52,6 +52,11 @@ public partial class DepartmentDashboard : PanelContainer
         var s = _sim.Stats;
         var sb = new StringBuilder();
         sb.Append("[b][font_size=16]A&E board[/font_size][/b]\n");
+        if (_sim.ClosedReasons is { Count: > 0 } missing)
+        {
+            sb.Append($"[color={ClinicalText.AmberTextHex}][b]Closed to new patients.[/b] Needs {string.Join(", ", missing)}.[/color]\n");
+        }
+
 
         sb.Append($"In department [b]{s.PatientsInDepartment}[/b]");
         if (s.AwaitingTriage > 0)

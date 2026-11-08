@@ -61,8 +61,8 @@ public sealed partial class HospitalSimulation
     /// <summary>Tiles in front of an entrance that must stay clear for people and ambulances.</summary>
     private const int EntranceApproach = 4;
 
-    /// <summary>Rooms the department cannot run without; the last one can't be demolished.</summary>
-    private static readonly CareSpaceKind[] RequiredKinds = { CareSpaceKind.Waiting, CareSpaceKind.Triage };
+    /// <summary>Rooms the hospital cannot run without; the last one can't be demolished.</summary>
+    private static readonly CareSpaceKind[] RequiredKinds = { CareSpaceKind.Waiting };
 
     private int _nextRoomNumber = 1;
 

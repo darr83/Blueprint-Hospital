@@ -25,6 +25,19 @@ public sealed class SimulationOptions
     public double ArrivalRateMultiplier { get; init; } = 1.0;
 
     public bool AutomaticArrivals { get; init; } = true;
+
+    /// <summary>What the player starts with.</summary>
+    public StartingHospital Start { get; init; } = StartingHospital.SmallEmergency;
+}
+
+/// <summary>The choice of how to start a new game.</summary>
+public enum StartingHospital
+{
+    /// <summary>A small, staffed A&amp;E: cubicles, resus, triage, offices and a starting team.</summary>
+    SmallEmergency,
+
+    /// <summary>The hospital building, roads and a waiting room with reception; everything else is built and hired by the player.</summary>
+    EmptyBuilding,
 }
 
 /// <summary>
@@ -79,7 +92,17 @@ public sealed partial class HospitalSimulation
         AmbulanceParkingTiles = AmbulanceBayPatientTiles.Select(t => new GridCoord(t.X + 6, t.Y)).ToArray();
         AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + 19, site.Length - 1);
 
-        CreateStartingStaff();
+        if (_options.Start == StartingHospital.EmptyBuilding)
+        {
+            ClearToEmptyBuilding();
+        }
+        else
+        {
+            CreateStartingStaff();
+        }
+
+        RefreshCandidatesIfDue();
+        _wasOpen = IsEmergencyOpen;
     }
 
     public GameDatabase Database { get; }
@@ -145,6 +168,7 @@ public sealed partial class HospitalSimulation
         var dt = SimulationClock.TickLength.TotalSeconds;
 
         RefreshCandidatesIfDue();
+        AnnounceOpening();
 
         if (_options.AutomaticArrivals)
         {
@@ -187,7 +211,7 @@ public sealed partial class HospitalSimulation
 
     private void GenerateArrivals(double dt)
     {
-        if (_arrivalProfile is null)
+        if (_arrivalProfile is null || !IsEmergencyOpen)
         {
             return;
         }
@@ -363,7 +387,6 @@ public sealed partial class HospitalSimulation
         HireStaff(StaffRole.Doctor, skill: 0.55);
         HireStaff(StaffRole.Porter, skill: 0.4);
         HireStaff(StaffRole.Porter, skill: 0.4);
-        RefreshCandidatesIfDue();
         foreach (var member in _staff)
         {
             member.PlaceAt(HomeTile(member));

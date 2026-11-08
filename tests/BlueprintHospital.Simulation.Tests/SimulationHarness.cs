@@ -11,7 +11,7 @@ internal sealed class SimulationHarness
 {
     private static GameDatabase? _database;
 
-    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0)
+    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0, StartingHospital startWith = StartingHospital.SmallEmergency)
     {
         Database = _database ??= GameDatabase.Load(new FileSystemDataSource(TestData.GameDataDirectory()));
         Events = new EventBus();
@@ -21,6 +21,7 @@ internal sealed class SimulationHarness
             Seed = seed,
             AutomaticArrivals = arrivals,
             ArrivalRateMultiplier = arrivalMultiplier,
+            Start = startWith,
         });
         Clock.Ticked += _ => Sim.Tick();
     }

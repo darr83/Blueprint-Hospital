@@ -1,4 +1,5 @@
 using BlueprintHospital.Core;
+using BlueprintHospital.Simulation.Simulation;
 using Godot;
 
 namespace BlueprintHospital.UI;
@@ -59,18 +60,61 @@ public partial class MainMenu : Control
         }
     }
 
-    private void ShowNewGame()
+    /// <summary>Opens the New Game panel: the hospital's name and how to start.</summary>
+    public void ShowNewGame()
     {
         var panel = new ModalPanel();
         panel.Content.AddChild(UiStyle.Heading("New Game"));
         panel.Content.AddChild(UiStyle.Body("Name your hospital"));
         var name = new LineEdit { Text = "Blueprint General Hospital", MaxLength = 48, CustomMinimumSize = new Vector2(380, 0) };
         panel.Content.AddChild(name);
-        panel.Content.AddChild(UiStyle.Body(
-            "You start with an empty hospital building, an A&E entrance and an ambulance bay.",
-            muted: true));
+        panel.Content.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) });
+        panel.Content.AddChild(UiStyle.Body("How do you want to start?"));
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text);
+        var start = StartingHospital.SmallEmergency;
+        var choices = new VBoxContainer();
+        choices.AddThemeConstantOverride("separation", 8);
+        var group = new ButtonGroup();
+        Button Choice(string title, string detail, StartingHospital value)
+        {
+            var button = new Button
+            {
+                Text = $"{title}\n{detail}",
+                ToggleMode = true,
+                ButtonGroup = group,
+                ThemeTypeVariation = UiStyle.Secondary,
+                Alignment = HorizontalAlignment.Left,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                CustomMinimumSize = new Vector2(380, 64),
+                FocusMode = FocusModeEnum.None,
+            };
+            button.Toggled += on =>
+            {
+                if (on)
+                {
+                    start = value;
+                }
+
+                // The chosen card is tinted blue.
+                var box = UiStyle.Box(on ? UiStyle.BlueTint : UiStyle.Surface, 10, on ? UiStyle.Blue : UiStyle.Border, 12);
+                foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+                {
+                    button.AddThemeStyleboxOverride(state, box);
+                }
+            };
+            return button;
+        }
+
+        var small = Choice("Small A&E with a team", "Cubicles, resus, triage, offices and 9 staff. Patients start arriving straight away.", StartingHospital.SmallEmergency);
+        var empty = Choice("Empty building", "Just the building, roads and a waiting room, with more money. Build and hire everything; A&E opens when it has a triage room, a cubicle, a nurse and a doctor.", StartingHospital.EmptyBuilding);
+        choices.AddChild(small);
+        choices.AddChild(empty);
+        panel.Content.AddChild(choices);
+        small.ButtonPressed = true;
+        empty.SetPressedNoSignal(false);
+        empty.EmitSignal(BaseButton.SignalName.Toggled, false);
+
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start);
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
