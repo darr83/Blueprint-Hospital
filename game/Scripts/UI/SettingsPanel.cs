@@ -27,6 +27,14 @@ public partial class SettingsPanel : ModalPanel
         Content.AddChild(edge);
         Content.AddChild(grid);
 
+        var audio = BlueprintHospital.Audio.AudioSettings.Current;
+        Content.AddChild(UiStyle.Body("Sound", muted: true));
+        var master = AddSlider("Master volume", 0, 1, 0.05, audio.Master, Percent);
+        var ambience = AddSlider("Ambience", 0, 1, 0.05, audio.Ambience, Percent);
+        var effects = AddSlider("Effects", 0, 1, 0.05, audio.Effects, Percent);
+        var interfaceSounds = AddSlider("Interface", 0, 1, 0.05, audio.Interface, Percent);
+        var music = AddSlider("Music", 0, 1, 0.05, audio.Music, Percent);
+
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
         buttons.AddChild(UiStyle.SecondaryButton("Cancel", Close, 120));
@@ -39,10 +47,19 @@ public partial class SettingsPanel : ModalPanel
             settings.EdgeScrolling = edge.ButtonPressed;
             settings.ShowGridByDefault = grid.ButtonPressed;
             GameManager.Instance.SaveSettings();
+            audio.Master = (float)master.Value;
+            audio.Ambience = (float)ambience.Value;
+            audio.Effects = (float)effects.Value;
+            audio.Interface = (float)interfaceSounds.Value;
+            audio.Music = (float)music.Value;
+            audio.Save();
+            audio.Apply();
             Close();
         }, 120));
         Content.AddChild(buttons);
     }
+
+    private static string Percent(double v) => $"{v * 100:0}%";
 
     private HSlider AddSlider(string label, double min, double max, double step, double value, System.Func<double, string> format)
     {
