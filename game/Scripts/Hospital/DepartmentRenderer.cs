@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Simulation;
+using BlueprintHospital.Simulation.World;
 using Godot;
 
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
 /// The department's floors: a tint per kind of room, the ambulance bay markings and coloured
-/// wayfinding lines along the corridor (red to Resus, green to Minors, purple to Triage).
+/// coloured wayfinding bands outside clinical rooms.
 /// Everything that stands up from the floor is drawn by <see cref="WorldLayer"/>.
 /// </summary>
 public partial class DepartmentRenderer : Node2D
@@ -69,32 +70,44 @@ public partial class DepartmentRenderer : Node2D
         }
     }
 
+    /// <summary>
+    /// A coloured band on the corridor floor outside each clinical room's door, so the way to
+    /// Resus (red), Majors (amber), Minors (green) and Triage (purple) can be seen at a glance.
+    /// </summary>
     private void DrawWayfinding()
     {
-        var corridor = _sim.Space("corridor_main").Rect;
-        var link = _sim.Space("corridor_link").Rect;
-        var resus = _sim.Space("resus_1");
-        var triage = _sim.Space("triage_1");
-        var minors = _sim.Spaces.Where(s => s.Kind == CareSpaceKind.Minors).OrderBy(s => s.Rect.X).ToList();
+        foreach (var space in _sim.Spaces.Where(s => s.HasWalls && s.Doors.Count > 0))
+        {
+            var colour = space.Kind switch
+            {
+                CareSpaceKind.Resus => new Color("#E53935"),
+                CareSpaceKind.Majors => new Color("#F9A825"),
+                CareSpaceKind.Minors => new Color("#43A047"),
+                CareSpaceKind.Triage => new Color("#7E57C2"),
+                _ => (Color?)null,
+            };
+            if (colour is not { } c)
+            {
+                continue;
+            }
 
-        // Red: from the ambulance entrance (east end of the corridor) to the Resus doors.
-        var resusDoor = resus.Doors[0];
-        var resusX = resus.Rect.X + resusDoor.Offset + (resusDoor.Width / 2.0);
-        Line(new[] { (corridor.Right - 0.5, corridor.Y + 2.5), (resusX, corridor.Y + 2.5), (resusX, corridor.Y + 0.3) }, new Color("#E53935"));
-
-        // Green: from the waiting room corridor to Minors.
-        var linkX = link.X + (link.Width / 2.0) - 1;
-        var minorsX = minors[0].Rect.X + minors[0].Doors[0].Offset + 1.5;
-        Line(new[] { (linkX, link.Bottom - 0.5), (linkX, corridor.Y + 4.5), (minorsX, corridor.Y + 4.5), (minorsX, corridor.Y + 0.3) }, new Color("#43A047"));
-
-        // Purple: from the waiting room corridor to Triage.
-        var triageY = triage.Rect.Y + triage.Doors[0].Offset + 1;
-        Line(new[] { (linkX + 2, link.Bottom - 0.5), (linkX + 2, triageY), (triage.Rect.X + 0.3, triageY) }, new Color("#7E57C2"));
+            var door = space.Doors[0];
+            var r = space.Rect;
+            const double gap = 0.35;
+            ((double X, double Y) A, (double X, double Y) B) ends = door.Side switch
+            {
+                WallSide.North => ((r.X + door.Offset, r.Y - gap), (r.X + door.Offset + door.Width, r.Y - gap)),
+                WallSide.South => ((r.X + door.Offset, r.Bottom + gap), (r.X + door.Offset + door.Width, r.Bottom + gap)),
+                WallSide.West => ((r.X - gap, r.Y + door.Offset), (r.X - gap, r.Y + door.Offset + door.Width)),
+                _ => ((r.Right + gap, r.Y + door.Offset), (r.Right + gap, r.Y + door.Offset + door.Width)),
+            };
+            Line(new[] { ends.A, ends.B }, c, 6f);
+        }
     }
 
-    private void Line((double X, double Y)[] points, Color colour)
+    private void Line((double X, double Y)[] points, Color colour, float width = 3f)
     {
         var screen = points.Select(p => IsoDraw.ToScreen(p.X, p.Y)).ToArray();
-        DrawPolyline(screen, new Color(colour, 0.75f), 3f, true);
+        DrawPolyline(screen, new Color(colour, 0.75f), width, true);
     }
 }

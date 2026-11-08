@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using BlueprintHospital.Simulation.World;
 using Godot;
@@ -41,6 +42,12 @@ public partial class SiteRenderer : Node2D
     {
         _site = site;
         _projection = projection;
+        Rebuild();
+    }
+
+    /// <summary>Redraws the ground after the building has been extended.</summary>
+    public void Rebuild()
+    {
         _groundMesh = BuildGroundMesh();
         _gridMesh = BuildGridMesh();
         QueueRedraw();
@@ -104,9 +111,8 @@ public partial class SiteRenderer : Node2D
         var line = new Color(0.25f, 0.35f, 0.45f, 0.18f);
         var tilesPerMetre = (int)(1 / Units.MetresPerTile);
 
-        foreach (var building in _site.Buildings)
+        foreach (var r in _site.Buildings.SelectMany(b => b.Areas))
         {
-            var r = building.Footprint;
             for (var x = r.X; x <= r.Right; x += tilesPerMetre)
             {
                 vertices.Add(ToScreen(x, r.Y));

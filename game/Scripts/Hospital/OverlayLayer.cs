@@ -67,9 +67,7 @@ public partial class OverlayLayer : Node2D
     private void RoomCard(CareSpace space)
     {
         var r = space.Rect;
-        var anchor = space.Kind == CareSpaceKind.Waiting
-            ? IsoDraw.ToScreen(r.X + 15, r.Y + 11)
-            : IsoDraw.ToScreen(r.X + (r.Width / 2.0), r.Bottom - 1.1);
+        var anchor = IsoDraw.ToScreen(r.X + (r.Width / 2.0), r.Bottom - 1.1);
 
         var title = space.Name;
         var detail = $"{r.Width / 2.0:0.#} × {r.Length / 2.0:0.#} m · {space.AreaSquareMetres:0} m²";

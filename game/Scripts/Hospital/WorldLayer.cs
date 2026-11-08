@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Simulation.Agents;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
@@ -36,6 +37,8 @@ public partial class WorldLayer : Node2D
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
     private readonly HashSet<GridCoord> _seatTiles = new();
     private readonly List<ObsMonitorInfo> _monitors = new();
+    private readonly List<Node> _staticNodes = new();
+    private IDisposable? _layoutSubscription;
     private HospitalSimulation _sim = null!;
     private SimulationClock _clock = null!;
 
@@ -54,6 +57,25 @@ public partial class WorldLayer : Node2D
         _sim = simulation;
         _clock = clock;
         YSortEnabled = true;
+        _layoutSubscription = _sim.Events.Subscribe<LayoutChanged>(_ => _layoutDirty = true);
+        RebuildStatic();
+    }
+
+    private bool _layoutDirty;
+
+    public override void _ExitTree() => _layoutSubscription?.Dispose();
+
+    /// <summary>Rebuilds walls and furniture, after rooms are built, moved or demolished.</summary>
+    public void RebuildStatic()
+    {
+        foreach (var node in _staticNodes)
+        {
+            node.QueueFree();
+        }
+
+        _staticNodes.Clear();
+        _monitors.Clear();
+        _seatTiles.Clear();
 
         foreach (var space in _sim.Spaces)
         {
@@ -61,15 +83,29 @@ public partial class WorldLayer : Node2D
             {
                 _seatTiles.Add(seat);
             }
+
+            foreach (var item in space.Furniture)
+            {
+                if (_sim.Database.Furniture.TryGetValue(item.ItemId, out var def) && def.Style == FurnitureStyle.Chair)
+                {
+                    _seatTiles.Add(item.Tile);
+                }
+            }
         }
 
         BuildWalls();
         BuildFurniture();
+        _layoutDirty = false;
     }
 
     public override void _Process(double delta)
     {
         Time += delta;
+        if (_layoutDirty)
+        {
+            RebuildStatic();
+        }
+
         SyncAgents();
     }
 
@@ -127,7 +163,7 @@ public partial class WorldLayer : Node2D
 
     /// <summary>The treatment space whose bed the patient is lying on, if any.</summary>
     public CareSpace? BedOf(Patient patient) =>
-        !patient.IsMoving && patient.CareSpaceId is { } id && _sim.Space(id) is { IsTreatmentSpace: true } space && patient.Tile == space.PatientSpot
+        !patient.IsMoving && patient.CareSpaceId is { } id && _sim.FindSpace(id) is { IsTreatmentSpace: true } space && patient.Tile == space.PatientSpot
             ? space
             : null;
 
@@ -201,7 +237,17 @@ public partial class WorldLayer : Node2D
 
         foreach (var building in _sim.Site.Buildings)
         {
-            Perimeter(building.Footprint, building.IsOpening);
+            foreach (var (inside, _, side) in building.OuterEdges())
+            {
+                var edge = side switch
+                {
+                    WallSide.North => (inside.X, inside.Y, true),
+                    WallSide.South => (inside.X, inside.Y + 1, true),
+                    WallSide.West => (inside.X, inside.Y, false),
+                    _ => (inside.X + 1, inside.Y, false),
+                };
+                (building.IsOpening(inside, side) ? doors : walls).Add(edge);
+            }
         }
 
         foreach (var space in _sim.Spaces.Where(s => s.HasWalls))
@@ -251,65 +297,34 @@ public partial class WorldLayer : Node2D
     {
         foreach (var space in _sim.Spaces)
         {
-            switch (space.Kind)
+            foreach (var item in space.Furniture)
             {
-                case CareSpaceKind.Resus:
-                case CareSpaceKind.Majors:
-                case CareSpaceKind.Minors:
-                    AddBedSpace(space);
-                    break;
+                if (!_sim.Database.Furniture.TryGetValue(item.ItemId, out var def))
+                {
+                    continue;
+                }
 
-                case CareSpaceKind.Triage:
-                    Chair(space.PatientSpot, new Color("#7E6BB5"));
-                    Chair(space.StaffSpot, new Color("#56606B"));
-                    Block(space.StaffSpot.X - 1.4, space.StaffSpot.Y - 1.2, 1.1, 2.2, 22, new Color("#E3E7EA"));
-                    AddObsMonitor(space, space.PatientSpot.X + 1.9, space.PatientSpot.Y - 0.4);
-                    break;
-
-                case CareSpaceKind.Waiting:
-                    foreach (var seat in space.Seats)
-                    {
-                        Chair(seat, new Color("#4F7FB0"));
-                    }
-
-                    // Reception desk between the receptionist and the queue, with a raised counter.
-                    Block(space.StaffSpot.X - 2, space.StaffSpot.Y + 1, 5, 0.8, 26, new Color("#8C6D4F"));
-                    Block(space.StaffSpot.X - 2.1, space.StaffSpot.Y + 1.5, 5.2, 0.4, 32, new Color("#E3D7C6"));
-                    Chair(space.StaffSpot, new Color("#56606B"));
-                    break;
-
-                case CareSpaceKind.NursesStation:
-                    Block(space.Rect.X + 1.5, space.Rect.Y + 4.1, space.Rect.Width - 3, 0.9, 24, new Color("#8C6D4F"));
-                    foreach (var seat in space.Seats)
-                    {
-                        Chair(seat, new Color("#56606B"));
-                    }
-
-                    break;
-
-                case CareSpaceKind.DoctorsOffice:
-                    Block(space.Rect.X + 1.6, space.Rect.Y + 4.1, space.Rect.Width - 3.2, 1.6, 20, new Color("#A9865F"));
-                    foreach (var seat in space.Seats)
-                    {
-                        Chair(seat, new Color("#56606B"));
-                    }
-
-                    break;
-
-                case CareSpaceKind.StaffRoom:
-                    Block(space.Rect.X + 1.8, space.Rect.Y + 3.1, 4.4, 1.6, 18, new Color("#A9865F"));
-                    foreach (var seat in space.Seats)
-                    {
-                        Chair(seat, new Color("#C0703A"));
-                    }
-
-                    Block(space.Rect.Right - 1.3, space.Rect.Y + 0.4, 1, 3, 24, new Color("#E3E7EA"));
-                    break;
+                var colour = new Color(def.Colour);
+                switch (def.Style)
+                {
+                    case FurnitureStyle.Bed:
+                        AddBed(space);
+                        break;
+                    case FurnitureStyle.Monitor:
+                        AddObsMonitor(space, item.CentreX, item.CentreY);
+                        break;
+                    case FurnitureStyle.Chair:
+                        Chair(item.Tile, colour);
+                        break;
+                    default:
+                        Block(item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour);
+                        break;
+                }
             }
         }
     }
 
-    private void AddBedSpace(CareSpace space)
+    private void AddBed(CareSpace space)
     {
         var spot = space.PatientSpot;
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
@@ -331,17 +346,6 @@ public partial class WorldLayer : Node2D
                 Figures.Lying(c, cx, cy, Looks.Patient(occupant!), Looks.Blanket(occupant!.Triage), lift);
             }
         }, animated: true);
-
-        // Obs monitor at the head of the bed, on the side away from where staff stand.
-        var side = space.StaffSpot.X < spot.X ? 1 : -1;
-        AddObsMonitor(space, cx + (side * 1.4), cy - 1.6);
-
-        if (space.Kind == CareSpaceKind.Resus)
-        {
-            // Resuscitation trolley and an oxygen cylinder.
-            Block(cx - (side * 2.6) - 0.6, cy - 2.4, 1.2, 1.4, 24, new Color("#D84B3E"));
-            Block(cx + (side * 2.4), cy + 1.2, 0.5, 0.5, 30, new Color("#E8EDEF"));
-        }
     }
 
     private void AddObsMonitor(CareSpace space, double gx, double gy)
@@ -388,7 +392,9 @@ public partial class WorldLayer : Node2D
 
     private void AddProp(Vector2 anchor, Action<CanvasItem> draw, bool animated = false)
     {
-        AddChild(new PropNode(draw, animated) { Position = anchor });
+        var node = new PropNode(draw, animated) { Position = anchor };
+        _staticNodes.Add(node);
+        AddChild(node);
     }
 
     /// <summary>A static or animated object drawn in world coordinates and sorted by its anchor.</summary>
