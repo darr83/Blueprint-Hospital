@@ -231,6 +231,7 @@ public static class RoomLayoutEngine
         }
 
         plan.StaffSpot = plan.Seats.Count > 0 ? plan.Seats[0] : f.Tile(f.W / 2, 1);
+        plan.PatientSpot = plan.StaffSpot;
 
         foreach (var item in template.Furniture.Where(i => i != desk?.Id && i != chair?.Id))
         {

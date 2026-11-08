@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
@@ -63,9 +64,9 @@ public sealed partial class HospitalSimulation
 
     private void CompleteTriage(StaffMember nurse, Patient patient, bool handover)
     {
-        if (TriageRoom.ReservedByStaffId == nurse.Id)
+        foreach (var room in SpacesOfKind(CareSpaceKind.Triage).Where(t => t.ReservedByStaffId == nurse.Id))
         {
-            TriageRoom.ReservedByStaffId = null;
+            room.ReservedByStaffId = null;
         }
 
         var obs = patient.CurrentObservations();

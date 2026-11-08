@@ -44,7 +44,6 @@ public sealed partial class HospitalSimulation
     private readonly List<AmbulanceVehicle> _ambulances = new();
     private readonly List<int> _receptionQueue = new();
     private readonly Dictionary<string, CareSpace> _spaces;
-    private readonly IReadOnlyList<GridCoord> _receptionQueueTiles;
     private readonly PatientGenerator _generator;
     private readonly DiagnosisEngine _diagnosis;
     private readonly ArrivalProfile? _arrivalProfile;
@@ -65,8 +64,7 @@ public sealed partial class HospitalSimulation
         Notifications = new NotificationLog(events);
 
         var building = site.Buildings[0];
-        _spaces = EmergencyDepartmentLayout.Create(building).ToDictionary(s => s.Id);
-        _receptionQueueTiles = EmergencyDepartmentLayout.ReceptionQueue(building);
+        _spaces = EmergencyDepartmentLayout.Create(building, database).ToDictionary(s => s.Id);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
         _generator = new PatientGenerator(database, Random);
         _diagnosis = new DiagnosisEngine(database);
@@ -92,7 +90,7 @@ public sealed partial class HospitalSimulation
 
     public SiteMap Site { get; }
 
-    public NavGrid Nav { get; }
+    public NavGrid Nav { get; private set; }
 
     public GameRandom Random { get; }
 
@@ -127,14 +125,19 @@ public sealed partial class HospitalSimulation
 
     public CareSpace Space(string id) => _spaces[id];
 
+    public CareSpace? FindSpace(string id) => _spaces.GetValueOrDefault(id);
+
+    /// <summary>Rooms of one kind, in a stable order.</summary>
+    public IEnumerable<CareSpace> SpacesOfKind(CareSpaceKind kind) =>
+        _spaces.Values.Where(s => s.Kind == kind).OrderBy(s => s.Id, StringComparer.Ordinal);
+
     public Patient? FindPatient(int id) =>
         _patients.TryGetValue(id, out var p) ? p : _departed.FirstOrDefault(d => d.Id == id);
 
     public StaffMember? FindStaff(int id) => _staff.FirstOrDefault(s => s.Id == id);
 
-    public CareSpace Waiting => _spaces["waiting_room"];
-
-    public CareSpace TriageRoom => _spaces["triage_1"];
+    /// <summary>The waiting room with reception. The building rules keep at least one.</summary>
+    public CareSpace Waiting => SpacesOfKind(CareSpaceKind.Waiting).First();
 
     /// <summary>Advances the hospital by one tick. Called by the clock.</summary>
     public void Tick()
@@ -272,20 +275,24 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    private GridCoord QueueTile(int index) => _receptionQueueTiles[Math.Min(index, _receptionQueueTiles.Count - 1)];
+    private GridCoord QueueTile(int index)
+    {
+        var tiles = Waiting.QueueTiles;
+        return tiles.Count == 0 ? Waiting.PatientSpot : tiles[Math.Min(index, tiles.Count - 1)];
+    }
 
     internal string Describe(Patient p) => $"{p.FullName} ({p.Age}{(p.Sex == Sex.Female ? "F" : "M")})";
 
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
-    private int? FreeSeat()
+    private GridCoord? FreeSeat()
     {
-        var taken = _patients.Values.Where(p => p.SeatIndex.HasValue).Select(p => p.SeatIndex!.Value).ToHashSet();
-        for (var i = 0; i < Waiting.Seats.Count; i++)
+        var taken = _patients.Values.Where(p => p.Seat.HasValue).Select(p => p.Seat!.Value).ToHashSet();
+        foreach (var seat in SpacesOfKind(CareSpaceKind.Waiting).SelectMany(w => w.Seats))
         {
-            if (!taken.Contains(i))
+            if (!taken.Contains(seat))
             {
-                return i;
+                return seat;
             }
         }
 
@@ -297,22 +304,23 @@ public sealed partial class HospitalSimulation
     {
         ReleaseSpace(patient);
         var seat = FreeSeat();
-        patient.SeatIndex = seat;
-        var destination = seat is { } s ? Waiting.Seats[s] : new GridCoord(Waiting.Rect.X + 10 + Random.Range(-3, 3), Waiting.Rect.Y + 3);
+        patient.Seat = seat;
+        var room = Waiting.Rect;
+        var destination = seat ?? new GridCoord(room.X + (room.Width / 2) + Random.Range(-3, 3), room.Y + (room.Length / 2));
         WalkTo(patient, destination);
     }
 
     internal void ReleaseSpace(Patient patient)
     {
-        if (patient.CareSpaceId is { } id && _spaces[id].OccupantId == patient.Id)
+        if (patient.CareSpaceId is { } id && FindSpace(id) is { } space && space.OccupantId == patient.Id)
         {
-            _spaces[id].OccupantId = null;
+            space.OccupantId = null;
         }
 
         patient.CareSpaceId = null;
     }
 
-    internal void ReleaseSeat(Patient patient) => patient.SeatIndex = null;
+    internal void ReleaseSeat(Patient patient) => patient.Seat = null;
 
     private void RemoveDepartedPatients()
     {
@@ -376,18 +384,30 @@ public sealed partial class HospitalSimulation
             case StaffRole.Receptionist:
                 return Waiting.StaffSpot;
             case StaffRole.Doctor:
-            {
-                var office = _spaces["doctors_office"];
-                var index = _staff.Where(s => s.Role == StaffRole.Doctor).ToList().IndexOf(member);
-                return office.Seats[Math.Max(0, index) % office.Seats.Count];
-            }
-
+                return BaseSeat(member, CareSpaceKind.DoctorsOffice);
             default:
-            {
-                var station = _spaces["nurses_station"];
-                var index = _staff.Where(s => s.Role == StaffRole.Nurse).ToList().IndexOf(member);
-                return station.Seats[Math.Max(0, index) % station.Seats.Count];
-            }
+                return BaseSeat(member, CareSpaceKind.NursesStation);
         }
+    }
+
+    /// <summary>A seat in the staff member's base room; without one they wait in a corridor.</summary>
+    private GridCoord BaseSeat(StaffMember member, CareSpaceKind kind)
+    {
+        var seats = SpacesOfKind(kind).SelectMany(s => s.Seats).ToList();
+        var index = Math.Max(0, _staff.Where(s => s.Role == member.Role).ToList().IndexOf(member));
+        if (seats.Count > 0)
+        {
+            return seats[index % seats.Count];
+        }
+
+        return WaitingPlace(index);
+    }
+
+    /// <summary>Somewhere in a corridor to stand, spread out by <paramref name="index"/>.</summary>
+    internal GridCoord WaitingPlace(int index)
+    {
+        var corridor = SpacesOfKind(CareSpaceKind.Corridor).OrderByDescending(c => c.Rect.Area).FirstOrDefault() ?? Waiting;
+        var r = corridor.Rect;
+        return new GridCoord(r.X + 1 + ((index * 3) % Math.Max(1, r.Width - 2)), r.Y + 1);
     }
 }

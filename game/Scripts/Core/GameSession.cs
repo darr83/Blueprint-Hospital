@@ -25,6 +25,11 @@ public sealed class GameSession
 
         // Each clock tick advances the hospital by one game second.
         Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount });
+        if (save?.Layout is { } layout)
+        {
+            Simulation.RestoreLayout(layout);
+        }
+
         Clock.Ticked += _ => Simulation.Tick();
     }
 
@@ -55,5 +60,6 @@ public sealed class GameSession
         SavedAtUtc = DateTime.UtcNow,
         Clock = Clock.CaptureState(),
         Camera = camera,
+        Layout = Simulation.CaptureLayout(),
     };
 }

@@ -47,6 +47,9 @@ public sealed class ClinicalTask
     /// <summary>True once staff and patient are both in place and the work timer has started.</summary>
     public bool Started { get; set; }
 
+    /// <summary>The room the task is done in, when it needs one of its own (the triage room in use).</summary>
+    public string? SpaceId { get; set; }
+
     /// <summary>Calculated priority; higher is more urgent.</summary>
     public double Priority { get; set; }
 }

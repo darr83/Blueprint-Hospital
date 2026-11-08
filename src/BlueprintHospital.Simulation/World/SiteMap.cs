@@ -23,10 +23,14 @@ public enum WallSide
     West,   // x == rect.X      (top-left edge on screen)
 }
 
-/// <summary>A hospital building: a floor footprint enclosed by outer walls with entrances.</summary>
+/// <summary>
+/// A hospital building: its original footprint plus any extensions, enclosed by outer walls
+/// with entrances.
+/// </summary>
 public sealed class Building(string id, string name, GridRect footprint)
 {
     private readonly List<Entrance> _entrances = new();
+    private readonly List<GridRect> _extensions = new();
 
     public string Id { get; } = id;
 
@@ -35,6 +39,54 @@ public sealed class Building(string id, string name, GridRect footprint)
     public GridRect Footprint { get; } = footprint;
 
     public IReadOnlyList<Entrance> Entrances => _entrances;
+
+    /// <summary>Areas added to the original footprint by building extensions.</summary>
+    public IReadOnlyList<GridRect> Extensions => _extensions;
+
+    /// <summary>The original footprint and every extension.</summary>
+    public IEnumerable<GridRect> Areas => _extensions.Prepend(Footprint);
+
+    /// <summary>Smallest rectangle around the whole building.</summary>
+    public GridRect Bounds
+    {
+        get
+        {
+            var areas = Areas.ToList();
+            var x = areas.Min(a => a.X);
+            var y = areas.Min(a => a.Y);
+            return new GridRect(x, y, areas.Max(a => a.Right) - x, areas.Max(a => a.Bottom) - y);
+        }
+    }
+
+    public bool Contains(GridCoord c) => Footprint.Contains(c) || _extensions.Any(e => e.Contains(c));
+
+    public double AreaSquareMetres => Areas.SelectMany(a => a.Tiles()).Distinct().Count() * Units.MetresPerTile * Units.MetresPerTile;
+
+    internal void AddExtension(GridRect area) => _extensions.Add(area);
+
+    internal void ClearExtensions() => _extensions.Clear();
+
+    /// <summary>Every edge between a floor tile of the building and a tile outside it: where the outer walls stand.</summary>
+    public IEnumerable<(GridCoord Inside, GridCoord Outside, WallSide Side)> OuterEdges()
+    {
+        var seen = new HashSet<GridCoord>();
+        foreach (var tile in Areas.SelectMany(a => a.Tiles()))
+        {
+            if (!seen.Add(tile))
+            {
+                continue;
+            }
+
+            foreach (var (dx, dy, side) in new[] { (0, -1, WallSide.North), (1, 0, WallSide.East), (0, 1, WallSide.South), (-1, 0, WallSide.West) })
+            {
+                var n = new GridCoord(tile.X + dx, tile.Y + dy);
+                if (!Contains(n))
+                {
+                    yield return (tile, n, side);
+                }
+            }
+        }
+    }
 
     public void AddEntrance(Entrance entrance)
     {
@@ -125,5 +177,12 @@ public sealed class SiteMap
         Fill(building.Footprint, TileKind.BuildingFloor);
     }
 
-    public Building? BuildingAt(GridCoord c) => _buildings.FirstOrDefault(b => b.Footprint.Contains(c));
+    public Building? BuildingAt(GridCoord c) => _buildings.FirstOrDefault(b => b.Contains(c));
+
+    /// <summary>Adds an extension to a building and lays its floor. Checks are made by the caller.</summary>
+    public void ExtendBuilding(Building building, GridRect area)
+    {
+        building.AddExtension(area);
+        Fill(area, TileKind.BuildingFloor);
+    }
 }

@@ -400,7 +400,7 @@ public sealed partial class HospitalSimulation
         foreach (var patient in waiting)
         {
             var category = patient.Triage!.Value;
-            var current = patient.CareSpaceId is { } cid ? _spaces[cid] : null;
+            var current = patient.CareSpaceId is { } cid ? FindSpace(cid) : null;
             CareSpace? target = null;
 
             foreach (var kind in SpacePreference(category))
@@ -454,7 +454,7 @@ public sealed partial class HospitalSimulation
             return false;
         }
 
-        return Acuity(SpacePreference(category)[0]) > Acuity(_spaces[id].Kind);
+        return FindSpace(id) is { } space && Acuity(SpacePreference(category)[0]) > Acuity(space.Kind);
     }
 
     private void RaiseCapacityAlert(string key, string text, Patient patient)
@@ -485,7 +485,7 @@ public sealed partial class HospitalSimulation
         }
         else
         {
-            patient.Log(Now, previous is null ? $"Moved to {space.Name}." : $"Moved from {_spaces[previous].Name} to {space.Name}.");
+            patient.Log(Now, previous is null ? $"Moved to {space.Name}." : $"Moved from {FindSpace(previous)?.Name ?? "another room"} to {space.Name}.");
         }
 
         if (patient.FirstSeenByDoctorAt is null && !HasTask(patient, TaskKind.DoctorAssessment))

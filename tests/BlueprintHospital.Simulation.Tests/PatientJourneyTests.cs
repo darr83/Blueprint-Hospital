@@ -163,7 +163,7 @@ public class PatientJourneyTests
                 Assert.Equal(space.Id, occupant!.CareSpaceId);
             }
 
-            var seats = h.Sim.Patients.Where(p => p.SeatIndex.HasValue).Select(p => p.SeatIndex).ToList();
+            var seats = h.Sim.Patients.Where(p => p.Seat.HasValue).Select(p => p.Seat).ToList();
             Assert.Equal(seats.Count, seats.Distinct().Count());
         }
 

@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.World;
 using BlueprintHospital.Simulation.Agents;
 using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Medical;
@@ -187,8 +188,8 @@ public sealed class Patient : Agent
     /// <summary>Care space currently occupied (or reserved), if any.</summary>
     public string? CareSpaceId { get; set; }
 
-    /// <summary>Waiting-room seat index, if seated.</summary>
-    public int? SeatIndex { get; set; }
+    /// <summary>The waiting-room seat the patient has taken, if any.</summary>
+    public GridCoord? Seat { get; set; }
 
     /// <summary>Id of the task currently being done to this patient, so two staff don't treat them at once.</summary>
     public int? BusyWithTaskId { get; set; }

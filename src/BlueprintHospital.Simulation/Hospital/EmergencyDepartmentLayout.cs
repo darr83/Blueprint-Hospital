@@ -1,129 +1,44 @@
+using BlueprintHospital.Simulation.Data;
 using BlueprintHospital.Simulation.World;
 
 namespace BlueprintHospital.Simulation.Hospital;
 
 /// <summary>
-/// The pre-built A&amp;E every new game starts with, laid out inside the starter building.
-/// (Rooms become player-built with the building system in a later milestone.)
-/// Coordinates below are relative to the building's corner; one tile is 0.5 m.
+/// The A&amp;E every new game starts with, built from the same room templates the player uses.
+/// Coordinates are relative to the building's corner; one tile is 0.5 m.
 /// </summary>
 public static class EmergencyDepartmentLayout
 {
     public const string Department = "emergency";
 
-    public static List<CareSpace> Create(Building building)
+    /// <summary>One room of the starter layout: template, id, name, corner, size in tiles along the door wall and deep, and door side.</summary>
+    private sealed record Placement(string Template, string Id, string Name, int X, int Y, int Width, int Depth, WallSide Door);
+
+    private static readonly Placement[] Starter =
     {
-        var o = new GridCoord(building.Footprint.X, building.Footprint.Y);
-        GridRect R(int x, int y, int w, int l) => new(o.X + x, o.Y + y, w, l);
-        GridCoord P(int x, int y) => new(o.X + x, o.Y + y);
-
-        var spaces = new List<CareSpace>
-        {
-            // Main corridor (4 m wide for trolleys) from the ambulance entrance westwards.
-            new()
-            {
-                Id = "corridor_main", Name = "A&E corridor", Kind = CareSpaceKind.Corridor, DepartmentId = Department,
-                Rect = R(4, 9, 56, 8), HasWalls = false,
-            },
-            new()
-            {
-                Id = "corridor_link", Name = "Waiting room corridor", Kind = CareSpaceKind.Corridor, DepartmentId = Department,
-                Rect = R(22, 17, 8, 9), HasWalls = false,
-            },
-
-            // North side of the corridor: treatment rooms, 4 m x 4.5 m (18 m²); resus 6 m x 4.5 m (27 m²).
-            Treatment("minors_1", "Minors 1", CareSpaceKind.Minors, R(4, 0, 8, 9), P(7, 3), P(5, 4)),
-            Treatment("minors_2", "Minors 2", CareSpaceKind.Minors, R(12, 0, 8, 9), P(15, 3), P(13, 4)),
-            new()
-            {
-                Id = "staff_room", Name = "Staff room", Kind = CareSpaceKind.StaffRoom, DepartmentId = Department,
-                Rect = R(20, 0, 8, 9), Doors = new[] { new Doorway(WallSide.South, 3, 2) },
-                StaffSpot = P(23, 3),
-                Seats = new[] { P(21, 2), P(22, 2), P(24, 2), P(25, 2), P(21, 5), P(22, 5), P(24, 5), P(25, 5) },
-            },
-            Treatment("majors_1", "Majors 1", CareSpaceKind.Majors, R(28, 0, 8, 9), P(31, 3), P(33, 4)),
-            Treatment("majors_2", "Majors 2", CareSpaceKind.Majors, R(36, 0, 8, 9), P(39, 3), P(41, 4)),
-            new()
-            {
-                Id = "resus_1", Name = "Resus", Kind = CareSpaceKind.Resus, DepartmentId = Department,
-                Rect = R(44, 0, 12, 9), Doors = new[] { new Doorway(WallSide.South, 4, 4) },
-                PatientSpot = P(49, 3), StaffSpot = P(47, 4),
-            },
-
-            // South side: offices, triage, nurses' station and the waiting room.
-            new()
-            {
-                Id = "doctors_office", Name = "Doctors' office", Kind = CareSpaceKind.DoctorsOffice, DepartmentId = Department,
-                Rect = R(4, 17, 10, 9), Doors = new[] { new Doorway(WallSide.North, 6, 2) },
-                StaffSpot = P(8, 21),
-                Seats = new[] { P(6, 20), P(8, 20), P(10, 20), P(6, 23), P(8, 23), P(10, 23) },
-            },
-            new()
-            {
-                Id = "triage_1", Name = "Triage", Kind = CareSpaceKind.Triage, DepartmentId = Department,
-                Rect = R(30, 17, 8, 9), Doors = new[] { new Doorway(WallSide.West, 3, 2) },
-                PatientSpot = P(34, 21), StaffSpot = P(33, 22),
-            },
-            new()
-            {
-                Id = "nurses_station", Name = "Nurses' station", Kind = CareSpaceKind.NursesStation, DepartmentId = Department,
-                Rect = R(38, 17, 10, 9), Doors = new[] { new Doorway(WallSide.North, 2, 6) },
-                StaffSpot = P(42, 20),
-                Seats = new[] { P(40, 20), P(42, 20), P(44, 20), P(46, 20), P(40, 22), P(42, 22), P(44, 22), P(46, 22) },
-            },
-            new()
-            {
-                Id = "waiting_room", Name = "Waiting room", Kind = CareSpaceKind.Waiting, DepartmentId = Department,
-                Rect = R(14, 26, 22, 14),
-                Doors = new[] { new Doorway(WallSide.North, 8, 8), new Doorway(WallSide.South, 8, 8) },
-                // Reception desk: receptionist behind it, patients in front.
-                StaffSpot = P(33, 32), PatientSpot = P(33, 34),
-                Seats = WaitingSeats(P),
-            },
-        };
-
-        return spaces;
-    }
-
-    /// <summary>Tiles where patients queue for reception, nearest the desk first.</summary>
-    public static IReadOnlyList<GridCoord> ReceptionQueue(Building building)
-    {
-        var o = new GridCoord(building.Footprint.X, building.Footprint.Y);
-        return new[] { new GridCoord(o.X + 33, o.Y + 34), new GridCoord(o.X + 33, o.Y + 35), new GridCoord(o.X + 33, o.Y + 36), new GridCoord(o.X + 32, o.Y + 37), new GridCoord(o.X + 31, o.Y + 37), new GridCoord(o.X + 30, o.Y + 37) };
-    }
-
-    private static CareSpace Treatment(string id, string name, CareSpaceKind kind, GridRect rect, GridCoord bed, GridCoord staff) => new()
-    {
-        Id = id,
-        Name = name,
-        Kind = kind,
-        DepartmentId = Department,
-        Rect = rect,
-        Doors = new[] { new Doorway(WallSide.South, 3, 3) },
-        PatientSpot = bed,
-        StaffSpot = staff,
+        new("corridor", "corridor_main", "A&E corridor", 4, 9, 56, 8, WallSide.South),
+        new("corridor", "corridor_link", "Waiting room corridor", 22, 17, 8, 9, WallSide.South),
+        new("minors_cubicle", "minors_1", "Minors 1", 4, 0, 8, 9, WallSide.South),
+        new("minors_cubicle", "minors_2", "Minors 2", 12, 0, 8, 9, WallSide.South),
+        new("staff_room", "staff_room", "Staff room", 20, 0, 8, 9, WallSide.South),
+        new("majors_cubicle", "majors_1", "Majors 1", 28, 0, 8, 9, WallSide.South),
+        new("majors_cubicle", "majors_2", "Majors 2", 36, 0, 8, 9, WallSide.South),
+        new("resus_bay", "resus_1", "Resus", 44, 0, 12, 9, WallSide.South),
+        new("doctors_office", "doctors_office", "Doctors' office", 4, 17, 10, 9, WallSide.North),
+        new("triage_room", "triage_1", "Triage", 30, 17, 9, 8, WallSide.West),
+        new("nurses_station", "nurses_station", "Nurses' station", 38, 17, 10, 9, WallSide.North),
+        new("waiting_room", "waiting_room", "Waiting room", 15, 26, 22, 14, WallSide.North),
     };
 
-    private static List<GridCoord> WaitingSeats(Func<int, int, GridCoord> p)
+    public static List<CareSpace> Create(Building building, GameDatabase database)
     {
-        var seats = new List<GridCoord>();
-        foreach (var y in new[] { 29, 31, 33, 35 })
+        var o = new GridCoord(building.Footprint.X, building.Footprint.Y);
+        return Starter.Select(p =>
         {
-            for (var x = 15; x <= 20; x++)
-            {
-                seats.Add(p(x, y));
-            }
-        }
-
-        foreach (var y in new[] { 29, 31 })
-        {
-            for (var x = 25; x <= 30; x++)
-            {
-                seats.Add(p(x, y));
-            }
-        }
-
-        return seats;
+            var template = database.RoomTemplates[p.Template];
+            var rect = RoomLayoutEngine.RectFor(new GridCoord(o.X + p.X, o.Y + p.Y), p.Width, p.Depth, p.Door);
+            return RoomLayoutEngine.Build(template, database, p.Id, p.Name, rect, p.Door);
+        }).ToList();
     }
 
     /// <summary>Builds the walkability grid: paths and floors walkable, walls blocking except at doors and entrances.</summary>
@@ -146,7 +61,13 @@ public static class EmergencyDepartmentLayout
 
         foreach (var building in site.Buildings)
         {
-            BlockPerimeter(grid, building.Footprint, (tile, side) => building.IsOpening(tile, side));
+            foreach (var (inside, outside, side) in building.OuterEdges())
+            {
+                if (!building.IsOpening(inside, side))
+                {
+                    grid.BlockEdge(inside, outside);
+                }
+            }
         }
 
         foreach (var space in spaces.Where(s => s.HasWalls))

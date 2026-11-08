@@ -70,9 +70,9 @@ public sealed partial class HospitalSimulation
             patient.BusyWithTaskId = null;
         }
 
-        if (task.Kind == TaskKind.Triage && TriageRoom.ReservedByStaffId == task.AssignedStaffId)
+        if (task.SpaceId is { } spaceId && FindSpace(spaceId) is { } room && room.ReservedByStaffId == task.AssignedStaffId)
         {
-            TriageRoom.ReservedByStaffId = null;
+            room.ReservedByStaffId = null;
         }
     }
 
@@ -222,11 +222,12 @@ public sealed partial class HospitalSimulation
         member.StatusText = $"{best.Label}: {patient.FullName}";
         patient.BusyWithTaskId = best.Id;
 
-        if (best.Kind == TaskKind.Triage)
+        if (best.Kind == TaskKind.Triage && FreeTriageRoom() is { } triage)
         {
-            TriageRoom.ReservedByStaffId = member.Id;
+            triage.ReservedByStaffId = member.Id;
+            best.SpaceId = triage.Id;
             ReleaseSeat(patient);
-            WalkTo(patient, TriageRoom.PatientSpot);
+            WalkTo(patient, triage.PatientSpot);
             patient.Log(Now, "Called through to triage.");
         }
         else if (best.Kind == TaskKind.EscortToTransfer && AmbulanceFor(patient) is { BaySlot: { } slot })
@@ -245,9 +246,8 @@ public sealed partial class HospitalSimulation
 
     private void TakeBreak(StaffMember member)
     {
-        var staffRoom = _spaces["staff_room"];
-        var seats = staffRoom.Seats;
-        var seat = seats[(member.Id - 1) % seats.Count];
+        var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
+        var seat = seats.Count > 0 ? seats[(member.Id - 1) % seats.Count] : HomeTile(member);
         member.Activity = StaffActivity.WalkingToBreak;
         member.BreakEndsAt = Now + BreakLength + TimeSpan.FromMinutes(Random.Range(0, 5));
         member.StatusText = "Going on a break";
@@ -270,7 +270,7 @@ public sealed partial class HospitalSimulation
         return task.Kind switch
         {
             TaskKind.Register => patient.Stage == PatientStage.WaitingToRegister && _receptionQueue.Count > 0 && _receptionQueue[0] == patient.Id,
-            TaskKind.Triage => TriageRoom.ReservedByStaffId is null && !patient.IsMoving,
+            TaskKind.Triage => FreeTriageRoom() is not null && !patient.IsMoving,
             TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay },
             _ => !patient.IsMoving || patient.Stage == PatientStage.InTreatmentSpace,
         };
@@ -283,13 +283,13 @@ public sealed partial class HospitalSimulation
         {
             case TaskKind.Register:
                 return Waiting.StaffSpot;
-            case TaskKind.Triage:
-                return TriageRoom.StaffSpot;
+            case TaskKind.Triage when task.SpaceId is { } triageId && FindSpace(triageId) is { } triage:
+                return triage.StaffSpot;
         }
 
-        if (patient.CareSpaceId is { } spaceId && task.Kind != TaskKind.EscortToTransfer)
+        if (patient.CareSpaceId is { } spaceId && task.Kind != TaskKind.EscortToTransfer && FindSpace(spaceId) is { } space)
         {
-            return _spaces[spaceId].StaffSpot;
+            return space.StaffSpot;
         }
 
         var target = patient.Destination ?? patient.Tile;
@@ -305,10 +305,13 @@ public sealed partial class HospitalSimulation
         return target;
     }
 
+    /// <summary>A triage room no nurse is using.</summary>
+    private CareSpace? FreeTriageRoom() => SpacesOfKind(CareSpaceKind.Triage).FirstOrDefault(t => t.ReservedByStaffId is null);
+
     private GridCoord PatientPositionFor(ClinicalTask task, Patient patient) => task.Kind switch
     {
         TaskKind.Register => QueueTile(0),
-        TaskKind.Triage => TriageRoom.PatientSpot,
+        TaskKind.Triage when task.SpaceId is { } id && FindSpace(id) is { } triage => triage.PatientSpot,
         _ => patient.Destination ?? patient.Tile,
     };
 
