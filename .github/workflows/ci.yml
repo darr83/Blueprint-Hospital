@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.7.2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Unit tests
+        run: dotnet test tests/BlueprintHospital.Simulation.Tests
+
+      - name: Build game
+        run: dotnet build game/BlueprintHospital.csproj
+
+      - name: Download Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          unzip -q godot.zip -d godot
+          echo "GODOT=$(find "$PWD/godot" -name 'Godot_v*_mono_linux.x86_64' -type f)" >> "$GITHUB_ENV"
+
+      - name: Import project
+        run: timeout 300 "$GODOT" --headless --path game --import
+
+      - name: Smoke test (launch, play, save, load)
+        run: timeout 300 "$GODOT" --headless --path game -- --smoke-test

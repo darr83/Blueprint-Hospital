@@ -1,0 +1,142 @@
+[
+  {
+    "id": "chest_pain",
+    "name": "Chest pain",
+    "patient_description": "My chest hurts.",
+    "body_system": "cardiovascular",
+    "is_red_flag": true
+  },
+  {
+    "id": "abdominal_pain",
+    "name": "Abdominal pain",
+    "patient_description": "I've got a bad pain in my stomach.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "headache",
+    "name": "Headache",
+    "patient_description": "My head is pounding.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "dizziness",
+    "name": "Dizziness",
+    "patient_description": "I keep feeling dizzy and light-headed.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "fever",
+    "name": "Fever",
+    "patient_description": "I feel hot and shivery.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "vomiting",
+    "name": "Vomiting",
+    "patient_description": "I can't stop being sick.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "diarrhoea",
+    "name": "Diarrhoea",
+    "patient_description": "I've had diarrhoea since yesterday.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "breathlessness",
+    "name": "Breathlessness",
+    "patient_description": "I can't catch my breath.",
+    "body_system": "respiratory",
+    "is_red_flag": true
+  },
+  {
+    "id": "palpitations",
+    "name": "Palpitations",
+    "patient_description": "My heart is racing and fluttering.",
+    "body_system": "cardiovascular",
+    "is_red_flag": false
+  },
+  {
+    "id": "rectal_bleeding",
+    "name": "Rectal bleeding",
+    "patient_description": "I've noticed blood when I go to the toilet.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "vaginal_bleeding",
+    "name": "Vaginal bleeding",
+    "patient_description": "I'm bleeding and it isn't my normal period.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
+  },
+  {
+    "id": "weakness",
+    "name": "Weakness",
+    "patient_description": "One side of my body feels weak.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "numbness",
+    "name": "Numbness",
+    "patient_description": "I can't feel parts of my arm and face properly.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "confusion",
+    "name": "Confusion",
+    "patient_description": "They're not making sense and seem muddled.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "seizures",
+    "name": "Seizures",
+    "patient_description": "They had a fit and were shaking all over.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "loss_of_consciousness",
+    "name": "Loss of consciousness",
+    "patient_description": "I blacked out.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "visual_disturbance",
+    "name": "Visual disturbances",
+    "patient_description": "My vision has gone blurry and strange.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "back_pain",
+    "name": "Back pain",
+    "patient_description": "My back really hurts.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "swelling",
+    "name": "Swelling",
+    "patient_description": "My legs and ankles have swollen up.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "fatigue",
+    "name": "Fatigue",
+    "patient_description": "I feel exhausted all the time.",
+    "body_system": "general",
+    "is_red_flag": false
+  }
+]

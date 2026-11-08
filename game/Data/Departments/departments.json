@@ -1,0 +1,52 @@
+[
+  {
+    "id": "emergency",
+    "name": "Accident and Emergency",
+    "short_name": "A&E",
+    "description": "Receives walk-in and ambulance patients, triages them Red, Amber or Green, and treats or refers them.",
+    "colour": "#D84343",
+    "starts_unlocked": true,
+    "is_shared_service": false,
+    "opening_cost": 0
+  },
+  {
+    "id": "cardiology",
+    "name": "Cardiology",
+    "short_name": "CARD",
+    "description": "Diagnoses and treats heart conditions such as heart attack, heart failure and arrhythmias.",
+    "colour": "#C2185B",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 250000
+  },
+  {
+    "id": "gynaecology",
+    "name": "Gynaecology",
+    "short_name": "GYN",
+    "description": "Cares for conditions of the female reproductive system, including early pregnancy emergencies.",
+    "colour": "#8E24AA",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 200000
+  },
+  {
+    "id": "neurology",
+    "name": "Neurology",
+    "short_name": "NEURO",
+    "description": "Assesses and treats conditions of the brain and nerves, including stroke and epilepsy.",
+    "colour": "#3949AB",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 275000
+  },
+  {
+    "id": "gastroenterology",
+    "name": "Gastroenterology",
+    "short_name": "GASTRO",
+    "description": "Investigates and treats conditions of the digestive system, liver and pancreas.",
+    "colour": "#6D8C2F",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 225000
+  }
+]
