@@ -170,7 +170,9 @@ public partial class SmokeTest : Node
     private static void OpenARecord(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
-        var focus = sim.Patients.Where(p => p.IsInDepartment && p.Triage is not null).OrderBy(p => p.Triage).First();
+        // Arrivals are random, so the department may be empty: fall back to a patient who has left.
+        var focus = sim.Patients.Where(p => p.IsInDepartment && p.Triage is not null).OrderBy(p => p.Triage).FirstOrDefault()
+                    ?? sim.DepartedPatients.First();
         hospital.SelectPatient(focus);
         Check(hospital.Hud.Record.Visible, "Patient record did not open.");
         GD.Print($"[smoke] Opened the record for {focus.FullName}.");
