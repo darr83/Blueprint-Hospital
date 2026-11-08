@@ -116,10 +116,11 @@ public partial class RecruitmentPanel : PanelContainer
         {
             var row = new PanelContainer();
             row.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color("#F7F9FB"), 10, null, 10));
-            var line = new HBoxContainer();
-            line.AddThemeConstantOverride("separation", 10);
+            // Place name above its chips, so long chips have the panel's full width and never push it off screen.
+            var line = new VBoxContainer();
+            line.AddThemeConstantOverride("separation", 6);
             row.AddChild(line);
-            var name = new Label { Text = place.Key, CustomMinimumSize = new Vector2(120, 0), TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
+            var name = new Label { Text = place.Key, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
             name.AddThemeFontSizeOverride("font_size", 14);
             line.AddChild(name);
             var counts = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -213,8 +214,9 @@ public partial class RecruitmentPanel : PanelContainer
         header.AddChild(pay);
         column.AddChild(header);
 
-        var facts = new HBoxContainer();
-        facts.AddThemeConstantOverride("separation", 6);
+        var facts = new HFlowContainer();
+        facts.AddThemeConstantOverride("h_separation", 6);
+        facts.AddThemeConstantOverride("v_separation", 6);
         foreach (var text in new[]
                  {
                      $"Skill {candidate.Skill:P0}",
@@ -232,7 +234,8 @@ public partial class RecruitmentPanel : PanelContainer
         var action = new HBoxContainer();
         action.AddThemeConstantOverride("separation", 8);
         var postings = _sim.PostingsFor(candidate.Role);
-        var where = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 40), ThemeTypeVariation = UiStyle.Secondary };
+        // Don't let a long room name widen the card past the panel: the button trims instead.
+        var where = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 40), ThemeTypeVariation = UiStyle.Secondary, FitToLongestItem = false, ClipText = true };
         foreach (var posting in postings)
         {
             where.AddItem(posting.Name);

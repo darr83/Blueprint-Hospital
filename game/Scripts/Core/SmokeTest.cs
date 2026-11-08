@@ -239,6 +239,10 @@ public partial class SmokeTest : Node
 
             case Stage.Recruitment when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("06b_recruitment");
+                var recruitment = hospital.Hud.Recruitment;
+                Check(recruitment.GetCombinedMinimumSize().X <= recruitment.Size.X + 1
+                      && recruitment.GetGlobalRect().End.X <= recruitment.GetViewportRect().Size.X + 1,
+                    $"Recruitment is wider than its dock ({recruitment.GetCombinedMinimumSize().X:0} > {recruitment.Size.X:0}).");
                 hospital.Hud.ToggleRecruitment();
                 StaffWardAndAdmit(hospital);
                 OpenRota(hospital);
