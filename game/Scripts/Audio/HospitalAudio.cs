@@ -157,7 +157,7 @@ public partial class HospitalAudio : Node2D
         var candidates = new List<(string Key, Vector2 Pos, Patient Patient, int News2, double Gain)>();
         foreach (var monitor in _world.Monitors)
         {
-            if (_world.ConnectedPatient(monitor.Space) is not { } patient)
+            if (_world.ConnectedPatient(monitor) is not { } patient)
             {
                 continue;
             }
@@ -508,7 +508,7 @@ public partial class HospitalAudio : Node2D
             case PatientOutcome.Died:
             {
                 // The monitor flatlines if they were on one, then a gentle sting.
-                var monitor = _world.Monitors.FirstOrDefault(m => _world.ConnectedPatient(m.Space)?.Id == e.Patient.Id);
+                var monitor = _world.Monitors.FirstOrDefault(m => _world.ConnectedPatient(m)?.Id == e.Patient.Id);
                 if (monitor is not null)
                 {
                     var pos = IsoDraw.ToScreen(monitor.X, monitor.Y);

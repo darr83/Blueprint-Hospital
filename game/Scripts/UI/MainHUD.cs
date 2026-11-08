@@ -73,6 +73,9 @@ public partial class MainHUD : CanvasLayer
 
     public RosterPanel Roster { get; } = new() { Name = "Roster", Visible = false };
 
+    /// <summary>The staff rota: day and night teams, breaks and moving staff between departments.</summary>
+    public StaffRotaPanel Rota { get; } = new() { Name = "Rota", Visible = false };
+
     public BuildPanel Build { get; } = new() { Name = "Build", Visible = false };
 
     public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
@@ -107,7 +110,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = false;
         RoomInfo.Close();
         ItemInfo.Close();
     }
@@ -175,6 +178,18 @@ public partial class MainHUD : CanvasLayer
         Roster.ShowTab(staff);
     }
 
+    /// <summary>Opens the staff rota, or closes it.</summary>
+    public void ToggleRota()
+    {
+        var show = !Rota.Visible;
+        HideRightPanels();
+        Rota.Visible = show;
+        if (show)
+        {
+            Rota.Rebuild();
+        }
+    }
+
     /// <summary>Shows or hides the A&amp;E board and notifications.</summary>
     public void ToggleBoard() => _left.Visible = !_left.Visible;
 
@@ -239,6 +254,15 @@ public partial class MainHUD : CanvasLayer
         ItemInfo.AnchorBottom = 0;
         ItemInfo.OffsetBottom = TopBarHeight + Gap + 10;
         root.AddChild(ItemInfo);
+
+        // The rota is big: it covers the map between the left-hand buttons and the right edge.
+        Rota.Initialise(sim);
+        Rota.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        Rota.OffsetLeft = NavWidth + Gap;
+        Rota.OffsetTop = TopBarHeight + Gap;
+        Rota.OffsetRight = -Gap;
+        Rota.OffsetBottom = -Gap;
+        root.AddChild(Rota);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -470,7 +494,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Hospital", NavIcon.Kind.Hospital, ToggleBoard, "Show or hide the A&E board and notifications"));
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
-        column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, () => ToggleRoster(true), "Who is on shift and what they are doing (T)"));
+        column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
@@ -535,7 +559,7 @@ public partial class MainHUD : CanvasLayer
             }
         }
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
-        Set("Staff", Roster.Visible && _rosterShowsStaff);
+        Set("Staff", Rota.Visible || (Roster.Visible && _rosterShowsStaff));
         Set("Clinics", Clinics.Visible);
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);
@@ -618,7 +642,7 @@ public partial class MainHUD : CanvasLayer
         _beds.Value.Text = total == 0 ? "No wards" : $"{total - used} of {total}";
         SetCardTone(_beds, total > 0 && used >= total ? Tone.Warning : Tone.Normal);
 
-        _staffOn.Value.Text = sim.Staff.Count().ToString();
+        _staffOn.Value.Text = sim.OnDutyStaff.Count().ToString();
     }
 
     // ---------------------------------------------------------------- map furniture

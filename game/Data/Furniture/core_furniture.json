@@ -471,5 +471,60 @@
   "colour": "#A8B3BB",
   "cost": 3500,
   "is_equipment": true
- }
+ },
+{
+ "id": "food_counter",
+ "name": "Food counter",
+ "width_m": 2.4,
+ "depth_m": 0.8,
+ "height_m": 1.0,
+ "style": "box",
+ "colour": "#C98B4E",
+ "cost": 4500,
+ "is_equipment": false
+},
+{
+ "id": "vending_machine",
+ "name": "Vending machine",
+ "width_m": 0.9,
+ "depth_m": 0.8,
+ "height_m": 1.85,
+ "style": "box",
+ "colour": "#C62828",
+ "cost": 2800,
+ "is_equipment": false
+},
+{
+ "id": "water_cooler",
+ "name": "Water machine",
+ "width_m": 0.4,
+ "depth_m": 0.4,
+ "height_m": 1.3,
+ "style": "box",
+ "colour": "#E3EEF5",
+ "cost": 450,
+ "is_equipment": false
+},
+{
+ "id": "cafe_table",
+ "name": "Cafe table",
+ "width_m": 0.8,
+ "depth_m": 0.8,
+ "height_m": 0.75,
+ "style": "box",
+ "colour": "#B07A4A",
+ "cost": 180,
+ "is_equipment": false
+},
+{
+ "id": "cafe_chair",
+ "name": "Cafe chair",
+ "width_m": 0.45,
+ "depth_m": 0.45,
+ "height_m": 0.85,
+ "style": "chair",
+ "colour": "#3E7CB1",
+ "cost": 60,
+ "is_equipment": false
+}
 ]

@@ -72,7 +72,7 @@ public class RecruitmentTests
         var h = new SimulationHarness(seed: 3);
         var patient = h.Sim.SpawnPatient(Patients.ArrivalMethod.WalkIn, "ankle_sprain");
         h.RunUntil(() => h.Sim.Staff.Any(s => s.Role == StaffRole.Receptionist && s.CurrentTaskId is not null), TimeSpan.FromHours(1), "reception to start");
-        var receptionist = h.Sim.Staff.Single(s => s.Role == StaffRole.Receptionist);
+        var receptionist = h.Sim.Staff.Single(s => s.Role == StaffRole.Receptionist && s.IsOnDuty);
         var task = receptionist.CurrentTaskId!.Value;
 
         Assert.True(h.Sim.Fire(receptionist.Id));

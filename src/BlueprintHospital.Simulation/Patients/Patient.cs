@@ -249,10 +249,34 @@ public sealed class Patient : Agent
     /// <summary>Treated in the ambulatory care unit and going home the same day, instead of being admitted.</summary>
     public bool SameDay { get; set; }
 
+    /// <summary>
+    /// The level of care the patient needs now: 0 for a ward, 2 for high dependency (HDU), 3 for
+    /// intensive care (ICU). Set on admission, after a big operation, by outreach and on ward rounds.
+    /// </summary>
+    public int CareLevel { get; set; }
+
+    /// <summary>Had a day case operation: comes round on a day surgery unit and goes home the same day.</summary>
+    public bool DayCase { get; set; }
+
+    /// <summary>Waiting for theatre on an assessment unit (e.g. the surgical assessment unit) rather than in A&amp;E.</summary>
+    public bool PreOp { get; set; }
+
+    /// <summary>Already on a ward but needs a bed on another (up to ICU/HDU, down from them, or out of an assessment unit).</summary>
+    public DateTime? WardMoveRequestedAt { get; set; }
+
+    /// <summary>Hours spent on an intensive care unit this stay (paid for at the critical care rate).</summary>
+    public double IntensiveCareHours { get; set; }
+
+    /// <summary>Hours spent on a high dependency unit this stay.</summary>
+    public double HighDependencyHours { get; set; }
+
     /// <summary>Physiotherapy sessions on the ward this stay.</summary>
     public int PhysioSessions { get; set; }
 
     public DateTime? LastPhysioAt { get; set; }
+
+    /// <summary>When they last got something to eat or drink from a cafe or vending machine; it keeps them patient for a while.</summary>
+    public DateTime? LastRefreshmentAt { get; set; }
 
     /// <summary>When the doctor asked for a ward bed.</summary>
     public DateTime? BedRequestedAt { get; set; }

@@ -76,7 +76,7 @@ public sealed partial class HospitalSimulation
         }
 
         var ambulance = patient.ArrivalMethod == ArrivalMethod.Ambulance;
-        if (patient.Triage == TriageCategory.Red || patient.Stage == PatientStage.AwaitingSurgery || (ambulance && patient.Triage != TriageCategory.Green))
+        if (patient.Triage == TriageCategory.Red || patient.Stage == PatientStage.AwaitingSurgery || patient.PreOp || patient.CareLevel >= 2 || (ambulance && patient.Triage != TriageCategory.Green))
         {
             patient.Mobility = Mobility.Trolley;
         }

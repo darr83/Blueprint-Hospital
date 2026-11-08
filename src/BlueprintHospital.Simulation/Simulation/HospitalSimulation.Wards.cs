@@ -41,6 +41,22 @@ public sealed partial class HospitalSimulation
     /// <summary>The doctor has decided the patient needs admitting.</summary>
     private void RequestWardBed(Patient patient, ConditionDefinition diagnosed, string? note = null)
     {
+        if (patient.Stage == PatientStage.OnWard)
+        {
+            // Already in a ward bed (e.g. back from theatre to the surgical assessment unit).
+            patient.DischargeDueAt = null;
+            RequestWardMove(patient, note ?? $"{diagnosed.DispositionNote} Needs {LevelName(patient.CareLevel)}.");
+            return;
+        }
+
+        var level = diagnosed.NeedsIntensiveCare && !patient.HadSurgery ? 3 : LevelFor(patient.Severity);
+        patient.CareLevel = Math.Max(patient.CareLevel, level);
+        if (patient.CareLevel == 2 && !HasHighDependencyBeds)
+        {
+            // No HDU or ICU here: they are looked after on an ordinary ward, as before.
+            patient.CareLevel = 0;
+        }
+
         if (WardsFor(patient).Count == 0)
         {
             ArrangeTransfer(patient, diagnosed, NoWardReason(patient));
@@ -49,7 +65,8 @@ public sealed partial class HospitalSimulation
 
         patient.Stage = PatientStage.AwaitingBed;
         patient.BedRequestedAt = Now;
-        patient.Log(Now, note ?? $"{diagnosed.DispositionNote} Referred to the {DepartmentName(DepartmentOf(patient))} team; waiting for a ward bed.", important: true);
+        var team = patient.CareLevel >= 2 ? "the critical care" : $"the {DepartmentName(DepartmentOf(patient))}";
+        patient.Log(Now, note ?? $"{diagnosed.DispositionNote} Referred to {team} team; waiting for {(patient.CareLevel >= 2 ? LevelName(patient.CareLevel) : "a ward bed")}.", important: true);
         Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} needs a ward bed.", patient.Id, patient.CareSpaceId, patient.Triage);
     }
 
@@ -93,6 +110,14 @@ public sealed partial class HospitalSimulation
             }
 
             var diagnosed = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
+            if (patient.PreOp)
+            {
+                // Their bed on the assessment unit has gone: they wait for theatre in A&E instead.
+                patient.PreOp = false;
+                RequestSurgery(patient, diagnosed);
+                continue;
+            }
+
             var wards = WardsFor(patient);
             if (wards.Count == 0 || Now - patient.BedRequestedAt > MaxWaitForBed)
             {
@@ -109,17 +134,23 @@ public sealed partial class HospitalSimulation
                 free.Bed.OccupantId = patient.Id;
                 patient.ReservedWardId = free.Ward.Id;
                 patient.ReservedBedIndex = free.Index;
-                var outlier = free.Ward.DepartmentId == EmergencyDepartmentId && DepartmentOf(patient) != EmergencyDepartmentId && !patient.ForObservation
+                var outlier = free.Ward.DepartmentId == EmergencyDepartmentId && patient.CareLevel < 2 && DepartmentOf(patient) != EmergencyDepartmentId && !patient.ForObservation
                     ? $" Their {DepartmentName(DepartmentOf(patient))} ward is full, so they go to the A&E ward for now."
                     : string.Empty;
                 patient.Log(Now, $"Bed {free.Index + 1} on {free.Ward.Name} allocated.{outlier}");
                 AddTask(TaskKind.EscortToWard, StaffRole.Nurse, patient, 5, $"Take to {free.Ward.Name}");
+            }
+            else if (Now - patient.BedRequestedAt > TimeSpan.FromHours(1) && patient.CareLevel >= 2)
+            {
+                RaiseCapacityAlert("critical_care", $"Critical care is full: {patient.FullName} has waited over an hour in A&E for {LevelName(patient.CareLevel)}. Build more ICU or HDU beds, or move patients down.", patient);
             }
             else if (Now - patient.BedRequestedAt > TimeSpan.FromHours(1))
             {
                 RaiseCapacityAlert("wards", $"The wards are full: {patient.FullName} has waited over an hour in A&E for a bed. Build more ward beds or patients will be sent elsewhere.", patient);
             }
         }
+
+        UpdateWardMoves();
 
         foreach (var patient in _patients.Values.Where(p => p.Stage == PatientStage.OnWard && p.IsAlive && p.BusyWithTaskId is null))
         {
@@ -167,12 +198,13 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        var from = patient.Stage == PatientStage.OnWard && patient.CareSpaceId is { } oldId ? FindSpace(oldId) : null;
         ReleaseSpace(patient);
         ward.Beds[index].OccupantId = patient.Id;
         patient.CareSpaceId = ward.Id;
         patient.BedIndex = index;
         WalkTo(patient, ward.Beds[index].PatientSpot);
-        patient.Log(Now, $"Left A&E for {ward.Name}.");
+        patient.Log(Now, from is not null ? $"Moving from {from.Name} to {ward.Name}." : $"Left A&E for {ward.Name}.");
     }
 
     private void CompleteEscortToWard(StaffMember nurse, Patient patient)
@@ -183,16 +215,31 @@ public sealed partial class HospitalSimulation
         }
 
         var diagnosed = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
+        var unit = UnitOf(ward);
+        if (patient.AdmittedAt is not null && patient.Stage == PatientStage.OnWard)
+        {
+            // A move between wards: no new admission, but a new team takes over.
+            patient.ReservedWardId = null;
+            patient.ReservedBedIndex = null;
+            patient.WardMoveRequestedAt = null;
+            patient.DischargeDueAt = StayOn(patient, diagnosed, unit, moved: true);
+            patient.Log(Now, $"Moved to {ward.Name}, bed {patient.BedIndex + 1}, by {nurse.Name}.", important: true);
+            if (unit is WardUnit.IntensiveCare or WardUnit.HighDependency)
+            {
+                AddTask(TaskKind.WardClerking, StaffRole.Doctor, patient, 15, unit == WardUnit.IntensiveCare ? "ICU admission" : "HDU admission");
+            }
+
+            return;
+        }
+
         patient.Stage = PatientStage.OnWard;
         patient.ReservedWardId = null;
         patient.ReservedBedIndex = null;
         patient.AdmittedAt = Now;
         patient.LeftEmergencyAt = Now;
-        var stay = patient.SameDay && diagnosed.AmbulatoryHours is { } sameDay ? sameDay
-            : patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe
-            : diagnosed.LengthOfStayHours;
-        patient.DischargeDueAt = Now.AddHours(Random.Range(stay[0], stay[1]));
-        patient.Log(Now, $"{(patient.SameDay ? "Moved for same-day care" : patient.ForObservation ? "Moved for observation" : "Admitted")} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
+        patient.DischargeDueAt = patient.PreOp ? null : StayOn(patient, diagnosed, unit, moved: false);
+        var how = patient.SameDay ? "Moved for same-day care" : patient.ForObservation ? "Moved for observation" : patient.PreOp ? "Moved to wait for theatre" : "Admitted";
+        patient.Log(Now, $"{how} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
         Stats.RecordAdmission(patient, Now);
         PayForAttendance(patient);
 
@@ -202,6 +249,37 @@ public sealed partial class HospitalSimulation
         }
 
         AddTask(TaskKind.WardClerking, StaffRole.Doctor, patient, 15, "Admission clerking");
+        if (patient.PreOp)
+        {
+            var operation = diagnosed.Operation!;
+            AddTask(TaskKind.Surgery, RoleForRoom(operation.Room), patient, operation.Minutes, operation.Name, diagnosed.Id);
+        }
+    }
+
+    /// <summary>When the team next review whether the patient can go: hours on ICU/HDU, a few hours after a day case, or the usual stay.</summary>
+    private DateTime StayOn(Patient patient, ConditionDefinition diagnosed, WardUnit unit, bool moved)
+    {
+        if (unit is WardUnit.IntensiveCare or WardUnit.HighDependency)
+        {
+            return Now.AddHours(Random.Range(6.0, 10.0));
+        }
+
+        if (patient.DayCase && unit == WardUnit.DaySurgery)
+        {
+            return Now.AddHours(Random.Range(3.0, 5.0));
+        }
+
+        if (moved && patient.DischargeDueAt is { } due && due > Now)
+        {
+            // Out of an assessment unit or down from critical care: the plan they already had stands.
+            return due;
+        }
+
+        var stay = patient.SameDay && diagnosed.AmbulatoryHours is { } sameDay ? sameDay
+            : patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe
+            : diagnosed.LengthOfStayHours;
+        var hours = Random.Range(stay[0], stay[1]);
+        return Now.AddHours(moved ? hours * 0.6 : hours);
     }
 
     // ---------------------------------------------------------------- care on the ward
@@ -237,6 +315,30 @@ public sealed partial class HospitalSimulation
 
     private void CompleteWardRound(StaffMember doctor, Patient patient)
     {
+        if (CriticalUnitOfPatient(patient) is { } critical)
+        {
+            CriticalCareRound(doctor, patient, critical);
+            return;
+        }
+
+        if (EscalateOnWardRound(doctor, patient))
+        {
+            return;
+        }
+
+        if (patient.DayCase)
+        {
+            if (patient.Severity <= SameDayFitSeverity)
+            {
+                patient.Log(Now, $"Ward round with {doctor.Name}: recovered from the anaesthetic and well enough to go home today.");
+                ArrangeMedicinesToTakeHome(patient);
+                return;
+            }
+
+            patient.DayCase = false;
+            patient.Log(Now, $"Ward round with {doctor.Name}: not ready for home after the day case operation, so kept in overnight.", important: true);
+        }
+
         if (patient.SameDay && patient.Severity <= SameDayFitSeverity)
         {
             patient.Log(Now, $"Ward round with {doctor.Name}: well enough to finish treatment at home, with a review at the ambulatory unit tomorrow.");

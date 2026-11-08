@@ -44,7 +44,7 @@ public partial class OverlayLayer : Node2D
         // Obs monitor screens, always visible above walls and beds.
         foreach (var monitor in _world.Monitors)
         {
-            var patient = _world.ConnectedPatient(monitor.Space);
+            var patient = _world.ConnectedPatient(monitor);
             var outline = patient is null ? (Color?)null : patient.Triage is null ? new Color("#F2F4F6") : Looks.TriageRing(patient.Triage);
             Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LatestObservations?.News2.Total ?? 0);
         }

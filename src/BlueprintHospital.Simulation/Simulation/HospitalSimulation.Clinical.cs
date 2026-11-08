@@ -54,6 +54,9 @@ public sealed partial class HospitalSimulation
             case TaskKind.Physio:
                 CompletePhysio(member, patient);
                 break;
+            case TaskKind.OutreachReview:
+                CompleteOutreachReview(member, patient);
+                break;
             case TaskKind.Discharge:
                 CompleteDischarge(member, patient);
                 break;

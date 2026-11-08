@@ -218,8 +218,16 @@ public partial class RoomPanel : PanelContainer
         if (room.IsWard)
         {
             var used = room.Beds.Count(b => b.OccupantId is not null);
-            var team = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Name);
-            return $"{used} of {room.Beds.Count} beds\n[color=#5B6B79]Ward team[/color]  {string.Join(", ", team)}";
+            string Team(Simulation.Staff.StaffShift shift)
+            {
+                var names = _sim.Staff.Where(s => s.BaseRoomId == room.Id && s.Shift == shift).Select(s => s.Name).ToList();
+                return names.Count > 0 ? string.Join(", ", names) : "[color=#C4373D]nobody[/color]";
+            }
+
+            var closed = _sim.UnitOf(room) == Simulation.Data.Models.WardUnit.IntensiveCare && !_sim.IsIntensiveCareOpen(room)
+                ? "[color=#C4373D]Closed: post an anaesthetist here to open it[/color]\n"
+                : string.Empty;
+            return $"{closed}{used} of {room.Beds.Count} beds\n[color=#5B6B79]Days[/color]  {Team(Simulation.Staff.StaffShift.Day)}\n[color=#5B6B79]Nights[/color]  {Team(Simulation.Staff.StaffShift.Night)}";
         }
 
         if (room.Kind == CareSpaceKind.Clinic)
@@ -239,7 +247,14 @@ public partial class RoomPanel : PanelContainer
             return $"{waiting} clinic patients waiting\n[color=#5B6B79]On the desk[/color]  {(desk.Count > 0 ? string.Join(", ", desk) : "[color=#C4373D]no receptionist[/color]")}";
         }
 
-        var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => room.Rect.Contains(s.Tile));
+        if (room.Kind == CareSpaceKind.Theatre && !_sim.IsStaffed(room))
+        {
+            var has = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Role).ToHashSet();
+            var missing = new[] { Simulation.Staff.StaffRole.Surgeon, Simulation.Staff.StaffRole.Anaesthetist }.Where(r => !has.Contains(r)).Select(r => $"a {Simulation.Staff.StaffGrades.RoleName(r)}");
+            return $"[color=#C4373D]Closed: needs {string.Join(" and ", missing)}[/color]";
+        }
+
+        var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => s.IsInBuilding && room.Rect.Contains(s.Tile));
         return room.Kind switch
         {
             CareSpaceKind.Corridor => "Corridor",

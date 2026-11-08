@@ -96,7 +96,7 @@ public partial class FinancePanel : PanelContainer
         sb.Append("[/table]\n\n");
 
         sb.Append("[color=#5B6B79]Running costs per day[/color]\n");
-        sb.Append($"Staff wages  £{_sim.StaffCostPerDay:N0}  ({_sim.Staff.Count} posts, each covered around the clock)\n");
+        sb.Append($"Staff wages  £{_sim.StaffCostPerDay:N0}  ({_sim.Staff.Count(s => s.Shift == Simulation.Staff.StaffShift.Day)} on days, {_sim.Staff.Count(s => s.Shift == Simulation.Staff.StaffShift.Night)} on nights; each hire covers one 12-hour shift)\n");
         sb.Append($"Building upkeep  £{_sim.UpkeepPerDay:N0}  ({_sim.MainBuilding.AreaSquareMetres:N0} m²)\n\n");
 
         sb.Append("[color=#5B6B79]Paid for each patient[/color]\n");
@@ -127,6 +127,7 @@ public partial class FinancePanel : PanelContainer
         MoneyCategory.Construction => "Building work",
         MoneyCategory.Operations => "Operations",
         MoneyCategory.Clinics => "Clinics",
+        MoneyCategory.Catering => "Cafe and vending",
         _ => category.ToString(),
     };
 }

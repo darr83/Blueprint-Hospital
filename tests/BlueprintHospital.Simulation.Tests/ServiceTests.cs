@@ -83,7 +83,7 @@ public class ServiceTests
     [Fact]
     public void Pneumonia_gets_a_chest_xray_in_the_xray_room_when_there_is_one()
     {
-        var h = Wing(5, new[] { ("xray_room", 9, 9) }, Array.Empty<(string, int, int)>());
+        var h = Wing(6, new[] { ("xray_room", 9, 9) }, Array.Empty<(string, int, int)>());
         var room = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.XRay);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
 
@@ -114,7 +114,7 @@ public class ServiceTests
     [Fact]
     public void Appendicitis_goes_to_theatre_then_recovers_on_a_ward()
     {
-        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("gastro_ward", 16, 10) }, "gastroenterology");
+        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("surgical_ward", 16, 10) }, "general_surgery");
         var theatre = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.Theatre);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
 

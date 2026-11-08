@@ -96,25 +96,57 @@ public sealed partial class HospitalSimulation
             return Wards.Where(IsSameDayUnit).ToList();
         }
 
-        var emergency = WardsOf(EmergencyDepartmentId).Where(w => !IsSameDayUnit(w)).ToList();
+        // Ordinary wards and assessment units; not same-day, day surgery or critical care units.
+        bool Plain(CareSpace w) => !IsSameDayUnit(w) && UnitOf(w) is WardUnit.None or WardUnit.Assessment;
+        var emergency = WardsOf(EmergencyDepartmentId).Where(Plain).ToList();
         if (patient.ForObservation)
         {
             return emergency;
         }
 
-        var department = DepartmentOf(patient);
-        var own = department == EmergencyDepartmentId ? new List<CareSpace>() : WardsOf(department).Where(w => !IsSameDayUnit(w)).ToList();
-        if (own.Count == 0 && !patient.HadSurgery)
+        // Intensive care patients only go to an open ICU; high dependency patients go to HDU, then ICU,
+        // then (with neither) an ordinary ward.
+        var critical = new List<CareSpace>();
+        if (patient.CareLevel >= 3)
         {
-            return department == EmergencyDepartmentId ? emergency : own;
+            return OpenIntensiveCareUnits.ToList();
         }
 
-        return own.Concat(emergency).ToList();
+        if (patient.CareLevel == 2)
+        {
+            critical.AddRange(HighDependencyUnits);
+            critical.AddRange(OpenIntensiveCareUnits);
+        }
+
+        var dayUnits = patient.DayCase ? Wards.Where(w => UnitOf(w) == WardUnit.DaySurgery).ToList() : new List<CareSpace>();
+
+        // A department's ordinary wards come before its assessment units.
+        var department = DepartmentOf(patient);
+        var mine = department == EmergencyDepartmentId ? new List<CareSpace>() : WardsOf(department).Where(Plain).ToList();
+        var own = mine.Where(w => UnitOf(w) == WardUnit.None).Concat(mine.Where(w => UnitOf(w) == WardUnit.Assessment)).ToList();
+        List<CareSpace> ordinary;
+        if (own.Count == 0 && !patient.HadSurgery)
+        {
+            ordinary = department == EmergencyDepartmentId ? emergency : own;
+        }
+        else
+        {
+            ordinary = own.Concat(emergency).ToList();
+        }
+
+        return critical.Concat(dayUnits).Concat(ordinary).ToList();
     }
 
     /// <summary>Why a patient who needs admitting can't be: their specialty has no ward here.</summary>
     private string NoWardReason(Patient patient)
     {
+        if (patient.CareLevel >= 3)
+        {
+            return Wards.Any(w => UnitOf(w) == WardUnit.IntensiveCare)
+                ? "Needs intensive care, but the intensive care unit has no anaesthetist, so they are being transferred to a neighbouring hospital's ICU."
+                : "Needs intensive care, but there is no intensive care unit here, so they are being transferred to a neighbouring hospital's ICU.";
+        }
+
         var department = DepartmentOf(patient);
         var name = DepartmentName(department);
         return IsUnlocked(department)

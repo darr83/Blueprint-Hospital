@@ -23,6 +23,8 @@ public static class RoomLayoutEngine
         RoomLayoutKind.Ward => new[] { "hospital_bed" },
         RoomLayoutKind.Triage => new[] { "staff_chair", "visitor_chair", "obs_monitor" },
         RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair", "waiting_seat" },
+        RoomLayoutKind.Cafeteria => new[] { "food_counter", "cafe_table", "cafe_chair" },
+        RoomLayoutKind.Vending => new[] { "vending_machine" },
         _ => Array.Empty<string>(),
     };
 
@@ -86,6 +88,12 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.StaffRoom:
                 Office(plan, template);
                 break;
+            case RoomLayoutKind.Cafeteria:
+                Cafeteria(plan, template);
+                break;
+            case RoomLayoutKind.Vending:
+                Vending(plan, template);
+                break;
         }
 
         var doors = new List<Doorway> { frame.Door(doorOffset, doorWidth, back: false) };
@@ -113,6 +121,7 @@ public static class RoomLayoutEngine
             StaffSpot = plan.StaffSpot,
             Seats = plan.Seats,
             Beds = plan.Beds,
+            VendingSpots = plan.Vendors,
             QueueTiles = plan.Queue,
             Furniture = plan.Items,
             BuildCost = Cost(template, database, rect, plan.Items),
@@ -176,7 +185,11 @@ public static class RoomLayoutEngine
     private static void Ward(Plan plan, RoomTemplate template)
     {
         var r = plan.Frame.Rect;
-        const int pitch = BedTilesX + 2;
+
+        // Critical care beds stand further apart, with a ventilator and a monitor beside each one.
+        var ventilated = template.Furniture.Contains("ventilator");
+        var monitored = template.Furniture.Contains("obs_monitor");
+        var pitch = ventilated ? BedTilesX + 4 : BedTilesX + 2;
         var north = (r.Y + 1, false);
         var south = (r.Bottom - 1 - BedTilesY, true);
         var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
@@ -203,9 +216,19 @@ public static class RoomLayoutEngine
                 plan.Reserve(spot);
                 plan.Reserve(staff);
 
-                if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                var headY = headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1;
+                if (ventilated && x + BedTilesX + 3 <= r.Right - 1)
                 {
-                    plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1, 0.9, 0.9);
+                    plan.AddWorld("ventilator", x + BedTilesX + 0.2, headY, 0.8, 0.8);
+                    plan.AddWorld("obs_monitor", x + BedTilesX + 1.4, headY, 0.6, 0.6);
+                }
+                else if (monitored && !locker && x + BedTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("obs_monitor", x + BedTilesX + 0.2, headY, 0.6, 0.6);
+                }
+                else if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headY, 0.9, 0.9);
                 }
             }
         }
@@ -214,7 +237,7 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker"))
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor"))
         {
             plan.TryPlaceAgainstWalls(item);
         }
@@ -332,6 +355,147 @@ public static class RoomLayoutEngine
         }
     }
 
+    /// <summary>The most vending machines any room gets.</summary>
+    public const int MaxVendingMachines = 4;
+
+    /// <summary>How many vending machines a cafeteria of this floor area gets: one in a small cafe, up to four in a big one.</summary>
+    public static int CafeVendingMachines(double areaSquareMetres) => areaSquareMetres switch
+    {
+        < 40 => 1,
+        < 65 => 2,
+        < 100 => 3,
+        _ => MaxVendingMachines,
+    };
+
+    /// <summary>
+    /// A food counter centred on the back wall with its queue in front, a water machine beside it, vending
+    /// machines down the side walls (more in a bigger cafe, up to four), and the rest of the floor filled
+    /// with square tables of four. A bigger cafe simply holds more tables.
+    /// </summary>
+    private static void Cafeteria(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+        var db = plan.Database;
+
+        // Food counter along the back wall, between a third and a half of its length.
+        var counterLength = Math.Clamp(Math.Round(f.W * 0.4), 3, 10);
+        var counterDepth = db.Furniture.TryGetValue("food_counter", out var counterDef) ? counterDef.DepthM / Units.MetresPerTile : 1.6;
+        var cu = Math.Floor((f.W - counterLength) / 2) + 0.2;
+        var counter = f.ToWorld(cu, 0.3, counterLength - 0.4, counterDepth);
+        plan.AddWorld("food_counter", counter.X, counter.Y, counter.W, counter.L);
+
+        // Customers queue along the front of the counter; the till is in the middle.
+        var queueV = (int)Math.Ceiling(0.3 + counterDepth);
+        var queue = new List<GridCoord>();
+        for (var u = (int)Math.Ceiling(cu); u < cu + counterLength - 0.4; u++)
+        {
+            queue.Add(f.Tile(u, queueV));
+        }
+
+        var till = f.Tile((int)Math.Floor(cu + ((counterLength - 0.4) / 2)), queueV);
+        plan.Queue = queue.OrderBy(q => Math.Abs(q.X - till.X) + Math.Abs(q.Y - till.Y)).ToList();
+        foreach (var q in plan.Queue)
+        {
+            plan.Reserve(q);
+        }
+
+        plan.PatientSpot = till;
+        plan.StaffSpot = till;
+
+        // Water machine on the back wall beside the counter.
+        if (template.Furniture.Contains("water_cooler")
+            && !plan.TryPlaceLocal("water_cooler", cu + counterLength - 0.2, 0.3)
+            && !plan.TryPlaceLocal("water_cooler", cu - 1.2, 0.3))
+        {
+            plan.TryPlaceAgainstWalls("water_cooler");
+        }
+
+        // Vending machines down the side walls, starting at the back, each with a clear tile in front.
+        var (leftUsed, rightUsed) = (false, false);
+        if (template.Furniture.Contains("vending_machine"))
+        {
+            var wanted = CafeVendingMachines(Units.AreaSquareMetres(f.Rect.Width, f.Rect.Length));
+            var placed = 0;
+            foreach (var left in new[] { true, false })
+            {
+                for (var v = 0.3; placed < wanted && v < f.D - 1; v += 0.5)
+                {
+                    if (plan.TryPlaceTurnedAgainstSide("vending_machine", v, left, out var front))
+                    {
+                        plan.Reserve(front);
+                        plan.Vendors.Add(front);
+                        placed++;
+                        (leftUsed, rightUsed) = left ? (true, rightUsed) : (leftUsed, true);
+                    }
+                }
+            }
+        }
+
+        // Tables of four (a chair on each side, set in a pinwheel), filling the floor row by row with
+        // a clear aisle round each one; the space inside the door is kept free.
+        var minU = leftUsed ? 3 : 1;
+        var maxU = f.W - (rightUsed ? 4 : 2);
+        // First in neat rows and columns, then into any gaps left (round the doorway, say).
+        foreach (var step in new[] { 5, 1 })
+        {
+            for (var bv = queueV + 1; bv + 4 <= f.D - 1; bv += step)
+            {
+                for (var bu = minU; bu + 4 <= maxU + 1; bu += step)
+                {
+                    plan.TryTableOfFour("cafe_table", "cafe_chair", bu, bv);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A row of vending machines along the back wall (one for every 2 metres of wall, up to four) with a
+    /// water machine at the end, and a seat or two by the side walls if the room is deep enough.
+    /// </summary>
+    private static void Vending(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+        var db = plan.Database;
+        var width = db.Furniture.TryGetValue("vending_machine", out var vm) ? vm.WidthM / Units.MetresPerTile : 1.8;
+        var depth = vm is null ? 1.6 : vm.DepthM / Units.MetresPerTile;
+        var frontV = (int)Math.Ceiling(0.3 + depth);
+
+        var count = 0;
+        for (var u = 0.3; count < MaxVendingMachines && u + width <= f.W - 0.2; u += width + 0.2)
+        {
+            if (plan.TryPlaceLocal("vending_machine", u, 0.3))
+            {
+                var front = f.Tile((int)Math.Floor(u + (width / 2)), frontV);
+                plan.Reserve(front);
+                plan.Vendors.Add(front);
+                count++;
+            }
+        }
+
+        // The water machine goes at the end of the row if there is room, otherwise against a wall.
+        if (template.Furniture.Contains("water_cooler") && !plan.TryPlaceLocal("water_cooler", 0.3 + (count * (width + 0.2)), 0.3))
+        {
+            plan.TryPlaceAgainstWalls("water_cooler");
+        }
+
+        plan.Queue = plan.Vendors.ToList();
+        plan.PatientSpot = plan.Vendors.Count > 0 ? plan.Vendors[0] : f.Tile(f.W / 2, frontV);
+        plan.StaffSpot = plan.PatientSpot;
+
+        // A seat by each side wall, out of the way of the door, if there is a row to spare.
+        if (template.Furniture.Contains("waiting_seat") && f.D - 2 > frontV)
+        {
+            foreach (var u in new[] { 0, f.W - 1 })
+            {
+                var tile = f.Tile(u, f.D - 2);
+                if ((u + 1 < plan.DoorOffset || u > plan.DoorOffset + plan.DoorWidth) && !plan.Items.Any(i => i.Overlaps(tile.X, tile.Y, 1, 1)))
+                {
+                    plan.AddSeat("waiting_seat", tile);
+                }
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ frame and plan
 
     /// <summary>
@@ -410,6 +574,9 @@ public static class RoomLayoutEngine
 
         public List<WardBed> Beds { get; } = new();
 
+        /// <summary>The tile in front of each vending machine, where a customer stands to buy.</summary>
+        public List<GridCoord> Vendors { get; } = new();
+
         /// <summary>The tiles just inside each doorway, in site coordinates, which furniture must keep clear.</summary>
         public (double X, double Y, double W, double L) DoorApproach(int depth) =>
             Frame.ToWorld(DoorOffset - 1, Frame.D - depth, DoorWidth + 2, depth);
@@ -485,6 +652,93 @@ public static class RoomLayoutEngine
             }
 
             AddWorld(itemId, r.X, r.Y, r.W, r.L);
+            return true;
+        }
+
+        /// <summary>
+        /// Places an item turned side-on against the left (or right) wall, <paramref name="v"/> from the back,
+        /// and gives the tile just in front of it.
+        /// </summary>
+        public bool TryPlaceTurnedAgainstSide(string itemId, double v, bool left, out GridCoord front)
+        {
+            front = default;
+            if (!Database.Furniture.TryGetValue(itemId, out var item))
+            {
+                return false;
+            }
+
+            var depth = item.DepthM / Units.MetresPerTile;
+            var width = item.WidthM / Units.MetresPerTile;
+            var u = left ? 0.3 : Frame.W - 0.3 - depth;
+            var frontU = left ? (int)Math.Ceiling(u + depth) : (int)Math.Floor(u) - 1;
+            var tile = Frame.Tile(frontU, (int)Math.Floor(v + (width / 2)));
+            front = tile;
+            if (_reserved.Contains(tile) || frontU < 0 || frontU >= Frame.W || Items.Any(i => i.Overlaps(tile.X, tile.Y, 1, 1)))
+            {
+                return false;
+            }
+
+            return TryPlaceLocal(itemId, u, v, turned: true);
+        }
+
+        /// <summary>
+        /// A square table in the middle of a 4 x 4 tile block whose corner is (<paramref name="bu"/>, <paramref name="bv"/>),
+        /// with a chair on each side. Skipped if it would touch other furniture, a kept-clear tile or the doorway.
+        /// </summary>
+        public bool TryTableOfFour(string tableId, string chairId, int bu, int bv)
+        {
+            if (!Database.Furniture.TryGetValue(tableId, out var table))
+            {
+                return false;
+            }
+
+            var size = table.WidthM / Units.MetresPerTile;
+            var inset = (2 - size) / 2;
+            var chairs = new[] { (bu + 1, bv), (bu + 3, bv + 1), (bu + 2, bv + 3), (bu, bv + 2) }
+                .Select(c => Frame.Tile(c.Item1, c.Item2)).ToList();
+
+            // Everything must be inside the room, off its edge tiles, and clear of the doorway.
+            if (bu < 1 || bv < 1 || bu + 4 > Frame.W - 1 || bv + 4 > Frame.D - 1)
+            {
+                return false;
+            }
+
+            var door = DoorApproach(2);
+            var whole = Frame.ToWorld(bu, bv, 4, 4);
+            if (door.X < whole.X + whole.W && whole.X < door.X + door.W && door.Y < whole.Y + whole.L && whole.Y < door.Y + door.L)
+            {
+                return false;
+            }
+
+            if (backDoor && bv < 3)
+            {
+                return false;
+            }
+
+            // A one-tile aisle all round, so every chair can be reached.
+            var top = Frame.ToWorld(bu + 1 + inset, bv + 1 + inset, size, size);
+            if (Items.Any(i => i.Overlaps(whole.X, whole.Y, whole.W, whole.L, 0.95)))
+            {
+                return false;
+            }
+
+            for (var x = (int)Math.Floor(whole.X); x < whole.X + whole.W; x++)
+            {
+                for (var y = (int)Math.Floor(whole.Y); y < whole.Y + whole.L; y++)
+                {
+                    if (_reserved.Contains(new GridCoord(x, y)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            AddWorld(tableId, top.X, top.Y, top.W, top.L);
+            foreach (var chair in chairs)
+            {
+                AddSeat(chairId, chair);
+            }
+
             return true;
         }
 

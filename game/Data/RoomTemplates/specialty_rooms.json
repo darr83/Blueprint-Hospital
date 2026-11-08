@@ -286,5 +286,39 @@
       "hand_basin",
       "visitor_chair"
     ]
+  },
+  {
+    "id": "outreach_office",
+    "name": "Critical care outreach office",
+    "category": "Specialty rooms",
+    "description": "Base for the critical care outreach team, who walk the wards looking for patients getting worse and move them up to HDU or ICU in time.",
+    "kind": "outreach_office",
+    "department": "critical_care",
+    "layout": "office",
+    "sizes": [
+      {
+        "name": "Small",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Standard",
+        "width_m": 5,
+        "length_m": 4
+      }
+    ],
+    "min_width_m": 3,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 5000,
+    "cost_per_square_metre": 800,
+    "staffing": "Hire an outreach nurse from Recruitment (H), posted to the office.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "clinical_cupboard"
+    ]
   }
 ]

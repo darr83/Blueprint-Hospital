@@ -133,13 +133,14 @@ public sealed partial class HospitalSimulation
         foreach (var patient in _patients.Values.Where(p => p.IsAlive && p.Stage != PatientStage.Gone))
         {
             var condition = patient.Condition;
+            var support = CriticalCareFactor(patient, hours);
             if (patient.EffectiveTreatmentGiven)
             {
                 patient.Severity = Math.Max(0, patient.Severity - (condition.RecoveryPerHour * hours));
             }
             else if (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal)
             {
-                patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * hours));
+                patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
             }
 
             if (condition.CanBeFatal && patient.Severity >= 1.0 && patient.Stage != PatientStage.Leaving)
@@ -235,7 +236,7 @@ public sealed partial class HospitalSimulation
                 case PatientStage.WaitingForSpace when patient.Triage == TriageCategory.Green
                                                        && Now - patient.QueuedSince > LeaveWithoutBeingSeenAfter
                                                        && patient.BusyWithTaskId is null
-                                                       && Random.Chance(1.0 / 3600):
+                                                       && Random.Chance(WalkOutFactor(patient) / 3600):
                     patient.Log(Now, "Left the department before being seen.", important: true);
                     Notifications.Add(Now, NotificationLevel.Warning, $"{patient.FullName} left without being seen after waiting {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", patient.Id, null, patient.Triage);
                     patient.OutcomeNote = "Left without being seen.";

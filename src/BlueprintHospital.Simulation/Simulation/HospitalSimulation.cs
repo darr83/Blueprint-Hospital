@@ -206,8 +206,10 @@ public sealed partial class HospitalSimulation
         UpdatePatientFlow();
         UpdateWards();
         UpdateClinics(dt);
+        UpdateRefreshments(dt);
         UpdateRecovery();
         SchedulePhysio();
+        ScheduleOutreach();
         ProcessScheduledResults();
         CheckOutcomeReviews();
         ScheduleObservations();
@@ -397,16 +399,21 @@ public sealed partial class HospitalSimulation
 
     private void CreateStartingStaff()
     {
-        // A small A&E team to open with. Everyone else, and everyone for new rooms, is hired by the player.
-        HireStaff(StaffRole.Receptionist, skill: 0.5);
-        HireStaff(StaffRole.Nurse, skill: 0.75);
-        HireStaff(StaffRole.Nurse, skill: 0.65);
-        HireStaff(StaffRole.Nurse, skill: 0.55);
-        HireStaff(StaffRole.Nurse, skill: 0.5);
-        HireStaff(StaffRole.Doctor, skill: 0.8);
-        HireStaff(StaffRole.Doctor, skill: 0.55);
-        HireStaff(StaffRole.Porter, skill: 0.4);
-        HireStaff(StaffRole.Porter, skill: 0.4);
+        // A small A&E team to open with, one for days and one for nights. Everyone else, and everyone
+        // for new rooms, is hired by the player.
+        foreach (var shift in new[] { CurrentShift, CurrentShift == StaffShift.Day ? StaffShift.Night : StaffShift.Day })
+        {
+            HireStaff(StaffRole.Receptionist, skill: 0.5, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.75, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.65, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.55, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.5, shift: shift);
+            HireStaff(StaffRole.Doctor, skill: 0.8, shift: shift);
+            HireStaff(StaffRole.Doctor, skill: 0.55, shift: shift);
+            HireStaff(StaffRole.Porter, skill: 0.4, shift: shift);
+            HireStaff(StaffRole.Porter, skill: 0.4, shift: shift);
+        }
+
         foreach (var member in _staff)
         {
             member.PlaceAt(HomeTile(member));

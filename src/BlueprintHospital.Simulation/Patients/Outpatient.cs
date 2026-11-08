@@ -99,4 +99,7 @@ public sealed class Outpatient : Agent
 
     /// <summary>Shown under their name: what they are doing.</summary>
     public string StatusText { get; set; } = "Arriving";
+
+    /// <summary>When they last got something to eat or drink while waiting.</summary>
+    public DateTime? LastRefreshmentAt { get; set; }
 }

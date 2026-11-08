@@ -523,6 +523,12 @@ public sealed partial class HospitalSimulation
         }
 
         var busy = _consults.Values.Any(c => c.StaffId == member.Id);
+        if (!busy && member.Activity == StaffActivity.Idle && DueBreak(member) is { } due && CanTakeBreak(member, due, null))
+        {
+            TakeBreak(member, due);
+            return;
+        }
+
         if (!busy && member.Fatigue >= BreakThreshold && member.Role != StaffRole.Receptionist)
         {
             TakeBreak(member);

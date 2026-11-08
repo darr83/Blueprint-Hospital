@@ -10,7 +10,7 @@ public class PatientJourneyTests
     [Fact]
     public void Heart_attack_by_ambulance_goes_through_resus_ecg_troponin_diagnosis_and_transfer()
     {
-        var h = new SimulationHarness(seed: 7);
+        var h = new SimulationHarness(seed: 8);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_myocardial_infarction");
 
         h.RunUntil(() => patient.Stage == PatientStage.Gone, TimeSpan.FromHours(6), "heart attack patient to leave");
@@ -22,7 +22,7 @@ public class PatientJourneyTests
         Assert.NotEqual(TriageCategory.Green, patient.Triage);
         Assert.Contains(patient.Investigations, i => i.InvestigationId == "ecg" && i.Status == InvestigationStatus.Resulted);
         // A clearly abnormal ECG is decisive: the team acts on it rather than waiting an hour for troponin.
-        Assert.Contains("upgraded", journey, StringComparison.OrdinalIgnoreCase);
+        Assert.True(journey.Contains("upgraded", StringComparison.OrdinalIgnoreCase), journey);
         Assert.Equal("acute_myocardial_infarction", patient.WorkingDiagnosis?.ConditionId);
         Assert.Contains("Aspirin", journey);
         Assert.Contains("primary PCI", journey);

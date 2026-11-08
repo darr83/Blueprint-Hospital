@@ -177,7 +177,7 @@ today, yesterday and the last week by category, and what the hospital costs to r
 
 ### Conditions
 
-The game has 38 conditions, each with its own symptoms, observations, tests, treatment and
+The game has 43 conditions, each with its own symptoms, observations, tests, treatment and
 outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
 
 | Condition | After A&E |
@@ -207,11 +207,16 @@ outcome. Doctors only see what a real doctor would: symptoms, observations and t
 | Hypoglycaemia | Discharge |
 | Migraine | Discharge |
 | Musculoskeletal chest pain | Discharge |
+| Perforated peptic ulcer | Major operation, then HDU |
+| Perianal abscess | Day case operation, then home |
 | Pulmonary embolism | Admit |
 | Pyelonephritis | Admit |
 | Renal colic | Discharge |
 | Seizure in known epilepsy | Discharge |
+| Septic shock | Intensive care |
 | Simple laceration | Discharge |
+| Small bowel obstruction | Admit |
+| Strangulated inguinal hernia | Operation, then admit |
 | Stroke | Admit |
 | Subarachnoid haemorrhage | Transfer |
 | Supraventricular tachycardia | Discharge |
@@ -229,7 +234,8 @@ specialist centre elsewhere (heart attack centre, neurosurgery).
 
 Every condition belongs to a department (`"department"` in its data). **A&E**, **Acute and General
 Medicine** and the shared services (imaging, theatres, pharmacy) are open from the start. The other
-specialties (Cardiology, Neurology, Gastroenterology, Gynaecology, and Trauma and Orthopaedics) are
+specialties (Cardiology, Neurology, Gastroenterology, General Surgery, Gynaecology, Trauma and
+Orthopaedics, and Critical Care) are
 locked: unlock one in **Build → Departments** by paying its opening cost, and its rooms (such as its
 ward) appear in the build menu. Then hire its team.
 
@@ -273,10 +279,11 @@ Build these from **Build → Services**. Each room opens once you hire someone t
   radiographer): CT head and CT pulmonary angiogram. The patient is taken from their cubicle to the
   scanner and back, and a radiologist reports the scan after a short wait. Without the room, doctors
   diagnose without that scan: a broken ankle or a bleed on the brain is much easier to miss.
-- **Operating theatre** (consultant surgeon): appendicectomy, ectopic pregnancy and hip fracture
-  operations. The patient waits in their cubicle for theatre, has the operation, then needs a ward
+- **Operating theatre** (consultant surgeon **and** anaesthetist): appendicectomy, ectopic pregnancy,
+  hip fracture and the other General Surgery operations. A theatre only opens with both a surgeon and
+  an anaesthetist posted to it, and the anaesthetist stays for the whole operation. The patient waits in their cubicle for theatre, has the operation, then needs a ward
   bed to recover in. If the A&E diagnosis was wrong, the surgeon finds out in theatre. Each theatre
-  only takes the departments ticked in its room panel (Gastroenterology for appendicitis, Gynaecology
+  only takes the departments ticked in its room panel (General Surgery for appendicitis, Gynaecology
   for ectopic pregnancy, Trauma and Orthopaedics for hip fractures, or All departments); a new theatre
   has none ticked. Patients whose department has no theatre are transferred.
 - **Pharmacy** (pharmacist): buys medicines at list price and dispenses ward patients' medicines to
@@ -313,10 +320,61 @@ who is not Red, goes there instead of a ward when it has a free bed: a few hours
 home to finish it with a review the next day. If they are not well enough by the ward round they are
 admitted after all. Other patients never use the unit's beds.
 
+### General Surgery
+
+Unlock **General Surgery** (£225,000) for appendicitis, gallbladder problems, pancreatitis, bowel
+obstruction, perforated ulcers, strangulated hernias and abscesses. Tick General Surgery on a theatre
+so its patients can be operated on.
+
+- **Surgical assessment unit:** A&E sends patients who need an operation here to wait for theatre in a
+  bed, freeing their cubicle (with no free bed they wait in A&E as before). After the operation they
+  move to the surgical ward.
+- **Surgical ward:** recovery after surgery, and care for gallbladder, pancreatitis and bowel patients.
+- **Day surgery unit:** after a small operation (draining an abscess) the patient comes round here and
+  goes home the same day if they are well enough on the ward round.
+- **Surgical clinic:** booked follow-ups, using the clinic calendar.
+
+### Critical Care (ICU and HDU)
+
+Unlock **Critical Care** (£300,000). Every patient has a level of care: a ward, high dependency (HDU)
+or intensive care (ICU).
+
+- **Intensive care unit:** a ventilator and monitor at every bed and a nurse for each patient. It only
+  takes patients while an **anaesthetist** is posted to it; the anaesthetist does the doctor's work
+  there. Very sick patients being admitted (septic shock, or anyone at severity 0.7 or more) need ICU;
+  without an open ICU they are transferred to a neighbouring hospital's ICU.
+- **High dependency unit:** a nurse for every two patients and a doctor. Patients go there after a
+  major operation (a laparotomy) and when they are sick but not ICU-sick. Without an HDU they are
+  looked after on an ordinary ward, as before.
+- **Critical care outreach office:** the outreach nurse goes to ward patients who are getting worse
+  and moves them up to HDU or ICU (and sometimes spots a wrong diagnosis). Without outreach, only the
+  ward round notices.
+- **Stepping down:** the ICU and HDU rounds move patients down as they get better: ICU, then HDU, then
+  a ward, then home. A patient keeps their bed until the next one is free. Organ support slows a
+  patient's decline (most on ICU), and each day on ICU (£1,800) or HDU (£900) is paid for on top of
+  the admission.
+
+### Cafeteria and vending points
+
+Build these from **Build → Facilities**. They need no staff: catering is run by an outside
+contractor, and the hospital gets a share of the takings (**Cafe and vending** in Finances).
+
+| Room | Smallest | Furniture (placed automatically) |
+| --- | --- | --- |
+| Cafeteria | 5 × 5 m | A food counter with a till on the back wall, a water machine beside it, vending machines down the side walls (1 in a small cafe, then 2, 3 and 4 as it grows past about 40, 65 and 100 m²) and tables of four filling the floor |
+| Vending point | 2 × 2.5 m | Vending machines along the back wall (one for each 1.1 m or so, up to 4), a water machine, and a seat or two if it is deep enough |
+
+Walking patients waiting in A&E (Green or Amber, after 20 minutes) and checked-in clinic patients
+whose appointment is at least 25 minutes off now and then go to a cafe or vending point (the
+nearest, though people will walk further for a cafe), buy something (£2 to £3 from a machine, £4 to
+£6 at the counter), sit at a table to eat if it's a cafe, and go back to their seat. If they are
+called while they're away they go straight to the call. Having had something to eat or drink makes
+a patient half as likely to leave without being seen for the next 3 hours.
+
 ### Outpatient clinics
 
 Build these from **Build → Clinics**: an **Outpatients reception** (desk and seats) and one or more
-clinic rooms (medical, cardiology, neurology, gastroenterology, gynaecology, gynaecology
+clinic rooms (medical, cardiology, neurology, gastroenterology, surgical, gynaecology, gynaecology
 examination room and fracture clinic). Specialty clinics need their department unlocked first.
 
 - A clinic runs with a **doctor posted to it** and a **receptionist posted to Outpatients
