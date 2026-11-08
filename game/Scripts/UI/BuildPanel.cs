@@ -200,7 +200,9 @@ public partial class BuildPanel : PanelContainer
         _body.AddChild(Text(
             $"[b]{t.Name}[/b]\n[color=#5B6B79]{t.Description}[/color]\n"
             + $"[color=#5B6B79]Minimum[/color]  {t.MinWidthM:0.#} × {t.MinLengthM:0.#} m   [color=#5B6B79]Maximum[/color]  {t.MaxWidthM:0.#} × {t.MaxLengthM:0.#} m\n"
-            + $"[color=#5B6B79]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m² + furniture\n"
+            + (t.IsShaft
+                ? $"[color=#5B6B79]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m², on each of the {_sim.FloorCount} floor{(_sim.FloorCount == 1 ? string.Empty : "s")}\n"
+                : $"[color=#5B6B79]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m² + furniture\n")
             + $"[color=#5B6B79]Staffing[/color]  {t.Staffing}"));
 
         // How the room fills up as it grows, laid out at a few example sizes.
@@ -262,6 +264,8 @@ public partial class BuildPanel : PanelContainer
         CareSpaceKind.PhysioGym => "Physios visit patients on every ward",
         CareSpaceKind.OutreachOffice => "Outreach nurses check every ward",
         CareSpaceKind.EndoscopyRecovery => "1 patient coming round",
+        CareSpaceKind.Lift => "Beds, trolleys, wheelchairs and walkers, to every floor",
+        CareSpaceKind.Stairs => "People on foot, a floor at a time",
         CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy => "1 patient at a time",
         _ => LayoutCapacity(template, room),
     };
@@ -319,6 +323,29 @@ public partial class BuildPanel : PanelContainer
         var extend = UiStyle.Button("Extend the building", () => _tool.StartExtension());
         extend.FocusMode = FocusModeEnum.None;
         _body.AddChild(extend);
+
+        // Floors: each new one has the ground floor's outline; lifts and stairs are carried up through it.
+        var floors = _sim.FloorCount;
+        var floorList = string.Join(", ", Enumerable.Range(0, floors).Select(SiteMap.FloorName));
+        _body.AddChild(Text(
+            $"[b]Floors[/b]\n[color=#5B6B79]{floors} floor{(floors == 1 ? string.Empty : "s")}: {floorList}.[/color]\n"
+            + $"A new floor has the same outline as the ground floor (extensions grow every floor). It costs £{HospitalSimulation.FloorCostPerSquareMetre:N0} per m² for the first floor up, "
+            + $"£{HospitalSimulation.FloorCostRisePerSquareMetre:N0} per m² more for each floor higher, plus every lift and staircase carried up to it. "
+            + "Build a lift or stairs (Lifts & stairs tab) to reach it: wheelchairs and trolleys need a lift."));
+        var check = _sim.CheckAddFloor();
+        var next = SiteMap.FloorName(floors).ToLowerInvariant();
+        var add = UiStyle.Button(floors > SiteMap.MaxUpperFloors ? "The building is as tall as it can be" : $"Build the {next} (£{check.Cost:N0})", () =>
+        {
+            var result = _sim.AddFloor();
+            _status.Text = result.CanBuild
+                ? $"[color=#2E8B57]✓ Built the {next} for £{result.Cost:N0}. Page Up to look at it.[/color]"
+                : $"[color=#C4373D]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
+            ShowTab(_tab);
+        });
+        add.FocusMode = FocusModeEnum.None;
+        add.Disabled = !check.CanBuild;
+        add.TooltipText = check.CanBuild ? string.Empty : string.Join("\n", check.Problems);
+        _body.AddChild(add);
     }
 
     // ------------------------------------------------------------------ departments

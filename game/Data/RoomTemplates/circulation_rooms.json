@@ -1,0 +1,39 @@
+[
+  {
+    "id": "lift",
+    "name": "Lift",
+    "category": "Lifts & stairs",
+    "description": "A bed lift that stops at every floor. Wheelchairs, trolleys and beds can only change floor by lift, and people on foot take it when it is quicker than the stairs. Build it on any floor and it goes through every floor, including floors added later; you pay for each floor.",
+    "kind": "lift",
+    "department": "facilities",
+    "layout": "lift",
+    "sizes": [
+      { "name": "Bed lift", "width_m": 2.5, "length_m": 3 },
+      { "name": "Large bed lift", "width_m": 3, "length_m": 3.5 },
+      { "name": "Twin lifts", "width_m": 5, "length_m": 3.5 }
+    ],
+    "min_width_m": 2.5, "min_length_m": 3, "max_width_m": 6, "max_length_m": 5,
+    "door_width_m": 1.5,
+    "base_cost": 30000, "cost_per_square_metre": 1500,
+    "staffing": "None.",
+    "furniture": []
+  },
+  {
+    "id": "stairs",
+    "name": "Stairs",
+    "category": "Lifts & stairs",
+    "description": "A staircase linking every floor. Staff and patients on foot use it to go up or down a floor or two; wheelchairs and trolleys can't. Build it on any floor and it goes through every floor, including floors added later; you pay for each floor.",
+    "kind": "stairs",
+    "department": "facilities",
+    "layout": "stairs",
+    "sizes": [
+      { "name": "Single flight", "width_m": 2.5, "length_m": 4 },
+      { "name": "Wide stairs", "width_m": 3.5, "length_m": 5 }
+    ],
+    "min_width_m": 2.5, "min_length_m": 4, "max_width_m": 5, "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 6000, "cost_per_square_metre": 900,
+    "staffing": "None.",
+    "furniture": []
+  }
+]

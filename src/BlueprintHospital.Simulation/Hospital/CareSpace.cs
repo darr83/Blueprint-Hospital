@@ -66,6 +66,12 @@ public enum CareSpaceKind
 
     /// <summary>A small alcove of vending machines and a water machine.</summary>
     VendingPoint,
+
+    /// <summary>A bed lift through every floor. Wheelchairs and trolleys change floor only by lift.</summary>
+    Lift,
+
+    /// <summary>Stairs through every floor, for people on foot.</summary>
+    Stairs,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -161,6 +167,9 @@ public sealed class CareSpace
     public bool IsRefreshments => Kind is CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint;
 
     public bool IsWard => Kind == CareSpaceKind.Ward;
+
+    /// <summary>A lift or stairs: one of these stands in the same spot on every floor.</summary>
+    public bool IsShaft => Kind is CareSpaceKind.Lift or CareSpaceKind.Stairs;
 
     /// <summary>For an operating theatre: the departments whose patients may be operated on in it.</summary>
     public HashSet<string> AllowedDepartments { get; } = new();

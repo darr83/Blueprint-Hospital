@@ -190,6 +190,12 @@ public sealed partial class HospitalSimulation
                 _pushTrails[patient.Id] = trail;
             }
 
+            // Out of the lift on another floor: the porter steps out behind them, not back down the shaft.
+            if (trail.Count > 0 && Site.FloorOf(trail[^1].Y) != Site.FloorOf(patient.Y))
+            {
+                trail.Clear();
+            }
+
             if (trail.Count == 0 || trail[^1] != (patient.X, patient.Y))
             {
                 trail.Add((patient.X, patient.Y));

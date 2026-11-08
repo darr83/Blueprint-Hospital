@@ -38,6 +38,9 @@ public partial class WorldLayer : Node2D
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
     private readonly HashSet<GridCoord> _seatTiles = new();
     private readonly List<ObsMonitorInfo> _monitors = new();
+
+    /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
+    private readonly HashSet<GridCoord> _bedSpots = new();
     private readonly List<Node> _staticNodes = new();
     private IDisposable? _layoutSubscription;
     private HospitalSimulation _sim = null!;
@@ -76,6 +79,7 @@ public partial class WorldLayer : Node2D
 
         _staticNodes.Clear();
         _monitors.Clear();
+        _bedSpots.Clear();
         _seatTiles.Clear();
 
         foreach (var space in _sim.Spaces)
@@ -101,6 +105,11 @@ public partial class WorldLayer : Node2D
 
         BuildWalls();
         BuildFurniture();
+        foreach (var (anchor, draw) in Decorations.Plan(_sim))
+        {
+            AddProp(anchor, draw);
+        }
+
         _layoutDirty = false;
     }
 
@@ -126,9 +135,21 @@ public partial class WorldLayer : Node2D
 
     public (double X, double Y) Interpolated(Agent agent)
     {
+        // Just stepped out of the lift onto another floor: no sliding across from the floor below.
+        if (IsoDraw.FloorOf(agent.PreviousY) != IsoDraw.FloorOf(agent.Y))
+        {
+            return (agent.X, agent.Y);
+        }
+
         var t = _clock.TickProgress;
         return (agent.PreviousX + ((agent.X - agent.PreviousX) * t), agent.PreviousY + ((agent.Y - agent.PreviousY) * t));
     }
+
+    /// <summary>True if the agent is on the floor in view (ambulances are always on the ground).</summary>
+    public bool OnViewFloor(Agent agent) => IsoDraw.OnViewFloor(agent.Y);
+
+    /// <summary>The rooms on the floor in view.</summary>
+    private IEnumerable<CareSpace> ViewSpaces => _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y));
 
     /// <summary>The patient or staff member under a world-space point, nearest the viewer first.</summary>
     public Agent? HitTest(Vector2 world)
@@ -187,6 +208,13 @@ public partial class WorldLayer : Node2D
 
         // On an X-ray, CT or operating table.
         if (_sim.Spaces.Any(s => s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy && s.PatientSpot == patient.Tile))
+        {
+            return true;
+        }
+
+        // Still lying on a bed they have been moved out of, waiting for a porter to wheel them away:
+        // they stay in that bed rather than appearing on a trolley on top of it.
+        if (_bedSpots.Contains(patient.Tile) && !IsSeated(patient))
         {
             return true;
         }
@@ -273,22 +301,24 @@ public partial class WorldLayer : Node2D
             }
         }
 
+        // The outer walls of the floor in view; only the ground floor has entrances.
+        var up = IsoDraw.ViewFloor * _sim.Site.FloorStride;
         foreach (var building in _sim.Site.Buildings)
         {
             foreach (var (inside, _, side) in building.OuterEdges())
             {
                 var edge = side switch
                 {
-                    WallSide.North => (inside.X, inside.Y, true),
-                    WallSide.South => (inside.X, inside.Y + 1, true),
-                    WallSide.West => (inside.X, inside.Y, false),
-                    _ => (inside.X + 1, inside.Y, false),
+                    WallSide.North => (inside.X, inside.Y + up, true),
+                    WallSide.South => (inside.X, inside.Y + 1 + up, true),
+                    WallSide.West => (inside.X, inside.Y + up, false),
+                    _ => (inside.X + 1, inside.Y + up, false),
                 };
-                (building.IsOpening(inside, side) ? doors : walls).Add(edge);
+                (up == 0 && building.IsOpening(inside, side) ? doors : walls).Add(edge);
             }
         }
 
-        foreach (var space in _sim.Spaces.Where(s => s.HasWalls))
+        foreach (var space in ViewSpaces.Where(s => s.HasWalls))
         {
             Perimeter(space.Rect, space.IsDoor);
         }
@@ -365,7 +395,7 @@ public partial class WorldLayer : Node2D
 
     private void BuildFurniture()
     {
-        foreach (var space in _sim.Spaces)
+        foreach (var space in ViewSpaces)
         {
             foreach (var item in space.Furniture)
             {
@@ -408,7 +438,7 @@ public partial class WorldLayer : Node2D
 
         if (_sim.Database.Furniture.TryGetValue(HospitalSimulation.CorridorChairItem, out var chairDef))
         {
-            foreach (var chair in _sim.CorridorChairs)
+            foreach (var chair in _sim.CorridorChairs.Where(c => IsoDraw.OnViewFloor(c.Y)))
             {
                 Chair(chair.Tile, new Color(chairDef.Colour));
             }
@@ -418,12 +448,19 @@ public partial class WorldLayer : Node2D
     private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false)
     {
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
+        _bedSpots.Add(spot);
 
         // Bed and whoever is lying on it are one object, anchored at the middle of the bed.
         AddProp(IsoDraw.ToScreen(cx, cy), c =>
         {
+            // Usually the bed's own patient; otherwise whoever is still lying here waiting to be moved.
             var occupant = occupantId() is { } id ? _sim.FindPatient(id) : null;
-            var lying = occupant is not null && InBed(occupant) && occupant.Tile == spot;
+            if (occupant is null || occupant.Tile != spot || !InBed(occupant))
+            {
+                occupant = _sim.Patients.FirstOrDefault(p => p.Tile == spot && InBed(p));
+            }
+
+            var lying = occupant is not null;
             if (lying && ReferenceEquals(Selected, occupant))
             {
                 var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);
@@ -565,7 +602,7 @@ public partial class WorldLayer : Node2D
         public void Sync()
         {
             var foot = world.FootPosition(agent);
-            Visible = agent switch
+            Visible = world.OnViewFloor(agent) && agent switch
             {
                 Patient p => world.IsOnMap(p) && !world.InBed(p),
                 _ => true,

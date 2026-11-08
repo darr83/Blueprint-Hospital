@@ -160,7 +160,7 @@ public sealed partial class HospitalSimulation
         {
             for (var i = 0; i < ward.Beds.Count; i++)
             {
-                if (ward.Beds[i].OccupantId is null)
+                if (IsVacant(ward.Beds[i]))
                 {
                     return (ward, ward.Beds[i], i);
                 }
