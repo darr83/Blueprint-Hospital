@@ -67,7 +67,7 @@ public sealed partial class HospitalSimulation
         _spaces = EmergencyDepartmentLayout.Create(building, database).ToDictionary(s => s.Id);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
         _generator = new PatientGenerator(database, Random);
-        _diagnosis = new DiagnosisEngine(database);
+        _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);
 
         var entrance = building.Entrances.First(e => !e.IsAmbulanceEntrance);
@@ -379,7 +379,7 @@ public sealed partial class HospitalSimulation
             Role = role,
             Grade = grade,
             DepartmentId = department,
-            WardId = wardId,
+            BaseRoomId = wardId,
             Skill = skill,
             Speed = speed,
             YearsExperience = years,
@@ -391,9 +391,9 @@ public sealed partial class HospitalSimulation
 
     internal GridCoord HomeTile(StaffMember member)
     {
-        if (member.WardId is { } wardId && FindSpace(wardId) is { } ward)
+        if (member.BaseRoomId is { } roomId && FindSpace(roomId) is { } room)
         {
-            return WardHome(member, ward);
+            return room.IsWard ? WardHome(member, room) : ServiceRoomHome(room);
         }
 
         switch (member.Role)
@@ -411,7 +411,7 @@ public sealed partial class HospitalSimulation
     private GridCoord BaseSeat(StaffMember member, CareSpaceKind kind)
     {
         var seats = SpacesOfKind(kind).SelectMany(s => s.Seats).ToList();
-        var index = Math.Max(0, _staff.Where(s => s.Role == member.Role && s.WardId is null).ToList().IndexOf(member));
+        var index = Math.Max(0, _staff.Where(s => s.Role == member.Role && s.BaseRoomId is null).ToList().IndexOf(member));
         if (seats.Count > 0)
         {
             return seats[index % seats.Count];

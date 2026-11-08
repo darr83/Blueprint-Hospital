@@ -37,6 +37,7 @@ public partial class SmokeTest : Node
         BuildPreview,
         RoomPanel,
         Ward,
+        Imaging,
         Finances,
         WaitForLoad,
         Done,
@@ -162,6 +163,14 @@ public partial class SmokeTest : Node
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
+                BuildImagingAndScan(hospital);
+                _frame = 0;
+                _stage = Stage.Imaging;
+                break;
+
+            case Stage.Imaging when scene is HospitalScene hospital && _frame >= 20:
+                Screenshot("09_imaging");
+                hospital.Hud.Record.Visible = false;
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
                 Check(hospital.Session.Simulation.Today[Simulation.Simulation.MoneyCategory.Construction] < 0, "Building work was not booked.");
@@ -266,7 +275,7 @@ public partial class SmokeTest : Node
         Check(ward.CanBuild, "Ward refused: " + string.Join("; ", ward.Problems));
         var built = sim.Wards.Single();
         Check(built.Beds.Count >= 8, $"Ward should have two rows of beds, has {built.Beds.Count}.");
-        Check(sim.Staff.Any(s => s.WardId == built.Id), "Ward team not hired.");
+        Check(sim.Staff.Any(s => s.BaseRoomId == built.Id), "Ward team not hired.");
 
         var patients = Enumerable.Range(0, 4).Select(_ => sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "community_acquired_pneumonia")).ToList();
         var clock = hospital.Session.Clock;
@@ -279,6 +288,29 @@ public partial class SmokeTest : Node
         Check(onWard >= 1, "No patient was admitted to the ward.");
         hospital.Camera.SnapTo(IsoDraw.ToScreen(built.Rect.X + (built.Rect.Width / 2.0), built.Rect.Y + (built.Rect.Length / 2.0)), 1.1f);
         GD.Print($"[smoke] Built {built.Name} with {built.Beds.Count} beds; {onWard} admitted, Admitted stat {sim.Stats.Admitted}.");
+    }
+
+    /// <summary>Builds an X-ray room north of the corridor, then X-rays a patient with a broken ankle.</summary>
+    private static void BuildImagingAndScan(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        var xray = sim.BuildRoom(sim.AutoPlan("xray_room", new Simulation.World.GridRect(b.X - 30, b.Y, 10, 9)));
+        Check(xray.CanBuild, "X-ray room refused: " + string.Join("; ", xray.Problems));
+        var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
+        Check(sim.Staff.Any(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Radiographer), "No radiographer hired.");
+
+        var patient = sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "ankle_fracture");
+        var clock = hospital.Session.Clock;
+        for (var i = 0; i < 8 * 3600 && (patient.IsMoving || patient.Tile != room.PatientSpot) && patient.Stage != Simulation.Patients.PatientStage.Gone; i++)
+        {
+            clock.Step();
+        }
+
+        Check(!patient.IsMoving && patient.Tile == room.PatientSpot, "Patient was not X-rayed: " + string.Join(" / ", patient.Timeline.Select(t => t.Text)));
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(room.Rect.X + 9, room.Rect.Y + 6), 1.1f);
+        hospital.SelectPatient(patient);
+        GD.Print($"[smoke] Built {room.Name}; {patient.FullName} is on the X-ray table at {clock.Now:HH:mm}.");
     }
 
     private static void OpenARecord(HospitalScene hospital)

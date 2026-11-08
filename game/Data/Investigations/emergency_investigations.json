@@ -774,6 +774,17 @@
     "summaries": [
      "D-dimer {value} ng/mL (raised)."
     ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.97,
+    "summaries": [
+     "D-dimer {value} ng/mL (raised)."
+    ],
+    "value_range": [
+     1100,
+     6000
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -981,6 +992,173 @@
     "probability": 0.55,
     "summaries": [
      "pH 7.32, pCO2 7.9 kPa: acute-on-chronic respiratory acidosis."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "chest_xray",
+  "name": "Chest X-ray",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 30,
+  "cost": 40,
+  "applies_to_sex": "any",
+  "room": "x_ray",
+  "normal": {
+   "summaries": [
+    "Clear lung fields. Normal heart size. No pneumothorax."
+   ]
+  },
+  "false_positive_rate": 0.06,
+  "false_positive": {
+   "summaries": [
+    "Possible subtle shadowing at the left base; clinical correlation advised."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.9,
+    "summaries": [
+     "Right lower lobe consolidation, consistent with pneumonia.",
+     "Left basal consolidation with air bronchograms."
+    ]
+   },
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.8,
+    "summaries": [
+     "Enlarged heart, upper lobe venous diversion and bilateral pleural effusions: pulmonary oedema."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.45,
+    "summaries": [
+     "Hyperinflated lungs with flattened diaphragms. No consolidation."
+    ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.2,
+    "summaries": [
+     "Small wedge-shaped opacity at the right base; small effusion."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "limb_xray",
+  "name": "X-ray of the injured limb",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 30,
+  "cost": 35,
+  "applies_to_sex": "any",
+  "room": "x_ray",
+  "normal": {
+   "summaries": [
+    "No fracture or dislocation seen."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Possible hairline lucency; may be a nutrient vessel. Treat clinically."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "ankle_fracture",
+    "probability": 0.97,
+    "summaries": [
+     "Displaced fracture of the lateral malleolus (Weber B).",
+     "Undisplaced fracture of the distal fibula."
+    ]
+   },
+   {
+    "condition": "fractured_neck_of_femur",
+    "probability": 0.93,
+    "summaries": [
+     "Displaced intracapsular fracture of the neck of femur.",
+     "Intertrochanteric fracture of the femur."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ct_head",
+  "name": "CT head",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 15,
+  "turnaround_minutes": 45,
+  "cost": 120,
+  "applies_to_sex": "any",
+  "room": "ct",
+  "normal": {
+   "summaries": [
+    "No acute intracranial abnormality. No haemorrhage."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "summaries": [
+    "Small old infarct; no acute change."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "subarachnoid_haemorrhage",
+    "probability": 0.93,
+    "summaries": [
+     "Acute subarachnoid blood in the basal cisterns: subarachnoid haemorrhage."
+    ]
+   },
+   {
+    "condition": "ischaemic_stroke",
+    "probability": 0.55,
+    "summaries": [
+     "Early ischaemic change in the left middle cerebral artery territory. No haemorrhage."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ctpa",
+  "name": "CT pulmonary angiogram",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 60,
+  "cost": 180,
+  "applies_to_sex": "any",
+  "room": "ct",
+  "normal": {
+   "summaries": [
+    "No pulmonary embolism."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Indeterminate small filling defect in a subsegmental artery."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.96,
+    "summaries": [
+     "Filling defects in both main pulmonary arteries: pulmonary emboli.",
+     "Segmental pulmonary embolus in the right lower lobe."
     ]
    }
   ],

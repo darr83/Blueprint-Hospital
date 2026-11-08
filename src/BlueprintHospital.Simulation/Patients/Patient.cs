@@ -33,6 +33,9 @@ public enum PatientStage
 
     /// <summary>Admitted to a ward bed.</summary>
     OnWard,
+
+    /// <summary>Treated in A&amp;E and waiting in their cubicle for theatre.</summary>
+    AwaitingSurgery,
     Leaving,
     Gone,
 }
@@ -231,6 +234,9 @@ public sealed class Patient : Agent
 
     /// <summary>The earliest the ward team expect the patient to be ready to go home.</summary>
     public DateTime? DischargeDueAt { get; set; }
+
+    /// <summary>When the medicines to take home will be ready; set once the ward round says they can go.</summary>
+    public DateTime? MedicinesReadyAt { get; set; }
 
     public IReadOnlyList<TimelineEntry> Timeline => _timeline;
 

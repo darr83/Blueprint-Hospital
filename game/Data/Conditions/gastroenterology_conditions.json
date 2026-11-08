@@ -195,8 +195,16 @@
       }
     ],
     "recovery_per_hour": 0.15,
-    "disposition": "transfer",
-    "disposition_note": "Transfer to general surgery for appendicectomy (no operating theatre on site yet)."
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: appendicitis needing an operation.",
+    "operation": {
+      "name": "Laparoscopic appendicectomy",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      24,
+      60
+    ]
   },
   {
     "id": "gastroenteritis",

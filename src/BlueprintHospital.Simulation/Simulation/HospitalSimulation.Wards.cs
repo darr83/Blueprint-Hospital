@@ -39,7 +39,7 @@ public sealed partial class HospitalSimulation
     // ---------------------------------------------------------------- referral
 
     /// <summary>The doctor has decided the patient needs admitting.</summary>
-    private void RequestWardBed(Patient patient, ConditionDefinition diagnosed)
+    private void RequestWardBed(Patient patient, ConditionDefinition diagnosed, string? note = null)
     {
         if (!Wards.Any())
         {
@@ -49,7 +49,7 @@ public sealed partial class HospitalSimulation
 
         patient.Stage = PatientStage.AwaitingBed;
         patient.BedRequestedAt = Now;
-        patient.Log(Now, $"{diagnosed.DispositionNote} Referred to the medical team; waiting for a ward bed.", important: true);
+        patient.Log(Now, note ?? $"{diagnosed.DispositionNote} Referred to the medical team; waiting for a ward bed.", important: true);
         Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} needs a ward bed.", patient.Id, patient.CareSpaceId, patient.Triage);
     }
 
@@ -119,7 +119,14 @@ public sealed partial class HospitalSimulation
 
         foreach (var patient in _patients.Values.Where(p => p.Stage == PatientStage.OnWard && p.IsAlive && p.BusyWithTaskId is null))
         {
-            if (Now >= patient.DischargeDueAt && !HasTask(patient, TaskKind.WardRound) && !HasTask(patient, TaskKind.WardDischarge) && !HasTask(patient, TaskKind.WardClerking))
+            if (patient.MedicinesReadyAt is { } ready)
+            {
+                if (Now >= ready && !HasTask(patient, TaskKind.WardDischarge))
+                {
+                    AddTask(TaskKind.WardDischarge, StaffRole.Nurse, patient, 15, "Discharge home");
+                }
+            }
+            else if (Now >= patient.DischargeDueAt && !HasTask(patient, TaskKind.WardRound) && !HasTask(patient, TaskKind.WardClerking) && !HasTask(patient, TaskKind.DispenseMedicines))
             {
                 AddTask(TaskKind.WardRound, StaffRole.Doctor, patient, 10, "Ward round review");
             }
@@ -199,7 +206,7 @@ public sealed partial class HospitalSimulation
         Stats.RecordAdmission(patient, Now);
         PayForAttendance(patient);
 
-        foreach (var doctor in _staff.Where(s => s.WardId is null))
+        foreach (var doctor in _staff.Where(s => s.BaseRoomId is null))
         {
             doctor.Caseload.Remove(patient.Id);
         }
@@ -243,7 +250,7 @@ public sealed partial class HospitalSimulation
         if (patient.Severity <= FitForDischargeSeverity)
         {
             patient.Log(Now, $"Ward round with {doctor.Name}: well enough to go home.");
-            AddTask(TaskKind.WardDischarge, StaffRole.Nurse, patient, 15, "Discharge home");
+            ArrangeMedicinesToTakeHome(patient);
             return;
         }
 
@@ -263,58 +270,10 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- ward teams
 
-    /// <summary>
-    /// Each ward has its own nurses (one for every <see cref="PatientsPerWardNurse"/> beds) and a doctor,
-    /// who join when it is built and leave when it is demolished.
-    /// </summary>
-    private void SyncWardStaff()
-    {
-        var wards = Wards.ToDictionary(w => w.Id);
-        foreach (var member in _staff.Where(s => s.WardId is { } id && !wards.ContainsKey(id)).ToList())
-        {
-            if (member.CurrentTaskId is { } taskId && _tasks.TryGetValue(taskId, out var task))
-            {
-                RemoveTask(task);
-            }
-
-            _staff.Remove(member);
-        }
-
-        foreach (var ward in wards.Values)
-        {
-            var nurses = Math.Max(1, (ward.Beds.Count + PatientsPerWardNurse - 1) / PatientsPerWardNurse);
-            var team = _staff.Where(s => s.WardId == ward.Id).ToList();
-            var haveNurses = team.Count(s => s.Role == StaffRole.Nurse);
-            for (var i = haveNurses; i < nurses; i++)
-            {
-                Hire(StaffRole.Nurse, i == 0 ? "Ward sister" : "Ward nurse", ward);
-            }
-
-            foreach (var spare in team.Where(s => s.Role == StaffRole.Nurse && s.CurrentTaskId is null).Skip(nurses).ToList())
-            {
-                _staff.Remove(spare);
-            }
-
-            if (!team.Any(s => s.Role == StaffRole.Doctor))
-            {
-                Hire(StaffRole.Doctor, "Ward doctor (FY1)", ward);
-            }
-        }
-    }
-
-    private void Hire(StaffRole role, string grade, CareSpace ward)
-    {
-        var senior = grade == "Ward sister";
-        var member = MakeStaff(role, grade, senior ? 0.8 : role == StaffRole.Doctor ? 0.55 : 0.6, 1.0, senior ? 10 : role == StaffRole.Doctor ? 1 : 3,
-            senior ? 43_000 : role == StaffRole.Doctor ? 36_000 : 31_000, ward.DepartmentId, ward.Id);
-        _staff.Add(member);
-        member.PlaceAt(HomeTile(member));
-    }
-
     /// <summary>Where ward staff wait between tasks: spread along the aisle inside the ward door.</summary>
     private GridCoord WardHome(StaffMember member, CareSpace ward)
     {
-        var team = _staff.Where(s => s.WardId == ward.Id).ToList();
+        var team = _staff.Where(s => s.BaseRoomId == ward.Id).ToList();
         var index = Math.Max(0, team.IndexOf(member));
         var spot = ward.StaffSpot;
         var r = ward.Rect;

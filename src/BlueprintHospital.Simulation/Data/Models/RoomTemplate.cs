@@ -26,6 +26,9 @@ public enum RoomLayoutKind
     /// <summary>One patient bed with an obs monitor and room-specific equipment (Minors, Majors, Resus).</summary>
     BedSpace,
 
+    /// <summary>A table or scanner in the middle (the first furniture item drawn as a bed) with room for staff beside it: X-ray, CT, theatre.</summary>
+    Equipment,
+
     /// <summary>A nurse's desk, a patient chair and an obs monitor.</summary>
     Triage,
 

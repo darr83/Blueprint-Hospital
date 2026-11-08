@@ -84,7 +84,8 @@
     "key_investigations": [
       "full_blood_count",
       "c_reactive_protein",
-      "urea_electrolytes"
+      "urea_electrolytes",
+      "chest_xray"
     ],
     "treatment": [
       {
@@ -289,7 +290,8 @@
     "key_investigations": [
       "venous_blood_gas",
       "full_blood_count",
-      "c_reactive_protein"
+      "c_reactive_protein",
+      "chest_xray"
     ],
     "treatment": [
       {
@@ -399,7 +401,8 @@
       "nt_pro_bnp",
       "ecg",
       "troponin",
-      "urea_electrolytes"
+      "urea_electrolytes",
+      "chest_xray"
     ],
     "treatment": [
       {
@@ -1234,5 +1237,119 @@
     "recovery_per_hour": 0.8,
     "disposition": "discharge",
     "disposition_note": "Glucose back to normal after treatment and a meal. Discharged with a diabetes team review of their insulin."
+  },
+  {
+    "id": "pulmonary_embolism",
+    "name": "Pulmonary embolism",
+    "department": "general_medicine",
+    "description": "A blood clot in the lungs, often from a leg vein. D-dimer and a CT pulmonary angiogram make the diagnosis.",
+    "prevalence": 2,
+    "age_range": [
+      25,
+      90
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.45,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1
+      },
+      {
+        "symptom": "pleuritic_chest_pain",
+        "probability": 0.65
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.4
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.3
+      },
+      {
+        "symptom": "haemoptysis",
+        "probability": 0.15
+      },
+      {
+        "symptom": "calf_swelling",
+        "probability": 0.25
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        108,
+        14
+      ],
+      "systolic_bp": [
+        122,
+        16
+      ],
+      "diastolic_bp": [
+        76,
+        10
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        93,
+        2
+      ],
+      "temperature": [
+        37.2,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -8,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "d_dimer",
+      "ctpa",
+      "ecg",
+      "chest_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "apixaban",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Oxygen to keep saturations 94-98%",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted on anticoagulation for monitoring.",
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
   }
 ]

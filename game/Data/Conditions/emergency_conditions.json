@@ -20,6 +20,10 @@
       {
         "symptom": "swelling",
         "probability": 0.9
+      },
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 0.25
       }
     ],
     "observations": {

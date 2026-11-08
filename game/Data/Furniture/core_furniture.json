@@ -218,5 +218,126 @@
   "colour": "#D9CBB5",
   "cost": 180,
   "is_equipment": false
+ },
+ {
+  "id": "xray_table",
+  "name": "X-ray table",
+  "width_m": 0.9,
+  "depth_m": 2.2,
+  "height_m": 0.75,
+  "style": "bed",
+  "colour": "#DDE3E8",
+  "cost": 22000,
+  "is_equipment": true
+ },
+ {
+  "id": "xray_tube",
+  "name": "X-ray tube and stand",
+  "width_m": 0.6,
+  "depth_m": 0.6,
+  "height_m": 2.1,
+  "style": "box",
+  "colour": "#C9D3DB",
+  "cost": 48000,
+  "is_equipment": true
+ },
+ {
+  "id": "lead_screen",
+  "name": "Lead screen",
+  "width_m": 1.0,
+  "depth_m": 0.3,
+  "height_m": 1.9,
+  "style": "box",
+  "colour": "#8FA3B3",
+  "cost": 2500,
+  "is_equipment": true
+ },
+ {
+  "id": "ct_table",
+  "name": "CT table",
+  "width_m": 0.7,
+  "depth_m": 2.2,
+  "height_m": 0.75,
+  "style": "bed",
+  "colour": "#E4E9ED",
+  "cost": 30000,
+  "is_equipment": true
+ },
+ {
+  "id": "ct_gantry",
+  "name": "CT scanner",
+  "width_m": 2.0,
+  "depth_m": 0.7,
+  "height_m": 1.9,
+  "style": "box",
+  "colour": "#F1F4F6",
+  "cost": 280000,
+  "is_equipment": true
+ },
+ {
+  "id": "operating_table",
+  "name": "Operating table",
+  "width_m": 0.8,
+  "depth_m": 2.1,
+  "height_m": 0.85,
+  "style": "bed",
+  "colour": "#5E7A8C",
+  "cost": 35000,
+  "is_equipment": true
+ },
+ {
+  "id": "anaesthetic_machine",
+  "name": "Anaesthetic machine",
+  "width_m": 0.7,
+  "depth_m": 0.6,
+  "height_m": 1.5,
+  "style": "box",
+  "colour": "#3F6E8C",
+  "cost": 45000,
+  "is_equipment": true
+ },
+ {
+  "id": "instrument_trolley",
+  "name": "Instrument trolley",
+  "width_m": 1.0,
+  "depth_m": 0.5,
+  "height_m": 0.9,
+  "style": "box",
+  "colour": "#B8C4CC",
+  "cost": 4000,
+  "is_equipment": true
+ },
+ {
+  "id": "pharmacy_counter",
+  "name": "Dispensing bench",
+  "width_m": 1.5,
+  "depth_m": 0.6,
+  "height_m": 0.9,
+  "style": "box",
+  "colour": "#7FA88A",
+  "cost": 1800,
+  "is_equipment": true
+ },
+ {
+  "id": "medicine_shelves",
+  "name": "Medicine shelves",
+  "width_m": 1.5,
+  "depth_m": 0.4,
+  "height_m": 2.0,
+  "style": "box",
+  "colour": "#E7E2D4",
+  "cost": 1200,
+  "is_equipment": true
+ },
+ {
+  "id": "drug_fridge",
+  "name": "Medicine fridge",
+  "width_m": 0.6,
+  "depth_m": 0.6,
+  "height_m": 1.8,
+  "style": "box",
+  "colour": "#EEF3F6",
+  "cost": 2400,
+  "is_equipment": true
  }
 ]

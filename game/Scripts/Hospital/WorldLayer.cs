@@ -164,7 +164,18 @@ public partial class WorldLayer : Node2D
     /// <summary>Lying on the bed of a treatment space or a ward.</summary>
     public bool InBed(Patient patient)
     {
-        if (patient.IsMoving || patient.CareSpaceId is not { } id || _sim.FindSpace(id) is not { } space)
+        if (patient.IsMoving)
+        {
+            return false;
+        }
+
+        // On an X-ray, CT or operating table.
+        if (_sim.Spaces.Any(s => s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy && s.PatientSpot == patient.Tile))
+        {
+            return true;
+        }
+
+        if (patient.CareSpaceId is not { } id || _sim.FindSpace(id) is not { } space)
         {
             return false;
         }
@@ -312,6 +323,9 @@ public partial class WorldLayer : Node2D
                 var colour = new Color(def.Colour);
                 switch (def.Style)
                 {
+                    case FurnitureStyle.Bed when space.IsServiceRoom:
+                        AddTable(space, colour);
+                        break;
                     case FurnitureStyle.Bed when space.IsWard:
                         if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
                         {
@@ -355,6 +369,29 @@ public partial class WorldLayer : Node2D
             if (lying)
             {
                 Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
+            }
+        }, animated: true);
+    }
+
+    /// <summary>An imaging or operating table, with the patient lying on it during a scan or an operation.</summary>
+    private void AddTable(CareSpace space, Color colour)
+    {
+        var spot = space.PatientSpot;
+        var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
+        var cover = space.Kind == CareSpaceKind.Theatre ? new Color("#4E9C8F") : new Color("#CFE0EE");
+        AddProp(IsoDraw.ToScreen(cx, cy), c =>
+        {
+            var patient = _sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == spot);
+            if (patient is not null && ReferenceEquals(Selected, patient))
+            {
+                var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);
+                c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
+            }
+
+            var lift = Figures.Table(c, cx, cy, colour);
+            if (patient is not null)
+            {
+                Figures.Lying(c, cx, cy, Looks.Patient(patient), cover, lift, false);
             }
         }, animated: true);
     }

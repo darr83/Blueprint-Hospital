@@ -1,3 +1,5 @@
+using BlueprintHospital.Simulation.Hospital;
+
 namespace BlueprintHospital.Simulation.Data.Models;
 
 public enum InvestigationCategory
@@ -8,7 +10,7 @@ public enum InvestigationCategory
     /// <summary>A sample is taken at the bedside and sent to the laboratory.</summary>
     Blood,
 
-    /// <summary>Needs a scanner room (arrives with the diagnostics milestone).</summary>
+    /// <summary>Done by a radiographer in an X-ray or CT room; a radiologist reports it after the turnaround time.</summary>
     Imaging,
 }
 
@@ -63,6 +65,9 @@ public sealed class InvestigationDefinition : IDataRecord
 
     public int Cost { get; init; }
 
+    /// <summary>For imaging: the room it needs (x_ray or ct). Without one on site the test can't be done.</summary>
+    public CareSpaceKind? Room { get; init; }
+
     public SexRestriction AppliesToSex { get; init; } = SexRestriction.Any;
 
     public string? Unit { get; init; }
@@ -92,6 +97,11 @@ public sealed class InvestigationDefinition : IDataRecord
         context.RequireRange("cost", Cost, 0, 100_000);
         context.RequireRange("false_positive_rate", FalsePositiveRate, 0, 1);
         CheckTemplate(context, "normal", Normal);
+
+        if ((Category == InvestigationCategory.Imaging) != Room is CareSpaceKind.XRay or CareSpaceKind.CT)
+        {
+            context.Error("room", "imaging tests, and only imaging tests, name their room: x_ray or ct.");
+        }
 
         if (FalsePositiveRate > 0)
         {

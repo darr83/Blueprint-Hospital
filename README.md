@@ -14,7 +14,7 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
 | 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
-| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards, 33 conditions, finances and full saves done |
+| 4. Departments, wards, pharmacy, surgery, finances | ✅ Done: wards, imaging, theatres, pharmacy, 38 conditions, finances, full saves |
 
 ## Repository layout
 
@@ -148,19 +148,21 @@ today, yesterday and the last week by category, and what the hospital costs to r
 
 - **Income** is a simplified NHS tariff: each A&E attendance earns £450 (Red), £250 (Amber) or
   £130 (Green) when the patient leaves A&E, and each ward admission earns £1,200 plus £300 a night
-  when the patient goes home. Patients who leave without being seen earn nothing.
+  when the patient goes home. Each operation earns £2,500. Patients who leave without being seen
+  earn nothing.
 - **Running costs:** wages for every post (each covered around the clock, about 4.5 people per
   post), building upkeep of £0.60 per m² a day, and every test and medicine as it is used.
+  Without a pharmacy, medicines cost 50% more.
 - **Building work** is paid up front. If the money runs out, building stops until it comes back.
 
 ### Conditions
 
-The game has 33 conditions, each with its own symptoms, observations, tests, treatment and
+The game has 38 conditions, each with its own symptoms, observations, tests, treatment and
 outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
 
 | Condition | After A&E |
 |---|---|
-| Acute appendicitis | Transfer |
+| Acute appendicitis | Operation, then admit |
 | Acute asthma | Discharge |
 | Acute cholecystitis | Admit |
 | Acute heart failure | Admit |
@@ -169,24 +171,29 @@ outcome. Doctors only see what a real doctor would: symptoms, observations and t
 | Acute pancreatitis | Admit |
 | Allergic reaction (hives) | Discharge |
 | Anaphylaxis | Discharge |
+| Ankle fracture | Discharge |
 | Ankle sprain | Discharge |
 | Atrial fibrillation with fast heart rate | Admit |
 | Biliary colic | Discharge |
-| COPD exacerbation | Admit |
 | Cellulitis | Discharge |
 | Community-acquired pneumonia | Admit |
+| COPD exacerbation | Admit |
 | Deep vein thrombosis | Discharge |
 | Diabetic ketoacidosis | Admit |
-| Ectopic pregnancy | Transfer |
+| Ectopic pregnancy | Operation, then admit |
+| Fractured neck of femur | Operation, then admit |
 | Gastro-oesophageal reflux | Discharge |
 | Gastroenteritis | Discharge |
 | Hypoglycaemia | Discharge |
 | Migraine | Discharge |
 | Musculoskeletal chest pain | Discharge |
+| Pulmonary embolism | Admit |
 | Pyelonephritis | Admit |
 | Renal colic | Discharge |
 | Seizure in known epilepsy | Discharge |
 | Simple laceration | Discharge |
+| Stroke | Admit |
+| Subarachnoid haemorrhage | Transfer |
 | Supraventricular tachycardia | Discharge |
 | Threatened miscarriage | Discharge |
 | Tonsillitis | Discharge |
@@ -194,8 +201,9 @@ outcome. Doctors only see what a real doctor would: symptoms, observations and t
 | Urinary tract infection | Discharge |
 | Vasovagal syncope (faint) | Discharge |
 
-"Admit" goes to a ward bed when there is one, otherwise to another hospital. "Transfer" goes to
-another hospital (heart attack centre, or surgery until theatres are built).
+"Admit" goes to a ward bed when there is one, otherwise to another hospital. "Operation" goes to
+theatre and then a ward bed; without a theatre the patient is transferred. "Transfer" goes to a
+specialist centre elsewhere (heart attack centre, neurosurgery).
 
 ### Wards
 
@@ -217,8 +225,24 @@ gives.
   go home. Each condition sets its usual length of stay (`length_of_stay_hours`).
 - A ward with a booked bed or a patient in it can't be moved or demolished.
 
+### Imaging, theatres and pharmacy
+
+Build these from **Build → Services**. Each brings its own member of staff, who leaves if the room
+is demolished.
+
+- **X-ray room** (radiographer): chest X-rays and X-rays of injured limbs. **CT scanner** (CT
+  radiographer): CT head and CT pulmonary angiogram. The patient is taken from their cubicle to the
+  scanner and back, and a radiologist reports the scan after a short wait. Without the room, doctors
+  diagnose without that scan: a broken ankle or a bleed on the brain is much easier to miss.
+- **Operating theatre** (consultant surgeon): appendicectomy, ectopic pregnancy and hip fracture
+  operations. The patient waits in their cubicle for theatre, has the operation, then needs a ward
+  bed to recover in. If the A&E diagnosis was wrong, the surgeon finds out in theatre.
+- **Pharmacy** (pharmacist): buys medicines at list price and dispenses ward patients' medicines to
+  take home. Without one, medicines cost 50% more and every ward discharge waits about 4 hours for
+  medicines from an outside pharmacy.
+
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
-staff rooms. Saves (format 2) keep the rooms, corridors, extensions and balance.
+staff rooms.
 
 ## Building an executable
 
@@ -353,7 +377,8 @@ Add an entry to any file in `game/Data/Conditions/`. This is a complete example:
   Severity 1 is fatal if `can_be_fatal` is true.
 - `key_investigations` are the tests doctors order to confirm or rule out this condition.
 - `treatment` steps are done in order. `essential` steps must be given for the patient to recover.
-- `disposition` is `discharge`, `transfer` or `admit`, with a note shown in the record.
+- `disposition` is `discharge`, `transfer`, `admit` or `surgery`, with a note shown in the record.
+  `surgery` also needs `"operation": { "name": "Laparoscopic appendicectomy", "minutes": 60 }`.
 
 ### How to add an investigation
 
@@ -385,7 +410,8 @@ Results are generated from the patient's **true** condition: for each `abnormal`
 `probability` is the test's sensitivity for that condition; otherwise the result is normal, apart
 from `false_positive_rate`. `{value}` in a summary is replaced by a number from `value_range`.
 `category` is `bedside`, `blood` or `imaging`; blood tests are sent to the lab and come back after
-`turnaround_minutes`. `applies_to_sex` can restrict a test (e.g. pregnancy test: `female`).
+`turnaround_minutes`. Imaging tests also name their `room` (`x_ray` or `ct`): they are done there
+by a radiographer and reported after `turnaround_minutes`, and can't be ordered without that room. `applies_to_sex` can restrict a test (e.g. pregnancy test: `female`).
 
 ### How to add a medication
 

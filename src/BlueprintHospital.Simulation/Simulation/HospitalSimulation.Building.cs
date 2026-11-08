@@ -586,6 +586,8 @@ public sealed partial class HospitalSimulation
             CareSpaceKind.Resus => "Resus",
             CareSpaceKind.Triage => "Triage",
             CareSpaceKind.Ward => "Ward",
+            CareSpaceKind.Theatre => "Theatre",
+            CareSpaceKind.Pharmacy => "Pharmacy",
             _ => template.Name,
         };
         var n = 1;
@@ -601,7 +603,7 @@ public sealed partial class HospitalSimulation
     private void AfterLayoutChange()
     {
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
-        SyncWardStaff();
+        SyncRoomStaff();
 
         foreach (var agent in _patients.Values.Cast<Agent>().Concat(_staff))
         {
@@ -682,7 +684,7 @@ public sealed partial class HospitalSimulation
 
         Balance = state.Balance;
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
-        SyncWardStaff();
+        SyncRoomStaff();
         foreach (var member in _staff)
         {
             member.PlaceAt(HomeTile(member));

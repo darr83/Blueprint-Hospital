@@ -7,6 +7,9 @@ public enum StaffRole
     Receptionist,
     Nurse,
     Doctor,
+    Radiographer,
+    Surgeon,
+    Pharmacist,
 }
 
 public enum StaffActivity
@@ -30,8 +33,8 @@ public sealed class StaffMember : Agent
 
     public required string DepartmentId { get; init; }
 
-    /// <summary>The ward this member of staff works on; null for A&amp;E staff.</summary>
-    public string? WardId { get; init; }
+    /// <summary>The room this member of staff is based in (a ward, X-ray, CT, theatre or pharmacy); null for A&amp;E staff.</summary>
+    public string? BaseRoomId { get; init; }
 
     public int Age { get; init; }
 

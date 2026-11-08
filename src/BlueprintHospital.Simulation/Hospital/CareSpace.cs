@@ -15,6 +15,18 @@ public enum CareSpaceKind
     StaffRoom,
     Corridor,
     Ward,
+
+    /// <summary>Plain X-rays, done by a radiographer.</summary>
+    XRay,
+
+    /// <summary>CT scanner, done by a radiographer.</summary>
+    CT,
+
+    /// <summary>Operating theatre, run by a surgeon.</summary>
+    Theatre,
+
+    /// <summary>Dispenses medicines; run by a pharmacist.</summary>
+    Pharmacy,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -104,6 +116,9 @@ public sealed class CareSpace
     public IReadOnlyList<WardBed> Beds { get; init; } = Array.Empty<WardBed>();
 
     public bool IsWard => Kind == CareSpaceKind.Ward;
+
+    /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
+    public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy;
 
     /// <summary>Patient currently in (or on their way to) this space.</summary>
     public int? OccupantId { get; set; }

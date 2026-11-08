@@ -37,6 +37,15 @@ public sealed class EmergencyStats
 
     public int WardDiagnosesCorrected { get; set; }
 
+    /// <summary>X-rays and CT scans done on site.</summary>
+    public int ScansDone { get; internal set; }
+
+    /// <summary>Operations done in the hospital's theatres.</summary>
+    public int OperationsDone { get; internal set; }
+
+    /// <summary>Patients in A&amp;E waiting to go to theatre.</summary>
+    public int AwaitingSurgery { get; internal set; }
+
     /// <summary>Patients in A&amp;E waiting for a ward bed.</summary>
     public int AwaitingBed { get; internal set; }
 
@@ -174,6 +183,7 @@ public sealed class EmergencyStats
     {
         var present = sim.Patients.Where(p => p.IsInEmergency).ToList();
         AwaitingBed = present.Count(p => p.Stage == PatientStage.AwaitingBed);
+        AwaitingSurgery = present.Count(p => p.Stage == PatientStage.AwaitingSurgery);
         OnWards = sim.Patients.Count(p => p.Stage == PatientStage.OnWard && p.IsAlive);
         var beds = sim.Spaces.Where(s => s.IsWard).SelectMany(s => s.Beds).ToList();
         WardBeds = (beds.Count(b => b.OccupantId is not null), beds.Count);

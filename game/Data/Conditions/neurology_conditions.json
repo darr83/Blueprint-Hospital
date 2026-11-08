@@ -196,5 +196,233 @@
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
     "disposition_note": "Back to normal. Discharged with their usual antiepileptic medicine and an epilepsy nurse review."
+  },
+  {
+    "id": "subarachnoid_haemorrhage",
+    "name": "Subarachnoid haemorrhage",
+    "department": "neurology",
+    "description": "Bleeding around the brain, usually from a burst aneurysm. A sudden 'worst ever' headache; CT head shows the blood.",
+    "prevalence": 0.7,
+    "age_range": [
+      25,
+      75
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.6,
+    "presenting_complaint": "headache",
+    "symptoms": [
+      {
+        "symptom": "headache",
+        "probability": 1
+      },
+      {
+        "symptom": "thunderclap_headache",
+        "probability": 0.95
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.6
+      },
+      {
+        "symptom": "neck_stiffness",
+        "probability": 0.6
+      },
+      {
+        "symptom": "photophobia",
+        "probability": 0.45
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.25
+      },
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        14
+      ],
+      "systolic_bp": [
+        168,
+        22
+      ],
+      "diastolic_bp": [
+        96,
+        12
+      ],
+      "respiratory_rate": [
+        18,
+        3
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        37.0,
+        0.3
+      ],
+      "pain_score": [
+        8,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.4,
+      0.6
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": -20,
+      "systolic_bp": 30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0.5
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_head"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Neurosurgical referral",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "transfer",
+    "disposition_note": "Transferred to the regional neurosurgical centre."
+  },
+  {
+    "id": "ischaemic_stroke",
+    "name": "Stroke",
+    "department": "neurology",
+    "description": "A blocked artery in the brain. 'Time is brain': CT head rules out a bleed before clot-busting treatment.",
+    "prevalence": 2,
+    "age_range": [
+      50,
+      98
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.85,
+    "presenting_complaint": "weakness",
+    "symptoms": [
+      {
+        "symptom": "weakness",
+        "probability": 1
+      },
+      {
+        "symptom": "slurred_speech",
+        "probability": 0.7
+      },
+      {
+        "symptom": "facial_droop",
+        "probability": 0.65
+      },
+      {
+        "symptom": "numbness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.3
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        12
+      ],
+      "systolic_bp": [
+        172,
+        22
+      ],
+      "diastolic_bp": [
+        94,
+        12
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.55
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": 20,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -3,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_head",
+      "capillary_glucose",
+      "ecg"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Stroke assessment (NIHSS)",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "aspirin",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Swallow screen",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.006,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the stroke unit for monitoring and rehabilitation.",
+    "length_of_stay_hours": [
+      96,
+      240
+    ]
   }
 ]

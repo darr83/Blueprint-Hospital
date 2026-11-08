@@ -61,6 +61,15 @@ public sealed partial class HospitalSimulation
             case TaskKind.WardDischarge:
                 CompleteWardDischarge(member, patient);
                 break;
+            case TaskKind.Imaging:
+                CompleteImaging(member, patient, task.Detail!);
+                break;
+            case TaskKind.Surgery:
+                CompleteSurgery(member, patient);
+                break;
+            case TaskKind.DispenseMedicines:
+                CompleteDispensing(member, patient);
+                break;
         }
     }
 
@@ -207,6 +216,9 @@ public sealed partial class HospitalSimulation
                 case InvestigationCategory.Blood:
                     addedBlood = true;
                     break;
+                case InvestigationCategory.Imaging:
+                    AddTask(TaskKind.Imaging, StaffRole.Radiographer, patient, test.ProcedureMinutes, test.Name, id);
+                    break;
                 default:
                     AddTask(TaskKind.BedsideTest, test.PerformedBy == ClinicalRole.Doctor ? StaffRole.Doctor : StaffRole.Nurse, patient, test.ProcedureMinutes, test.Name, id);
                     break;
@@ -300,8 +312,9 @@ public sealed partial class HospitalSimulation
             {
                 record.Note = $"{med.TypicalDose}, {med.Route}";
                 patient.Log(Now, $"{med.Name} {med.TypicalDose} ({med.Route}) given by {member.Name}.");
-                Stats.MedicationCost += med.CostPerDose;
-                Book(MoneyCategory.Medicines, -med.CostPerDose);
+                var cost = MedicineCost(med.CostPerDose);
+                Stats.MedicationCost += cost;
+                Book(MoneyCategory.Medicines, -cost);
                 patient.Analgesia = Math.Min(0.7, patient.Analgesia + med.DrugClass switch
                 {
                     "Opioid analgesic" => 0.5,
@@ -345,6 +358,10 @@ public sealed partial class HospitalSimulation
 
             case Disposition.Admit:
                 RequestWardBed(patient, diagnosed);
+                break;
+
+            case Disposition.Surgery:
+                RequestSurgery(patient, diagnosed);
                 break;
 
             default:

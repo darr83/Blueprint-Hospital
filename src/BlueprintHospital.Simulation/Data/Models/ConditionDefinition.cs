@@ -6,6 +6,9 @@ public enum Disposition
     Discharge,
     Transfer,
     Admit,
+
+    /// <summary>Needs an operation (<see cref="ConditionDefinition.Operation"/>), then a ward bed to recover in.</summary>
+    Surgery,
 }
 
 /// <summary>Who carries out a task.</summary>
@@ -19,6 +22,15 @@ public enum TreatmentStepType
 {
     Medication,
     Procedure,
+}
+
+/// <summary>An operation done in theatre.</summary>
+public sealed class OperationDefinition
+{
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>Time in theatre for an average surgeon.</summary>
+    public int Minutes { get; init; }
 }
 
 public sealed class SymptomChance
@@ -155,6 +167,9 @@ public sealed class ConditionDefinition : IDataRecord
 
     public string DispositionNote { get; init; } = string.Empty;
 
+    /// <summary>The operation, for conditions whose disposition is surgery.</summary>
+    public OperationDefinition? Operation { get; init; }
+
     /// <summary>For admitted patients: [shortest, longest] stay on the ward in hours.</summary>
     public double[] LengthOfStayHours { get; init; } = { 24, 72 };
 
@@ -218,6 +233,19 @@ public sealed class ConditionDefinition : IDataRecord
         }
 
         context.RequireText("disposition_note", DispositionNote);
+        if (Disposition == Disposition.Surgery)
+        {
+            if (Operation is null)
+            {
+                context.Error("operation", "is required when the disposition is surgery.");
+            }
+            else
+            {
+                context.RequireText("operation.name", Operation.Name);
+                context.RequireRange("operation.minutes", Operation.Minutes, 10, 600);
+            }
+        }
+
         if (LengthOfStayHours.Length != 2 || LengthOfStayHours[0] < 1 || LengthOfStayHours[1] < LengthOfStayHours[0] || LengthOfStayHours[1] > 24 * 60)
         {
             context.Error("length_of_stay_hours", "must be [shortest, longest] in hours, between 1 and 1440.");

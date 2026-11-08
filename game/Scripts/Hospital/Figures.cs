@@ -204,6 +204,16 @@ public static class Figures
         return frameHeight + mattress;
     }
 
+    /// <summary>An X-ray, CT or operating table: a slab on a central pedestal. Returns the height of its top.</summary>
+    public static float Table(CanvasItem c, double gx, double gy, Color top)
+    {
+        const float height = 20f;
+        IsoDraw.Box(c, gx - 0.5, gy - 1.0, 1.0, 2.0, 3, new Color("#4A545D"));
+        IsoDraw.Box(c, gx - 0.3, gy - 0.8, 0.6, 1.6, height - 5, new Color("#7D8995"));
+        IsoDraw.Box(c, gx - 0.75, gy - 2.05, 1.5, 4.1, 5, top, height - 5);
+        return height;
+    }
+
     /// <summary>Height of the obs monitor screen's bottom edge above the floor, in pixels.</summary>
     public const float MonitorHeight = 52f;
 

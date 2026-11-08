@@ -70,6 +70,7 @@ public static class RoomLayoutEngine
         switch (template.Layout)
         {
             case RoomLayoutKind.BedSpace:
+            case RoomLayoutKind.Equipment:
                 BedSpace(plan, template);
                 break;
             case RoomLayoutKind.Ward:
@@ -131,7 +132,16 @@ public static class RoomLayoutEngine
         var spot = new GridCoord((int)Math.Floor(bed.X + (bed.W / 2)), (int)Math.Floor(bed.Y + (bed.L / 2)));
         plan.PatientSpot = spot;
         plan.Reserve(spot);
-        plan.AddWorld("hospital_bed", bed.X, bed.Y, bed.W, bed.L);
+
+        // Imaging rooms and theatres use their own table (the first item drawn as a bed).
+        var table = template.Furniture.FirstOrDefault(i => plan.Database.Furniture.TryGetValue(i, out var d) && d.Style == FurnitureStyle.Bed) ?? "hospital_bed";
+        plan.AddWorld(table, bed.X, bed.Y, bed.W, bed.L);
+
+        // A CT scanner's ring goes round the head end of the table.
+        if (template.Furniture.Contains("ct_gantry"))
+        {
+            plan.AddWorld("ct_gantry", bed.X - 0.6, bed.Y + 0.4, bed.W + 1.2, 1.4);
+        }
 
         // Staff stand beside the bed, on the side nearest the door.
         var door = plan.DoorTile;
@@ -142,12 +152,16 @@ public static class RoomLayoutEngine
         plan.StaffSpot = candidates.Count > 0 ? candidates[0] : new GridCoord(spot.X, Math.Min(spot.Y + 3, f.Rect.Bottom - 1));
         plan.Reserve(plan.StaffSpot);
 
-        // Obs monitor at the head of the bed, on the side away from where staff stand.
+        // Obs monitor (or anaesthetic machine, or X-ray tube) at the head of the bed, on the side away from where staff stand.
         var side = plan.StaffSpot.X < spot.X ? 1 : -1;
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
-        plan.AddWorld("obs_monitor", cx + (side * 1.4) - 0.3, cy - 1.6 - 0.3, 0.6, 0.6);
+        var headItem = template.Furniture.FirstOrDefault(i => i is "obs_monitor" or "anaesthetic_machine" or "xray_tube");
+        if (headItem is not null)
+        {
+            plan.AddWorld(headItem, cx + (side * 1.4) - 0.3, cy - 1.6 - 0.3, 0.6, 0.6);
+        }
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "obs_monitor"))
+        foreach (var item in template.Furniture.Where(i => i != table && i != headItem && i != "ct_gantry"))
         {
             plan.TryPlaceAgainstWalls(item);
         }

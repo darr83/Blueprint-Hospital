@@ -142,7 +142,7 @@ public partial class RoomPanel : PanelContainer
         if (room.IsWard)
         {
             var used = room.Beds.Count(b => b.OccupantId is not null);
-            var team = _sim.Staff.Where(s => s.WardId == room.Id).Select(s => s.Name);
+            var team = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Name);
             return $"{used} of {room.Beds.Count} beds\n[color=#B8C4CE]Ward team[/color]  {string.Join(", ", team)}";
         }
 

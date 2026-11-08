@@ -316,7 +316,7 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            if (patient.Stage is not (PatientStage.WaitingForSpace or PatientStage.InTreatmentSpace or PatientStage.AwaitingTransfer or PatientStage.InAmbulanceQueue or PatientStage.AwaitingBed or PatientStage.OnWard))
+            if (patient.Stage is not (PatientStage.WaitingForSpace or PatientStage.InTreatmentSpace or PatientStage.AwaitingTransfer or PatientStage.InAmbulanceQueue or PatientStage.AwaitingBed or PatientStage.AwaitingSurgery or PatientStage.OnWard))
             {
                 continue;
             }

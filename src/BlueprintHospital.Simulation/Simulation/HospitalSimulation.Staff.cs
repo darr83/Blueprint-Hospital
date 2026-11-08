@@ -195,7 +195,7 @@ public sealed partial class HospitalSimulation
     private void ChooseTask(StaffMember member)
     {
         var candidates = _tasks.Values
-            .Where(t => t.AssignedStaffId is null && t.Role == member.Role && TeamFor(t) == member.WardId && CanStart(t))
+            .Where(t => t.AssignedStaffId is null && t.Role == member.Role && IsForMember(t, member) && CanStart(t))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
@@ -229,6 +229,10 @@ public sealed partial class HospitalSimulation
             ReleaseSeat(patient);
             WalkTo(patient, triage.PatientSpot);
             patient.Log(Now, "Called through to triage.");
+        }
+        else if (ServiceRoomKind(best) is not null)
+        {
+            StartServiceTask(member, best, patient);
         }
         else if (best.Kind == TaskKind.EscortToWard)
         {
@@ -289,6 +293,8 @@ public sealed partial class HospitalSimulation
                 return Waiting.StaffSpot;
             case TaskKind.Triage when task.SpaceId is { } triageId && FindSpace(triageId) is { } triage:
                 return triage.StaffSpot;
+            case TaskKind.Imaging or TaskKind.Surgery or TaskKind.DispenseMedicines when task.SpaceId is { } roomId && FindSpace(roomId) is { } room:
+                return room.StaffSpot;
         }
 
         if (BedOf(patient) is { } bed)
@@ -321,6 +327,7 @@ public sealed partial class HospitalSimulation
     {
         TaskKind.Register => QueueTile(0),
         TaskKind.Triage when task.SpaceId is { } id && FindSpace(id) is { } triage => triage.PatientSpot,
+        TaskKind.Imaging or TaskKind.Surgery when task.SpaceId is { } id && FindSpace(id) is { } room => room.PatientSpot,
         _ => patient.Destination ?? patient.Tile,
     };
 
@@ -363,6 +370,10 @@ public sealed partial class HospitalSimulation
         member.StatusText = "Available";
         member.TasksCompleted++;
         patient.BusyWithTaskId = null;
+        if (task.SpaceId is { } spaceId && FindSpace(spaceId) is { } usedRoom && usedRoom.ReservedByStaffId == member.Id)
+        {
+            usedRoom.ReservedByStaffId = null;
+        }
 
         CompleteTask(member, task, patient);
     }

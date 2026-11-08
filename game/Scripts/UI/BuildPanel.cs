@@ -220,7 +220,15 @@ public partial class BuildPanel : PanelContainer
         return string.Join("\n", lines);
     }
 
-    private static string Capacity(RoomTemplate template, CareSpace room) => template.Layout switch
+    private static string Capacity(RoomTemplate template, CareSpace room) => template.Kind switch
+    {
+        CareSpaceKind.XRay or CareSpaceKind.CT => "1 patient at a time",
+        CareSpaceKind.Theatre => "1 operation at a time",
+        CareSpaceKind.Pharmacy => "Dispenses for every ward",
+        _ => LayoutCapacity(template, room),
+    };
+
+    private static string LayoutCapacity(RoomTemplate template, CareSpace room) => template.Layout switch
     {
         RoomLayoutKind.BedSpace => "1 patient on a bed",
         RoomLayoutKind.Ward => room.Beds.Count == 1 ? "1 bed" : $"{room.Beds.Count} beds",

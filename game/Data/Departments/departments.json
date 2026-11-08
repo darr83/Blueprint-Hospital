@@ -58,5 +58,45 @@
     "starts_unlocked": false,
     "is_shared_service": false,
     "opening_cost": 225000
+  },
+  {
+    "id": "radiology",
+    "name": "Radiology",
+    "short_name": "RAD",
+    "description": "X-rays and CT scans, done by radiographers and reported by radiologists.",
+    "colour": "#546E7A",
+    "starts_unlocked": false,
+    "is_shared_service": true,
+    "opening_cost": 0
+  },
+  {
+    "id": "theatres",
+    "name": "Operating Theatres",
+    "short_name": "THR",
+    "description": "Operating theatres where surgeons do emergency operations.",
+    "colour": "#00897B",
+    "starts_unlocked": false,
+    "is_shared_service": true,
+    "opening_cost": 0
+  },
+  {
+    "id": "pharmacy",
+    "name": "Pharmacy",
+    "short_name": "PHA",
+    "description": "Supplies the hospital's medicines and prepares medicines for patients to take home.",
+    "colour": "#43A047",
+    "starts_unlocked": false,
+    "is_shared_service": true,
+    "opening_cost": 0
+  },
+  {
+    "id": "trauma_orthopaedics",
+    "name": "Trauma and Orthopaedics",
+    "short_name": "T&O",
+    "description": "Treats broken bones and joint injuries, from plaster casts to hip operations.",
+    "colour": "#6D4C41",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 0
   }
 ]

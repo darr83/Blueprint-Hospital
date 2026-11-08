@@ -208,5 +208,61 @@
     "patient_description": "I feel shaky.",
     "body_system": "neurological",
     "is_red_flag": false
+  },
+  {
+    "id": "unable_to_weight_bear",
+    "name": "Unable to bear weight",
+    "patient_description": "I can't put any weight on it at all.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "shortened_rotated_leg",
+    "name": "Shortened, turned-out leg",
+    "patient_description": "My leg looks shorter and my foot's turned out.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": true
+  },
+  {
+    "id": "thunderclap_headache",
+    "name": "Sudden severe headache",
+    "patient_description": "It came on like being hit on the back of the head: the worst headache of my life.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "neck_stiffness",
+    "name": "Stiff neck",
+    "patient_description": "My neck is really stiff.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "slurred_speech",
+    "name": "Slurred speech",
+    "patient_description": "My words are coming out wrong.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "facial_droop",
+    "name": "Face drooping on one side",
+    "patient_description": "One side of my face has dropped.",
+    "body_system": "neurological",
+    "is_red_flag": true
+  },
+  {
+    "id": "pleuritic_chest_pain",
+    "name": "Sharp pain on breathing in",
+    "patient_description": "It's a sharp pain in my chest when I breathe in.",
+    "body_system": "respiratory",
+    "is_red_flag": false
+  },
+  {
+    "id": "haemoptysis",
+    "name": "Coughing up blood",
+    "patient_description": "I've been coughing up blood.",
+    "body_system": "respiratory",
+    "is_red_flag": true
   }
 ]

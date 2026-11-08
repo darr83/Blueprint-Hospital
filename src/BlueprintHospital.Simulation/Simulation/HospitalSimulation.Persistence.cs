@@ -112,6 +112,8 @@ public sealed class PatientState
 
     public DateTime? DischargeDueAt { get; init; }
 
+    public DateTime? MedicinesReadyAt { get; init; }
+
     public List<TimelineEntry> Timeline { get; init; } = new();
 
     public List<ObservationState> ObservationHistory { get; init; } = new();
@@ -409,7 +411,7 @@ public sealed partial class HospitalSimulation
             member.StatusText = "Available";
         }
 
-        SyncWardStaff();
+        SyncRoomStaff();
         Resume(state.Patients.Select(p => (p.Id, p.Position)), id => _patients.GetValueOrDefault(id));
         Resume(state.Staff.Select(s => (s.Id, s.Position)), id => FindStaff(id));
     }
@@ -430,7 +432,7 @@ public sealed partial class HospitalSimulation
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
-        AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, Timeline = p.Timeline.ToList(),
+        AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -479,6 +481,7 @@ public sealed partial class HospitalSimulation
         p.LeftEmergencyAt = s.LeftEmergencyAt;
         p.AdmittedAt = s.AdmittedAt;
         p.DischargeDueAt = s.DischargeDueAt;
+        p.MedicinesReadyAt = s.MedicinesReadyAt;
         p.RestoreTimeline(s.Timeline);
         foreach (var o in s.ObservationHistory)
         {
@@ -493,7 +496,7 @@ public sealed partial class HospitalSimulation
 
     private static StaffState SaveStaff(StaffMember m) => new()
     {
-        Id = m.Id, Name = m.Name, Role = m.Role, Grade = m.Grade, DepartmentId = m.DepartmentId, WardId = m.WardId, Age = m.Age,
+        Id = m.Id, Name = m.Name, Role = m.Role, Grade = m.Grade, DepartmentId = m.DepartmentId, WardId = m.BaseRoomId, Age = m.Age,
         YearsExperience = m.YearsExperience, Skill = m.Skill, Speed = m.Speed, Salary = m.Salary, Fatigue = m.Fatigue, Morale = m.Morale,
         Activity = m.Activity, CurrentTaskId = m.CurrentTaskId, WorkRemainingSeconds = m.WorkRemainingSeconds, BreakEndsAt = m.BreakEndsAt,
         StatusText = m.StatusText, Caseload = m.Caseload.ToList(), TasksCompleted = m.TasksCompleted, Position = PositionOf(m),
@@ -503,7 +506,7 @@ public sealed partial class HospitalSimulation
     {
         var m = new StaffMember
         {
-            Id = s.Id, Name = s.Name, Role = s.Role, Grade = s.Grade, DepartmentId = s.DepartmentId, WardId = s.WardId, Age = s.Age,
+            Id = s.Id, Name = s.Name, Role = s.Role, Grade = s.Grade, DepartmentId = s.DepartmentId, BaseRoomId = s.WardId, Age = s.Age,
             YearsExperience = s.YearsExperience, Skill = s.Skill, Speed = s.Speed, Salary = s.Salary,
         };
         m.Fatigue = s.Fatigue;
@@ -577,6 +580,7 @@ public sealed partial class HospitalSimulation
                 ["ward_corrections"] = s.WardDiagnosesCorrected, ["deaths"] = s.Deaths, ["left_unseen"] = s.LeftWithoutBeingSeen,
                 ["diagnoses"] = s.DiagnosesMade, ["diagnoses_correct"] = s.DiagnosesCorrect, ["missed"] = s.MissedDiagnoses,
                 ["reputation_penalties"] = s.ReputationPenalties, ["investigation_cost"] = s.InvestigationCost, ["medication_cost"] = s.MedicationCost,
+                ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone,
             },
             TriagedTotal = new Dictionary<TriageCategory, int>(s.TriagedTotal),
             RecentTimeToDoctor = s.RecentTimeToDoctor.ToList(),
@@ -598,6 +602,8 @@ public sealed partial class HospitalSimulation
         s.WardDischarges = I("ward_discharges");
         s.WardDeaths = I("ward_deaths");
         s.WardDiagnosesCorrected = I("ward_corrections");
+        s.ScansDone = I("scans");
+        s.OperationsDone = I("operations");
         s.Deaths = I("deaths");
         s.LeftWithoutBeingSeen = I("left_unseen");
         s.DiagnosesMade = I("diagnoses");

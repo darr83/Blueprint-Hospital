@@ -79,12 +79,12 @@ public class WardTests
     public void Building_a_ward_brings_its_own_team()
     {
         var (h, ward) = WithWard();
-        var team = h.Sim.Staff.Where(s => s.WardId == ward.Id).ToList();
+        var team = h.Sim.Staff.Where(s => s.BaseRoomId == ward.Id).ToList();
         Assert.Contains(team, s => s.Role == StaffRole.Doctor);
         Assert.Equal((ward.Beds.Count + 5) / 6, team.Count(s => s.Role == StaffRole.Nurse));
 
         Assert.True(h.Sim.DemolishRoom(ward.Id).CanBuild);
-        Assert.DoesNotContain(h.Sim.Staff, s => s.WardId == ward.Id);
+        Assert.DoesNotContain(h.Sim.Staff, s => s.BaseRoomId == ward.Id);
     }
 
     [Fact]

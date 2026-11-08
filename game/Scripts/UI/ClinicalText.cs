@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Simulation;
@@ -37,6 +39,13 @@ public static class ClinicalText
     public static string Whereabouts(HospitalSimulation sim, Patient patient)
     {
         var room = patient.CareSpaceId is { } id ? sim.FindSpace(id)?.Name : null;
+        if (patient.BusyWithTaskId is { } taskId
+            && sim.Tasks.FirstOrDefault(t => t.Id == taskId) is { Kind: TaskKind.Imaging or TaskKind.Surgery, SpaceId: { } serviceId } task
+            && sim.FindSpace(serviceId) is { } serviceRoom)
+        {
+            return $"{serviceRoom.Name}: {task.Label}";
+        }
+
         return patient.Stage switch
         {
             PatientStage.WalkingIn => "Walking in to A&E",
@@ -48,6 +57,7 @@ public static class ClinicalText
             PatientStage.AwaitingTransfer => $"{room ?? "A&E"}: waiting for transfer",
             PatientStage.AwaitingBed when patient.ReservedWardId is { } ward => $"{room ?? "A&E"}: bed found on {sim.FindSpace(ward)?.Name ?? "a ward"}, waiting to go up",
             PatientStage.AwaitingBed => $"{room ?? "A&E"}: waiting for a ward bed",
+            PatientStage.AwaitingSurgery => $"{room ?? "A&E"}: waiting for theatre",
             PatientStage.OnWard => $"{room ?? "Ward"}, bed {(patient.BedIndex ?? 0) + 1}",
             PatientStage.Leaving => "Leaving A&E",
             PatientStage.Gone => patient.Outcome switch

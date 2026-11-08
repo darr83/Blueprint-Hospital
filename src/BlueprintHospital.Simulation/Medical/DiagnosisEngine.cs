@@ -40,6 +40,9 @@ public sealed class DiagnosisEngine(GameDatabase database)
     /// <summary>Chance of a symptom appearing in a condition that doesn't list it.</summary>
     private const double UnlistedSymptomChance = 0.02;
 
+    /// <summary>Whether a test can be done here (an X-ray needs an X-ray room). Doctors diagnose without the tests they can't get.</summary>
+    public Func<InvestigationDefinition, bool> CanDo { get; init; } = _ => true;
+
     public IReadOnlyList<DifferentialEntry> Differential(Patient patient)
     {
         var known = patient.HistoryTaken ? patient.Symptoms.ToHashSet() : patient.KnownSymptoms;
@@ -108,11 +111,13 @@ public sealed class DiagnosisEngine(GameDatabase database)
         var ordered = patient.Investigations.Select(i => i.InvestigationId).ToHashSet();
         var toOrder = new List<string>();
 
-        void Want(ConditionDefinition condition)
+        void Want(ConditionDefinition condition, bool scans = true)
         {
             foreach (var id in condition.KeyInvestigations)
             {
-                if (!ordered.Contains(id) && !toOrder.Contains(id) && InvestigationSystem.AppliesTo(database.Investigations[id], patient))
+                var test = database.Investigations[id];
+                if (!ordered.Contains(id) && !toOrder.Contains(id) && InvestigationSystem.AppliesTo(test, patient) && CanDo(test)
+                    && (scans || test.Category != InvestigationCategory.Imaging))
                 {
                     toOrder.Add(id);
                 }
@@ -128,9 +133,10 @@ public sealed class DiagnosisEngine(GameDatabase database)
 
         // Must-not-miss: a life-threatening cause of this presenting complaint is always ruled out in
         // patients of an age where it occurs (e.g. troponin for chest pain), however unlikely it looks.
+        // Scans are kept for when the condition is a real possibility, not ordered on every patient.
         foreach (var mustNotMiss in differential.Skip(1).Select(d => d.Condition).Where(c => IsMustNotMiss(c, patient)))
         {
-            Want(mustNotMiss);
+            Want(mustNotMiss, scans: false);
         }
 
         var anyResults = patient.Investigations.Any(i => i.Status == InvestigationStatus.Resulted);

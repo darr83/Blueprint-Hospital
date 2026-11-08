@@ -19,6 +19,15 @@ public enum TaskKind
     WardClerking,
     WardRound,
     WardDischarge,
+
+    /// <summary>An X-ray or CT scan in the imaging room; the patient goes there and back.</summary>
+    Imaging,
+
+    /// <summary>An operation in theatre.</summary>
+    Surgery,
+
+    /// <summary>The pharmacist prepares medicines to take home before a ward discharge.</summary>
+    DispenseMedicines,
 }
 
 /// <summary>
@@ -51,7 +60,7 @@ public sealed class ClinicalTask
     /// <summary>True once staff and patient are both in place and the work timer has started.</summary>
     public bool Started { get; set; }
 
-    /// <summary>The room the task is done in, when it needs one of its own (the triage room in use).</summary>
+    /// <summary>The room the task is done in, when it needs one of its own (triage, imaging, theatre or pharmacy).</summary>
     public string? SpaceId { get; set; }
 
     /// <summary>Calculated priority; higher is more urgent.</summary>

@@ -24,6 +24,9 @@ public enum MoneyCategory
 
     /// <summary>Building, moving and demolishing rooms and extending the building.</summary>
     Construction,
+
+    /// <summary>Payment for each operation done in theatre.</summary>
+    Operations,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>
@@ -62,6 +65,12 @@ public sealed partial class HospitalSimulation
     public const int AdmissionTariff = 1_200;
 
     public const int BedDayTariff = 300;
+
+    /// <summary>Payment for an operation, on top of the admission.</summary>
+    public const int OperationTariff = 2_500;
+
+    /// <summary>Without a pharmacy on site, medicines are bought in from outside at this mark-up.</summary>
+    public const double NoPharmacyMedicineMarkup = 1.5;
 
     /// <summary>Each post is covered 24 hours a day, 7 days a week: about 4.5 people per post.</summary>
     public const double StaffPerPost = 4.5;
@@ -154,6 +163,10 @@ public sealed partial class HospitalSimulation
             Book(MoneyCategory.Attendances, AttendanceTariff[category]);
         }
     }
+
+    /// <summary>What a dose costs: list price with a pharmacy, more without.</summary>
+    public long MedicineCost(int costPerDose) =>
+        HasPharmacy ? costPerDose : (long)Math.Round(costPerDose * NoPharmacyMedicineMarkup);
 
     private void PayForAdmission(Patient patient)
     {
