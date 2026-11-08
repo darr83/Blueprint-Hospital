@@ -72,6 +72,7 @@ Then:
 | Toggle building grid | G |
 | Show walking routes | R (or Routes on the left-hand bar) |
 | Rotate the view a quarter turn | Q / E (or the turn buttons bottom right) |
+| Look at the floor above / below | Page Up / Page Down (or ▲ ▼ bottom right) |
 | Play or Build mode | The Play / Build switch in the top bar, or B to swap |
 | Open a patient's record | Play mode: left-click the patient, a notification, or a row in the Patients list |
 | Open a member of staff's panel | Play mode: left-click them, or a row in the Staff list |
@@ -361,6 +362,30 @@ or intensive care (ICU).
   a ward, then home. A patient keeps their bed until the next one is free. Organ support slows a
   patient's decline (most on ICU), and each day on ICU (£1,800) or HDU (£900) is paid for on top of
   the admission.
+
+### Upper floors, lifts and stairs
+
+- **Adding a floor:** Build → Building → *Build the first floor* (or the **+▲** button bottom right,
+  which opens that tab). A new floor has the same outline as the ground floor and costs £500 per m²
+  of outline for the first floor up, £100 per m² more for each floor higher, plus every lift and
+  staircase carried up to it. The building can be up to five floors (ground + 4). Extending the
+  building later grows every floor, and the extension is paid for on each floor.
+- **Seeing a floor:** Page Up / Page Down or the ▲ ▼ buttons. Only that floor's rooms and people are
+  drawn; upstairs, the grounds show faded below. Clicking someone in the Patients or Staff list
+  switches to their floor.
+- **Lifts and stairs** (Build → Lifts & stairs) are dragged out like a room on any floor and go
+  through every floor, in the same place, including floors added later; they are paid for on each
+  floor. Their door must open onto a corridor on at least one floor. Upstairs, a corridor starts
+  from the landing outside a lift or stair door. They can't be moved; demolishing one takes it out
+  of every floor.
+- **Who uses what:** people on foot take whichever is quicker: stairs cost about 10 s a floor, the
+  lift about 12 s of waiting plus 2.5 s a floor, so walkers take the stairs for one floor and the lift
+  for more. Wheelchairs, trolleys, beds and ambulance stretchers only change floor by lift, and the
+  porter rides up with them. So a room patients are brought to (a ward, theatre, scanner or clinic)
+  can only be built upstairs once a lift reaches it; staff-only rooms (offices, staff room,
+  pharmacy) are fine with just stairs.
+- **Saves:** the floor count and every lift and staircase are saved (save format 4). Older saves load
+  as a one-floor building.
 
 ### Cafeteria and vending points
 

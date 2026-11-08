@@ -43,8 +43,31 @@ public partial class RouteLayer : Node2D
 
     private void DrawRoute(Agent agent, Color colour, bool selected)
     {
-        var points = new List<Vector2> { _world.FootPosition(agent) };
-        points.AddRange(agent.RemainingPath.Select(t => IsoDraw.ToScreen(t.X + 0.5, t.Y + 0.5)));
+        // Only the part of the route on the floor in view: up to the lift or stairs, or on from them.
+        var points = new List<Vector2>();
+        var (ax, ay) = _world.Interpolated(agent);
+        var lastFloor = IsoDraw.FloorOf(ay);
+        if (IsoDraw.OnViewFloor(ay))
+        {
+            points.Add(_world.FootPosition(agent));
+        }
+
+        foreach (var t in agent.RemainingPath)
+        {
+            var floor = IsoDraw.FloorOf(t.Y + 0.5);
+            if (floor != lastFloor && points.Count > 0)
+            {
+                // Changes floor here: the line stops at the lift or stairs.
+                break;
+            }
+
+            lastFloor = floor;
+            if (IsoDraw.OnViewFloor(t.Y + 0.5))
+            {
+                points.Add(IsoDraw.ToScreen(t.X + 0.5, t.Y + 0.5));
+            }
+        }
+
         if (points.Count < 2)
         {
             return;

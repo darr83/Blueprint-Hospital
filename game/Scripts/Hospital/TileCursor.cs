@@ -30,7 +30,8 @@ public partial class TileCursor : Node2D
 
         var mouse = GetGlobalMousePosition();
         var tile = IsoDraw.ScreenToTile(mouse);
-        GridCoord? next = _site.InBounds(tile) ? tile : null;
+        var local = _site.Local(tile);
+        GridCoord? next = _site.InBounds(local) && _site.FloorOf(tile) == IsoDraw.ViewFloor ? tile : null;
         if (next == _hovered)
         {
             return;

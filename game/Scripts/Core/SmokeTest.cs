@@ -33,6 +33,8 @@ public partial class SmokeTest : Node
     private int _savedOnWard;
     private int _savedAppointments;
     private int _savedChairs;
+    private int _savedFloors;
+    private Simulation.Staff.StaffMember? _climber;
 
     private enum Stage
     {
@@ -63,6 +65,8 @@ public partial class SmokeTest : Node
         Cafe,
         Vending,
         CriticalCare,
+        UpperFloor,
+        UpperFloorWalk,
         Rotate,
         Ambulance,
         Finances,
@@ -347,6 +351,27 @@ public partial class SmokeTest : Node
 
             case Stage.CriticalCare when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09i_intensive_care");
+                _climber = BuildUpperFloor(hospital);
+                _frame = 0;
+                _stage = Stage.UpperFloor;
+                break;
+
+            case Stage.UpperFloor when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09j_lift_and_stairs");
+                hospital.ShowFloor(1);
+                Check(IsoDraw.ViewFloor == 1, "Page Up did not show the first floor.");
+                var upstairsLift = hospital.Session.Simulation.Spaces.First(sp => sp.Kind == Simulation.Hospital.CareSpaceKind.Lift && hospital.Session.Simulation.FloorOf(sp) == 1);
+                hospital.Camera.SnapTo(IsoDraw.ToScreen(upstairsLift.Rect.X - 6, upstairsLift.Rect.Y + 2), 0.6f);
+                _frame = 0;
+                _stage = Stage.UpperFloorWalk;
+                break;
+
+            case Stage.UpperFloorWalk when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09k_first_floor");
+                var floorSim = hospital.Session.Simulation;
+                GD.Print($"[smoke] Viewed the first floor; {floorSim.Staff.Count(m => m.IsInBuilding && floorSim.FloorOf(m) == 1)} staff up there.");
+                hospital.ShowFloor(0);
+                Check(IsoDraw.ViewFloor == 0, "Page Down did not go back to the ground floor.");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -434,6 +459,7 @@ public partial class SmokeTest : Node
                 _savedOnWard = hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
                 _savedAppointments = hospital.Session.Simulation.Appointments.Count;
                 _savedChairs = hospital.Session.Simulation.CorridorChairs.Count;
+                _savedFloors = hospital.Session.Simulation.FloorCount;
                 manager.SaveGame(SlotName, _savedCamera);
                 GD.Print("[smoke] Game saved.");
                 manager.LoadGame(SlotName);
@@ -450,6 +476,8 @@ public partial class SmokeTest : Node
                 Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
                 Check(hospital.Session.Simulation.Appointments.Count == _savedAppointments, "Clinic appointments not restored.");
                 Check(hospital.Session.Simulation.CorridorChairs.Count == _savedChairs, "Corridor chairs not restored.");
+                Check(hospital.Session.Simulation.FloorCount == _savedFloors && _savedFloors > 1, $"Floors not restored ({hospital.Session.Simulation.FloorCount} of {_savedFloors}).");
+                Check(hospital.Session.Simulation.Nav.Links.Any(), "Lifts and stairs not linked after loading.");
                 GD.Print($"[smoke] {_savedPatients} patients restored, {_savedOnWard} on the ward.");
                 SaveManager.Delete(SlotName);
                 GD.Print("[smoke] Save reloaded and verified.");
@@ -785,6 +813,110 @@ public partial class SmokeTest : Node
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(icu.Rect.X + (icu.Rect.Width / 2.0), icu.Rect.Y + (icu.Rect.Length / 2.0)), 1.1f);
         GD.Print($"[smoke] Built {icu.Name} with {icu.Beds.Count} ventilated beds; {onIcu} on ICU at {clock.Now:HH:mm}.");
+    }
+
+    /// <summary>
+    /// Adds a first floor, puts a lift and stairs beside the A&amp;E corridor, lays a corridor upstairs from
+    /// their doors and builds a ward up there, then sends a nurse up. Returns the nurse.
+    /// </summary>
+    private static Simulation.Staff.StaffMember? BuildUpperFloor(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var site = sim.Site;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.HideRightPanels();
+        sim.AdjustBalance(2_000_000);
+        var floor = sim.AddFloor();
+        Check(floor.CanBuild, "First floor refused: " + string.Join("; ", floor.Problems));
+        Check(sim.FloorCount == 2, "The building should have two floors.");
+
+        // Find room for a lift and stairs next to a ground-floor corridor.
+        Simulation.Hospital.CareSpace? Place(string template, int w, int l)
+        {
+            for (var y = b.Y; y + l <= b.Bottom; y++)
+            {
+                for (var x = b.X; x + w <= b.Right; x++)
+                {
+                    var rect = new Simulation.World.GridRect(x, y, w, l);
+                    if (sim.Spaces.Any(s => s.Rect.Intersects(new Simulation.World.GridRect(x - 1, y - 1, w + 2, l + 2)) && s.Kind != Simulation.Hospital.CareSpaceKind.Corridor)
+                        || !sim.Spaces.Any(s => s.Kind == Simulation.Hospital.CareSpaceKind.Corridor && s.Rect.Intersects(new Simulation.World.GridRect(x - 1, y - 1, w + 2, l + 2)))
+                        || sim.Spaces.Any(s => s.Rect.Intersects(rect)))
+                    {
+                        continue;
+                    }
+
+                    var check = sim.BuildRoom(sim.AutoPlan(template, rect));
+                    if (check.CanBuild)
+                    {
+                        return sim.Spaces.Last(s => s.TemplateId == template && sim.FloorOf(s) == 0);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        var lift = Place("lift", 5, 6);
+        Check(lift is not null, "Found nowhere to put a lift.");
+        var stairs = Place("stairs", 5, 8);
+        Check(stairs is not null, "Found nowhere to put stairs.");
+        GD.Print($"[smoke] {lift!.Name} at {lift.Rect} and {stairs!.Name} at {stairs.Rect}, through {sim.FloorCount} floors.");
+
+        // Upstairs: a corridor from the lift door across the building, then a ward off it.
+        var upLift = sim.ShaftOf(lift).Single(s => sim.FloorOf(s) == 1);
+        var door = upLift.Doors[0];
+        var r = upLift.Rect;
+        var outside = door.Side switch
+        {
+            Simulation.World.WallSide.North => new Simulation.World.GridCoord(r.X + door.Offset, r.Y - 1),
+            Simulation.World.WallSide.South => new Simulation.World.GridCoord(r.X + door.Offset, r.Bottom),
+            Simulation.World.WallSide.West => new Simulation.World.GridCoord(r.X - 1, r.Y + door.Offset),
+            _ => new Simulation.World.GridCoord(r.Right, r.Y + door.Offset),
+        };
+        var up = site.OnFloor(new Simulation.World.GridRect(b.X, b.Y, b.Width, b.Length), 1);
+        var corridorRect = door.Side is Simulation.World.WallSide.North or Simulation.World.WallSide.South
+            ? new Simulation.World.GridRect(up.X, door.Side == Simulation.World.WallSide.North ? outside.Y - 5 : outside.Y, up.Width, 6)
+            : new Simulation.World.GridRect(door.Side == Simulation.World.WallSide.West ? outside.X - 5 : outside.X, up.Y, 6, up.Length);
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", corridorRect, Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, $"Upstairs corridor {corridorRect} refused: " + string.Join("; ", corridor.Problems));
+
+        Simulation.Hospital.CareSpace? ward = null;
+        var horizontal = corridorRect.Width > corridorRect.Length;
+        for (var i = 0; i < 60 && ward is null; i += 2)
+        {
+            foreach (var rect in horizontal
+                         ? new[] { new Simulation.World.GridRect(up.X + 2 + i, corridorRect.Y - 10, 14, 10), new Simulation.World.GridRect(up.X + 2 + i, corridorRect.Bottom, 14, 10) }
+                         : new[] { new Simulation.World.GridRect(corridorRect.X - 10, up.Y + 2 + i, 10, 14), new Simulation.World.GridRect(corridorRect.Right, up.Y + 2 + i, 10, 14) })
+            {
+                if (sim.BuildRoom(sim.AutoPlan("medical_ward", rect)).CanBuild)
+                {
+                    ward = sim.Wards.Single(w => sim.FloorOf(w) == 1);
+                    break;
+                }
+            }
+        }
+
+        Check(ward is not null, "Found nowhere upstairs for a ward.");
+        GD.Print($"[smoke] Upstairs: corridor {corridorRect} and {ward!.Name} with {ward.Beds.Count} beds.");
+
+        // The ward's own nurses walk up to it.
+        foreach (var shift in new[] { Simulation.Staff.StaffShift.Day, Simulation.Staff.StaffShift.Night })
+        {
+            sim.HireStaff(Simulation.Staff.StaffRole.Nurse, ward.Id, 0.6, shift);
+        }
+
+        var clock = hospital.Session.Clock;
+        Simulation.Staff.StaffMember? nurse = null;
+        for (var i = 0; i < 2 * 3600 && nurse is null; i++)
+        {
+            clock.Step();
+            nurse = sim.Staff.FirstOrDefault(m => m.IsInBuilding && sim.FloorOf(m) == 1);
+        }
+
+        Check(nurse is not null, "No member of staff made it up to the first floor.");
+        GD.Print($"[smoke] {nurse!.Name} went up to the first floor at {clock.Now:HH:mm}.");
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(stairs.Rect.X - 10, stairs.Rect.Y + 2), 0.9f);
+        return nurse;
     }
 
     /// <summary>Build mode: clicking a corridor chair opens it with a Remove button.</summary>

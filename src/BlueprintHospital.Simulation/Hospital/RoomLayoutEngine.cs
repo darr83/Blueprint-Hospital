@@ -94,6 +94,12 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.Vending:
                 Vending(plan, template);
                 break;
+            case RoomLayoutKind.Lift:
+            case RoomLayoutKind.Stairs:
+                // Nothing to furnish: people stand in the middle to ride the lift or start up the stairs.
+                var r = plan.Frame.Rect;
+                plan.PatientSpot = plan.StaffSpot = new GridCoord(r.X + (r.Width / 2), r.Y + (r.Length / 2));
+                break;
         }
 
         var doors = new List<Doorway> { frame.Door(doorOffset, doorWidth, back: false) };

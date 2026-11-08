@@ -53,9 +53,10 @@ public partial class SiteRenderer : Node2D
         QueueRedraw();
     }
 
+    /// <summary>Screen position of a point on the site (the ground floor), whichever floor is in view.</summary>
     public Vector2 ToScreen(double gridX, double gridY)
     {
-        return IsoDraw.ToScreen(gridX, gridY);
+        return IsoDraw.ToScreenGround(gridX, gridY);
     }
 
     public override void _Draw()
@@ -65,17 +66,40 @@ public partial class SiteRenderer : Node2D
             return;
         }
 
-        DrawMesh(_groundMesh, null);
+        if (IsoDraw.ViewFloor == 0)
+        {
+            DrawMesh(_groundMesh, null);
+        }
+        else
+        {
+            // Upstairs: the grounds below show faded, under this floor's slab (the building's outline).
+            DrawMesh(_groundMesh, null);
+            var site = new[] { ToScreen(0, 0), ToScreen(_site.Width, 0), ToScreen(_site.Width, _site.Length), ToScreen(0, _site.Length) };
+            DrawColoredPolygon(site, UpperFloorGround);
+            foreach (var r in _site.Buildings.SelectMany(b => b.Areas))
+            {
+                DrawColoredPolygon(new[] { ToScreen(r.X, r.Y), ToScreen(r.Right, r.Y), ToScreen(r.Right, r.Bottom), ToScreen(r.X, r.Bottom) }, UpperFloorSlab);
+            }
+        }
+
         if (_showGrid && _gridMesh is not null)
         {
             DrawMesh(_gridMesh, null);
         }
 
-        foreach (var building in _site.Buildings)
+        if (IsoDraw.ViewFloor == 0)
         {
-            DrawBuildingWalls(building);
+            foreach (var building in _site.Buildings)
+            {
+                DrawBuildingWalls(building);
+            }
         }
     }
+
+    /// <summary>The grounds seen from an upper floor: washed out towards the sky.</summary>
+    private static readonly Color UpperFloorGround = new(0.9f, 0.93f, 0.96f, 0.62f);
+
+    private static readonly Color UpperFloorSlab = new("#D6D3CC");
 
     private ArrayMesh BuildGroundMesh()
     {

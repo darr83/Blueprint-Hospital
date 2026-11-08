@@ -295,7 +295,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Sets the patient off along a path straight away (see <c>WalkTo</c> for porters).</summary>
     private void Go(Patient patient, GridCoord destination)
     {
-        var path = Nav.FindPath(patient.Tile, destination);
+        var path = PathFor(patient, destination);
         if (path.Count > 0)
         {
             patient.FollowPath(path);
@@ -318,7 +318,7 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var path = Nav.FindPath(member.Tile, destination);
+        var path = PathFor(member, destination);
         if (path.Count > 0)
         {
             member.FollowPath(path);

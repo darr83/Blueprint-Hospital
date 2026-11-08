@@ -70,8 +70,9 @@ public partial class HospitalScene : Node2D
         _session = manager.Session!;
         var settings = manager.Settings;
 
-        IsoDraw.SetSite(_session.Site.Width, _session.Site.Length);
+        IsoDraw.SetSite(_session.Site.Width, _session.Site.Length, _session.Site.FloorStride);
         IsoDraw.SetRotation(0);
+        IsoDraw.SetViewFloor(0);
 
         _site = new SiteRenderer { Name = "Site" };
         AddChild(_site);
@@ -154,7 +155,7 @@ public partial class HospitalScene : Node2D
         _hud.MenuRequested += OpenPauseMenu;
         _cursor.HoveredTileChanged += (x, y, onSite) => _hud.ShowHoveredTile(x, y, onSite, _session.Site);
         _hud.Record.CloseRequested += ClearSelection;
-        _hud.Record.FocusRequested += p => _camera.GlideTo(_world.FootPosition(p));
+        _hud.Record.FocusRequested += p => FocusOn(p);
         _hud.Feed.PatientClicked += id =>
         {
             if (_session.Simulation.FindPatient(id) is { } patient)
@@ -167,12 +168,22 @@ public partial class HospitalScene : Node2D
         _hud.Rota.ShowOnMapRequested += m => SelectStaff(m, centre: true);
         _hud.Clinics.OutpatientClicked += o => SelectOutpatient(o, centre: true);
         _hud.StaffInfo.CloseRequested += ClearSelection;
-        _hud.StaffInfo.FocusRequested += m => _camera.GlideTo(_world.FootPosition(m));
+        _hud.StaffInfo.FocusRequested += m => FocusOn(m);
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
         _hud.RotateRequested += RotateView;
+        _hud.FloorStepRequested += step => ShowFloor(ViewFloor + step);
+        _hud.AddFloorRequested += () =>
+        {
+            SetMode(GameMode.Build);
+            _hud.HideRightPanels();
+            _hud.Build.Visible = true;
+            _hud.Build.ShowTab("Building");
+        };
+        _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
         _hud.SetGridShown(_site.ShowGrid);
         _hud.SelectionAnchor = () => _world.Selected switch
         {
+            Agent a when !_world.OnViewFloor(a) => null,
             Patient p when _world.IsOnMap(p) => (_world.FootPosition(p), p.FullName),
             StaffMember m => (_world.FootPosition(m), m.Name),
             Outpatient o when _session.Simulation.FindAppointment(o.AppointmentId) is { } a => (_world.FootPosition(o), a.FullName),
@@ -217,7 +228,7 @@ public partial class HospitalScene : Node2D
         _hud.Record.Show(patient);
         if (centre && patient.IsInDepartment)
         {
-            _camera.GlideTo(_world.FootPosition(patient));
+            FocusOn(patient);
         }
     }
 
@@ -229,7 +240,7 @@ public partial class HospitalScene : Node2D
         _hud.ShowStaff(member);
         if (centre)
         {
-            _camera.GlideTo(_world.FootPosition(member));
+            FocusOn(member);
         }
     }
 
@@ -243,7 +254,7 @@ public partial class HospitalScene : Node2D
         _hud.Clinics.ShowToday();
         if (centre)
         {
-            _camera.GlideTo(_world.FootPosition(outpatient));
+            FocusOn(outpatient);
         }
     }
 
@@ -277,6 +288,12 @@ public partial class HospitalScene : Node2D
         if (_layoutDirty)
         {
             _layoutDirty = false;
+            if (ViewFloor >= _session.Simulation.FloorCount)
+            {
+                ShowFloor(_session.Simulation.FloorCount - 1);
+            }
+
+            _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
             _site.Rebuild();
             _department.QueueRedraw();
         }
@@ -356,6 +373,12 @@ public partial class HospitalScene : Node2D
             case Key.E:
                 RotateView(1);
                 break;
+            case Key.Pageup:
+                ShowFloor(ViewFloor + 1);
+                break;
+            case Key.Pagedown:
+                ShowFloor(ViewFloor - 1);
+                break;
             default:
                 return;
         }
@@ -430,7 +453,7 @@ public partial class HospitalScene : Node2D
     {
         (CareSpace, PlacedFurniture)? best = null;
         var bestDepth = float.MinValue;
-        foreach (var space in _session.Simulation.Spaces)
+        foreach (var space in _session.Simulation.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             foreach (var item in space.Furniture)
             {
@@ -472,7 +495,7 @@ public partial class HospitalScene : Node2D
         // Waiting chairs placed in the corridors.
         if (!bedsOnly)
         {
-            foreach (var chair in _session.Simulation.CorridorChairs)
+            foreach (var chair in _session.Simulation.CorridorChairs.Where(c => IsoDraw.OnViewFloor(c.Y)))
             {
                 var corridor = _session.Simulation.Spaces.FirstOrDefault(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(chair.Tile));
                 if (corridor is null)
@@ -526,7 +549,7 @@ public partial class HospitalScene : Node2D
             return state;
         }
 
-        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
+        var (gx, gy) = IsoDraw.ScreenToGroundGrid(new Vector2((float)state.X, (float)state.Y));
         return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16 };
     }
 
@@ -541,6 +564,33 @@ public partial class HospitalScene : Node2D
         _world.RebuildStatic();
         _camera.Bounds = SiteBounds();
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
+    }
+
+    /// <summary>The floor in view (0 = ground).</summary>
+    public int ViewFloor => IsoDraw.ViewFloor;
+
+    /// <summary>Looks at another floor: only its rooms and people are drawn, over the grounds faded below.</summary>
+    public void ShowFloor(int floor)
+    {
+        floor = System.Math.Clamp(floor, 0, _session.Simulation.FloorCount - 1);
+        if (floor == ViewFloor)
+        {
+            _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
+            return;
+        }
+
+        IsoDraw.SetViewFloor(floor);
+        _site.QueueRedraw();
+        _department.QueueRedraw();
+        _world.RebuildStatic();
+        _hud.SetFloorShown(floor, _session.Simulation.FloorCount);
+    }
+
+    /// <summary>Moves the view to someone, changing floor first if they are upstairs or down.</summary>
+    public void FocusOn(Agent agent)
+    {
+        ShowFloor(_session.Simulation.FloorOf(agent));
+        _camera.GlideTo(_world.FootPosition(agent));
     }
 
     private void ToggleGrid()
