@@ -33,6 +33,9 @@ public enum MoneyCategory
 
     /// <summary>The hospital's share of what patients spend in its cafes and vending machines.</summary>
     Catering,
+
+    /// <summary>Money added from the cheat console.</summary>
+    Cheats,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

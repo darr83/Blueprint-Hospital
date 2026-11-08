@@ -90,6 +90,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>A bed (play mode) or a piece of furniture or equipment (build mode).</summary>
     public ItemPanel ItemInfo { get; } = new() { Name = "ItemInfo", Visible = false };
 
+    /// <summary>The cheat command line, opened with Ctrl+C.</summary>
+    public CheatConsole Cheats { get; } = new() { Name = "CheatConsole", Visible = false };
+
     /// <summary>Raised when the player picks Play or Build in the top bar, or presses the Build button.</summary>
     public event Action<BlueprintHospital.Hospital.GameMode>? ModeRequested;
 
@@ -263,6 +266,14 @@ public partial class MainHUD : CanvasLayer
         Rota.OffsetRight = -Gap;
         Rota.OffsetBottom = -Gap;
         root.AddChild(Rota);
+
+        // The cheat console sits on top of everything, centred under the top bar.
+        Cheats.Initialise(sim);
+        Cheats.AnchorLeft = Cheats.AnchorRight = 0.5f;
+        Cheats.OffsetLeft = -300;
+        Cheats.OffsetRight = 300;
+        Cheats.OffsetTop = TopBarHeight + Gap;
+        root.AddChild(Cheats);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
