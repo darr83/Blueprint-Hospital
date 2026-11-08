@@ -410,6 +410,7 @@ public partial class SmokeTest : Node
                     }
                 }
 
+                CheckCheatConsole(hospital);
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
                 Check(hospital.Session.Simulation.Accounts.Take(2).Any(d => d[Simulation.Simulation.MoneyCategory.Construction] < 0), "Building work was not booked.");
@@ -419,6 +420,8 @@ public partial class SmokeTest : Node
 
             case Stage.Finances when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("08_finances");
+                PressCtrlC(hospital);
+                Check(!hospital.Hud.Cheats.Visible, "Ctrl+C did not close the cheat console.");
                 hospital.Hud.ToggleFinances();
                 var clock = hospital.Session.Clock;
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
@@ -442,6 +445,7 @@ public partial class SmokeTest : Node
                 Check(hospital.CaptureCamera() == _savedCamera, "Camera not restored.");
                 Check(hospital.Session.Simulation.Spaces.Count() == _savedRooms, "Built rooms not restored.");
                 Check(hospital.Session.Simulation.Balance == _savedBalance, "Balance not restored.");
+                Check(hospital.Session.Simulation.Accounts.Take(2).Sum(d => d[Simulation.Simulation.MoneyCategory.Cheats]) == CheatMoney, "The cheat money line was not restored.");
                 Check(hospital.Session.Simulation.Patients.Count() == _savedPatients, $"Patients not restored ({hospital.Session.Simulation.Patients.Count()} of {_savedPatients}).");
                 Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
                 Check(hospital.Session.Simulation.Appointments.Count == _savedAppointments, "Clinic appointments not restored.");
@@ -460,6 +464,33 @@ public partial class SmokeTest : Node
     /// Brings in a walk-in and an ambulance patient, runs the simulation for game time and checks
     /// both are triaged, then opens a record. Background arrivals make the department busy for the screenshot.
     /// </summary>
+    private const long CheatMoney = 123_456;
+
+    /// <summary>Ctrl+C opens the cheat console; "money" adds to the balance under a Cheats line.</summary>
+    private static void CheckCheatConsole(HospitalScene hospital)
+    {
+        PressCtrlC(hospital);
+        Check(hospital.Hud.Cheats.Visible, "Ctrl+C did not open the cheat console.");
+        Check(!hospital.Hud.Clinics.Visible, "Ctrl+C should not open the clinics (C).");
+        var sim = hospital.Session.Simulation;
+        var before = sim.Balance;
+        var result = hospital.Hud.Cheats.Run($"money {CheatMoney}");
+        Check(result.Succeeded && sim.Balance == before + CheatMoney, "The money cheat did not add to the balance: " + result.Message);
+        Check(sim.Today[Simulation.Simulation.MoneyCategory.Cheats] == CheatMoney, "The money cheat was not booked as a Cheats line.");
+        Check(!hospital.Hud.Cheats.Run("money lots").Succeeded && sim.Balance == before + CheatMoney, "A bad money command should change nothing.");
+        hospital.Hud.Cheats.Run($"money {CheatMoney}");
+        hospital.Hud.Cheats.Run($"money -{CheatMoney}");
+        Check(sim.Balance == before + CheatMoney, "Taking money away with the cheat did not work.");
+    }
+
+    private static void PressCtrlC(HospitalScene hospital)
+    {
+        var press = new InputEventKey { Keycode = Key.C, PhysicalKeycode = Key.C, CtrlPressed = true, Pressed = true };
+        hospital.GetViewport().PushInput(press);
+        var release = new InputEventKey { Keycode = Key.C, PhysicalKeycode = Key.C, CtrlPressed = true, Pressed = false };
+        hospital.GetViewport().PushInput(release);
+    }
+
     private static void CheckPatientJourney(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;

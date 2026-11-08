@@ -326,7 +326,7 @@ public partial class HospitalScene : Node2D
             case Key.F:
                 _hud.ToggleFinances();
                 break;
-            case Key.C:
+            case Key.C when !key.CtrlPressed:
                 _hud.ToggleClinics();
                 break;
             case Key.H:
