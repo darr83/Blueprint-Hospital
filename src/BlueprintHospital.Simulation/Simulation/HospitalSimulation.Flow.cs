@@ -134,7 +134,20 @@ public sealed partial class HospitalSimulation
         {
             var condition = patient.Condition;
             var support = CriticalCareFactor(patient, hours);
-            if (patient.EffectiveTreatmentGiven)
+            if (patient.MonitorIsRed)
+            {
+                // A red monitor needs a doctor at the bedside: with one they get better (quickly once the
+                // right treatment is in, slowly otherwise); without one they carry on getting worse.
+                if (DoctorAtBedside(patient) is not null)
+                {
+                    patient.Severity = Math.Max(0, patient.Severity - (RedRecoveryPerHour(patient) * hours));
+                }
+                else
+                {
+                    patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
+                }
+            }
+            else if (patient.EffectiveTreatmentGiven)
             {
                 patient.Severity = Math.Max(0, patient.Severity - (condition.RecoveryPerHour * hours));
             }
@@ -174,6 +187,10 @@ public sealed partial class HospitalSimulation
         foreach (var doctor in _staff)
         {
             doctor.Caseload.Remove(patient.Id);
+            if (doctor.BedsidePatientId == patient.Id)
+            {
+                LeaveBedside(doctor);
+            }
         }
 
         if (AmbulanceFor(patient) is { } ambulance && ambulance.Purpose == AmbulancePurpose.Arrival)

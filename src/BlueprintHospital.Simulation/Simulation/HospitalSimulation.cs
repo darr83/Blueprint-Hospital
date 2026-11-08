@@ -213,6 +213,7 @@ public sealed partial class HospitalSimulation
         ProcessScheduledResults();
         CheckOutcomeReviews();
         ScheduleObservations();
+        UpdateRedMonitors();
         AllocateSpaces();
         UpdateTaskPriorities();
         UpdateStaff(dt);

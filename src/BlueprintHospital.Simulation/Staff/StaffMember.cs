@@ -127,6 +127,9 @@ public sealed class StaffMember : Agent
     /// <summary>An anaesthetist giving the anaesthetic for this operation (the surgeon's task) is held in theatre until it is done.</summary>
     public int? AssistingTaskId { get; set; }
 
+    /// <summary>The red-monitor patient this doctor is staying with until they are no longer red.</summary>
+    public int? BedsidePatientId { get; set; }
+
     /// <summary>Game seconds of work left on the current task.</summary>
     public double WorkRemainingSeconds { get; set; }
 

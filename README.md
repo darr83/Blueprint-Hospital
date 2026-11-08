@@ -115,6 +115,13 @@ busiest from late morning to evening.
 - **Treatment** follows the diagnosis, with allergy checks before every medicine. Patients are
   then discharged or transferred (e.g. a heart attack to a heart attack centre for PCI).
 - Untreated patients **deteriorate**. Repeat observations pick this up and upgrade their category.
+- **Red monitors need a doctor at the bedside.** A monitor turns red when the patient's NEWS2
+  reaches 7 (or on a Red triage no doctor has stabilised yet), and stays red until NEWS2 is back
+  to 5 or less. The most urgent job on the board sends a doctor (or the ICU anaesthetist) to the
+  bed, and they stay there, doing that patient's work themselves and taking no breaks, until
+  the monitor clears. With a doctor there the patient gets better: quickly once the right
+  treatment is in, slowly otherwise. With no doctor there they keep getting worse, even after
+  treatment. A stabilised Red patient's monitor border shows amber.
 
 The **A&E board** (left) shows patients by category, waits, ambulances, cubicle use and the
 4-hour figure. Click any notification to open that patient's record.

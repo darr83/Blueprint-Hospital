@@ -197,6 +197,12 @@ public sealed class Patient : Agent
     /// <summary>True when every essential step for the true condition has been given.</summary>
     public bool EffectiveTreatmentGiven { get; set; }
 
+    /// <summary>
+    /// A Red-triaged patient a doctor has seen at the bedside with NEWS2 back under 7. Their monitor
+    /// stops showing red (until their NEWS2 climbs to 7 again).
+    /// </summary>
+    public bool RedStabilised { get; set; }
+
     /// <summary>Fraction of pain relieved by analgesia (0..0.7).</summary>
     public double Analgesia { get; set; }
 
@@ -228,6 +234,45 @@ public sealed class Patient : Agent
     public bool IsAlive => Outcome != PatientOutcome.Died;
 
     public bool IsInDepartment => Stage is not (PatientStage.Gone or PatientStage.Leaving) && IsAlive;
+
+    /// <summary>NEWS2 from the live observations the bedside monitor shows right now.</summary>
+    public int LiveNews2 => News2.Calculate(CurrentObservations()).Total;
+
+    /// <summary>
+    /// The monitor shows red: it turns red at NEWS2 7 (or on a Red triage a doctor hasn't yet stabilised) and
+    /// stays red until NEWS2 is back to 5 or less. A doctor must stay at the bedside while it is red; only then
+    /// do they get better. Set by the simulation each tick.
+    /// </summary>
+    public bool MonitorIsRed => MonitorRed && IsInDepartment;
+
+    /// <summary>The stored red-monitor state (see <see cref="MonitorIsRed"/>).</summary>
+    public bool MonitorRed { get; set; }
+
+    /// <summary>Works out whether the monitor is red now, from the live NEWS2 and whether it was red a moment ago.</summary>
+    public bool UpdateMonitorRed()
+    {
+        if (Triage is not { } triage || !IsInDepartment)
+        {
+            return MonitorRed = false;
+        }
+
+        var news = LiveNews2;
+        return MonitorRed = news >= RedMonitorNews2
+            || (triage == TriageCategory.Red && !RedStabilised)
+            || (MonitorRed && news > MonitorClearNews2);
+    }
+
+    /// <summary>The colour the monitor's border shows: red while <see cref="MonitorIsRed"/>, amber for a stabilised Red patient.</summary>
+    public TriageCategory? MonitorColour => Triage is null ? null
+        : MonitorIsRed ? TriageCategory.Red
+        : Triage == TriageCategory.Red ? TriageCategory.Amber
+        : Triage;
+
+    /// <summary>The NEWS2 at which the monitor turns red and a doctor must come to the bedside.</summary>
+    public const int RedMonitorNews2 = 7;
+
+    /// <summary>A red monitor goes back to normal once NEWS2 is this or lower.</summary>
+    public const int MonitorClearNews2 = 5;
 
     /// <summary>Still in A&amp;E (in the hospital and not yet on a ward).</summary>
     public bool IsInEmergency => IsInDepartment && Stage != PatientStage.OnWard && LeftEmergencyAt is null;
