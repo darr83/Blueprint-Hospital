@@ -100,6 +100,11 @@ public partial class WorldLayer : Node2D
 
         BuildWalls();
         BuildFurniture();
+        foreach (var (anchor, draw) in Decorations.Plan(_sim))
+        {
+            AddProp(anchor, draw);
+        }
+
         _layoutDirty = false;
     }
 
