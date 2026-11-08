@@ -1,0 +1,302 @@
+[
+  {
+    "id": "outpatient_reception",
+    "name": "Outpatients reception",
+    "category": "Clinics",
+    "description": "Where clinic patients check in at the desk, then wait on the seats (or on chairs placed in the corridors) until they are called.",
+    "kind": "outpatient_reception",
+    "department": "outpatients",
+    "layout": "waiting",
+    "sizes": [
+      {
+        "name": "Small",
+        "width_m": 7,
+        "length_m": 5
+      },
+      {
+        "name": "Standard",
+        "width_m": 10,
+        "length_m": 6
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 4,
+    "max_width_m": 20,
+    "max_length_m": 14,
+    "door_width_m": 2.0,
+    "base_cost": 10000,
+    "cost_per_square_metre": 700,
+    "staffing": "Hire a receptionist posted to Outpatients reception.",
+    "furniture": [
+      "reception_desk",
+      "staff_chair",
+      "waiting_seat"
+    ]
+  },
+  {
+    "id": "medical_clinic",
+    "name": "Medical clinic",
+    "category": "Clinics",
+    "description": "Follow-up appointments for diabetes, breathing problems and patients recently home from the ward.",
+    "kind": "clinic",
+    "department": "general_medicine",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "cardiology_clinic",
+    "name": "Cardiology clinic",
+    "category": "Clinics",
+    "description": "Appointments for chest pain, palpitations, heart failure and high blood pressure.",
+    "kind": "clinic",
+    "department": "cardiology",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "neurology_clinic",
+    "name": "Neurology clinic",
+    "category": "Clinics",
+    "description": "Appointments for headaches, epilepsy, multiple sclerosis and follow-up after a stroke.",
+    "kind": "clinic",
+    "department": "neurology",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "gastro_clinic",
+    "name": "Gastroenterology clinic",
+    "category": "Clinics",
+    "description": "Appointments for indigestion, liver problems, inflammatory bowel disease and weight loss.",
+    "kind": "clinic",
+    "department": "gastroenterology",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "gynaecology_clinic",
+    "name": "Gynaecology clinic",
+    "category": "Clinics",
+    "description": "Appointments for heavy periods, pelvic pain, menopause and follow-up after surgery.",
+    "kind": "clinic",
+    "department": "gynaecology",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "gynae_exam_room",
+    "name": "Gynaecology examination room",
+    "category": "Clinics",
+    "description": "Short procedures by appointment: colposcopy, coil fitting and biopsies.",
+    "kind": "clinic",
+    "department": "gynaecology",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  },
+  {
+    "id": "fracture_clinic",
+    "name": "Fracture clinic",
+    "category": "Clinics",
+    "description": "Follow-up for broken bones: checking healing on X-ray, changing casts and planning recovery.",
+    "kind": "clinic",
+    "department": "trauma_orthopaedics",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a doctor posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "examination_couch",
+      "hand_basin",
+      "clinical_cupboard",
+      "obs_monitor"
+    ]
+  }
+]

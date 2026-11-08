@@ -1,0 +1,208 @@
+[
+  {
+    "id": "acute_myocardial_infarction",
+    "name": "Acute myocardial infarction",
+    "department": "cardiology",
+    "description": "A heart attack: a coronary artery is blocked and heart muscle is being starved of blood. Time-critical.",
+    "prevalence": 4,
+    "age_range": [
+      42,
+      92
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.75,
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "radiating_pain",
+        "probability": 0.55
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.6
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.45
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.4
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        102,
+        14
+      ],
+      "systolic_bp": [
+        142,
+        22
+      ],
+      "diastolic_bp": [
+        88,
+        10
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        95,
+        1.5
+      ],
+      "temperature": [
+        37.0,
+        0.3
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.15,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -65,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -9,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ecg",
+      "troponin",
+      "full_blood_count",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "aspirin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ticagrelor",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "glyceryl_trinitrate",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.25,
+    "disposition": "surgery",
+    "disposition_note": "Needs primary PCI to open the blocked coronary artery.",
+    "operation": { "name": "Primary PCI", "minutes": 75, "room": "cath_lab" },
+    "length_of_stay_hours": [48, 96]
+  },
+  {
+    "id": "musculoskeletal_chest_pain",
+    "name": "Musculoskeletal chest pain",
+    "department": "emergency",
+    "description": "Chest pain from the muscles, ribs or cartilage of the chest wall. Benign once a heart cause is excluded.",
+    "prevalence": 6,
+    "age_range": [
+      18,
+      75
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "chest_wall_tenderness",
+        "probability": 0.85
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.05
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        80,
+        9
+      ],
+      "systolic_bp": [
+        128,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "troponin"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ibuprofen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Discharged with simple pain relief and safety-netting advice."
+  }
+]

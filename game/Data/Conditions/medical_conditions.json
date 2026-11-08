@@ -1,0 +1,1363 @@
+[
+  {
+    "id": "community_acquired_pneumonia",
+    "name": "Community-acquired pneumonia",
+    "department": "general_medicine",
+    "description": "An infection of the lung tissue picked up outside hospital. Older or frailer patients usually need admitting for antibiotics, oxygen and fluids.",
+    "prevalence": 3,
+    "age_range": [
+      45,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.55,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.85
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.7
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.3
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        16
+      ],
+      "diastolic_bp": [
+        70,
+        9
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        92,
+        2
+      ],
+      "temperature": [
+        38.3,
+        0.5
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.55
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -35,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -8,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes",
+      "chest_xray"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Oxygen therapy",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "amoxicillin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "clarithromycin",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "length_of_stay_hours": [
+      30,
+      96
+    ],
+    "disposition_note": "Admitted under the medical team for antibiotics and oxygen.",
+    "ambulatory_hours": [6, 10]
+  },
+  {
+    "id": "asthma_exacerbation",
+    "name": "Acute asthma",
+    "department": "general_medicine",
+    "description": "A flare of asthma: the airways tighten and fill with mucus. Usually settles with nebulisers and steroids.",
+    "prevalence": 4,
+    "age_range": [
+      16,
+      60
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.3,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1
+      },
+      {
+        "symptom": "wheeze",
+        "probability": 0.9
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        128,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        94,
+        1.5
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.45
+    ],
+    "deterioration_per_hour": 0.07,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -20,
+      "respiratory_rate": 12,
+      "oxygen_saturation": -10,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "peak_flow"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "salbutamol_nebuliser",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ipratropium_nebuliser",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "prednisolone",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Peak flow improved after nebulisers. Discharged with a 5-day course of prednisolone and an asthma action plan.",
+    "observe_hours": [3, 5]
+  },
+  {
+    "id": "copd_exacerbation",
+    "name": "COPD exacerbation",
+    "department": "general_medicine",
+    "description": "A flare of chronic obstructive pulmonary disease, often triggered by a chest infection.",
+    "prevalence": 4,
+    "age_range": [
+      55,
+      92
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.6,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1
+      },
+      {
+        "symptom": "wheeze",
+        "probability": 0.75
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.9
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        102,
+        12
+      ],
+      "systolic_bp": [
+        136,
+        16
+      ],
+      "diastolic_bp": [
+        80,
+        9
+      ],
+      "respiratory_rate": [
+        25,
+        3
+      ],
+      "oxygen_saturation": [
+        88,
+        2
+      ],
+      "temperature": [
+        37.4,
+        0.5
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -25,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -8,
+      "temperature": 0.5
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "venous_blood_gas",
+      "full_blood_count",
+      "c_reactive_protein",
+      "chest_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "salbutamol_nebuliser",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ipratropium_nebuliser",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "prednisolone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "doxycycline",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted under the medical team for nebulisers, steroids and controlled oxygen.",
+    "length_of_stay_hours": [
+      36,
+      120
+    ]
+  },
+  {
+    "id": "acute_heart_failure",
+    "name": "Acute heart failure",
+    "department": "cardiology",
+    "description": "The heart is not pumping well enough and fluid backs up into the lungs and legs.",
+    "prevalence": 3,
+    "age_range": [
+      55,
+      95
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.6,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.75
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        106,
+        14
+      ],
+      "systolic_bp": [
+        148,
+        22
+      ],
+      "diastolic_bp": [
+        88,
+        10
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        91,
+        2
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -50,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -8,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "nt_pro_bnp",
+      "ecg",
+      "troponin",
+      "urea_electrolytes",
+      "chest_xray",
+      "echocardiogram"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "furosemide",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Sit up and give oxygen",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted under the medical team for intravenous diuretics and an echocardiogram.",
+    "length_of_stay_hours": [
+      48,
+      144
+    ]
+  },
+  {
+    "id": "atrial_fibrillation",
+    "name": "Atrial fibrillation with fast heart rate",
+    "department": "cardiology",
+    "description": "An irregular, fast heart rhythm. Needs the rate slowing and assessment for blood thinners.",
+    "prevalence": 3,
+    "age_range": [
+      50,
+      92
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.35,
+    "presenting_complaint": "palpitations",
+    "symptoms": [
+      {
+        "symptom": "palpitations",
+        "probability": 1
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.45
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.35
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.2
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        138,
+        14
+      ],
+      "systolic_bp": [
+        128,
+        16
+      ],
+      "diastolic_bp": [
+        80,
+        10
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.4
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -35,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "urea_electrolytes",
+      "troponin",
+      "echocardiogram"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "bisoprolol",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Anticoagulation risk assessment (CHA2DS2-VASc)",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted for rate control and to start anticoagulation.",
+    "ambulatory_hours": [4, 8],
+    "length_of_stay_hours": [
+      18,
+      60
+    ]
+  },
+  {
+    "id": "supraventricular_tachycardia",
+    "name": "Supraventricular tachycardia",
+    "department": "cardiology",
+    "description": "A sudden, very fast regular heart rhythm in an otherwise healthy heart. Usually stops with vagal manoeuvres or adenosine.",
+    "prevalence": 2,
+    "age_range": [
+      16,
+      60
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.3,
+    "presenting_complaint": "palpitations",
+    "symptoms": [
+      {
+        "symptom": "palpitations",
+        "probability": 1
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        186,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -30,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Modified Valsalva manoeuvre",
+        "performed_by": "doctor",
+        "minutes": 5,
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "adenosine",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.6,
+    "disposition": "discharge",
+    "disposition_note": "Back in normal rhythm. Discharged with advice on vagal manoeuvres and a cardiology referral."
+  },
+  {
+    "id": "lower_urinary_tract_infection",
+    "name": "Urinary tract infection",
+    "department": "general_medicine",
+    "description": "A bladder infection. Treated with a short course of antibiotics.",
+    "prevalence": 5,
+    "age_range": [
+      16,
+      85
+    ],
+    "female_fraction": 0.85,
+    "ambulance_probability": 0.05,
+    "presenting_complaint": "dysuria",
+    "symptoms": [
+      {
+        "symptom": "dysuria",
+        "probability": 1
+      },
+      {
+        "symptom": "urinary_frequency",
+        "probability": 0.85
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        86,
+        10
+      ],
+      "systolic_bp": [
+        126,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.3,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "nitrofurantoin",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on nitrofurantoin with advice to return if feverish or in loin pain."
+  },
+  {
+    "id": "pyelonephritis",
+    "name": "Pyelonephritis",
+    "department": "general_medicine",
+    "description": "A kidney infection, which can spread into the blood (urosepsis).",
+    "prevalence": 3,
+    "age_range": [
+      18,
+      90
+    ],
+    "female_fraction": 0.75,
+    "ambulance_probability": 0.4,
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1
+      },
+      {
+        "symptom": "loin_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "dysuria",
+        "probability": 0.6
+      },
+      {
+        "symptom": "urinary_frequency",
+        "probability": 0.5
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.4
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        112,
+        16
+      ],
+      "diastolic_bp": [
+        68,
+        9
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        96,
+        1
+      ],
+      "temperature": [
+        38.8,
+        0.5
+      ],
+      "pain_score": [
+        3,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.55
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -45,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -4,
+      "temperature": 0.6
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "urine_dipstick",
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "gentamicin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.015,
+    "disposition": "admit",
+    "disposition_note": "Admitted on intravenous antibiotics (sepsis six completed).",
+    "ambulatory_hours": [6, 10],
+    "length_of_stay_hours": [
+      48,
+      96
+    ]
+  },
+  {
+    "id": "cellulitis",
+    "name": "Cellulitis",
+    "department": "emergency",
+    "description": "A bacterial infection of the skin and the tissue under it, usually on a leg.",
+    "prevalence": 4,
+    "age_range": [
+      18,
+      90
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "red_hot_skin",
+    "symptoms": [
+      {
+        "symptom": "red_hot_skin",
+        "probability": 1
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.85
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.7
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.35
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        10
+      ],
+      "systolic_bp": [
+        130,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        37.7,
+        0.5
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.25
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -15,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0.8
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "flucloxacillin",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Mark the edge of the redness",
+        "performed_by": "nurse",
+        "minutes": 3,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on oral flucloxacillin with the edge of the redness marked and advice to return if it spreads."
+  },
+  {
+    "id": "acute_kidney_injury",
+    "name": "Acute kidney injury",
+    "department": "general_medicine",
+    "description": "The kidneys suddenly stop working properly, often from dehydration or medicines in an older person.",
+    "prevalence": 3,
+    "age_range": [
+      60,
+      98
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.5,
+    "presenting_complaint": "fatigue",
+    "symptoms": [
+      {
+        "symptom": "fatigue",
+        "probability": 1
+      },
+      {
+        "symptom": "reduced_urine",
+        "probability": 0.7
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.35
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.4
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        12
+      ],
+      "systolic_bp": [
+        104,
+        16
+      ],
+      "diastolic_bp": [
+        64,
+        9
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -35,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -3,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "urea_electrolytes",
+      "urine_dipstick",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Stop medicines that harm the kidneys",
+        "performed_by": "doctor",
+        "minutes": 5,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted for intravenous fluids and daily kidney blood tests.",
+    "length_of_stay_hours": [
+      48,
+      120
+    ]
+  },
+  {
+    "id": "diabetic_ketoacidosis",
+    "name": "Diabetic ketoacidosis",
+    "department": "general_medicine",
+    "description": "A life-threatening lack of insulin in type 1 diabetes: high sugar, ketones and acid in the blood.",
+    "prevalence": 2,
+    "age_range": [
+      14,
+      50
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.5,
+    "presenting_complaint": "vomiting",
+    "symptoms": [
+      {
+        "symptom": "vomiting",
+        "probability": 1
+      },
+      {
+        "symptom": "excessive_thirst",
+        "probability": 0.85
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.6
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.3
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        118,
+        12
+      ],
+      "systolic_bp": [
+        108,
+        14
+      ],
+      "diastolic_bp": [
+        66,
+        8
+      ],
+      "respiratory_rate": [
+        28,
+        4
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.07,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -40,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "capillary_glucose",
+      "blood_ketones",
+      "venous_blood_gas",
+      "urea_electrolytes",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "fixed_rate_insulin",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Hourly glucose and ketone monitoring",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.015,
+    "disposition": "admit",
+    "disposition_note": "Admitted on the DKA protocol: fluids, fixed-rate insulin and hourly monitoring.",
+    "length_of_stay_hours": [
+      36,
+      72
+    ]
+  },
+  {
+    "id": "hypoglycaemia",
+    "name": "Hypoglycaemia",
+    "department": "general_medicine",
+    "description": "Low blood sugar, usually in someone on insulin or sulfonylureas. Quickly reversed with glucose.",
+    "prevalence": 2,
+    "age_range": [
+      18,
+      90
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.7,
+    "presenting_complaint": "confusion",
+    "symptoms": [
+      {
+        "symptom": "confusion",
+        "probability": 1
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.8
+      },
+      {
+        "symptom": "tremor",
+        "probability": 0.6
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        108,
+        12
+      ],
+      "systolic_bp": [
+        134,
+        14
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.5,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.45
+    ],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -20,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "capillary_glucose"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "oral_glucose",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "glucose_10_percent",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.8,
+    "disposition": "discharge",
+    "disposition_note": "Glucose back to normal after treatment and a meal. Discharged with a diabetes team review of their insulin.",
+    "observe_hours": [2, 4]
+  },
+  {
+    "id": "pulmonary_embolism",
+    "name": "Pulmonary embolism",
+    "department": "general_medicine",
+    "description": "A blood clot in the lungs, often from a leg vein. D-dimer and a CT pulmonary angiogram make the diagnosis.",
+    "prevalence": 2,
+    "age_range": [
+      25,
+      90
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.45,
+    "presenting_complaint": "breathlessness",
+    "symptoms": [
+      {
+        "symptom": "breathlessness",
+        "probability": 1
+      },
+      {
+        "symptom": "pleuritic_chest_pain",
+        "probability": 0.65
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.4
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.3
+      },
+      {
+        "symptom": "haemoptysis",
+        "probability": 0.15
+      },
+      {
+        "symptom": "calf_swelling",
+        "probability": 0.25
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        108,
+        14
+      ],
+      "systolic_bp": [
+        122,
+        16
+      ],
+      "diastolic_bp": [
+        76,
+        10
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        93,
+        2
+      ],
+      "temperature": [
+        37.2,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -8,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "d_dimer",
+      "ctpa",
+      "ecg",
+      "chest_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "apixaban",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Oxygen to keep saturations 94-98%",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted on anticoagulation for monitoring.",
+    "ambulatory_hours": [4, 8],
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
+  }
+]

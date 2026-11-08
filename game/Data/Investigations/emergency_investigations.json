@@ -1,0 +1,1330 @@
+[
+ {
+  "id": "ecg",
+  "name": "12-lead ECG",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 0,
+  "cost": 30,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Sinus rhythm. No acute ST-segment or T-wave changes."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "summaries": [
+    "Sinus rhythm with non-specific T-wave flattening."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.85,
+    "summaries": [
+     "ST-segment elevation in leads II, III and aVF (inferior STEMI).",
+     "ST-segment elevation in leads V1–V4 (anterior STEMI).",
+     "ST-segment depression and T-wave inversion in V4–V6."
+    ]
+   },
+   {
+    "condition": "atrial_fibrillation",
+    "probability": 0.98,
+    "summaries": [
+     "Atrial fibrillation with a fast ventricular rate (around 140 bpm).",
+     "Irregularly irregular rhythm, no P waves: atrial fibrillation, rate 130 to 150."
+    ]
+   },
+   {
+    "condition": "supraventricular_tachycardia",
+    "probability": 0.97,
+    "summaries": [
+     "Narrow-complex regular tachycardia at 190 bpm, no visible P waves: SVT."
+    ]
+   },
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.4,
+    "summaries": [
+     "Sinus tachycardia with left bundle branch block (old)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": true
+ },
+ {
+  "id": "troponin",
+  "name": "High-sensitivity troponin",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 60,
+  "cost": 25,
+  "applies_to_sex": "any",
+  "unit": "ng/L",
+  "normal": {
+   "value_range": [
+    2,
+    14
+   ],
+   "summaries": [
+    "Troponin {value} ng/L (normal, below 14)."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "value_range": [
+    15,
+    40
+   ],
+   "summaries": [
+    "Troponin {value} ng/L (mildly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.95,
+    "value_range": [
+     60,
+     3000
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (markedly raised)."
+    ]
+   },
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.35,
+    "value_range": [
+     18,
+     45
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (mildly raised, likely strain)."
+    ]
+   },
+   {
+    "condition": "atrial_fibrillation",
+    "probability": 0.15,
+    "value_range": [
+     15,
+     30
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (mildly raised, rate-related)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "full_blood_count",
+  "name": "Full blood count",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "x10^9/L",
+  "normal": {
+   "value_range": [
+    4.5,
+    10.5
+   ],
+   "summaries": [
+    "White cell count {value} x10^9/L. Haemoglobin and platelets normal."
+   ]
+  },
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "value_range": [
+    11.2,
+    12.5
+   ],
+   "summaries": [
+    "White cell count {value} x10^9/L (mildly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_appendicitis",
+    "probability": 0.8,
+    "value_range": [
+     12.5,
+     19
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   },
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.3,
+    "value_range": [
+     11,
+     14
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.75,
+    "value_range": [
+     13,
+     24
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   },
+   {
+    "condition": "acute_cholecystitis",
+    "probability": 0.75,
+    "value_range": [
+     12,
+     19
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised)."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.8,
+    "value_range": [
+     13,
+     22
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   },
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.85,
+    "value_range": [
+     62,
+     98
+    ],
+    "summaries": [
+     "Haemoglobin {value} g/L (low; was 135 last year)."
+    ]
+   },
+   {
+    "condition": "cellulitis",
+    "probability": 0.45,
+    "value_range": [
+     11.5,
+     15
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.35,
+    "value_range": [
+     11.5,
+     16
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "acute_pancreatitis",
+    "probability": 0.6,
+    "value_range": [
+     13,
+     20
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised)."
+    ]
+   },
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.5,
+    "value_range": [
+     12,
+     18
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, stress response)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "c_reactive_protein",
+  "name": "C-reactive protein (CRP)",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "mg/L",
+  "normal": {
+   "value_range": [
+    0.5,
+    5
+   ],
+   "summaries": [
+    "CRP {value} mg/L (normal)."
+   ]
+  },
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "value_range": [
+    6,
+    15
+   ],
+   "summaries": [
+    "CRP {value} mg/L (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_appendicitis",
+    "probability": 0.85,
+    "value_range": [
+     25,
+     180
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "gastroenteritis",
+    "probability": 0.4,
+    "value_range": [
+     6,
+     40
+    ],
+    "summaries": [
+     "CRP {value} mg/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.9,
+    "value_range": [
+     60,
+     300
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "acute_cholecystitis",
+    "probability": 0.85,
+    "value_range": [
+     60,
+     250
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.9,
+    "value_range": [
+     80,
+     300
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "cellulitis",
+    "probability": 0.7,
+    "value_range": [
+     25,
+     120
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.5,
+    "value_range": [
+     15,
+     80
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "acute_pancreatitis",
+    "probability": 0.7,
+    "value_range": [
+     50,
+     200
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "tonsillitis",
+    "probability": 0.6,
+    "value_range": [
+     20,
+     90
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "urea_electrolytes",
+  "name": "Urea and electrolytes",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 30,
+  "cost": 5,
+  "applies_to_sex": "any",
+  "unit": "mmol/L",
+  "normal": {
+   "value_range": [
+    3,
+    7.5
+   ],
+   "summaries": [
+    "Urea {value} mmol/L. Sodium, potassium and creatinine normal."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "value_range": [
+    7.9,
+    9
+   ],
+   "summaries": [
+    "Urea {value} mmol/L (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "gastroenteritis",
+    "probability": 0.5,
+    "value_range": [
+     8.5,
+     14
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised, consistent with dehydration)."
+    ]
+   },
+   {
+    "condition": "acute_kidney_injury",
+    "probability": 0.98,
+    "value_range": [
+     180,
+     420
+    ],
+    "summaries": [
+     "Creatinine {value} µmol/L (raised; baseline 85 last year). Potassium 5.6.",
+     "Creatinine {value} µmol/L (raised from baseline). Urea 18."
+    ]
+   },
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.6,
+    "value_range": [
+     9,
+     16
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised). Potassium 5.8."
+    ]
+   },
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.7,
+    "value_range": [
+     11,
+     22
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised, out of proportion to creatinine)."
+    ]
+   },
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.3,
+    "value_range": [
+     115,
+     150
+    ],
+    "summaries": [
+     "Creatinine mildly raised at {value} µmol/L."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.35,
+    "value_range": [
+     115,
+     160
+    ],
+    "summaries": [
+     "Creatinine mildly raised at {value} µmol/L."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "pregnancy_test",
+  "name": "Urine pregnancy test",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 0,
+  "cost": 2,
+  "applies_to_sex": "female",
+  "normal": {
+   "summaries": [
+    "Urine hCG negative."
+   ]
+  },
+  "false_positive_rate": 0.0,
+  "abnormal": [
+   {
+    "condition": "ectopic_pregnancy",
+    "probability": 0.99,
+    "summaries": [
+     "Urine hCG positive."
+    ]
+   },
+   {
+    "condition": "threatened_miscarriage",
+    "probability": 0.99,
+    "summaries": [
+     "Urine hCG positive."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "urine_dipstick",
+  "name": "Urine dipstick",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 0,
+  "cost": 2,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Urine dipstick negative for leucocytes, nitrites, blood, glucose and ketones."
+   ]
+  },
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "summaries": [
+    "Trace leucocytes only; nitrites negative."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "lower_urinary_tract_infection",
+    "probability": 0.93,
+    "summaries": [
+     "Leucocytes +++ and nitrites positive."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.95,
+    "summaries": [
+     "Leucocytes +++, nitrites positive, blood ++."
+    ]
+   },
+   {
+    "condition": "renal_colic",
+    "probability": 0.85,
+    "summaries": [
+     "Blood +++; no leucocytes or nitrites."
+    ]
+   },
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.95,
+    "summaries": [
+     "Glucose ++++ and ketones +++."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "capillary_glucose",
+  "name": "Capillary blood glucose",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 2,
+  "turnaround_minutes": 0,
+  "cost": 1,
+  "applies_to_sex": "any",
+  "unit": "mmol/L",
+  "normal": {
+   "value_range": [
+    4.2,
+    7.8
+   ],
+   "summaries": [
+    "Blood glucose {value} mmol/L (normal)."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "value_range": [
+    8.5,
+    11
+   ],
+   "summaries": [
+    "Blood glucose {value} mmol/L (slightly high)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "hypoglycaemia",
+    "probability": 0.99,
+    "value_range": [
+     1.4,
+     3.4
+    ],
+    "summaries": [
+     "Blood glucose {value} mmol/L (low)."
+    ]
+   },
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.99,
+    "value_range": [
+     18,
+     34
+    ],
+    "summaries": [
+     "Blood glucose {value} mmol/L (very high)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "blood_ketones",
+  "name": "Capillary blood ketones",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 2,
+  "turnaround_minutes": 0,
+  "cost": 3,
+  "applies_to_sex": "any",
+  "unit": "mmol/L",
+  "normal": {
+   "value_range": [
+    0.1,
+    0.5
+   ],
+   "summaries": [
+    "Blood ketones {value} mmol/L (normal)."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "value_range": [
+    0.7,
+    1.4
+   ],
+   "summaries": [
+    "Blood ketones {value} mmol/L (slightly raised; not eating)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.98,
+    "value_range": [
+     3.5,
+     7
+    ],
+    "summaries": [
+     "Blood ketones {value} mmol/L (high)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "peak_flow",
+  "name": "Peak expiratory flow",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 3,
+  "turnaround_minutes": 0,
+  "cost": 0,
+  "applies_to_sex": "any",
+  "unit": "%",
+  "normal": {
+   "value_range": [
+    82,
+    105
+   ],
+   "summaries": [
+    "Peak flow {value}% of predicted (normal)."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "value_range": [
+    70,
+    79
+   ],
+   "summaries": [
+    "Peak flow {value}% of predicted (poor technique)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "asthma_exacerbation",
+    "probability": 0.92,
+    "value_range": [
+     35,
+     65
+    ],
+    "summaries": [
+     "Peak flow {value}% of predicted (reduced)."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.6,
+    "value_range": [
+     30,
+     55
+    ],
+    "summaries": [
+     "Peak flow {value}% of predicted (reduced)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "d_dimer",
+  "name": "D-dimer",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 40,
+  "cost": 15,
+  "applies_to_sex": "any",
+  "unit": "ng/mL",
+  "normal": {
+   "value_range": [
+    100,
+    450
+   ],
+   "summaries": [
+    "D-dimer {value} ng/mL (negative)."
+   ]
+  },
+  "false_positive_rate": 0.15,
+  "false_positive": {
+   "value_range": [
+    520,
+    900
+   ],
+   "summaries": [
+    "D-dimer {value} ng/mL (raised; non-specific)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "deep_vein_thrombosis",
+    "probability": 0.96,
+    "value_range": [
+     900,
+     4500
+    ],
+    "summaries": [
+     "D-dimer {value} ng/mL (raised)."
+    ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.97,
+    "summaries": [
+     "D-dimer {value} ng/mL (raised)."
+    ],
+    "value_range": [
+     1100,
+     6000
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "liver_function_tests",
+  "name": "Liver function tests",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 45,
+  "cost": 6,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Bilirubin, ALT and ALP all normal."
+   ]
+  },
+  "false_positive_rate": 0.06,
+  "false_positive": {
+   "summaries": [
+    "ALT mildly raised (63 U/L); bilirubin normal."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "biliary_colic",
+    "probability": 0.35,
+    "summaries": [
+     "ALP mildly raised; bilirubin normal."
+    ]
+   },
+   {
+    "condition": "acute_cholecystitis",
+    "probability": 0.7,
+    "summaries": [
+     "ALP and ALT raised; bilirubin 28 µmol/L."
+    ]
+   },
+   {
+    "condition": "acute_pancreatitis",
+    "probability": 0.5,
+    "summaries": [
+     "ALT raised at 180 U/L (possible gallstone cause)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "lipase",
+  "name": "Serum lipase",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 45,
+  "cost": 8,
+  "applies_to_sex": "any",
+  "unit": "U/L",
+  "normal": {
+   "value_range": [
+    15,
+    60
+   ],
+   "summaries": [
+    "Lipase {value} U/L (normal)."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "value_range": [
+    70,
+    150
+   ],
+   "summaries": [
+    "Lipase {value} U/L (mildly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_pancreatitis",
+    "probability": 0.96,
+    "value_range": [
+     800,
+     4000
+    ],
+    "summaries": [
+     "Lipase {value} U/L (more than three times normal)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "nt_pro_bnp",
+  "name": "NT-proBNP",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 60,
+  "cost": 20,
+  "applies_to_sex": "any",
+  "unit": "ng/L",
+  "normal": {
+   "value_range": [
+    40,
+    350
+   ],
+   "summaries": [
+    "NT-proBNP {value} ng/L (heart failure unlikely)."
+   ]
+  },
+  "false_positive_rate": 0.08,
+  "false_positive": {
+   "value_range": [
+    420,
+    900
+   ],
+   "summaries": [
+    "NT-proBNP {value} ng/L (mildly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.96,
+    "value_range": [
+     2500,
+     18000
+    ],
+    "summaries": [
+     "NT-proBNP {value} ng/L (high: heart failure likely)."
+    ]
+   },
+   {
+    "condition": "atrial_fibrillation",
+    "probability": 0.4,
+    "value_range": [
+     500,
+     1800
+    ],
+    "summaries": [
+     "NT-proBNP {value} ng/L (raised)."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.15,
+    "value_range": [
+     420,
+     900
+    ],
+    "summaries": [
+     "NT-proBNP {value} ng/L (mildly raised)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "venous_blood_gas",
+  "name": "Venous blood gas",
+  "category": "bedside",
+  "performed_by": "doctor",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 0,
+  "cost": 10,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "pH 7.38, bicarbonate 25, lactate 1.1. Normal."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "summaries": [
+    "pH 7.36, bicarbonate 23, lactate 2.1 (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "diabetic_ketoacidosis",
+    "probability": 0.98,
+    "summaries": [
+     "pH 7.08, bicarbonate 9, lactate 2.4: severe metabolic acidosis.",
+     "pH 7.19, bicarbonate 12: metabolic acidosis."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.4,
+    "summaries": [
+     "pH 7.33, lactate 3.4 (raised)."
+    ]
+   },
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.35,
+    "summaries": [
+     "pH 7.32, lactate 3.1, haemoglobin 79."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.55,
+    "summaries": [
+     "pH 7.32, pCO2 7.9 kPa: acute-on-chronic respiratory acidosis."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "chest_xray",
+  "name": "Chest X-ray",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 30,
+  "cost": 40,
+  "applies_to_sex": "any",
+  "room": "x_ray",
+  "normal": {
+   "summaries": [
+    "Clear lung fields. Normal heart size. No pneumothorax."
+   ]
+  },
+  "false_positive_rate": 0.06,
+  "false_positive": {
+   "summaries": [
+    "Possible subtle shadowing at the left base; clinical correlation advised."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "community_acquired_pneumonia",
+    "probability": 0.9,
+    "summaries": [
+     "Right lower lobe consolidation, consistent with pneumonia.",
+     "Left basal consolidation with air bronchograms."
+    ]
+   },
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.8,
+    "summaries": [
+     "Enlarged heart, upper lobe venous diversion and bilateral pleural effusions: pulmonary oedema."
+    ]
+   },
+   {
+    "condition": "copd_exacerbation",
+    "probability": 0.45,
+    "summaries": [
+     "Hyperinflated lungs with flattened diaphragms. No consolidation."
+    ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.2,
+    "summaries": [
+     "Small wedge-shaped opacity at the right base; small effusion."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "limb_xray",
+  "name": "X-ray of the injured limb",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 30,
+  "cost": 35,
+  "applies_to_sex": "any",
+  "room": "x_ray",
+  "normal": {
+   "summaries": [
+    "No fracture or dislocation seen."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Possible hairline lucency; may be a nutrient vessel. Treat clinically."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "ankle_fracture",
+    "probability": 0.97,
+    "summaries": [
+     "Displaced fracture of the lateral malleolus (Weber B).",
+     "Undisplaced fracture of the distal fibula."
+    ]
+   },
+   {
+    "condition": "fractured_neck_of_femur",
+    "probability": 0.93,
+    "summaries": [
+     "Displaced intracapsular fracture of the neck of femur.",
+     "Intertrochanteric fracture of the femur."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ct_head",
+  "name": "CT head",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 15,
+  "turnaround_minutes": 45,
+  "cost": 120,
+  "applies_to_sex": "any",
+  "room": "ct",
+  "normal": {
+   "summaries": [
+    "No acute intracranial abnormality. No haemorrhage."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "summaries": [
+    "Small old infarct; no acute change."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "subarachnoid_haemorrhage",
+    "probability": 0.93,
+    "summaries": [
+     "Acute subarachnoid blood in the basal cisterns: subarachnoid haemorrhage."
+    ]
+   },
+   {
+    "condition": "ischaemic_stroke",
+    "probability": 0.55,
+    "summaries": [
+     "Early ischaemic change in the left middle cerebral artery territory. No haemorrhage."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ctpa",
+  "name": "CT pulmonary angiogram",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 60,
+  "cost": 180,
+  "applies_to_sex": "any",
+  "room": "ct",
+  "normal": {
+   "summaries": [
+    "No pulmonary embolism."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Indeterminate small filling defect in a subsegmental artery."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.96,
+    "summaries": [
+     "Filling defects in both main pulmonary arteries: pulmonary emboli.",
+     "Segmental pulmonary embolus in the right lower lobe."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "echocardiogram",
+  "name": "Echocardiogram",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 30,
+  "turnaround_minutes": 15,
+  "cost": 120,
+  "applies_to_sex": "any",
+  "room": "echo",
+  "normal": {
+   "summaries": [
+    "Normal left ventricular size and function. Valves look normal."
+   ]
+  },
+  "false_positive_rate": 0.05,
+  "false_positive": {
+   "summaries": [
+    "Mildly thickened aortic valve, not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "acute_heart_failure",
+    "probability": 0.9,
+    "summaries": [
+     "Severely impaired left ventricular function, ejection fraction about 30%."
+    ]
+   },
+   {
+    "condition": "acute_myocardial_infarction",
+    "probability": 0.6,
+    "summaries": [
+     "New regional wall motion abnormality in the anterior wall."
+    ]
+   },
+   {
+    "condition": "atrial_fibrillation",
+    "probability": 0.5,
+    "summaries": [
+     "Dilated left atrium; left ventricle works normally."
+    ]
+   },
+   {
+    "condition": "pulmonary_embolism",
+    "probability": 0.35,
+    "summaries": [
+     "Dilated, strained right ventricle."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "eeg",
+  "name": "EEG",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 40,
+  "turnaround_minutes": 60,
+  "cost": 150,
+  "applies_to_sex": "any",
+  "room": "eeg",
+  "normal": {
+   "summaries": [
+    "Normal background rhythm. No epileptiform activity."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Some non-specific slowing, of uncertain significance."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "breakthrough_seizure",
+    "probability": 0.6,
+    "summaries": [
+     "Frequent epileptiform discharges: supports epilepsy."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "pelvic_ultrasound",
+  "name": "Pelvic ultrasound",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 10,
+  "cost": 90,
+  "applies_to_sex": "female",
+  "room": "ultrasound",
+  "normal": {
+   "summaries": [
+    "Normal uterus and ovaries. No free fluid."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Small simple ovarian cyst, probably not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "ectopic_pregnancy",
+    "probability": 0.85,
+    "summaries": [
+     "Empty uterus with a mass beside the left ovary and free fluid in the pelvis: ectopic pregnancy."
+    ]
+   },
+   {
+    "condition": "threatened_miscarriage",
+    "probability": 0.8,
+    "summaries": [
+     "Live pregnancy in the womb with a heartbeat; small bleed beside the sac."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "ogd",
+  "name": "OGD (endoscopy)",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 30,
+  "turnaround_minutes": 10,
+  "cost": 450,
+  "applies_to_sex": "any",
+  "room": "endoscopy",
+  "normal": {
+   "summaries": [
+    "Normal gullet, stomach and duodenum."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Mild redness of the stomach lining."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.9,
+    "summaries": [
+     "Bleeding duodenal ulcer, treated with clips and adrenaline injection."
+    ]
+   },
+   {
+    "condition": "gastro_oesophageal_reflux",
+    "probability": 0.5,
+    "summaries": [
+     "Inflamed lower gullet (oesophagitis)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ }
+]

@@ -1,0 +1,97 @@
+[
+  {
+    "id": "medical_clinic",
+    "appointment_minutes": 20,
+    "tariff": 160,
+    "reasons": [
+      "Diabetes review",
+      "Follow-up after pneumonia",
+      "Breathlessness",
+      "Follow-up after a ward stay",
+      "Thyroid problem",
+      "Anaemia",
+      "Weight loss"
+    ]
+  },
+  {
+    "id": "cardiology_clinic",
+    "appointment_minutes": 20,
+    "tariff": 190,
+    "reasons": [
+      "Chest pain on exertion",
+      "Palpitations",
+      "Heart failure review",
+      "High blood pressure",
+      "Follow-up after a heart attack",
+      "Heart murmur",
+      "Atrial fibrillation review"
+    ]
+  },
+  {
+    "id": "neurology_clinic",
+    "appointment_minutes": 30,
+    "tariff": 210,
+    "reasons": [
+      "Headaches",
+      "Epilepsy review",
+      "Multiple sclerosis review",
+      "Follow-up after a stroke",
+      "Numbness and tingling",
+      "Tremor",
+      "Blackouts"
+    ]
+  },
+  {
+    "id": "gastro_clinic",
+    "appointment_minutes": 20,
+    "tariff": 180,
+    "reasons": [
+      "Indigestion",
+      "Crohn's disease review",
+      "Ulcerative colitis review",
+      "Abnormal liver tests",
+      "Difficulty swallowing",
+      "Change in bowel habit",
+      "Coeliac disease"
+    ]
+  },
+  {
+    "id": "gynaecology_clinic",
+    "appointment_minutes": 20,
+    "tariff": 170,
+    "reasons": [
+      "Heavy periods",
+      "Pelvic pain",
+      "Menopause symptoms",
+      "Follow-up after surgery",
+      "Endometriosis review",
+      "Postmenopausal bleeding"
+    ],
+    "female_only": true
+  },
+  {
+    "id": "gynae_exam_room",
+    "appointment_minutes": 30,
+    "tariff": 260,
+    "reasons": [
+      "Colposcopy",
+      "Coil fitting",
+      "Endometrial biopsy",
+      "Polyp removal"
+    ],
+    "female_only": true
+  },
+  {
+    "id": "fracture_clinic",
+    "appointment_minutes": 15,
+    "tariff": 150,
+    "reasons": [
+      "Wrist fracture check",
+      "Ankle fracture check",
+      "Cast change",
+      "Follow-up after hip operation",
+      "Shoulder fracture check",
+      "Finger injury"
+    ]
+  }
+]

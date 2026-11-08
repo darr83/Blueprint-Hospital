@@ -1,0 +1,143 @@
+[
+  {
+    "id": "xray_room",
+    "name": "X-ray room",
+    "category": "Services",
+    "description": "Plain X-rays: chests, limbs and joints. Patients are brought here from A&E and a radiologist reports the film.",
+    "kind": "x_ray",
+    "department": "radiology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4.5,
+        "length_m": 4.5
+      },
+      {
+        "name": "Large",
+        "width_m": 6,
+        "length_m": 5
+      }
+    ],
+    "min_width_m": 4,
+    "min_length_m": 4,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 10000,
+    "cost_per_square_metre": 1500,
+    "staffing": "Hire a radiographer from Recruitment (H) to run it.",
+    "furniture": [
+      "xray_table",
+      "xray_tube",
+      "lead_screen",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "ct_scanner",
+    "name": "CT scanner",
+    "category": "Services",
+    "description": "CT scans of the head and chest: finds bleeds on the brain, strokes and blood clots in the lungs.",
+    "kind": "ct",
+    "department": "radiology",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 5,
+        "length_m": 5
+      },
+      {
+        "name": "Large",
+        "width_m": 6.5,
+        "length_m": 5.5
+      }
+    ],
+    "min_width_m": 4.5,
+    "min_length_m": 4.5,
+    "max_width_m": 9,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 20000,
+    "cost_per_square_metre": 1800,
+    "staffing": "Hire a radiographer from Recruitment (H) to run it.",
+    "furniture": [
+      "ct_table",
+      "ct_gantry",
+      "lead_screen",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "operating_theatre",
+    "name": "Operating theatre",
+    "category": "Services",
+    "description": "Emergency operations: appendicectomy, ectopic pregnancy and hip fractures. Patients recover on a ward afterwards.",
+    "kind": "theatre",
+    "department": "theatres",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 6,
+        "length_m": 6
+      },
+      {
+        "name": "Large",
+        "width_m": 7.5,
+        "length_m": 7
+      }
+    ],
+    "min_width_m": 5.5,
+    "min_length_m": 5.5,
+    "max_width_m": 10,
+    "max_length_m": 10,
+    "door_width_m": 2.0,
+    "base_cost": 40000,
+    "cost_per_square_metre": 2500,
+    "staffing": "Hire a consultant surgeon from Recruitment (H). Tick which departments may use it in the room panel.",
+    "furniture": [
+      "operating_table",
+      "anaesthetic_machine",
+      "instrument_trolley",
+      "hand_basin",
+      "clinical_cupboard"
+    ]
+  },
+  {
+    "id": "pharmacy",
+    "name": "Pharmacy",
+    "category": "Services",
+    "description": "Buys medicines at list price and prepares ward patients' medicines to take home. Without one, medicines cost 50% more and ward discharges wait about 4 hours.",
+    "kind": "pharmacy",
+    "department": "pharmacy",
+    "layout": "office",
+    "sizes": [
+      {
+        "name": "Small",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Standard",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 8000,
+    "cost_per_square_metre": 900,
+    "staffing": "Hire a pharmacist from Recruitment (H) to run it.",
+    "furniture": [
+      "pharmacy_counter",
+      "staff_chair",
+      "medicine_shelves",
+      "drug_fridge"
+    ]
+  }
+]

@@ -1,0 +1,743 @@
+[
+  {
+    "id": "gastro_oesophageal_reflux",
+    "name": "Gastro-oesophageal reflux",
+    "department": "gastroenterology",
+    "description": "Stomach acid irritating the oesophagus, causing burning chest pain.",
+    "prevalence": 4,
+    "age_range": [
+      22,
+      85
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.08,
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "heartburn",
+        "probability": 0.85
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        82,
+        9
+      ],
+      "systolic_bp": [
+        130,
+        13
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "troponin"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "alginate_antacid",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "omeprazole",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on omeprazole with GP follow-up."
+  },
+  {
+    "id": "acute_appendicitis",
+    "name": "Acute appendicitis",
+    "department": "gastroenterology",
+    "description": "Inflammation of the appendix. Needs surgical review and usually an appendicectomy.",
+    "prevalence": 3,
+    "age_range": [
+      8,
+      60
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.2,
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "right_iliac_fossa_pain",
+        "probability": 0.75
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.8
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.7
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.45
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        100,
+        11
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.9,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 1.2
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes",
+      "pregnancy_test"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.15,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: appendicitis needing an operation.",
+    "operation": {
+      "name": "Laparoscopic appendicectomy",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      24,
+      60
+    ]
+  },
+  {
+    "id": "gastroenteritis",
+    "name": "Gastroenteritis",
+    "department": "gastroenterology",
+    "description": "Infection of the gut causing vomiting and diarrhoea. Usually settles; the main risk is dehydration.",
+    "prevalence": 6,
+    "age_range": [
+      5,
+      88
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "vomiting",
+    "symptoms": [
+      {
+        "symptom": "vomiting",
+        "probability": 1.0
+      },
+      {
+        "symptom": "diarrhoea",
+        "probability": 0.85
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.9
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.6
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.3
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        11
+      ],
+      "systolic_bp": [
+        116,
+        12
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.5,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": 0,
+      "temperature": 0.5
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.35,
+    "disposition": "discharge",
+    "disposition_note": "Discharged with oral rehydration advice once tolerating fluids."
+  },
+  {
+    "id": "biliary_colic",
+    "name": "Biliary colic",
+    "department": "gastroenterology",
+    "description": "Pain from a gallstone briefly blocking the gallbladder, often after a fatty meal.",
+    "prevalence": 3,
+    "age_range": [
+      25,
+      75
+    ],
+    "female_fraction": 0.7,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "right_upper_quadrant_pain",
+        "probability": 0.9
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        10
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0.3
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "buscopan",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Low-fat diet advice",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Pain settled. Discharged with analgesia and a referral for an outpatient gallbladder ultrasound."
+  },
+  {
+    "id": "acute_cholecystitis",
+    "name": "Acute cholecystitis",
+    "department": "gastroenterology",
+    "description": "An inflamed, infected gallbladder. Needs antibiotics and usually surgery.",
+    "prevalence": 2,
+    "age_range": [
+      30,
+      85
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.3,
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "right_upper_quadrant_pain",
+        "probability": 0.95
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.7
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        10
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        38.3,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -2,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted for intravenous antibiotics, with surgical review for cholecystectomy.",
+    "length_of_stay_hours": [
+      48,
+      120
+    ]
+  },
+  {
+    "id": "acute_pancreatitis",
+    "name": "Acute pancreatitis",
+    "department": "gastroenterology",
+    "description": "Inflammation of the pancreas, usually from gallstones or alcohol. Can become severe.",
+    "prevalence": 2,
+    "age_range": [
+      30,
+      85
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.5,
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "epigastric_pain_to_back",
+        "probability": 0.85
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.8
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.8
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        14
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        21,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1
+      ],
+      "temperature": [
+        37.8,
+        0.4
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -45,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -5,
+      "temperature": 0.4
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "lipase",
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "admit",
+    "disposition_note": "Admitted for intravenous fluids, pain relief and severity scoring.",
+    "length_of_stay_hours": [
+      72,
+      168
+    ]
+  },
+  {
+    "id": "upper_gi_bleed",
+    "name": "Upper gastrointestinal bleed",
+    "department": "gastroenterology",
+    "description": "Bleeding from the oesophagus, stomach or duodenum, often from an ulcer. Can be torrential.",
+    "prevalence": 2,
+    "age_range": [
+      35,
+      95
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.6,
+    "presenting_complaint": "haematemesis",
+    "symptoms": [
+      {
+        "symptom": "haematemesis",
+        "probability": 1
+      },
+      {
+        "symptom": "melaena",
+        "probability": 0.6
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        110,
+        14
+      ],
+      "systolic_bp": [
+        104,
+        16
+      ],
+      "diastolic_bp": [
+        64,
+        10
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        36.6,
+        0.3
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": {
+      "heart_rate": 35,
+      "systolic_bp": -55,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "full_blood_count",
+      "urea_electrolytes",
+      "venous_blood_gas",
+      "ogd"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Blood transfusion",
+        "performed_by": "nurse",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Glasgow-Blatchford score and endoscopy referral",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.015,
+    "disposition": "admit",
+    "disposition_note": "Admitted for transfusion and endoscopy within 24 hours.",
+    "length_of_stay_hours": [
+      48,
+      120
+    ]
+  }
+]

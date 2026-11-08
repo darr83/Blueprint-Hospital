@@ -1,0 +1,201 @@
+[
+  {
+    "id": "ankle_fracture",
+    "name": "Ankle fracture",
+    "department": "trauma_orthopaedics",
+    "description": "A broken ankle, usually from a twist or fall. Shown on X-ray; most are treated in plaster.",
+    "prevalence": 3,
+    "age_range": [
+      12,
+      85
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.15,
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.95
+      },
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 0.9
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        10
+      ],
+      "systolic_bp": [
+        130,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0.0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Below-knee plaster backslab",
+        "performed_by": "nurse",
+        "minutes": 20,
+        "essential": true,
+        "room": "plaster_room"
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged in a plaster backslab with crutches and a fracture clinic appointment."
+  },
+  {
+    "id": "fractured_neck_of_femur",
+    "name": "Fractured neck of femur",
+    "department": "trauma_orthopaedics",
+    "description": "A broken hip, usually from a fall in an older person. Needs an operation within 36 hours.",
+    "prevalence": 2,
+    "age_range": [
+      65,
+      100
+    ],
+    "female_fraction": 0.7,
+    "ambulance_probability": 0.9,
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 0.95
+      },
+      {
+        "symptom": "shortened_rotated_leg",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        12
+      ],
+      "systolic_bp": [
+        138,
+        18
+      ],
+      "diastolic_bp": [
+        78,
+        10
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.6,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.015,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -20,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray",
+      "full_blood_count",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Fascia iliaca nerve block",
+        "performed_by": "doctor",
+        "minutes": 15,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.008,
+    "disposition": "surgery",
+    "disposition_note": "Orthopaedic team agree: hip fracture needing an operation.",
+    "needs_physio": true,
+    "length_of_stay_hours": [
+      120,
+      288
+    ],
+    "operation": {
+      "name": "Hip hemiarthroplasty",
+      "minutes": 90
+    }
+  }
+]

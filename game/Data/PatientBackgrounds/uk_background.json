@@ -1,0 +1,23 @@
+[
+  {
+    "id": "uk_general",
+    "description": "Approximate UK adult prevalence of common long-term conditions and drug allergies, used to give generated patients a believable background.",
+    "past_history": [
+      { "name": "Hypertension", "min_age": 30, "probability_by_age": [[30, 0.08], [50, 0.25], [70, 0.5]], "regular_medications": ["Amlodipine 5 mg once daily"] },
+      { "name": "Type 2 diabetes", "min_age": 30, "probability_by_age": [[30, 0.03], [50, 0.09], [70, 0.16]], "regular_medications": ["Metformin 500 mg twice daily"] },
+      { "name": "High cholesterol", "min_age": 35, "probability_by_age": [[35, 0.05], [55, 0.2], [70, 0.35]], "regular_medications": ["Atorvastatin 20 mg at night"] },
+      { "name": "Asthma", "min_age": 3, "probability_by_age": [[3, 0.1], [60, 0.08]], "regular_medications": ["Salbutamol inhaler as required"] },
+      { "name": "Ischaemic heart disease", "min_age": 45, "probability_by_age": [[45, 0.02], [60, 0.07], [75, 0.15]], "regular_medications": ["Aspirin 75 mg once daily", "Bisoprolol 2.5 mg once daily"] },
+      { "name": "Chronic obstructive pulmonary disease", "min_age": 45, "probability_by_age": [[45, 0.02], [65, 0.06], [80, 0.09]], "regular_medications": ["Tiotropium inhaler once daily"] },
+      { "name": "Hypothyroidism", "min_age": 20, "probability_by_age": [[20, 0.02], [60, 0.05]], "regular_medications": ["Levothyroxine 75 micrograms once daily"] },
+      { "name": "Depression", "min_age": 16, "probability_by_age": [[16, 0.08], [70, 0.06]], "regular_medications": ["Sertraline 50 mg once daily"] },
+      { "name": "Atrial fibrillation", "min_age": 55, "probability_by_age": [[55, 0.02], [70, 0.06], [85, 0.12]], "regular_medications": ["Apixaban 5 mg twice daily"] }
+    ],
+    "allergies": [
+      { "group": "penicillin", "name": "Penicillin (rash)", "probability": 0.08 },
+      { "group": "nsaid", "name": "NSAIDs (wheeze)", "probability": 0.02 },
+      { "group": "aspirin", "name": "Aspirin (angioedema)", "probability": 0.005 },
+      { "group": "opioid", "name": "Codeine (vomiting)", "probability": 0.02 }
+    ]
+  }
+]
