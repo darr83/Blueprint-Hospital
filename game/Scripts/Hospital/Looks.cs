@@ -102,30 +102,60 @@ public static class Looks
 /// <summary>Vehicles on the hospital site.</summary>
 public static class Vehicles
 {
+    // The ambulance sprite sheet is baked from a 3D model by tools/ArtBaker/bake_ambulance.py:
+    // 16 headings across (0 = towards grid +x, then 22.5 degree steps), and 3 rows for the blue
+    // lights (off, left on, right on). Keep these numbers in step with that script.
+    private const string AmbulanceSheetPath = "res://Art/Vehicles/ambulance.png";
+    private const int Headings = 16;
+    private const int CellWidth = 576;
+    private const int CellHeight = 400;
+    private static readonly Vector2 Anchor = new(288, 232);
+
+    // The simulation positions an ambulance by its front; the sprite is drawn about its centre.
+    private const double FrontToCentre = 2.9;
+    private const double Length = 11.6;
+    private const double Width = 5.0;
+
+    private static Texture2D? _ambulanceSheet;
+
+    private static Texture2D AmbulanceSheet => _ambulanceSheet ??= GD.Load<Texture2D>(AmbulanceSheetPath);
+
     public static void Ambulance(CanvasItem c, WorldLayer world, AmbulanceVehicle ambulance)
     {
         var (x, y) = world.Interpolated(ambulance);
         var dir = ambulance.Facing;
+        var centre = (X: x - (dir.X * FrontToCentre), Y: y - (dir.Y * FrontToCentre));
 
-        // The position is the front of the vehicle; the body sits behind it along its heading.
-        var body = (X: x - (dir.X * 4.5), Y: y - (dir.Y * 4.5));
-        var cab = (X: x + (dir.X * 1.6), Y: y + (dir.Y * 1.6));
-        var yellow = new Color("#F2D21B");
+        // Soft shadow on the ground under the vehicle.
+        var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
+        var (fx, fy) = len < 1e-6 ? (1.0, 0.0) : (dir.X / len, dir.Y / len);
+        var (nx, ny) = (-fy, fx);
+        var (hl, hw) = ((Length / 2) + 0.2, (Width / 2) + 0.2);
+        var shadow = new[]
+        {
+            IsoDraw.ToScreen(centre.X + (fx * hl) + (nx * hw), centre.Y + (fy * hl) + (ny * hw)),
+            IsoDraw.ToScreen(centre.X + (fx * hl) - (nx * hw), centre.Y + (fy * hl) - (ny * hw)),
+            IsoDraw.ToScreen(centre.X - (fx * hl) - (nx * hw), centre.Y - (fy * hl) - (ny * hw)),
+            IsoDraw.ToScreen(centre.X - (fx * hl) + (nx * hw), centre.Y - (fy * hl) + (ny * hw)),
+        };
+        c.DrawColoredPolygon(Array.ConvertAll(shadow, p => p + new Vector2(3, 3)), new Color(0, 0, 0, 0.16f));
 
-        IsoDraw.OrientedBox(c, cab.X, cab.Y, dir, 2.6, 4.2, 38, yellow);
-        IsoDraw.OrientedBox(c, cab.X + (dir.X * 0.9), cab.Y + (dir.Y * 0.9), dir, 0.6, 3.8, 12, new Color("#26343F"), lift: 24);
-        IsoDraw.OrientedBox(c, body.X, body.Y, dir, 8.4, 4.6, 58, yellow);
-        IsoDraw.OrientedBox(c, body.X, body.Y, dir, 8.4, 4.6, 0, new Color("#E9EEF2"), lift: 58);
+        // Pick the baked heading that matches the facing as it looks in the current view rotation.
+        var (ox, oy) = IsoDraw.Rotate(0, 0);
+        var (rx, ry) = IsoDraw.Rotate(fx, fy);
+        var angle = Math.Atan2(ry - oy, rx - ox);
+        var column = ((int)Math.Round(angle / (Math.Tau / Headings)) % Headings + Headings) % Headings;
 
-        // Blue lights flash on an emergency run.
+        // Blue lights flash on an emergency run, alternating left and right.
         var flashing = ambulance.State is AmbulanceState.Driving or AmbulanceState.WaitingForBay
                        && world.Simulation.FindPatient(ambulance.PatientId) is { Triage: TriageCategory.Red or null };
-        var front = IsoDraw.ToScreen(body.X + (dir.X * 4), body.Y + (dir.Y * 4)) + new Vector2(0, -62);
-        var on = flashing && ((int)(world.Time * 6) % 2 == 0);
-        c.DrawCircle(front + new Vector2(-8, 0), 4, on ? new Color("#3D7BFF") : new Color("#1C3F8A"));
-        c.DrawCircle(front + new Vector2(8, 0), 4, !on && flashing ? new Color("#3D7BFF") : new Color("#1C3F8A"));
+        var row = flashing ? 1 + ((int)(world.Time * 6) % 2) : 0;
 
-        var labelPos = IsoDraw.ToScreen(body.X, body.Y) + new Vector2(-18, -36);
+        var source = new Rect2(column * CellWidth, row * CellHeight, CellWidth, CellHeight);
+        var at = IsoDraw.ToScreen(centre.X, centre.Y) - Anchor;
+        c.DrawTextureRectRegion(AmbulanceSheet, new Rect2(at, new Vector2(CellWidth, CellHeight)), source);
+
+        var labelPos = IsoDraw.ToScreen(centre.X, centre.Y) + new Vector2(-18, -36);
         c.DrawString(ThemeDB.FallbackFont, labelPos, ambulance.CallSign, HorizontalAlignment.Left, -1, 12, new Color("#1E5631"));
     }
 }

@@ -3,6 +3,7 @@ using BlueprintHospital.Hospital;
 using System.Linq;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Transport;
 using Godot;
 
 namespace BlueprintHospital.Core;
@@ -21,6 +22,7 @@ public partial class SmokeTest : Node
     private DateTime _savedTime;
     private CameraState? _savedCamera;
     private CameraState? _overview;
+    private AmbulanceVehicle? _ambulance;
     private string? _screenshotDirectory;
     private int _savedRooms;
     private long _savedBalance;
@@ -40,6 +42,7 @@ public partial class SmokeTest : Node
         Ward,
         Imaging,
         Rotate,
+        Ambulance,
         Finances,
         WaitForLoad,
         Done,
@@ -227,6 +230,24 @@ public partial class SmokeTest : Node
 
                 hospital.ToggleRoutes();
                 GD.Print("[smoke] Rotated the view through all four angles with routes shown.");
+                StartAmbulanceShots(hospital);
+                _frame = 0;
+                _stage = Stage.Ambulance;
+                break;
+
+            case Stage.Ambulance when scene is HospitalScene hospital && _frame >= 6:
+                if (_ambulance is not null)
+                {
+                    Screenshot($"11_ambulance_{IsoDraw.Rotation}");
+                    hospital.RotateView(1);
+                    hospital.Camera.SnapTo(hospital.World.FootPosition(_ambulance) + new Vector2(0, -40), 1.2f);
+                    _frame = 0;
+                    if (IsoDraw.Rotation != 0)
+                    {
+                        break;
+                    }
+                }
+
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
                 Check(hospital.Session.Simulation.Today[Simulation.Simulation.MoneyCategory.Construction] < 0, "Building work was not booked.");
@@ -381,6 +402,26 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>Saves the current frame when run with "--screenshots=DIR" (needs a real display, not --headless).</summary>
+    /// <summary>Brings an ambulance onto the site and centres on it, to check the vehicle sprite from every angle.</summary>
+    private void StartAmbulanceShots(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        sim.SpawnPatient(ArrivalMethod.Ambulance);
+        hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
+        for (var i = 0; i < 600 && !sim.Ambulances.Any(a => a.State is AmbulanceState.AtBay or AmbulanceState.WaitingForBay); i++)
+        {
+            hospital.Session.Clock.Step();
+        }
+
+        _ambulance = sim.Ambulances.FirstOrDefault(a => a.State is AmbulanceState.AtBay or AmbulanceState.WaitingForBay)
+                     ?? sim.Ambulances.FirstOrDefault(a => a.State != AmbulanceState.Gone);
+        GD.Print($"[smoke] Ambulance shots: {(_ambulance is null ? "no ambulance on site" : $"{_ambulance.CallSign} {_ambulance.State}")}.");
+        if (_ambulance is not null)
+        {
+            hospital.Camera.SnapTo(hospital.World.FootPosition(_ambulance) + new Vector2(0, -40), 1.2f);
+        }
+    }
+
     private void Screenshot(string name)
     {
         if (_screenshotDirectory is null || DisplayServer.GetName() == "headless")
