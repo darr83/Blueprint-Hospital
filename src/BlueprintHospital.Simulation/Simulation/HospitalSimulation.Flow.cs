@@ -38,6 +38,13 @@ public sealed partial class HospitalSimulation
         if (slot < 0)
         {
             ambulance.State = AmbulanceState.WaitingForBay;
+            if (ambulance.Purpose == AmbulancePurpose.Transfer && _patients.TryGetValue(ambulance.PatientId, out var leaving) && !HasTask(leaving, TaskKind.EscortToTransfer))
+            {
+                // Every bay is taken: the crew walk in and collect the patient from their cubicle instead.
+                leaving.Log(Now, $"Transfer ambulance {ambulance.CallSign} is here but the bays are full; the crew are coming in.");
+                AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, leaving, 10, "Hand over to transfer crew");
+            }
+
             var queueIndex = _ambulances.Count(a => a.State == AmbulanceState.WaitingForBay) - 1;
             var waitTile = new GridCoord(AmbulanceRoadEntry.X, AmbulanceParkingTiles[^1].Y + 8 + (queueIndex * 6));
             ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { waitTile }));
@@ -111,7 +118,10 @@ public sealed partial class HospitalSimulation
         else
         {
             patient.Log(Now, $"Transfer ambulance {ambulance.CallSign} has arrived.");
-            AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, patient, 10, "Hand over to transfer crew");
+            if (!HasTask(patient, TaskKind.EscortToTransfer))
+            {
+                AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, patient, 10, "Hand over to transfer crew");
+            }
         }
     }
 

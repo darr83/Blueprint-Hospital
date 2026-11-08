@@ -369,7 +369,9 @@ public sealed partial class HospitalSimulation
         {
             TaskKind.Register => patient.Stage == PatientStage.WaitingToRegister && _receptionQueue.Count > 0 && _receptionQueue[0] == patient.Id,
             TaskKind.Triage => FreeTriageRoom() is not null && !patient.IsMoving,
-            TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay },
+            // With every bay taken, the transfer crew come in and collect the patient from their cubicle,
+            // so a full ambulance bay can't leave transfer patients (and their cubicles) stuck for good.
+            TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay or Transport.AmbulanceState.WaitingForBay },
             _ => !patient.IsMoving || patient.Stage == PatientStage.InTreatmentSpace,
         };
     }
