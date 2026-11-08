@@ -305,7 +305,8 @@ public class CriticalCareTests
         h.RunUntil(() => patient.CareSpaceId == icu.Id && !patient.IsMoving || patient.Stage == PatientStage.Gone, TimeSpan.FromHours(6), "outreach to move them to ICU");
         var journey = h.Journey(patient);
         Assert.Contains("Outreach review by", journey);
-        Assert.Contains("needs intensive care", journey);
+        // Someone sitting with them and a doctor's review may have eased them a little first: ICU or HDU care.
+        Assert.Matches("needs (intensive|high dependency) care", journey);
         Assert.Equal(icu.Id, patient.CareSpaceId);
 
         // Better again: the ICU round steps them down to the ward.

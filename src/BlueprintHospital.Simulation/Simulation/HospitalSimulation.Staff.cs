@@ -99,6 +99,9 @@ public sealed partial class HospitalSimulation
             case TaskKind.Triage:
                 band = TriageBand;
                 break;
+            case TaskKind.StayWithPatient or TaskKind.RedReview:
+                band = BedsideBand;
+                break;
             default:
                 var news = patient.LatestObservations?.News2.Total ?? 0;
                 band = patient.Triage switch
@@ -224,20 +227,30 @@ public sealed partial class HospitalSimulation
 
     private void ChooseTask(StaffMember member)
     {
+        // Someone sitting with a red-monitor patient only works on that patient, and takes no breaks.
+        var bedside = member.BedsidePatientId is { } bedsideId ? FindPatient(bedsideId) : null;
         var candidates = _tasks.Values
-            .Where(t => t.AssignedStaffId is null && (t.Role == member.Role || NurseCanCover(t, member) || AnaesthetistCanCover(t, member)) && IsForMember(t, member) && CanStart(t))
+            .Where(t => t.AssignedStaffId is null && CanStart(t) && (bedside is not null
+                ? IsBedsideWork(t, member, bedside)
+                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member)) && IsForMember(t, member)))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
         var best = candidates.FirstOrDefault();
 
-        if (DueBreak(member) is { } due && CanTakeBreak(member, due, best))
+        if (bedside is not null && best is null)
+        {
+            StayAtBedside(member, bedside);
+            return;
+        }
+
+        if (bedside is null && DueBreak(member) is { } due && CanTakeBreak(member, due, best))
         {
             TakeBreak(member, due);
             return;
         }
 
-        if (member.Role != StaffRole.Receptionist && member.Fatigue >= BreakThreshold && (best is null || best.Priority < RedOngoing))
+        if (bedside is null && member.Role != StaffRole.Receptionist && member.Fatigue >= BreakThreshold && (best is null || best.Priority < RedOngoing))
         {
             TakeBreak(member);
             return;
@@ -259,6 +272,14 @@ public sealed partial class HospitalSimulation
         if (best.Kind == TaskKind.MovePatient)
         {
             WalkTo(member, StaffPositionFor(best, patient));
+            return;
+        }
+
+        if (best.Kind == TaskKind.StayWithPatient)
+        {
+            // Sitting with them doesn't stop nurses and doctors treating the patient at the same time.
+            member.StatusText = $"Going to sit with {patient.FullName}";
+            WalkTo(member, BedsideSpot(patient));
             return;
         }
 
@@ -334,6 +355,11 @@ public sealed partial class HospitalSimulation
             return patient.PendingMove is not null;
         }
 
+        if (task.Kind == TaskKind.StayWithPatient)
+        {
+            return true;
+        }
+
         if (patient.BusyWithTaskId is not null && patient.BusyWithTaskId != task.Id)
         {
             return false;
@@ -343,7 +369,9 @@ public sealed partial class HospitalSimulation
         {
             TaskKind.Register => patient.Stage == PatientStage.WaitingToRegister && _receptionQueue.Count > 0 && _receptionQueue[0] == patient.Id,
             TaskKind.Triage => FreeTriageRoom() is not null && !patient.IsMoving,
-            TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay },
+            // With every bay taken, the transfer crew come in and collect the patient from their cubicle,
+            // so a full ambulance bay can't leave transfer patients (and their cubicles) stuck for good.
+            TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay or Transport.AmbulanceState.WaitingForBay },
             _ => !patient.IsMoving || patient.Stage == PatientStage.InTreatmentSpace,
         };
     }
@@ -431,6 +459,12 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        if (task.Kind == TaskKind.StayWithPatient)
+        {
+            ProgressBedsideCall(member, task, patient);
+            return;
+        }
+
         if (!task.Started)
         {
             var staffSpot = StaffPositionFor(task, patient);
@@ -461,7 +495,11 @@ public sealed partial class HospitalSimulation
         member.Activity = StaffActivity.Idle;
         member.StatusText = "Available";
         member.TasksCompleted++;
-        patient.BusyWithTaskId = null;
+        if (patient.BusyWithTaskId == task.Id)
+        {
+            patient.BusyWithTaskId = null;
+        }
+
         if (task.SpaceId is { } spaceId && FindSpace(spaceId) is { } usedRoom && usedRoom.ReservedByStaffId == member.Id)
         {
             usedRoom.ReservedByStaffId = null;

@@ -87,6 +87,12 @@ public sealed class PatientState
 
     public bool EffectiveTreatmentGiven { get; init; }
 
+    public bool RedStabilised { get; init; }
+
+    public bool MonitorRed { get; init; }
+
+    public bool RedReviewed { get; init; }
+
     public double Analgesia { get; init; }
 
     public string? CareSpaceId { get; init; }
@@ -207,6 +213,9 @@ public sealed class StaffState
 
     /// <summary>The operation an anaesthetist is giving the anaesthetic for.</summary>
     public int? AssistingTaskId { get; init; }
+
+    /// <summary>The red-monitor patient a doctor is staying with.</summary>
+    public int? BedsidePatientId { get; init; }
 }
 
 public sealed class BreakState
@@ -634,7 +643,7 @@ public sealed partial class HospitalSimulation
         AmbulanceHandover = p.AmbulanceHandover, Stage = p.Stage, Outcome = p.Outcome, OutcomeNote = p.OutcomeNote, LeftAt = p.LeftAt,
         Triage = p.Triage, TriageReason = p.TriageReason, TriagedAt = p.TriagedAt, KnownSymptoms = p.KnownSymptoms.ToList(),
         HistoryTaken = p.HistoryTaken, FirstSeenByDoctorAt = p.FirstSeenByDoctorAt, Investigations = p.Investigations.ToList(),
-        WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven,
+        WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, RedStabilised = p.RedStabilised, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
@@ -680,6 +689,9 @@ public sealed partial class HospitalSimulation
         p.WorkingDiagnosis = s.WorkingDiagnosis is { } d && Database.Conditions.ContainsKey(d.ConditionId) ? d : null;
         p.TreatmentPlan.AddRange(s.TreatmentPlan);
         p.EffectiveTreatmentGiven = s.EffectiveTreatmentGiven;
+        p.RedStabilised = s.RedStabilised;
+        p.MonitorRed = s.MonitorRed;
+        p.RedReviewed = s.RedReviewed;
         p.Analgesia = s.Analgesia;
         p.CareSpaceId = s.CareSpaceId;
         p.Seat = s.Seat;
@@ -727,7 +739,7 @@ public sealed partial class HospitalSimulation
         YearsExperience = m.YearsExperience, Skill = m.Skill, Speed = m.Speed, Salary = m.Salary, Fatigue = m.Fatigue, Morale = m.Morale,
         Activity = m.Activity, CurrentTaskId = m.CurrentTaskId, WorkRemainingSeconds = m.WorkRemainingSeconds, BreakEndsAt = m.BreakEndsAt,
         StatusText = m.StatusText, Caseload = m.Caseload.ToList(), TasksCompleted = m.TasksCompleted, Position = PositionOf(m),
-        Shift = m.Shift, HasPendingMove = m.HasPendingMove, PendingRoomId = m.PendingRoomId, AssistingTaskId = m.AssistingTaskId,
+        Shift = m.Shift, HasPendingMove = m.HasPendingMove, PendingRoomId = m.PendingRoomId, AssistingTaskId = m.AssistingTaskId, BedsidePatientId = m.BedsidePatientId,
         Breaks = m.Breaks.Select(b => new BreakState { Start = b.Start, Minutes = b.Minutes, TakenAt = b.TakenAt, Done = b.Done, Requested = b.Requested }).ToList(),
     };
 
@@ -751,6 +763,7 @@ public sealed partial class HospitalSimulation
         m.HasPendingMove = s.HasPendingMove;
         m.PendingRoomId = s.PendingRoomId;
         m.AssistingTaskId = s.AssistingTaskId;
+        m.BedsidePatientId = s.BedsidePatientId;
         m.Breaks.AddRange(s.Breaks.Select(b => new PlannedBreak { Start = b.Start, Minutes = b.Minutes, TakenAt = b.TakenAt, Done = b.Done, Requested = b.Requested }));
         m.PlaceAt(new GridCoord(s.Position.X, s.Position.Y));
         return m;

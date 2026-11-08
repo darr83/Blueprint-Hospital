@@ -88,6 +88,9 @@ public static class Looks
             StaffRole.OutreachNurse => new PersonLook(
                 Top: new Color("#1D3A6E"), Trousers: new Color("#18233A"), Skin: skin, Hair: hair,
                 Piping: new Color("#F2B134"), Tunic: true, Lanyard: true, LongHair: longHair),
+            StaffRole.HealthcareAssistant => new PersonLook(
+                Top: new Color("#8C98A4"), Trousers: new Color("#2B3440"), Skin: skin, Hair: hair,
+                Piping: Colors.White, Tunic: true, Lanyard: true, LongHair: longHair),
             StaffRole.Porter => new PersonLook(
                 Top: new Color("#3C6E47"), Trousers: new Color("#22262B"), Skin: skin, Hair: hair,
                 Lanyard: true, LongHair: longHair),

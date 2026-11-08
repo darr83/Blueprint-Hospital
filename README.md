@@ -115,6 +115,14 @@ busiest from late morning to evening.
 - **Treatment** follows the diagnosis, with allergy checks before every medicine. Patients are
   then discharged or transferred (e.g. a heart attack to a heart attack centre for PCI).
 - Untreated patients **deteriorate**. Repeat observations pick this up and upgrade their category.
+- **Red monitors need someone at the bedside and a doctor's review.** A bed, cubicle or bay monitor
+  turns red when the patient's NEWS2 reaches 7 (or on a Red triage not yet stabilised), and stays
+  red until NEWS2 is back to 5 or less. The most urgent jobs on the board then send a **healthcare
+  assistant** to sit with them one-to-one (doing their obs, taking no breaks) until the monitor
+  clears, and a doctor (or the ICU anaesthetist) to review them at the bedside, who then moves on.
+  Only with both does the patient get better: quickly once the right treatment is in, slowly
+  otherwise. Until then they keep getting worse, even after treatment. With no healthcare
+  assistants, a nurse sits with them after 10 minutes. A stabilised Red patient's border shows amber.
 
 The **A&E board** (left) shows patients by category, waits, ambulances, cubicle use and the
 4-hour figure. Click any notification to open that patient's record.
@@ -413,6 +421,10 @@ balance goes below zero. Money and the finances are still counted and shown as n
   doctors are Junior Doctor, Doctor, Registrar or Consultant. Radiographers, surgeons, pharmacists,
   cardiac physiologists, neurophysiologists, sonographers, endoscopists, porters and receptionists
   have one grade each. Any nurse or doctor can work in A&E or on any ward.
+- **Healthcare assistants** (Band 3, grey tunic) work in A&E or on a ward. They sit one-to-one with
+  patients whose monitor has gone red, so doctors are free to review and move on. The recommended
+  team is at least one in A&E (more as cubicles grow) and one per ward; the small A&E start has one
+  on each shift.
 - **Recruitment** (H) lists eight candidates, refreshed every morning at 08:00, with their grade,
   skill, experience, pace and salary. Choose where each will work and press Hire. Rooms never come
   with staff: everyone is hired by you.

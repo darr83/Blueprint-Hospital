@@ -38,6 +38,13 @@ public sealed partial class HospitalSimulation
         if (slot < 0)
         {
             ambulance.State = AmbulanceState.WaitingForBay;
+            if (ambulance.Purpose == AmbulancePurpose.Transfer && _patients.TryGetValue(ambulance.PatientId, out var leaving) && !HasTask(leaving, TaskKind.EscortToTransfer))
+            {
+                // Every bay is taken: the crew walk in and collect the patient from their cubicle instead.
+                leaving.Log(Now, $"Transfer ambulance {ambulance.CallSign} is here but the bays are full; the crew are coming in.");
+                AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, leaving, 10, "Hand over to transfer crew");
+            }
+
             var queueIndex = _ambulances.Count(a => a.State == AmbulanceState.WaitingForBay) - 1;
             var waitTile = new GridCoord(AmbulanceRoadEntry.X, AmbulanceParkingTiles[^1].Y + 8 + (queueIndex * 6));
             ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { waitTile }));
@@ -111,7 +118,10 @@ public sealed partial class HospitalSimulation
         else
         {
             patient.Log(Now, $"Transfer ambulance {ambulance.CallSign} has arrived.");
-            AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, patient, 10, "Hand over to transfer crew");
+            if (!HasTask(patient, TaskKind.EscortToTransfer))
+            {
+                AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, patient, 10, "Hand over to transfer crew");
+            }
         }
     }
 
@@ -134,7 +144,20 @@ public sealed partial class HospitalSimulation
         {
             var condition = patient.Condition;
             var support = CriticalCareFactor(patient, hours);
-            if (patient.EffectiveTreatmentGiven)
+            if (patient.MonitorIsRed)
+            {
+                // A red monitor needs someone sitting with them and a doctor's review: with both they get better
+                // (quickly once the right treatment is in, slowly otherwise); without them they carry on getting worse.
+                if (patient.RedReviewed && CarerAtBedside(patient) is not null)
+                {
+                    patient.Severity = Math.Max(0, patient.Severity - (RedRecoveryPerHour(patient) * hours));
+                }
+                else
+                {
+                    patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
+                }
+            }
+            else if (patient.EffectiveTreatmentGiven)
             {
                 patient.Severity = Math.Max(0, patient.Severity - (condition.RecoveryPerHour * hours));
             }
@@ -174,6 +197,10 @@ public sealed partial class HospitalSimulation
         foreach (var doctor in _staff)
         {
             doctor.Caseload.Remove(patient.Id);
+            if (doctor.BedsidePatientId == patient.Id)
+            {
+                LeaveBedside(doctor);
+            }
         }
 
         if (AmbulanceFor(patient) is { } ambulance && ambulance.Purpose == AmbulancePurpose.Arrival)

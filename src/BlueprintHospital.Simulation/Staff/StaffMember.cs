@@ -37,6 +37,9 @@ public enum StaffRole
 
     /// <summary>Critical care outreach: reviews ward patients who are getting worse and moves them up to HDU or ICU.</summary>
     OutreachNurse,
+
+    /// <summary>Healthcare assistant: sits one-to-one with a patient whose monitor is red, and does their obs.</summary>
+    HealthcareAssistant,
 }
 
 public enum StaffActivity
@@ -126,6 +129,9 @@ public sealed class StaffMember : Agent
 
     /// <summary>An anaesthetist giving the anaesthetic for this operation (the surgeon's task) is held in theatre until it is done.</summary>
     public int? AssistingTaskId { get; set; }
+
+    /// <summary>The red-monitor patient this member of staff (usually a healthcare assistant) is sitting with until they are no longer red.</summary>
+    public int? BedsidePatientId { get; set; }
 
     /// <summary>Game seconds of work left on the current task.</summary>
     public double WorkRemainingSeconds { get; set; }

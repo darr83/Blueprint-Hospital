@@ -309,22 +309,22 @@ public partial class StaffRotaPanel : PanelContainer
 
     private bool Shown(StaffRole role) => _filter switch
     {
-        "nurse" => role == StaffRole.Nurse,
+        "nurse" => role is StaffRole.Nurse or StaffRole.HealthcareAssistant,
         "doctor" => role == StaffRole.Doctor,
         "porter" => role == StaffRole.Porter,
-        "other" => role is not (StaffRole.Nurse or StaffRole.Doctor or StaffRole.Porter),
+        "other" => role is not (StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Doctor or StaffRole.Porter),
         _ => true,
     };
 
     /// <summary>Every place someone can work, in rota order.</summary>
     private List<Place> Places()
     {
-        var places = new List<Place> { new(null, "A&E", "Emergency department", new[] { StaffRole.Nurse, StaffRole.Doctor, StaffRole.Receptionist }) };
+        var places = new List<Place> { new(null, "A&E", "Emergency department", new[] { StaffRole.Nurse, StaffRole.HealthcareAssistant, StaffRole.Doctor, StaffRole.Receptionist }) };
         foreach (var ward in _sim.Wards.OrderBy(w => w.Id, StringComparer.Ordinal))
         {
             var used = ward.Beds.Count(b => b.OccupantId.HasValue);
             var doctors = _sim.UnitOf(ward) == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
-            places.Add(new(ward.Id, ward.Name, $"{ward.Beds.Count} beds · {used} in use", new[] { StaffRole.Nurse, doctors }));
+            places.Add(new(ward.Id, ward.Name, $"{ward.Beds.Count} beds · {used} in use", new[] { StaffRole.Nurse, StaffRole.HealthcareAssistant, doctors }));
         }
 
         foreach (var clinic in _sim.ClinicRooms)
