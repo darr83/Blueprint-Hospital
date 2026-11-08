@@ -52,7 +52,7 @@ public class RehabTests
     {
         var h = Wing(3, new[] { ("xray_room", 10, 9), ("plaster_room", 9, 8) }, "trauma_orthopaedics");
         var plaster = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.PlasterRoom);
-        var tech = h.Sim.Staff.Single(s => s.Role == StaffRole.PlasterTechnician);
+        var tech = h.Sim.Staff.Single(s => s.Role == StaffRole.PlasterTechnician && s.IsOnDuty);
         var plastered = 0;
         for (var i = 0; i < 3; i++)
         {
@@ -99,7 +99,7 @@ public class RehabTests
     public void Physiotherapy_gets_stroke_patients_home_sooner()
     {
         var h = Wing(5, new[] { ("stroke_unit", 16, 10), ("physio_gym", 12, 10) }, "neurology", "trauma_orthopaedics");
-        var physio = h.Sim.Staff.Single(s => s.Role == StaffRole.Physiotherapist);
+        var physio = h.Sim.Staff.Single(s => s.Role == StaffRole.Physiotherapist && s.IsOnDuty);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "ischaemic_stroke");
         h.RunUntil(() => patient.Stage is PatientStage.OnWard or PatientStage.Gone or PatientStage.AwaitingTransfer, TimeSpan.FromHours(12), "stroke patient to reach a ward");
         if (patient.Stage != PatientStage.OnWard || patient.WorkingDiagnosis?.ConditionId != "ischaemic_stroke")

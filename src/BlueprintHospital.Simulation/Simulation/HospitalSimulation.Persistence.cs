@@ -181,6 +181,28 @@ public sealed class StaffState
     public int TasksCompleted { get; init; }
 
     public PositionState Position { get; init; } = new(0, 0);
+
+    /// <summary>Day or night team. Missing in saves from before shifts: those staff are split between the teams.</summary>
+    public StaffShift? Shift { get; init; }
+
+    public List<BreakState> Breaks { get; init; } = new();
+
+    public bool HasPendingMove { get; init; }
+
+    public string? PendingRoomId { get; init; }
+}
+
+public sealed class BreakState
+{
+    public DateTime Start { get; init; }
+
+    public int Minutes { get; init; }
+
+    public DateTime? TakenAt { get; init; }
+
+    public bool Done { get; init; }
+
+    public bool Requested { get; init; }
 }
 
 public sealed class AmbulanceSave
@@ -523,6 +545,11 @@ public sealed partial class HospitalSimulation
 
         RestoreClinics(state);
         SyncRoomStaff();
+        if (state.Staff.Count > 0 && state.Staff.All(s => s.Shift is null))
+        {
+            SplitIntoTeams();
+        }
+
         Resume(state.Patients.Select(p => (p.Id, p.Position)), id => _patients.GetValueOrDefault(id));
         Resume(state.Outpatients.Select(o => (o.Id, o.Position)), id => FindOutpatient(id));
         Resume(state.Staff.Select(s => (s.Id, s.Position)), id => FindStaff(id));
@@ -670,6 +697,8 @@ public sealed partial class HospitalSimulation
         YearsExperience = m.YearsExperience, Skill = m.Skill, Speed = m.Speed, Salary = m.Salary, Fatigue = m.Fatigue, Morale = m.Morale,
         Activity = m.Activity, CurrentTaskId = m.CurrentTaskId, WorkRemainingSeconds = m.WorkRemainingSeconds, BreakEndsAt = m.BreakEndsAt,
         StatusText = m.StatusText, Caseload = m.Caseload.ToList(), TasksCompleted = m.TasksCompleted, Position = PositionOf(m),
+        Shift = m.Shift, HasPendingMove = m.HasPendingMove, PendingRoomId = m.PendingRoomId,
+        Breaks = m.Breaks.Select(b => new BreakState { Start = b.Start, Minutes = b.Minutes, TakenAt = b.TakenAt, Done = b.Done, Requested = b.Requested }).ToList(),
     };
 
     private static StaffMember LoadStaff(StaffState s)
@@ -688,6 +717,10 @@ public sealed partial class HospitalSimulation
         m.StatusText = s.StatusText;
         m.Caseload.UnionWith(s.Caseload);
         m.TasksCompleted = s.TasksCompleted;
+        m.Shift = s.Shift ?? StaffShift.Day;
+        m.HasPendingMove = s.HasPendingMove;
+        m.PendingRoomId = s.PendingRoomId;
+        m.Breaks.AddRange(s.Breaks.Select(b => new PlannedBreak { Start = b.Start, Minutes = b.Minutes, TakenAt = b.TakenAt, Done = b.Done, Requested = b.Requested }));
         m.PlaceAt(new GridCoord(s.Position.X, s.Position.Y));
         return m;
     }

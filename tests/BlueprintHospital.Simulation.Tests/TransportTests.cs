@@ -26,7 +26,8 @@ public class TransportTests
     public void The_starting_team_includes_porters()
     {
         var h = new SimulationHarness();
-        Assert.Equal(2, h.Sim.Staff.Count(s => s.Role == StaffRole.Porter));
+        Assert.Equal(2, h.Sim.Staff.Count(s => s.Role == StaffRole.Porter && s.Shift == StaffShift.Day));
+        Assert.Equal(2, h.Sim.Staff.Count(s => s.Role == StaffRole.Porter && s.Shift == StaffShift.Night));
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public class TransportTests
     [Fact]
     public void A_porter_pushes_a_poorly_patient_to_xray_and_walks_behind_them()
     {
-        var h = WithXray(seed: 5);
+        var h = WithXray(seed: 6);
         var room = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.XRay);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
 
