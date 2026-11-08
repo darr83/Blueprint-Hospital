@@ -127,6 +127,7 @@ public partial class FinancePanel : PanelContainer
         MoneyCategory.Construction => "Building work",
         MoneyCategory.Operations => "Operations",
         MoneyCategory.Clinics => "Clinics",
+        MoneyCategory.Catering => "Cafe and vending",
         _ => category.ToString(),
     };
 }

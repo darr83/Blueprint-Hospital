@@ -57,6 +57,12 @@ public enum CareSpaceKind
 
     /// <summary>Recovery bay where patients come round after sedation for endoscopy.</summary>
     EndoscopyRecovery,
+
+    /// <summary>Cafe for patients and visitors: food counter, vending machines, water machine and tables.</summary>
+    Cafeteria,
+
+    /// <summary>A small alcove of vending machines and a water machine.</summary>
+    VendingPoint,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -144,6 +150,12 @@ public sealed class CareSpace
 
     /// <summary>The beds on a ward, in a stable order. Empty for every other kind of room.</summary>
     public IReadOnlyList<WardBed> Beds { get; init; } = Array.Empty<WardBed>();
+
+    /// <summary>In a cafeteria or vending point: the tile in front of each vending machine, where customers stand to buy.</summary>
+    public IReadOnlyList<GridCoord> VendingSpots { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>A cafeteria or vending point, where waiting patients can get something to eat and drink.</summary>
+    public bool IsRefreshments => Kind is CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint;
 
     public bool IsWard => Kind == CareSpaceKind.Ward;
 
