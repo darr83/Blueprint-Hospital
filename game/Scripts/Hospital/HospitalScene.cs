@@ -13,9 +13,20 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
+/// What clicking on the map picks. In play mode: patients, staff and beds. In build mode: rooms,
+/// furniture and equipment, and the build menu is open.
+/// </summary>
+public enum GameMode
+{
+    Play,
+    Build,
+}
+
+/// <summary>
 /// The main play scene. Wires the current <see cref="GameSession"/> to the site and department
 /// views, the people in them, the camera and HUD, and drives the simulation clock every frame.
-/// Clicking a patient opens their record; clicking a member of staff opens their panel.
+/// In play mode clicking a patient, member of staff or bed opens their panel; in build mode
+/// clicking a room or a piece of furniture does.
 /// </summary>
 public partial class HospitalScene : Node2D
 {
@@ -30,6 +41,11 @@ public partial class HospitalScene : Node2D
     private BuildTool _build = null!;
     private IsoCamera _camera = null!;
     private MainHUD _hud = null!;
+    private SelectionHighlight _highlight = null!;
+    private SelectionHighlight _itemHighlight = null!;
+
+    /// <summary>Play (people and beds) or Build (rooms and items).</summary>
+    public GameMode Mode { get; private set; } = GameMode.Play;
 
     public GameSession Session => _session;
 
@@ -66,10 +82,17 @@ public partial class HospitalScene : Node2D
         AddChild(_department);
         _department.Initialise(_session.Simulation);
 
+        // Outline of the selected room or item, on the floor under everything standing on it.
+        _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
+        AddChild(_highlight);
+
         // Walls, furniture, people and vehicles, depth-sorted together; labels on top.
         _world = new WorldLayer { Name = "World" };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
+
+        _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
+        AddChild(_itemHighlight);
 
         _routes = new RouteLayer { Name = "Routes" };
         AddChild(_routes);
@@ -114,9 +137,13 @@ public partial class HospitalScene : Node2D
         _hud.RoomInfo.MoveRequested += room =>
         {
             _hud.RoomInfo.Close();
+            SetMode(GameMode.Build);
             _hud.Build.Visible = true;
             _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
+        _hud.ModeRequested += SetMode;
+        _hud.ItemInfo.RoomRequested += room => _hud.ShowRoom(room);
+        _hud.ItemInfo.PatientRequested += p => SelectPatient(p, centre: true);
         _hud.GridToggled += ToggleGrid;
         _hud.RoutesToggled += ToggleRoutes;
         _hud.MenuRequested += OpenPauseMenu;
@@ -145,9 +172,38 @@ public partial class HospitalScene : Node2D
         };
     }
 
-    /// <summary>Selects a patient and opens their record.</summary>
+    /// <summary>
+    /// Switches between play and build mode. Build mode opens the build menu and lets go of whoever
+    /// was selected; play mode closes the build menu and any room or item panel.
+    /// </summary>
+    public void SetMode(GameMode mode)
+    {
+        if (mode == Mode)
+        {
+            if (mode == GameMode.Build && !_hud.Build.Visible && !_build.Active)
+            {
+                _hud.HideRightPanels();
+                _hud.Build.Visible = true;
+            }
+
+            return;
+        }
+
+        Mode = mode;
+        _hud.Mode = mode;
+        _build.Cancel();
+        ClearSelection();
+        _hud.HideRightPanels();
+        if (mode == GameMode.Build)
+        {
+            _hud.Build.Visible = true;
+        }
+    }
+
+    /// <summary>Selects a patient and opens their record (switching to play mode).</summary>
     public void SelectPatient(Patient patient, bool centre = false)
     {
+        SetMode(GameMode.Play);
         _world.Selected = patient;
         _hud.HideRightPanels();
         _hud.Record.Show(patient);
@@ -160,6 +216,7 @@ public partial class HospitalScene : Node2D
     /// <summary>Selects a member of staff and opens their panel.</summary>
     public void SelectStaff(StaffMember member, bool centre = false)
     {
+        SetMode(GameMode.Play);
         _world.Selected = member;
         _hud.ShowStaff(member);
         if (centre)
@@ -188,6 +245,12 @@ public partial class HospitalScene : Node2D
     public override void _Process(double delta)
     {
         _session.Clock.Advance(delta);
+        _highlight.Room = _hud.RoomInfo.Visible && _hud.RoomInfo.RoomId is { } roomId ? _session.Simulation.FindSpace(roomId)?.Rect : null;
+        var shown = _hud.ItemInfo.Visible && _hud.ItemInfo.Room is { } itemRoom && _hud.ItemInfo.Item is { } item ? (itemRoom, item) : default;
+        _itemHighlight.Item = shown.item is null ? null : Footprint(shown.itemRoom, shown.item);
+        _itemHighlight.ItemHeight = shown.item is not null && _session.Database.Furniture.TryGetValue(shown.item.ItemId, out var shownDef)
+            ? (float)System.Math.Min(System.Math.Max(shownDef.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
+            : 0;
         if (_layoutDirty)
         {
             _layoutDirty = false;
@@ -206,33 +269,7 @@ public partial class HospitalScene : Node2D
 
         if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
         {
-            switch (_world.HitTest(GetGlobalMousePosition()))
-            {
-                case Patient patient:
-                    SelectPatient(patient);
-                    break;
-                case StaffMember member:
-                    SelectStaff(member, centre: false);
-                    break;
-                default:
-                    ClearSelection();
-                    var tile = IsoDraw.ScreenToTile(GetGlobalMousePosition());
-                    var room = _session.Simulation.Spaces
-                        .Where(s => s.Rect.Contains(tile))
-                        .OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0)
-                        .FirstOrDefault();
-                    if (room is not null)
-                    {
-                        _hud.ShowRoom(room);
-                    }
-                    else
-                    {
-                        _hud.RoomInfo.Close();
-                    }
-
-                    break;
-            }
-
+            ClickAt(GetGlobalMousePosition());
             GetViewport().SetInputAsHandled();
             return;
         }
@@ -244,13 +281,15 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
+            case Key.Escape when Mode == GameMode.Build:
+                SetMode(GameMode.Play);
+                break;
             case Key.B:
-                _build.Cancel();
-                _hud.ToggleBuild();
+                SetMode(Mode == GameMode.Build ? GameMode.Play : GameMode.Build);
                 break;
             case Key.Escape:
                 OpenPauseMenu();
@@ -296,6 +335,129 @@ public partial class HospitalScene : Node2D
         }
 
         GetViewport().SetInputAsHandled();
+    }
+
+    /// <summary>
+    /// A left click on the map. Play mode picks a person, or failing that a bed; build mode picks a
+    /// piece of furniture, or failing that the room. Clicking empty floor closes the panel.
+    /// </summary>
+    public void ClickAt(Vector2 world)
+    {
+        if (Mode == GameMode.Play)
+        {
+            switch (_world.HitTest(world))
+            {
+                case Patient patient:
+                    SelectPatient(patient);
+                    return;
+                case StaffMember member:
+                    SelectStaff(member);
+                    return;
+            }
+
+            ClearSelection();
+            if (ItemAt(world, bedsOnly: true) is { } bed)
+            {
+                _hud.HideRightPanels();
+                _hud.ItemInfo.ShowBed(bed.Room, bed.Item);
+            }
+            else
+            {
+                _hud.ItemInfo.Close();
+            }
+
+            return;
+        }
+
+        if (ItemAt(world, bedsOnly: false) is { } hit)
+        {
+            _hud.HideRightPanels();
+            _hud.ItemInfo.ShowItem(hit.Room, hit.Item);
+            return;
+        }
+
+        var tile = IsoDraw.ScreenToTile(world);
+        var room = _session.Simulation.Spaces
+            .Where(s => s.Rect.Contains(tile))
+            .OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0)
+            .FirstOrDefault();
+        if (room is not null)
+        {
+            _hud.ShowRoom(room);
+        }
+        else
+        {
+            // Back to the build menu.
+            _hud.HideRightPanels();
+            _hud.Build.Visible = true;
+        }
+    }
+
+    /// <summary>
+    /// The furniture under a point on screen, counting its height so clicking the top of a cupboard
+    /// works. Beds are the patient beds on wards and in cubicles (not X-ray tables).
+    /// </summary>
+    public (CareSpace Room, PlacedFurniture Item)? ItemAt(Vector2 world, bool bedsOnly)
+    {
+        (CareSpace, PlacedFurniture)? best = null;
+        var bestDepth = float.MinValue;
+        foreach (var space in _session.Simulation.Spaces)
+        {
+            foreach (var item in space.Furniture)
+            {
+                if (!_session.Database.Furniture.TryGetValue(item.ItemId, out var def))
+                {
+                    continue;
+                }
+
+                var isBed = def.Style == Simulation.Data.Models.FurnitureStyle.Bed && !space.IsServiceRoom;
+                if (bedsOnly && !isBed)
+                {
+                    continue;
+                }
+
+                const double pad = 0.1;
+                var (x, y, w, l) = Footprint(space, item);
+                var lift = new Vector2(0, -(float)System.Math.Max(def.HeightM, 0.3) * IsoDraw.PixelsPerMetre);
+                var floor = new[]
+                {
+                    IsoDraw.ToScreen(x - pad, y - pad), IsoDraw.ToScreen(x + w + pad, y - pad),
+                    IsoDraw.ToScreen(x + w + pad, y + l + pad), IsoDraw.ToScreen(x - pad, y + l + pad),
+                };
+                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
+                if (!Geometry2D.IsPointInPolygon(world, hull))
+                {
+                    continue;
+                }
+
+                // Nearest the viewer wins when two overlap on screen.
+                var depth = IsoDraw.ToScreen(x + (w / 2), y + (l / 2)).Y;
+                if (depth > bestDepth)
+                {
+                    best = (space, item);
+                    bestDepth = depth;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Where an item is drawn on the floor (X, Y, width, length in tiles). Patient beds are drawn
+    /// centred on the bed's patient spot rather than at the layout's footprint.
+    /// </summary>
+    public (double X, double Y, double W, double L) Footprint(CareSpace space, PlacedFurniture item)
+    {
+        var isBed = _session.Database.Furniture.TryGetValue(item.ItemId, out var def)
+            && def.Style == Simulation.Data.Models.FurnitureStyle.Bed && !space.IsServiceRoom;
+        if (!isBed)
+        {
+            return (item.X, item.Y, item.Width, item.Length);
+        }
+
+        var spot = space.IsWard ? item.Tile : space.PatientSpot;
+        return (spot.X + 0.5 - 0.8, spot.Y + 0.5 - 2.1, 1.6, 4.2);
     }
 
     /// <summary>The camera, saved as if the view were not rotated (saves always load facing the default way).</summary>

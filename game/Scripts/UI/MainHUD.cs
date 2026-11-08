@@ -81,10 +81,19 @@ public partial class MainHUD : CanvasLayer
 
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
+    /// <summary>A bed (play mode) or a piece of furniture or equipment (build mode).</summary>
+    public ItemPanel ItemInfo { get; } = new() { Name = "ItemInfo", Visible = false };
+
+    /// <summary>Raised when the player picks Play or Build in the top bar, or presses the Build button.</summary>
+    public event Action<BlueprintHospital.Hospital.GameMode>? ModeRequested;
+
+    /// <summary>The mode the scene is in, shown on the Play / Build switch.</summary>
+    public BlueprintHospital.Hospital.GameMode Mode { get; set; }
+
     /// <summary>True while the A&amp;E board and notifications column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, Finances, Recruitment };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, ItemInfo, Finances, Recruitment };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -97,6 +106,7 @@ public partial class MainHUD : CanvasLayer
     {
         Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = false;
         RoomInfo.Close();
+        ItemInfo.Close();
     }
 
     /// <summary>Opens the finances, or closes them.</summary>
@@ -207,6 +217,11 @@ public partial class MainHUD : CanvasLayer
         Recruitment.Initialise(sim);
         DockRight(Recruitment, 440);
         root.AddChild(Recruitment);
+        ItemInfo.Initialise(sim);
+        DockRight(ItemInfo, 360);
+        ItemInfo.AnchorBottom = 0;
+        ItemInfo.OffsetBottom = TopBarHeight + Gap + 10;
+        root.AddChild(ItemInfo);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -321,6 +336,7 @@ public partial class MainHUD : CanvasLayer
         clockRow.AddChild(speeds);
         clock.AddChild(clockRow);
         row.AddChild(clock);
+        row.AddChild(BuildModeSwitch());
 
         row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
@@ -339,6 +355,54 @@ public partial class MainHUD : CanvasLayer
         row.AddChild(menu);
 
         return bar;
+    }
+
+    private readonly Dictionary<BlueprintHospital.Hospital.GameMode, Button> _modeButtons = new();
+
+    /// <summary>The Play / Build switch: what clicking on the map picks.</summary>
+    private Control BuildModeSwitch()
+    {
+        var pill = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        var style = UiStyle.Box(UiStyle.Ground, 10, UiStyle.Border);
+        style.ContentMarginLeft = style.ContentMarginRight = style.ContentMarginTop = style.ContentMarginBottom = 4;
+        pill.AddThemeStyleboxOverride("panel", style);
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 2);
+        pill.AddChild(row);
+        AddModeButton(row, "Play", BlueprintHospital.Hospital.GameMode.Play, "Play mode: click patients, staff and beds");
+        AddModeButton(row, "Build", BlueprintHospital.Hospital.GameMode.Build, "Build mode: build, and click rooms and items (B)");
+        return pill;
+    }
+
+    private void AddModeButton(HBoxContainer parent, string text, BlueprintHospital.Hospital.GameMode mode, string tooltip)
+    {
+        var button = new Button
+        {
+            Text = text,
+            ToggleMode = true,
+            CustomMinimumSize = new Vector2(64, 32),
+            TooltipText = tooltip,
+            FocusMode = Control.FocusModeEnum.None,
+        };
+        button.AddThemeStyleboxOverride("normal", UiStyle.Box(new Color(0, 0, 0, 0), 6));
+        button.AddThemeStyleboxOverride("hover", UiStyle.Box(UiStyle.Surface, 6));
+        button.AddThemeStyleboxOverride("pressed", UiStyle.Box(UiStyle.Blue, 6));
+        button.AddThemeStyleboxOverride("hover_pressed", UiStyle.Box(UiStyle.BlueHover, 6));
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_focus_color" })
+        {
+            button.AddThemeColorOverride(state, UiStyle.TextDark);
+        }
+
+        button.AddThemeColorOverride("font_pressed_color", Colors.White);
+        button.AddThemeColorOverride("font_hover_pressed_color", Colors.White);
+        button.AddThemeFontSizeOverride("font_size", 14);
+        button.Pressed += () =>
+        {
+            button.SetPressedNoSignal(mode == Mode);
+            ModeRequested?.Invoke(mode);
+        };
+        _modeButtons[mode] = button;
+        parent.AddChild(button);
     }
 
     private void AddSpeedButton(HBoxContainer parent, string text, SimulationSpeed speed, string tooltip)
@@ -387,7 +451,7 @@ public partial class MainHUD : CanvasLayer
         column.AddThemeConstantOverride("separation", 6);
         nav.AddChild(column);
         column.AddChild(NavButton("Hospital", NavIcon.Kind.Hospital, ToggleBoard, "Show or hide the A&E board and notifications"));
-        column.AddChild(NavButton("Build", NavIcon.Kind.Build, ToggleBuild, "Build rooms and corridors, and extend the building (B)"));
+        column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, () => ToggleRoster(true), "Who is on shift and what they are doing (T)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
@@ -444,7 +508,14 @@ public partial class MainHUD : CanvasLayer
         }
 
         Set("Hospital", _left.Visible);
-        Set("Build", Build.Visible);
+        Set("Build", Mode == BlueprintHospital.Hospital.GameMode.Build);
+        foreach (var (mode, button) in _modeButtons)
+        {
+            if (button.ButtonPressed != (mode == Mode))
+            {
+                button.SetPressedNoSignal(mode == Mode);
+            }
+        }
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
         Set("Staff", Roster.Visible && _rosterShowsStaff);
         Set("Hire", Recruitment.Visible);

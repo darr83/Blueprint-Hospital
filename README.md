@@ -72,15 +72,18 @@ Then:
 | Toggle building grid | G |
 | Show walking routes | R (or Routes on the left-hand bar) |
 | Rotate the view a quarter turn | Q / E (or the turn buttons bottom right) |
-| Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
-| Open a member of staff's panel | Left-click them, or a row in the Staff list |
+| Play or Build mode | The Play / Build switch in the top bar, or B to swap |
+| Open a patient's record | Play mode: left-click the patient, a notification, or a row in the Patients list |
+| Open a member of staff's panel | Play mode: left-click them, or a row in the Staff list |
+| See a bed and who is in it | Play mode: left-click the bed |
 | Show / hide the A&E board | Hospital on the left-hand bar |
 | Patients list / Staff list | P / T (or the left-hand bar) |
 | Finances | F (or click the balance in the top bar) |
 | Recruitment (hire staff) | H (or Hire in the left-hand bar) |
-| Build menu | B (or Build on the left-hand bar) |
+| Build menu | Build mode (B, or Build on the left-hand bar) |
 | Build / stop building | Drag with the left button / right click or Esc |
-| Room details, rename, move or demolish | Left-click the room's floor |
+| Room details, rename, move or demolish | Build mode: left-click the room's floor |
+| Furniture or equipment details | Build mode: left-click the item |
 | Close a record, list or panel | Esc |
 | Menu (save, load, settings, quit) | Esc (when nothing is open) |
 
@@ -119,7 +122,12 @@ The **A&E board** (left) shows patients by category, waits, ambulances, cubicle 
 
 ## Building the hospital
 
-Press **B** to open the build menu. Every room is built from a **template** in
+The game has two modes. In **Play mode** clicking picks patients, staff and beds; rooms and
+furniture can't be picked. In **Build mode** (press **B** or use the switch in the top bar) the
+build menu opens and clicking picks rooms, furniture and equipment; people can't be picked.
+The selected room or item is outlined in blue.
+
+Press **B** to go into build mode and open the build menu. Every room is built from a **template** in
 `game/Data/RoomTemplates`, with furniture from `game/Data/Furniture`, all at real sizes in metres.
 
 - **Rooms** (A&E: Minors and Majors cubicles, Resus bay, Triage room, Waiting room; Staff:
@@ -145,7 +153,7 @@ Press **B** to open the build menu. Every room is built from a **template** in
 - **Rotate (Q / E):** turns the view a quarter turn, so the hospital can be seen from all four sides.
 - **Extending the building:** drag out new floor on any side, onto grass or paving. Entrances, the
   car park and the ambulance bay must be kept clear.
-- **Room panel:** click a room's floor to see its details and who is using it, rename it, move or
+- **Room panel:** in build mode, click a room's floor to see its details and who is using it, rename it, move or
   resize it (it keeps its name), or demolish it for a 50% refund. Rooms in use can't be moved or
   demolished, and the department always keeps at least one waiting room and one triage room.
 - **Money:** a new hospital has £750,000 to build with, shown in the top bar.

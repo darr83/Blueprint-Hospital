@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BlueprintHospital.Hospital;
+using BlueprintHospital.UI;
 using System.Linq;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Patients;
@@ -42,8 +43,10 @@ public partial class SmokeTest : Node
         StaffPanel,
         BuildPreview,
         RoomPanel,
+        BuildItem,
         Recruitment,
         Ward,
+        WardBed,
         Transport,
         Imaging,
         Rotate,
@@ -186,7 +189,7 @@ public partial class SmokeTest : Node
                 Check(hospital.Session.Simulation.Spaces.Count() == built + 1, "The previewed cubicle was not built.");
                 hospital.BuildTool.Cancel();
                 var newRoom = hospital.Session.Simulation.Spaces.Where(s => s.TemplateId == "majors_cubicle").OrderBy(s => s.Rect.X).First();
-                hospital.Hud.ShowRoom(newRoom);
+                ClickRoomFloor(hospital, newRoom);
                 GD.Print($"[smoke] Built {newRoom.Name}; balance £{hospital.Session.Simulation.Balance:N0}.");
                 _frame = 0;
                 _stage = Stage.RoomPanel;
@@ -194,7 +197,15 @@ public partial class SmokeTest : Node
 
             case Stage.RoomPanel when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("06_room_panel");
-                hospital.Hud.RoomInfo.Close();
+                ClickBuildItem(hospital);
+                _frame = 0;
+                _stage = Stage.BuildItem;
+                break;
+
+            case Stage.BuildItem when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("06a_build_item");
+                hospital.SetMode(GameMode.Play);
+                Check(!hospital.Hud.Build.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should close the build menu and item panel.");
                 BuildWard(hospital);
                 hospital.Hud.ToggleRecruitment();
                 Check(hospital.Hud.Recruitment.Visible, "Recruitment did not open.");
@@ -212,6 +223,14 @@ public partial class SmokeTest : Node
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
+                ClickWardBed(hospital);
+                _frame = 0;
+                _stage = Stage.WardBed;
+                break;
+
+            case Stage.WardBed when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07b_ward_bed");
+                hospital.Hud.HideRightPanels();
                 BuildImagingAndSendForScan(hospital);
                 _frame = 0;
                 _stage = Stage.Transport;
@@ -374,13 +393,61 @@ public partial class SmokeTest : Node
         var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 30, b.Y + 9, 34, 8), Simulation.World.WallSide.South));
         Check(corridor.CanBuild, "Corridor refused: " + string.Join("; ", corridor.Problems));
 
-        hospital.Hud.ToggleBuild();
+        hospital.SetMode(GameMode.Build);
+        Check(hospital.Mode == GameMode.Build && hospital.Hud.Build.Visible, "Build mode did not open the build menu.");
         var template = sim.Database.RoomTemplates["majors_cubicle"];
         hospital.BuildTool.StartRoom(template);
         hospital.BuildTool.PreviewDrag(new Simulation.World.GridCoord(b.X - 10, b.Y), new Simulation.World.GridCoord(b.X - 1, b.Y + 8));
         Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
+    }
+
+    /// <summary>Build mode: clicking bare floor in the new cubicle opens the room, and clicking a member of staff does nothing.</summary>
+    private static void ClickRoomFloor(HospitalScene hospital, Simulation.Hospital.CareSpace room)
+    {
+        Check(hospital.Mode == GameMode.Build, "Should still be in build mode.");
+        var floor = Enumerable.Range(0, room.Rect.Width * room.Rect.Length)
+            .Select(i => IsoDraw.ToScreen(room.Rect.X + (i % room.Rect.Width) + 0.5, room.Rect.Y + (i / room.Rect.Width) + 0.5))
+            .First(p => hospital.ItemAt(p, bedsOnly: false) is null);
+        hospital.ClickAt(floor);
+        Check(hospital.Hud.RoomInfo.Visible && hospital.Hud.RoomInfo.RoomId == room.Id, "Clicking the room in build mode did not open it.");
+
+        var member = hospital.Session.Simulation.Staff.First();
+        hospital.ClickAt(hospital.World.FootPosition(member) + new Vector2(0, -30));
+        Check(hospital.World.Selected is null && !hospital.Hud.StaffInfo.Visible, "Build mode should not select staff.");
+        hospital.ClickAt(floor);
+    }
+
+    /// <summary>Build mode: clicking the new cubicle's bed opens it as an item.</summary>
+    private static void ClickBuildItem(HospitalScene hospital)
+    {
+        var room = hospital.Session.Simulation.Spaces.Where(s => s.TemplateId == "majors_cubicle").OrderBy(s => s.Rect.X).First();
+        var bed = room.Furniture.First(f => hospital.Session.Database.Furniture[f.ItemId].Style == Simulation.Data.Models.FurnitureStyle.Bed);
+        var (bx, by, bw, bl) = hospital.Footprint(room, bed);
+        hospital.ClickAt(IsoDraw.ToScreen(bx + (bw / 2), by + (bl / 2)));
+        Check(hospital.Hud.ItemInfo.Visible && !hospital.Hud.ItemInfo.AsBed && hospital.Hud.ItemInfo.Item == bed, "Clicking the bed in build mode did not open it as an item.");
+    }
+
+    /// <summary>Play mode: clicking the ward floor picks nothing; clicking an empty bed opens the bed.</summary>
+    private static void ClickWardBed(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var ward = sim.Wards.Single();
+        Check(hospital.Mode == GameMode.Play, "Should be in play mode on the ward.");
+        var floor = IsoDraw.ToScreen(ward.Rect.X + 0.5, ward.Rect.Y + (ward.Rect.Length / 2.0));
+        if (hospital.World.HitTest(floor) is null && hospital.ItemAt(floor, bedsOnly: true) is null)
+        {
+            hospital.ClickAt(floor);
+            Check(!hospital.Hud.RoomInfo.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should not select rooms.");
+        }
+
+        var bed = ward.Furniture
+            .Where(f => sim.Database.Furniture[f.ItemId].Style == Simulation.Data.Models.FurnitureStyle.Bed)
+            .Select(f => (Item: f, At: IsoDraw.ToScreen(f.Tile.X + 0.5, f.Tile.Y + 0.5)))
+            .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.World.HitTest(b.At) is null);
+        hospital.ClickAt(bed.At);
+        Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.AsBed, "Clicking an empty bed in play mode did not open it.");
     }
 
     /// <summary>Builds a ward south of the new corridor, then sends in patients with pneumonia and runs the clock until some are on it.</summary>
