@@ -16,8 +16,25 @@ public enum CareSpaceKind
     Corridor,
 }
 
-/// <summary>A doorway in a room wall.</summary>
+/// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
 public sealed record Doorway(WallSide Side, int Offset, int Width);
+
+/// <summary>
+/// A piece of furniture standing in a room. <see cref="X"/>/<see cref="Y"/> is its corner on the
+/// site grid and <see cref="Width"/>/<see cref="Length"/> its footprint along X and Y, all in tiles.
+/// </summary>
+public sealed record PlacedFurniture(string ItemId, double X, double Y, double Width, double Length)
+{
+    public double CentreX => X + (Width / 2);
+
+    public double CentreY => Y + (Length / 2);
+
+    /// <summary>The tile under the middle of the item.</summary>
+    public GridCoord Tile => new((int)Math.Floor(CentreX), (int)Math.Floor(CentreY));
+
+    public bool Overlaps(double x, double y, double w, double l, double gap = 0) =>
+        X < x + w + gap && x < X + Width + gap && Y < y + l + gap && y < Y + Length + gap;
+}
 
 /// <summary>
 /// A room or area in the hospital. Treatment spaces hold one patient at a time;
@@ -27,7 +44,8 @@ public sealed class CareSpace
 {
     public required string Id { get; init; }
 
-    public required string Name { get; init; }
+    /// <summary>Shown on the room's sign. The player can rename rooms.</summary>
+    public required string Name { get; set; }
 
     public required CareSpaceKind Kind { get; init; }
 
@@ -40,6 +58,21 @@ public sealed class CareSpace
     public bool HasWalls { get; init; } = true;
 
     public IReadOnlyList<Doorway> Doors { get; init; } = Array.Empty<Doorway>();
+
+    /// <summary>The room template it was built from.</summary>
+    public string TemplateId { get; init; } = string.Empty;
+
+    /// <summary>Which wall the main door is in.</summary>
+    public WallSide DoorSide { get; init; } = WallSide.South;
+
+    /// <summary>Furniture and equipment, placed by <see cref="RoomLayoutEngine"/>.</summary>
+    public IReadOnlyList<PlacedFurniture> Furniture { get; init; } = Array.Empty<PlacedFurniture>();
+
+    /// <summary>Where patients queue (the reception queue in a waiting room), nearest the desk first.</summary>
+    public IReadOnlyList<GridCoord> QueueTiles { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>What the room cost to build, in pounds (used for refunds).</summary>
+    public int BuildCost { get; init; }
 
     /// <summary>Where the patient lies or sits (bed, trolley or chair).</summary>
     public GridCoord PatientSpot { get; init; }

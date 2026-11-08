@@ -1,0 +1,21 @@
+[
+  { "id": "hospital_bed", "name": "Hospital bed", "width_m": 0.9, "depth_m": 2.2, "height_m": 0.6, "style": "bed", "colour": "#E9EEF2", "cost": 4200, "is_equipment": true },
+  { "id": "obs_monitor", "name": "Observation monitor", "width_m": 0.4, "depth_m": 0.4, "height_m": 1.6, "style": "monitor", "colour": "#4A545D", "cost": 6500, "is_equipment": true },
+  { "id": "resus_trolley", "name": "Resuscitation trolley", "width_m": 0.6, "depth_m": 0.7, "height_m": 1.0, "style": "box", "colour": "#D84B3E", "cost": 3800, "is_equipment": true },
+  { "id": "oxygen_cylinder", "name": "Oxygen cylinder", "width_m": 0.25, "depth_m": 0.25, "height_m": 1.2, "style": "box", "colour": "#E8EDEF", "cost": 350, "is_equipment": true },
+  { "id": "ventilator", "name": "Ventilator", "width_m": 0.5, "depth_m": 0.5, "height_m": 1.3, "style": "box", "colour": "#7FA7C4", "cost": 18000, "is_equipment": true },
+  { "id": "drip_stand", "name": "Drip stand", "width_m": 0.3, "depth_m": 0.3, "height_m": 1.8, "style": "box", "colour": "#B5BEC6", "cost": 180, "is_equipment": true },
+  { "id": "clinical_cupboard", "name": "Clinical supplies cupboard", "width_m": 1.0, "depth_m": 0.5, "height_m": 1.1, "style": "box", "colour": "#E3E7EA", "cost": 650, "is_equipment": false },
+  { "id": "hand_basin", "name": "Clinical hand basin", "width_m": 0.6, "depth_m": 0.45, "height_m": 0.9, "style": "box", "colour": "#F5F7F8", "cost": 900, "is_equipment": false },
+  { "id": "visitor_chair", "name": "Visitor chair", "width_m": 0.5, "depth_m": 0.5, "height_m": 0.9, "style": "chair", "colour": "#7E6BB5", "cost": 150, "is_equipment": false },
+  { "id": "staff_chair", "name": "Desk chair", "width_m": 0.5, "depth_m": 0.5, "height_m": 0.9, "style": "chair", "colour": "#56606B", "cost": 220, "is_equipment": false },
+  { "id": "waiting_seat", "name": "Waiting room seat", "width_m": 0.5, "depth_m": 0.5, "height_m": 0.9, "style": "chair", "colour": "#4F7FB0", "cost": 120, "is_equipment": false },
+  { "id": "lounge_chair", "name": "Staff room chair", "width_m": 0.5, "depth_m": 0.5, "height_m": 0.9, "style": "chair", "colour": "#C0703A", "cost": 160, "is_equipment": false },
+  { "id": "triage_desk", "name": "Triage desk", "width_m": 1.2, "depth_m": 0.6, "height_m": 0.75, "style": "box", "colour": "#E3E7EA", "cost": 450, "is_equipment": false },
+  { "id": "examination_couch", "name": "Examination couch", "width_m": 0.7, "depth_m": 1.9, "height_m": 0.7, "style": "box", "colour": "#5C8FB8", "cost": 1200, "is_equipment": true },
+  { "id": "reception_desk", "name": "Reception desk", "width_m": 2.5, "depth_m": 0.6, "height_m": 1.1, "style": "box", "colour": "#8C6D4F", "cost": 2400, "is_equipment": false },
+  { "id": "office_desk", "name": "Office desk", "width_m": 1.0, "depth_m": 0.8, "height_m": 0.75, "style": "box", "colour": "#A9865F", "cost": 380, "is_equipment": false },
+  { "id": "station_counter", "name": "Nurses' station counter", "width_m": 1.0, "depth_m": 0.5, "height_m": 0.9, "style": "box", "colour": "#8C6D4F", "cost": 520, "is_equipment": false },
+  { "id": "staff_table", "name": "Staff room table", "width_m": 1.0, "depth_m": 0.8, "height_m": 0.7, "style": "box", "colour": "#A9865F", "cost": 300, "is_equipment": false },
+  { "id": "kitchenette", "name": "Kitchenette and fridge", "width_m": 1.5, "depth_m": 0.6, "height_m": 0.9, "style": "box", "colour": "#E3E7EA", "cost": 1600, "is_equipment": false }
+]

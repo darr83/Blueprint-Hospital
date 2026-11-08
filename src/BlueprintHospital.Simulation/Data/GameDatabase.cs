@@ -16,6 +16,8 @@ public sealed class GameDatabase
     public const string NamesFolder = "Names";
     public const string ArrivalsFolder = "Arrivals";
     public const string PatientBackgroundsFolder = "PatientBackgrounds";
+    public const string FurnitureFolder = "Furniture";
+    public const string RoomTemplatesFolder = "RoomTemplates";
 
     private GameDatabase()
     {
@@ -37,6 +39,10 @@ public sealed class GameDatabase
 
     public IReadOnlyDictionary<string, PatientBackground> PatientBackgrounds { get; private init; } = null!;
 
+    public IReadOnlyDictionary<string, FurnitureDefinition> Furniture { get; private init; } = null!;
+
+    public IReadOnlyDictionary<string, RoomTemplate> RoomTemplates { get; private init; } = null!;
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -56,6 +62,8 @@ public sealed class GameDatabase
             Names = RecordLoader.LoadFolder<NamePool>(source, NamesFolder, errors),
             Arrivals = RecordLoader.LoadFolder<ArrivalProfile>(source, ArrivalsFolder, errors),
             PatientBackgrounds = RecordLoader.LoadFolder<PatientBackground>(source, PatientBackgroundsFolder, errors),
+            Furniture = RecordLoader.LoadFolder<FurnitureDefinition>(source, FurnitureFolder, errors),
+            RoomTemplates = RecordLoader.LoadFolder<RoomTemplate>(source, RoomTemplatesFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);
@@ -133,6 +141,25 @@ public sealed class GameDatabase
         {
             errors.Add(new DataValidationError($"{ArrivalsFolder}/", profile.Id, "department", $"refers to unknown department '{profile.Department}'."));
         }
+
+        foreach (var template in RoomTemplates.Values)
+        {
+            var file = $"{RoomTemplatesFolder}/";
+            if (!Departments.ContainsKey(template.Department))
+            {
+                errors.Add(new DataValidationError(file, template.Id, "department", $"refers to unknown department '{template.Department}'."));
+            }
+
+            foreach (var item in template.Furniture.Where(f => !Furniture.ContainsKey(f)))
+            {
+                errors.Add(new DataValidationError(file, template.Id, "furniture", $"refers to unknown furniture '{item}'."));
+            }
+
+            foreach (var item in Hospital.RoomLayoutEngine.RequiredFurniture(template.Layout).Where(f => !template.Furniture.Contains(f)))
+            {
+                errors.Add(new DataValidationError(file, template.Id, "furniture", $"must include '{item}', which the {template.Layout} layout needs."));
+            }
+        }
     }
 
     /// <summary>Creates a database directly from records. For tests.</summary>
@@ -144,7 +171,9 @@ public sealed class GameDatabase
         IEnumerable<MedicationDefinition>? medications = null,
         IEnumerable<NamePool>? names = null,
         IEnumerable<ArrivalProfile>? arrivals = null,
-        IEnumerable<PatientBackground>? backgrounds = null) => new()
+        IEnumerable<PatientBackground>? backgrounds = null,
+        IEnumerable<FurnitureDefinition>? furniture = null,
+        IEnumerable<RoomTemplate>? roomTemplates = null) => new()
     {
         Departments = (departments ?? Array.Empty<DepartmentDefinition>()).ToDictionary(r => r.Id),
         Symptoms = (symptoms ?? Array.Empty<SymptomDefinition>()).ToDictionary(r => r.Id),
@@ -154,5 +183,7 @@ public sealed class GameDatabase
         Names = (names ?? Array.Empty<NamePool>()).ToDictionary(r => r.Id),
         Arrivals = (arrivals ?? Array.Empty<ArrivalProfile>()).ToDictionary(r => r.Id),
         PatientBackgrounds = (backgrounds ?? Array.Empty<PatientBackground>()).ToDictionary(r => r.Id),
+        Furniture = (furniture ?? Array.Empty<FurnitureDefinition>()).ToDictionary(r => r.Id),
+        RoomTemplates = (roomTemplates ?? Array.Empty<RoomTemplate>()).ToDictionary(r => r.Id),
     };
 }

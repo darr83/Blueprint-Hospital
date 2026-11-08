@@ -1,0 +1,79 @@
+[
+  {
+    "id": "doctors_office",
+    "name": "Doctors' office",
+    "category": "Staff",
+    "description": "Desks where doctors write notes and wait for their next patient.",
+    "kind": "doctors_office",
+    "department": "emergency",
+    "layout": "office",
+    "sizes": [
+      { "name": "Small", "width_m": 4, "length_m": 3.5 },
+      { "name": "Standard", "width_m": 5, "length_m": 4.5 },
+      { "name": "Large", "width_m": 7, "length_m": 5 }
+    ],
+    "min_width_m": 3, "min_length_m": 3, "max_width_m": 12, "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 3000, "cost_per_square_metre": 800,
+    "staffing": "Base for the department's doctors.",
+    "furniture": ["office_desk", "staff_chair"]
+  },
+  {
+    "id": "nurses_station",
+    "name": "Nurses' station",
+    "category": "Staff",
+    "description": "An open counter where nurses coordinate care between tasks.",
+    "kind": "nurses_station",
+    "department": "emergency",
+    "layout": "office",
+    "sizes": [
+      { "name": "Small", "width_m": 4, "length_m": 3.5 },
+      { "name": "Standard", "width_m": 5, "length_m": 4.5 },
+      { "name": "Large", "width_m": 7, "length_m": 5 }
+    ],
+    "min_width_m": 3, "min_length_m": 3, "max_width_m": 12, "max_length_m": 8,
+    "door_width_m": 3.0,
+    "base_cost": 3500, "cost_per_square_metre": 800,
+    "staffing": "Base for the department's nurses.",
+    "furniture": ["station_counter", "staff_chair"]
+  },
+  {
+    "id": "staff_room",
+    "name": "Staff room",
+    "category": "Staff",
+    "description": "Somewhere for tired staff to take a break. Without one, breaks are short and less restful.",
+    "kind": "staff_room",
+    "department": "emergency",
+    "layout": "staff_room",
+    "sizes": [
+      { "name": "Small", "width_m": 3.5, "length_m": 3.5 },
+      { "name": "Standard", "width_m": 4, "length_m": 4.5 },
+      { "name": "Large", "width_m": 6, "length_m": 5 }
+    ],
+    "min_width_m": 3, "min_length_m": 3, "max_width_m": 10, "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 2500, "cost_per_square_metre": 750,
+    "staffing": "None.",
+    "furniture": ["staff_table", "lounge_chair", "kitchenette"]
+  },
+  {
+    "id": "corridor",
+    "name": "Corridor",
+    "category": "Corridors",
+    "description": "Connects rooms. Every room's door must open onto a corridor. Wider corridors let trolleys pass.",
+    "kind": "corridor",
+    "department": "emergency",
+    "layout": "none",
+    "sizes": [
+      { "name": "Narrow (2 m)", "width_m": 2.0, "length_m": 6 },
+      { "name": "Standard (2.5 m)", "width_m": 2.5, "length_m": 6 },
+      { "name": "Wide (3 m)", "width_m": 3.0, "length_m": 6 },
+      { "name": "Trolley (4 m)", "width_m": 4.0, "length_m": 6 }
+    ],
+    "min_width_m": 1.5, "min_length_m": 1, "max_width_m": 60, "max_length_m": 60,
+    "door_width_m": 1.0,
+    "base_cost": 0, "cost_per_square_metre": 450,
+    "staffing": "None.",
+    "furniture": []
+  }
+]
