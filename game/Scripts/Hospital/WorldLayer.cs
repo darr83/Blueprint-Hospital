@@ -473,6 +473,15 @@ public partial class WorldLayer : Node2D
     /// <summary>A patient, member of staff or ambulance, kept at its interpolated position.</summary>
     private sealed partial class AgentNode(WorldLayer world, Agent agent) : Node2D
     {
+        public override void _Ready()
+        {
+            // The ambulance is a baked sprite; mipmaps keep it smooth when the camera zooms out.
+            if (agent is AmbulanceVehicle)
+            {
+                TextureFilter = TextureFilterEnum.LinearWithMipmaps;
+            }
+        }
+
         public void Sync()
         {
             var foot = world.FootPosition(agent);
