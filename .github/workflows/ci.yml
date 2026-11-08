@@ -11,9 +11,9 @@ jobs:
     env:
       GODOT_VERSION: 4.7.2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
@@ -25,7 +25,16 @@ jobs:
 
       - name: Download Godot
         run: |
-          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          # The release download is ~100 MB and is sometimes cut short; retry until the archive is complete.
+          for attempt in 1 2 3 4; do
+            rm -f godot.zip
+            if curl -fsSL --retry 3 --retry-all-errors --connect-timeout 30 --max-time 600 -o godot.zip "$url" && unzip -tq godot.zip; then
+              break
+            fi
+            echo "Download attempt $attempt failed; retrying"
+            sleep $((attempt * 10))
+          done
           unzip -q godot.zip -d godot
           echo "GODOT=$(find "$PWD/godot" -name 'Godot_v*_mono_linux.x86_64' -type f)" >> "$GITHUB_ENV"
 
