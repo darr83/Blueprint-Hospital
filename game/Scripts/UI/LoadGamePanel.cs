@@ -27,12 +27,12 @@ public partial class LoadGamePanel : ModalPanel
         Content.AddChild(_status);
 
         _load = UiStyle.Button("Load", LoadSelected, 120);
-        _delete = UiStyle.Button("Delete", DeleteSelected, 120);
+        _delete = UiStyle.SecondaryButton("Delete", DeleteSelected, 120);
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
         buttons.AddChild(_delete);
-        buttons.AddChild(UiStyle.Button("Back", Close, 120));
+        buttons.AddChild(UiStyle.SecondaryButton("Back", Close, 120));
         buttons.AddChild(_load);
         Content.AddChild(buttons);
 

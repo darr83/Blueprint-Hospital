@@ -20,15 +20,15 @@ public partial class PauseMenu : ModalPanel
     {
         Content.AddChild(UiStyle.Heading("Paused"));
         Content.AddChild(UiStyle.Button("Resume", Close));
-        Content.AddChild(UiStyle.Button("Save Game", () => AddChild(SaveGamePanel.Create(_captureCamera, hospitalName))));
-        Content.AddChild(UiStyle.Button("Load Game", () => AddChild(new LoadGamePanel())));
-        Content.AddChild(UiStyle.Button("Settings", () => AddChild(new SettingsPanel())));
-        Content.AddChild(UiStyle.Button("Exit to Main Menu", () =>
+        Content.AddChild(UiStyle.SecondaryButton("Save Game", () => AddChild(SaveGamePanel.Create(_captureCamera, hospitalName))));
+        Content.AddChild(UiStyle.SecondaryButton("Load Game", () => AddChild(new LoadGamePanel())));
+        Content.AddChild(UiStyle.SecondaryButton("Settings", () => AddChild(new SettingsPanel())));
+        Content.AddChild(UiStyle.SecondaryButton("Exit to Main Menu", () =>
         {
             GetTree().Paused = false;
             GameManager.Instance.ReturnToMainMenu();
         }));
-        Content.AddChild(UiStyle.Button("Quit to Desktop", () => GetTree().Quit()));
+        Content.AddChild(UiStyle.SecondaryButton("Quit to Desktop", () => GetTree().Quit()));
     }
 
     public override void _Ready()

@@ -30,15 +30,15 @@ public partial class FinancePanel : PanelContainer
         var header = new HBoxContainer();
         var title = new Label { Text = "Finances", SizeFlagsHorizontal = SizeFlags.ExpandFill };
         title.AddThemeFontSizeOverride("font_size", 22);
-        title.AddThemeColorOverride("font_color", Colors.White);
+        title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
-        var close = new Button { Text = "✕", FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(34, 32) };
+        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40) };
         close.Pressed += () => Visible = false;
         header.AddChild(close);
         column.AddChild(header);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        _text.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
+        _text.AddThemeColorOverride("default_color", new Color("#17232E"));
         _text.AddThemeFontSizeOverride("normal_font_size", 15);
         _text.AddThemeFontSizeOverride("bold_font_size", 15);
         scroll.AddChild(_text);
@@ -71,10 +71,10 @@ public partial class FinancePanel : PanelContainer
         var yesterday = days.Skip(1).FirstOrDefault();
         var week = days.Take(7).ToList();
         sb.Append("[table=4]");
-        Cell(sb, "[color=#B8C4CE]£[/color]");
-        Cell(sb, "[color=#B8C4CE]Today[/color]", right: true);
-        Cell(sb, "[color=#B8C4CE]Yesterday[/color]", right: true);
-        Cell(sb, $"[color=#B8C4CE]{(week.Count == 1 ? "1 day" : $"{week.Count} days")}[/color]", right: true);
+        Cell(sb, "[color=#5B6B79]£[/color]");
+        Cell(sb, "[color=#5B6B79]Today[/color]", right: true);
+        Cell(sb, "[color=#5B6B79]Yesterday[/color]", right: true);
+        Cell(sb, $"[color=#5B6B79]{(week.Count == 1 ? "1 day" : $"{week.Count} days")}[/color]", right: true);
         foreach (var category in System.Enum.GetValues<MoneyCategory>())
         {
             var weekTotal = week.Sum(d => d[category]);
@@ -95,14 +95,14 @@ public partial class FinancePanel : PanelContainer
         Cell(sb, $"[b]{Money(week.Sum(d => d.Net))}[/b]", right: true);
         sb.Append("[/table]\n\n");
 
-        sb.Append("[color=#B8C4CE]Running costs per day[/color]\n");
+        sb.Append("[color=#5B6B79]Running costs per day[/color]\n");
         sb.Append($"Staff wages  £{_sim.StaffCostPerDay:N0}  ({_sim.Staff.Count} posts, each covered around the clock)\n");
         sb.Append($"Building upkeep  £{_sim.UpkeepPerDay:N0}  ({_sim.MainBuilding.AreaSquareMetres:N0} m²)\n\n");
 
-        sb.Append("[color=#B8C4CE]Paid for each patient[/color]\n");
+        sb.Append("[color=#5B6B79]Paid for each patient[/color]\n");
         sb.Append($"A&E attendance  Red £{HospitalSimulation.AttendanceTariff[TriageCategory.Red]}, Amber £{HospitalSimulation.AttendanceTariff[TriageCategory.Amber]}, Green £{HospitalSimulation.AttendanceTariff[TriageCategory.Green]}\n");
         sb.Append($"Ward admission  £{HospitalSimulation.AdmissionTariff:N0} + £{HospitalSimulation.BedDayTariff} a night\n");
-        sb.Append("[color=#9FB0BC]Patients who leave without being seen earn nothing. Tests and medicines are paid for as they are used.[/color]");
+        sb.Append("[color=#5B6B79]Patients who leave without being seen earn nothing. Tests and medicines are paid for as they are used.[/color]");
         _text.Text = sb.ToString();
     }
 
@@ -112,8 +112,8 @@ public partial class FinancePanel : PanelContainer
     private static string Money(long amount) => amount switch
     {
         > 0 => $"[color={ClinicalText.GreenHex}]+{amount:N0}[/color]",
-        < 0 => $"[color=#FFB4AE]{amount:N0}[/color]",
-        _ => "[color=#6F8291]–[/color]",
+        < 0 => $"[color=#C4373D]{amount:N0}[/color]",
+        _ => "[color=#5B6B79]–[/color]",
     };
 
     private static string Name(MoneyCategory category) => category switch

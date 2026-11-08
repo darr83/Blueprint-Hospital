@@ -133,7 +133,7 @@ public partial class RosterPanel : PanelContainer
                 var colour = member.Role switch
                 {
                     StaffRole.Doctor => new Color("#1F8A8A"),
-                    StaffRole.Nurse => new Color("#005EB8"),
+                    StaffRole.Nurse => new Color("#1F5FBF"),
                     StaffRole.Radiographer => new Color("#8E2448"),
                     StaffRole.Surgeon => new Color("#00897B"),
                     StaffRole.Pharmacist => new Color("#43A047"),
@@ -172,7 +172,7 @@ public partial class RosterPanel : PanelContainer
     private void AddNote(string text)
     {
         var label = new Label { Text = text };
-        label.AddThemeColorOverride("font_color", new Color("#9FB0BC"));
+        label.AddThemeColorOverride("font_color", new Color("#5B6B79"));
         _list.AddChild(label);
     }
 }

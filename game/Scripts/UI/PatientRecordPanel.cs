@@ -43,26 +43,62 @@ public partial class PatientRecordPanel : PanelContainer
     {
         _sim = simulation;
         Theme = UiStyle.Theme;
-        CustomMinimumSize = new Vector2(440, 0);
-        AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(UiStyle.PanelBackground, 0.97f),
-            CornerRadiusTopLeft = 8, CornerRadiusBottomLeft = 8,
-            ContentMarginLeft = 16, ContentMarginRight = 12, ContentMarginTop = 12, ContentMarginBottom = 12,
-            ShadowColor = new Color(0, 0, 0, 0.3f), ShadowSize = 8,
-        });
+        CustomMinimumSize = new Vector2(400, 0);
+        MouseFilter = MouseFilterEnum.Stop;
+        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
 
         var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 8);
+        column.AddThemeConstantOverride("separation", 14);
         AddChild(column);
 
         var header = new HBoxContainer();
-        _title.AddThemeFontSizeOverride("font_size", 15);
-        _title.AddThemeColorOverride("font_color", UiStyle.TextMuted);
-        _title.Text = "PATIENT RECORD";
-        _title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        header.AddChild(_title);
-        var find = UiStyle.Button("Find", () =>
+        header.AddThemeConstantOverride("separation", 14);
+        _avatar = HudWidgets.Avatar();
+        header.AddChild(_avatar.Badge);
+        var who = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
+        who.AddThemeConstantOverride("separation", 0);
+        _title.AddThemeFontSizeOverride("font_size", 20);
+        _title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        who.AddChild(_title);
+        who.AddChild(_subtitle);
+        header.AddChild(who);
+        var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
+        close.TooltipText = "Close (Esc)";
+        close.CustomMinimumSize = new Vector2(40, 40);
+        header.AddChild(close);
+        column.AddChild(header);
+
+        var chips = new HBoxContainer();
+        chips.AddThemeConstantOverride("separation", 6);
+        _triageChip = HudWidgets.Chip();
+        _placeChip = HudWidgets.Chip();
+        _arrivalChip = HudWidgets.Chip();
+        chips.AddChild(_triageChip.Chip);
+        chips.AddChild(_placeChip.Chip);
+        chips.AddChild(_arrivalChip.Chip);
+        column.AddChild(chips);
+
+        _now = HudWidgets.FocusCard();
+        column.AddChild(_now.Box);
+
+        var tiles = new HBoxContainer();
+        tiles.AddThemeConstantOverride("separation", 8);
+        _timeTile = HudWidgets.StatTile("In A&E");
+        _painTile = HudWidgets.StatTile("Pain");
+        _newsTile = HudWidgets.StatTile("NEWS2");
+        tiles.AddChild(_timeTile.Tile);
+        tiles.AddChild(_painTile.Tile);
+        tiles.AddChild(_newsTile.Tile);
+        column.AddChild(tiles);
+        column.AddChild(HudWidgets.Divider());
+
+        _text.AddThemeColorOverride("default_color", UiStyle.TextDark);
+        _text.AddThemeFontSizeOverride("normal_font_size", 14);
+        _text.AddThemeFontSizeOverride("bold_font_size", 14);
+        _scroll.AddChild(_text);
+        column.AddChild(_scroll);
+
+        var find = UiStyle.Button("Find on map", () =>
         {
             if (_patient is not null)
             {
@@ -70,19 +106,54 @@ public partial class PatientRecordPanel : PanelContainer
             }
         });
         find.TooltipText = "Centre the view on this patient";
-        find.CustomMinimumSize = new Vector2(0, 32);
-        header.AddChild(find);
-        var close = UiStyle.Button("✕", () => CloseRequested?.Invoke());
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(36, 32);
-        header.AddChild(close);
-        column.AddChild(header);
+        find.CustomMinimumSize = new Vector2(0, 44);
+        column.AddChild(find);
+    }
 
-        _text.AddThemeColorOverride("default_color", UiStyle.TextDark);
-        _text.AddThemeFontSizeOverride("normal_font_size", 15);
-        _text.AddThemeFontSizeOverride("bold_font_size", 15);
-        _scroll.AddChild(_text);
-        column.AddChild(_scroll);
+    private readonly Label _subtitle = UiStyle.Caption(string.Empty, 14);
+    private (PanelContainer Badge, Label Initials) _avatar;
+    private (PanelContainer Chip, Label Text) _triageChip;
+    private (PanelContainer Chip, Label Text) _placeChip;
+    private (PanelContainer Chip, Label Text) _arrivalChip;
+    private (PanelContainer Box, Label Heading, Label Text, Label Detail) _now;
+    private (PanelContainer Tile, Label Value) _timeTile;
+    private (PanelContainer Tile, Label Value) _painTile;
+    private (PanelContainer Tile, Label Value) _newsTile;
+
+    /// <summary>The header: who they are, triage, where they are and the headline figures.</summary>
+    private void RefreshHeader(Patient p)
+    {
+        var now = _sim.Now;
+        _title.Text = $"{p.FullName}, {p.Age}";
+        _subtitle.Text = $"{p.Sex} · {_sim.Database.Symptoms[p.PresentingComplaint].Name}";
+        var triage = ClinicalText.TriageColour(p.Triage);
+        HudWidgets.SetAvatar(_avatar, p.FullName, triage);
+        HudWidgets.SetChip(_triageChip, p.Triage is null ? "Not triaged" : p.Triage.ToString()!, triage);
+        var tile = p.Tile;
+        var place = p.IsInDepartment ? _sim.Spaces.Where(s => s.Rect.Contains(tile) && s.Kind != BlueprintHospital.Simulation.Hospital.CareSpaceKind.Corridor).Select(s => s.Name).FirstOrDefault() : null;
+        HudWidgets.SetChip(_placeChip, place ?? string.Empty, UiStyle.Ground);
+        HudWidgets.SetChip(_arrivalChip, p.ArrivalMethod == ArrivalMethod.Ambulance ? "Ambulance" : "Walked in", UiStyle.Ground);
+
+        _now.Heading.Text = p.IsInDepartment ? "Right now" : "Left the department";
+        _now.Text.Text = ClinicalText.Whereabouts(_sim, p);
+        _now.Detail.Text = p.WorkingDiagnosis is { } dx ? $"Working diagnosis: {_sim.Database.Conditions[dx.ConditionId].Name}" : p.Triage is null ? string.Empty : "No diagnosis yet";
+        _now.Detail.Visible = _now.Detail.Text.Length > 0;
+
+        var time = p.TimeInDepartment(now);
+        _timeTile.Value.Text = ClinicalText.Duration(time);
+        _timeTile.Value.AddThemeColorOverride("font_color", time > TimeSpan.FromHours(4) && p.IsInDepartment ? UiStyle.Red : time > TimeSpan.FromHours(2) && p.IsInDepartment ? UiStyle.AmberText : UiStyle.TextDark);
+        if (p.LatestObservations is { } latest)
+        {
+            _painTile.Value.Text = $"{latest.Obs.PainScore}/10";
+            _newsTile.Value.Text = latest.News2.Total.ToString();
+            _newsTile.Value.AddThemeColorOverride("font_color", latest.News2.Total >= 5 ? UiStyle.Red : UiStyle.TextDark);
+        }
+        else
+        {
+            _painTile.Value.Text = "–";
+            _newsTile.Value.Text = "–";
+            _newsTile.Value.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        }
     }
 
     public void Show(Patient patient)
@@ -120,6 +191,7 @@ public partial class PatientRecordPanel : PanelContainer
             return;
         }
 
+        RefreshHeader(_patient);
         var text = Build(_patient);
         if (text == _lastText)
         {
@@ -138,9 +210,8 @@ public partial class PatientRecordPanel : PanelContainer
         var now = _sim.Now;
         var sb = new StringBuilder();
         string E(string s) => ClinicalText.Escape(s);
-        void Section(string name) => sb.Append($"\n[color=#005EB8][b]{name}[/b][/color]\n");
+        void Section(string name) => sb.Append($"\n[color=#1F5FBF][b]{name}[/b][/color]\n");
 
-        sb.Append($"[font_size=24][b]{E(p.FullName)}[/b][/font_size]\n");
         sb.Append($"{p.Sex}, {p.Age} · {p.HospitalNumber} · DOB {p.DateOfBirth:dd/MM/yyyy}\n");
         var how = p.ArrivalMethod == ArrivalMethod.Ambulance ? "by ambulance" : "walked in";
         sb.Append($"Arrived {p.ArrivedAt:HH:mm} ({how}) · [b]{ClinicalText.Duration(p.TimeInDepartment(now))}[/b] in A&E");
@@ -151,11 +222,11 @@ public partial class PatientRecordPanel : PanelContainer
 
         sb.Append('\n');
 
-        var hex = ClinicalText.TriageHex(p.Triage);
-        sb.Append($"\n[bgcolor={hex}][color=#FFFFFF][b]  {ClinicalText.TriageName(p.Triage)}  [/b][/color][/bgcolor]  ");
-        sb.Append(p.Triage is null ? "Awaiting triage" : E(p.TriageReason));
-        sb.Append('\n');
-        sb.Append($"[b]Location:[/b] {E(ClinicalText.Whereabouts(_sim, p))}\n");
+        if (p.Triage is not null)
+        {
+            sb.Append($"[b]Triage:[/b] {E(p.TriageReason)}\n");
+        }
+
         if (!string.IsNullOrEmpty(p.OutcomeNote) && !p.IsInDepartment)
         {
             sb.Append($"[b]Outcome:[/b] {E(p.OutcomeNote)}\n");
@@ -183,7 +254,7 @@ public partial class PatientRecordPanel : PanelContainer
             sb.Append("[table=8]");
             foreach (var h in new[] { "Time", "HR", "BP", "RR", "SpO₂", "Temp", "ACVPU", "NEWS2" })
             {
-                sb.Append($"[cell][color=#4C6272]{h}  [/color][/cell]");
+                sb.Append($"[cell][color=#5B6B79]{h}  [/color][/cell]");
             }
 
             foreach (var (time, o, n) in p.ObservationHistory.Reverse().Take(6))
@@ -198,21 +269,21 @@ public partial class PatientRecordPanel : PanelContainer
         }
         else
         {
-            sb.Append("[color=#4C6272]No observations recorded yet.[/color]\n");
+            sb.Append("[color=#5B6B79]No observations recorded yet.[/color]\n");
         }
 
         // Symptoms the team knows about.
         Section("SYMPTOMS");
         var symptoms = p.HistoryTaken ? p.Symptoms : p.KnownSymptoms.ToList();
         sb.Append(symptoms.Count == 0
-            ? "[color=#4C6272]Not yet assessed.[/color]\n"
-            : string.Join(", ", symptoms.Select(s => db.Symptoms.TryGetValue(s, out var d) ? E(d.Name) : s)) + (p.HistoryTaken ? "" : " [color=#4C6272](full history not yet taken)[/color]") + "\n");
+            ? "[color=#5B6B79]Not yet assessed.[/color]\n"
+            : string.Join(", ", symptoms.Select(s => db.Symptoms.TryGetValue(s, out var d) ? E(d.Name) : s)) + (p.HistoryTaken ? "" : " [color=#5B6B79](full history not yet taken)[/color]") + "\n");
 
         // Investigations.
         Section("INVESTIGATIONS");
         if (p.Investigations.Count == 0)
         {
-            sb.Append("[color=#4C6272]None requested.[/color]\n");
+            sb.Append("[color=#5B6B79]None requested.[/color]\n");
         }
 
         foreach (var inv in p.Investigations)
@@ -222,15 +293,15 @@ public partial class PatientRecordPanel : PanelContainer
             {
                 case InvestigationStatus.Resulted:
                     var colour = inv.Abnormal ? ClinicalText.RedHex : GreenHex;
-                    sb.Append($"[b]{E(name)}[/b] [color=#4C6272]{inv.ResultedAt:HH:mm}[/color]\n");
+                    sb.Append($"[b]{E(name)}[/b] [color=#5B6B79]{inv.ResultedAt:HH:mm}[/color]\n");
                     sb.Append($"   [color={colour}]{(inv.Abnormal ? "ABNORMAL: " : "")}{E(inv.Summary)}[/color]\n");
                     break;
                 case InvestigationStatus.SampleTaken:
                     var due = inv.ResultDueAt is { } d ? $", due about {d:HH:mm}" : string.Empty;
-                    sb.Append($"[b]{E(name)}[/b] [color=#4C6272]sample sent to lab{due}[/color]\n");
+                    sb.Append($"[b]{E(name)}[/b] [color=#5B6B79]sample sent to lab{due}[/color]\n");
                     break;
                 default:
-                    sb.Append($"[b]{E(name)}[/b] [color=#4C6272]requested {inv.RequestedAt:HH:mm}, not yet done[/color]\n");
+                    sb.Append($"[b]{E(name)}[/b] [color=#5B6B79]requested {inv.RequestedAt:HH:mm}, not yet done[/color]\n");
                     break;
             }
         }
@@ -241,11 +312,11 @@ public partial class PatientRecordPanel : PanelContainer
         {
             var doctor = _sim.FindStaff(dx.DoctorId)?.Name ?? "a doctor";
             sb.Append($"[b]{E(db.Conditions[dx.ConditionId].Name)}[/b] ({dx.Confidence:P0} confident)\n");
-            sb.Append($"[color=#4C6272]Made by {E(doctor)} at {dx.MadeAt:HH:mm}[/color]\n");
+            sb.Append($"[color=#5B6B79]Made by {E(doctor)} at {dx.MadeAt:HH:mm}[/color]\n");
         }
         else
         {
-            sb.Append(p.FirstSeenByDoctorAt is null ? "[color=#4C6272]Not yet seen by a doctor.[/color]\n" : "[color=#4C6272]Working diagnosis not yet made.[/color]\n");
+            sb.Append(p.FirstSeenByDoctorAt is null ? "[color=#5B6B79]Not yet seen by a doctor.[/color]\n" : "[color=#5B6B79]Working diagnosis not yet made.[/color]\n");
         }
 
         // Treatment.
@@ -257,11 +328,11 @@ public partial class PatientRecordPanel : PanelContainer
                 var label = t.Step.Type == TreatmentStepType.Medication && t.Step.Medication is { } m && db.Medications.TryGetValue(m, out var med)
                     ? med.Name
                     : t.Step.Describe();
-                var mark = t.Withheld ? $"[color={ClinicalText.RedHex}]✗[/color]" : t.Done ? $"[color={GreenHex}]✓[/color]" : "[color=#4C6272]○[/color]";
+                var mark = t.Withheld ? $"[color={ClinicalText.RedHex}]✗[/color]" : t.Done ? $"[color={GreenHex}]✓[/color]" : "[color=#5B6B79]○[/color]";
                 sb.Append($"{mark} {E(label)}");
                 if (!string.IsNullOrEmpty(t.Note))
                 {
-                    sb.Append($" [color=#4C6272]{E(t.Note)}[/color]");
+                    sb.Append($" [color=#5B6B79]{E(t.Note)}[/color]");
                 }
 
                 sb.Append('\n');
@@ -282,7 +353,7 @@ public partial class PatientRecordPanel : PanelContainer
         foreach (var entry in p.Timeline.Reverse())
         {
             var text = E(entry.Text);
-            sb.Append($"[color=#4C6272]{entry.Time:HH:mm}[/color]  {(entry.Important ? $"[b]{text}[/b]" : text)}\n");
+            sb.Append($"[color=#5B6B79]{entry.Time:HH:mm}[/color]  {(entry.Important ? $"[b]{text}[/b]" : text)}\n");
         }
 
         return sb.ToString();

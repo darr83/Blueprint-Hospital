@@ -15,6 +15,9 @@ public static class ClinicalText
     public const string AmberHex = "#F9A825";
     public const string GreenHex = "#43A047";
 
+    /// <summary>Amber that is readable as text on a white panel.</summary>
+    public const string AmberTextHex = "#9A5B00";
+
     public static Color TriageColour(TriageCategory? category) => category switch
     {
         TriageCategory.Red => new Color(RedHex),

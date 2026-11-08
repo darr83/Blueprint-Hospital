@@ -11,7 +11,7 @@ public partial class MainMenu : Control
         Theme = UiStyle.Theme;
         var manager = GameManager.Instance;
 
-        AddChild(new ColorRect { Color = new Color("#E8EDEE"), AnchorRight = 1, AnchorBottom = 1 });
+        AddChild(new ColorRect { Color = UiStyle.Ground, AnchorRight = 1, AnchorBottom = 1 });
         AddChild(new ColorRect { Color = UiStyle.NhsBlue, AnchorRight = 1, OffsetBottom = 10 });
 
         var centre = new CenterContainer { AnchorRight = 1, AnchorBottom = 1 };
@@ -30,11 +30,11 @@ public partial class MainMenu : Control
         column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 20) });
 
         var newGame = UiStyle.Button("New Game", ShowNewGame);
-        var loadGame = UiStyle.Button("Load Game", () => AddChild(new LoadGamePanel()));
+        var loadGame = UiStyle.SecondaryButton("Load Game", () => AddChild(new LoadGamePanel()));
         column.AddChild(newGame);
         column.AddChild(loadGame);
-        column.AddChild(UiStyle.Button("Settings", () => AddChild(new SettingsPanel())));
-        column.AddChild(UiStyle.Button("Quit", () => GetTree().Quit()));
+        column.AddChild(UiStyle.SecondaryButton("Settings", () => AddChild(new SettingsPanel())));
+        column.AddChild(UiStyle.SecondaryButton("Quit", () => GetTree().Quit()));
 
         if (manager.DataLoadError is { } error)
         {
@@ -75,7 +75,7 @@ public partial class MainMenu : Control
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
-        buttons.AddChild(UiStyle.Button("Back", panel.Close, 120));
+        buttons.AddChild(UiStyle.SecondaryButton("Back", panel.Close, 120));
         buttons.AddChild(UiStyle.Button("Start", Start, 120));
         panel.Content.AddChild(buttons);
         AddChild(panel);

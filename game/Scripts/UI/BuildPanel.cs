@@ -43,12 +43,12 @@ public partial class BuildPanel : PanelContainer
         var header = new HBoxContainer();
         var title = new Label { Text = "Build", SizeFlagsHorizontal = SizeFlags.ExpandFill };
         title.AddThemeFontSizeOverride("font_size", 22);
-        title.AddThemeColorOverride("font_color", Colors.White);
+        title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
-        _balance.AddThemeColorOverride("font_color", new Color("#9BE7B5"));
+        _balance.AddThemeColorOverride("font_color", new Color("#2E8B57"));
         _balance.AddThemeFontSizeOverride("font_size", 18);
         header.AddChild(_balance);
-        var close = new Button { Text = "✕", FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(34, 32), TooltipText = "Close (B)" };
+        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40), TooltipText = "Close (B)" };
         close.Pressed += () =>
         {
             _tool.Cancel();
@@ -57,13 +57,21 @@ public partial class BuildPanel : PanelContainer
         header.AddChild(close);
         column.AddChild(header);
 
-        var tabs = new HBoxContainer();
-        tabs.AddThemeConstantOverride("separation", 4);
+        var tabs = new HFlowContainer();
+        tabs.AddThemeConstantOverride("h_separation", 6);
+        tabs.AddThemeConstantOverride("v_separation", 6);
         var categories = _sim.Database.RoomTemplates.Values.Where(t => !t.IsCorridor).Select(t => t.Category).Distinct().ToList();
         foreach (var name in categories.Append("Corridors").Append("Building"))
         {
-            var tab = new Button { Text = name, ToggleMode = true, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 32), SizeFlagsHorizontal = SizeFlags.ExpandFill, ClipText = true };
-            tab.AddThemeFontSizeOverride("font_size", 15);
+            var tab = new Button { Text = name, ToggleMode = true, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 34), ThemeTypeVariation = UiStyle.Secondary };
+            tab.AddThemeFontSizeOverride("font_size", 14);
+            foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+            {
+                var box = (StyleBoxFlat)UiStyle.Theme.GetStylebox(state, UiStyle.Secondary).Duplicate();
+                box.ContentMarginLeft = box.ContentMarginRight = 12;
+                box.ContentMarginTop = box.ContentMarginBottom = 4;
+                tab.AddThemeStyleboxOverride(state, box);
+            }
             tab.Pressed += () => ShowTab(name);
             _tabs[name] = tab;
             tabs.AddChild(tab);
@@ -77,12 +85,12 @@ public partial class BuildPanel : PanelContainer
         column.AddChild(scroll);
 
         _status.CustomMinimumSize = new Vector2(0, 40);
-        _status.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
+        _status.AddThemeColorOverride("default_color", new Color("#17232E"));
         column.AddChild(_status);
         column.AddChild(Hint("Drag to build · Right click or Esc stops"));
 
         _tool.CheckChanged += RefreshStatus;
-        _tool.Built += text => _status.Text = $"[color=#9BE7B5]{text}[/color]";
+        _tool.Built += text => _status.Text = $"[color=#2E8B57]{text}[/color]";
         ShowTab(_tab);
     }
 
@@ -166,10 +174,10 @@ public partial class BuildPanel : PanelContainer
         }
 
         _body.AddChild(Text(
-            $"[b]{t.Name}[/b]\n[color=#B8C4CE]{t.Description}[/color]\n"
-            + $"[color=#B8C4CE]Minimum[/color]  {t.MinWidthM:0.#} × {t.MinLengthM:0.#} m   [color=#B8C4CE]Maximum[/color]  {t.MaxWidthM:0.#} × {t.MaxLengthM:0.#} m\n"
-            + $"[color=#B8C4CE]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m² + furniture\n"
-            + $"[color=#B8C4CE]Staffing[/color]  {t.Staffing}"));
+            $"[b]{t.Name}[/b]\n[color=#5B6B79]{t.Description}[/color]\n"
+            + $"[color=#5B6B79]Minimum[/color]  {t.MinWidthM:0.#} × {t.MinLengthM:0.#} m   [color=#5B6B79]Maximum[/color]  {t.MaxWidthM:0.#} × {t.MaxLengthM:0.#} m\n"
+            + $"[color=#5B6B79]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m² + furniture\n"
+            + $"[color=#5B6B79]Staffing[/color]  {t.Staffing}"));
 
         // How the room fills up as it grows, laid out at a few example sizes.
         var rows = t.Sizes.Select(size =>
@@ -178,7 +186,7 @@ public partial class BuildPanel : PanelContainer
             var room = RoomLayoutEngine.Build(t, _sim.Database, "preview", t.Name, new GridRect(0, 0, w, d), WallSide.South);
             return $"{size.WidthM:0.#} × {size.LengthM:0.#} m  →  {Capacity(t, room)}, about £{room.BuildCost:N0}";
         });
-        _body.AddChild(Text("[color=#B8C4CE]Grows with size[/color]\n" + string.Join("\n", rows)));
+        _body.AddChild(Text("[color=#5B6B79]Grows with size[/color]\n" + string.Join("\n", rows)));
         _body.AddChild(Hint("Click a room type, then drag on the floor from corner to corner. The door goes on the wall that touches a corridor, and the furniture fills the room to fit."));
     }
 
@@ -201,21 +209,21 @@ public partial class BuildPanel : PanelContainer
 
         var lines = new List<string>
         {
-            $"[color=#B8C4CE]Size[/color]  {Units.TilesToMetres(w):0.#} × {Units.TilesToMetres(d):0.#} m · {room.AreaSquareMetres:0} m²",
-            $"[color=#B8C4CE]Capacity[/color]  {Capacity(template, room)}",
-            $"[color=#B8C4CE]Cost[/color]  £{room.BuildCost:N0}",
+            $"[color=#5B6B79]Size[/color]  {Units.TilesToMetres(w):0.#} × {Units.TilesToMetres(d):0.#} m · {room.AreaSquareMetres:0} m²",
+            $"[color=#5B6B79]Capacity[/color]  {Capacity(template, room)}",
+            $"[color=#5B6B79]Cost[/color]  £{room.BuildCost:N0}",
         };
         if (equipment.Count > 0)
         {
-            lines.Add($"[color=#B8C4CE]Equipment[/color]  {string.Join(", ", equipment)}");
+            lines.Add($"[color=#5B6B79]Equipment[/color]  {string.Join(", ", equipment)}");
         }
 
         if (furniture.Count > 0)
         {
-            lines.Add($"[color=#B8C4CE]Furniture[/color]  {string.Join(", ", furniture)}");
+            lines.Add($"[color=#5B6B79]Furniture[/color]  {string.Join(", ", furniture)}");
         }
 
-        lines.Add($"[color=#B8C4CE]Staffing[/color]  {template.Staffing}");
+        lines.Add($"[color=#5B6B79]Staffing[/color]  {template.Staffing}");
         return string.Join("\n", lines);
     }
 
@@ -242,7 +250,7 @@ public partial class BuildPanel : PanelContainer
     private void ShowCorridors()
     {
         var corridor = _sim.Database.RoomTemplates.Values.First(t => t.IsCorridor);
-        _body.AddChild(Text($"[b]Corridors[/b]\n[color=#B8C4CE]{corridor.Description}[/color]"));
+        _body.AddChild(Text($"[b]Corridors[/b]\n[color=#5B6B79]{corridor.Description}[/color]"));
         _body.AddChild(Text($"Cost £{corridor.CostPerSquareMetre:N0} per m² of new floor. Drag out any size from corner to corner (at least {corridor.MinWidthM:0.#} m wide). A corridor must touch or cross another corridor or an entrance; where it crosses one they join up, and floor that is already corridor is free."));
         var lay = new Button
         {
@@ -262,9 +270,9 @@ public partial class BuildPanel : PanelContainer
         var b = building.Bounds;
         _body.AddChild(Text(
             $"[b]{building.Name}[/b]\n"
-            + $"[color=#B8C4CE]Floor area[/color]  {building.AreaSquareMetres:N0} m²\n"
-            + $"[color=#B8C4CE]Overall size[/color]  {Units.TilesToMetres(b.Width):0.#} × {Units.TilesToMetres(b.Length):0.#} m\n"
-            + $"[color=#B8C4CE]Extensions[/color]  {building.Extensions.Count}"));
+            + $"[color=#5B6B79]Floor area[/color]  {building.AreaSquareMetres:N0} m²\n"
+            + $"[color=#5B6B79]Overall size[/color]  {Units.TilesToMetres(b.Width):0.#} × {Units.TilesToMetres(b.Length):0.#} m\n"
+            + $"[color=#5B6B79]Extensions[/color]  {building.Extensions.Count}"));
         _body.AddChild(Text($"Extend the building in any direction onto grass or paving. Costs £{HospitalSimulation.ExtensionCostPerSquareMetre:N0} per m² of new floor. Keep the entrances, the car park and the ambulance bay clear."));
         var extend = UiStyle.Button("Extend the building", () => _tool.StartExtension());
         extend.FocusMode = FocusModeEnum.None;
@@ -284,11 +292,11 @@ public partial class BuildPanel : PanelContainer
         if (check.CanBuild)
         {
             var verb = _tool.MovingId is null ? "Release to build" : "Release to rebuild here";
-            _status.Text = $"[color=#9BE7B5]✓ {verb}: £{check.Cost:N0}[/color]";
+            _status.Text = $"[color=#2E8B57]✓ {verb}: £{check.Cost:N0}[/color]";
             return;
         }
 
-        _status.Text = $"[color=#FFB4AE]✗ {string.Join("\n✗ ", check.Problems.Take(4))}[/color]";
+        _status.Text = $"[color=#C4373D]✗ {string.Join("\n✗ ", check.Problems.Take(4))}[/color]";
     }
 
     // ------------------------------------------------------------------ helpers
@@ -296,21 +304,21 @@ public partial class BuildPanel : PanelContainer
     private static RichTextLabel Text(string bbcode)
     {
         var label = new RichTextLabel { BbcodeEnabled = true, FitContent = true, ScrollActive = false, Text = bbcode, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        label.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
+        label.AddThemeColorOverride("default_color", new Color("#17232E"));
         return label;
     }
 
     private static Label Small(string text)
     {
         var label = new Label { Text = text, VerticalAlignment = VerticalAlignment.Center };
-        label.AddThemeColorOverride("font_color", new Color("#B8C4CE"));
+        label.AddThemeColorOverride("font_color", new Color("#5B6B79"));
         return label;
     }
 
     private static Label Hint(string text)
     {
         var label = new Label { Text = text, AutowrapMode = TextServer.AutowrapMode.WordSmart };
-        label.AddThemeColorOverride("font_color", new Color("#8FA0AD"));
+        label.AddThemeColorOverride("font_color", new Color("#5B6B79"));
         label.AddThemeFontSizeOverride("font_size", 13);
         return label;
     }

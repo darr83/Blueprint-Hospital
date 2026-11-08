@@ -34,6 +34,7 @@ public partial class SmokeTest : Node
         RunSimulation,
         CloseUp,
         PatientRecord,
+        StaffPanel,
         BuildPreview,
         RoomPanel,
         Ward,
@@ -136,6 +137,17 @@ public partial class SmokeTest : Node
             case Stage.PatientRecord when scene is HospitalScene hospital && _frame >= 10:
                 Check(hospital.Session.Clock.TickCount > 0, "Simulation clock did not advance.");
                 Screenshot("04_patient_record");
+                var member = hospital.Session.Simulation.Staff.OrderBy(m => m.CurrentTaskId is null ? 1 : 0).First();
+                hospital.SelectStaff(member, centre: true);
+                Check(hospital.Hud.StaffInfo.Visible && !hospital.Hud.Record.Visible, "Clicking a member of staff did not open their panel.");
+                _frame = 0;
+                _stage = Stage.StaffPanel;
+                break;
+
+            case Stage.StaffPanel when scene is HospitalScene hospital && _frame >= 20:
+                Screenshot("04b_staff_panel");
+                hospital.ClearSelectionForTest();
+                Check(!hospital.Hud.StaffInfo.Visible, "Staff panel did not close.");
                 StartBuilding(hospital);
                 _frame = 0;
                 _stage = Stage.BuildPreview;

@@ -15,7 +15,7 @@ namespace BlueprintHospital.Hospital;
 /// <summary>
 /// The main play scene. Wires the current <see cref="GameSession"/> to the site and department
 /// views, the people in them, the camera and HUD, and drives the simulation clock every frame.
-/// Clicking a patient opens their record; clicking a member of staff shows the staff list.
+/// Clicking a patient opens their record; clicking a member of staff opens their panel.
 /// </summary>
 public partial class HospitalScene : Node2D
 {
@@ -132,14 +132,24 @@ public partial class HospitalScene : Node2D
         };
         _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
         _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
+        _hud.StaffInfo.CloseRequested += ClearSelection;
+        _hud.StaffInfo.FocusRequested += m => _camera.GlideTo(_world.FootPosition(m));
+        _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
+        _hud.RotateRequested += RotateView;
+        _hud.SetGridShown(_site.ShowGrid);
+        _hud.SelectionAnchor = () => _world.Selected switch
+        {
+            Patient p when _world.IsOnMap(p) => (_world.FootPosition(p), p.FullName),
+            StaffMember m => (_world.FootPosition(m), m.Name),
+            _ => null,
+        };
     }
 
     /// <summary>Selects a patient and opens their record.</summary>
     public void SelectPatient(Patient patient, bool centre = false)
     {
         _world.Selected = patient;
-        _hud.Roster.Visible = false;
-        _hud.Finances.Visible = false;
+        _hud.HideRightPanels();
         _hud.Record.Show(patient);
         if (centre && patient.IsInDepartment)
         {
@@ -147,9 +157,11 @@ public partial class HospitalScene : Node2D
         }
     }
 
-    private void SelectStaff(StaffMember member, bool centre)
+    /// <summary>Selects a member of staff and opens their panel.</summary>
+    public void SelectStaff(StaffMember member, bool centre = false)
     {
         _world.Selected = member;
+        _hud.ShowStaff(member);
         if (centre)
         {
             _camera.GlideTo(_world.FootPosition(member));
@@ -163,6 +175,7 @@ public partial class HospitalScene : Node2D
     {
         _world.Selected = null;
         _hud.Record.Visible = false;
+        _hud.StaffInfo.Visible = false;
     }
 
     private System.IDisposable? _layoutSubscription;
@@ -200,12 +213,6 @@ public partial class HospitalScene : Node2D
                     break;
                 case StaffMember member:
                     SelectStaff(member, centre: false);
-                    _hud.Record.Visible = false;
-                    if (!_hud.Roster.Visible)
-                    {
-                        _hud.ToggleRoster(staff: true);
-                    }
-
                     break;
                 default:
                     ClearSelection();
@@ -237,12 +244,9 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible:
                 ClearSelection();
-                _hud.Roster.Visible = false;
-                _hud.Build.Visible = false;
-                _hud.Finances.Visible = false;
-                _hud.RoomInfo.Close();
+                _hud.HideRightPanels();
                 break;
             case Key.B:
                 _build.Cancel();
@@ -317,7 +321,11 @@ public partial class HospitalScene : Node2D
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
     }
 
-    private void ToggleGrid() => _site.ShowGrid = !_site.ShowGrid;
+    private void ToggleGrid()
+    {
+        _site.ShowGrid = !_site.ShowGrid;
+        _hud.SetGridShown(_site.ShowGrid);
+    }
 
     /// <summary>Shows or hides everyone's walking route (the selected person's always shows).</summary>
     public void ToggleRoutes()

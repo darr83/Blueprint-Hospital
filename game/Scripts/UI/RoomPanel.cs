@@ -19,7 +19,7 @@ public partial class RoomPanel : PanelContainer
     private readonly RichTextLabel _info = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly RichTextLabel _problems = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false };
     private readonly Button _move = new() { Text = "Move or resize", TooltipText = "Drag out the room again where you want it, at the size you want", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
-    private readonly Button _demolish = new() { Text = "Demolish", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
+    private readonly Button _demolish = new() { Text = "Demolish", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private HospitalSimulation _sim = null!;
     private string? _roomId;
     private double _refresh;
@@ -53,12 +53,12 @@ public partial class RoomPanel : PanelContainer
             _name.ReleaseFocus();
         };
         header.AddChild(_name);
-        var close = new Button { Text = "✕", FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(34, 32) };
+        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40) };
         close.Pressed += Close;
         header.AddChild(close);
         column.AddChild(header);
 
-        _info.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
+        _info.AddThemeColorOverride("default_color", new Color("#17232E"));
         column.AddChild(_info);
 
         var buttons = new HBoxContainer();
@@ -118,9 +118,9 @@ public partial class RoomPanel : PanelContainer
 
         var template = _sim.Database.RoomTemplates.GetValueOrDefault(room.TemplateId);
         var text = template is null ? string.Empty : BuildPanel.Describe(template, room, _sim);
-        text = text.Replace($"[color=#B8C4CE]Cost[/color]  £{room.BuildCost:N0}", $"[color=#B8C4CE]Value[/color]  £{room.BuildCost:N0}");
-        var header = $"[color=#B8C4CE]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
-        _info.Text = $"{header}\n{text}\n[color=#B8C4CE]In use[/color]  {Usage(room)}";
+        text = text.Replace($"[color=#5B6B79]Cost[/color]  £{room.BuildCost:N0}", $"[color=#5B6B79]Value[/color]  £{room.BuildCost:N0}");
+        var header = $"[color=#5B6B79]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
+        _info.Text = $"{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}";
 
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";
@@ -143,7 +143,7 @@ public partial class RoomPanel : PanelContainer
         {
             var used = room.Beds.Count(b => b.OccupantId is not null);
             var team = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Name);
-            return $"{used} of {room.Beds.Count} beds\n[color=#B8C4CE]Ward team[/color]  {string.Join(", ", team)}";
+            return $"{used} of {room.Beds.Count} beds\n[color=#5B6B79]Ward team[/color]  {string.Join(", ", team)}";
         }
 
         var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => room.Rect.Contains(s.Tile));
@@ -170,7 +170,7 @@ public partial class RoomPanel : PanelContainer
             return;
         }
 
-        _problems.Text = $"[color=#FFB4AE]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
+        _problems.Text = $"[color=#C4373D]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
     }
 
     private static string Facing(WallSide side) => side switch

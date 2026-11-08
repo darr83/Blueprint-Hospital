@@ -66,16 +66,18 @@ Then:
 | Action | Control |
 |---|---|
 | Move camera | Middle mouse drag, or WASD / arrow keys |
-| Zoom | Mouse wheel (zooms towards the cursor) |
+| Zoom | Mouse wheel (zooms towards the cursor), or the + and − buttons bottom right |
 | Pause / resume | Space |
 | Speed 1x / 2x / 4x | 1 / 2 / 3 |
 | Toggle building grid | G |
-| Show walking routes | R (or the Routes button) |
-| Rotate the view a quarter turn | Q / E |
+| Show walking routes | R (or Routes on the left-hand bar) |
+| Rotate the view a quarter turn | Q / E (or the turn buttons bottom right) |
 | Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
-| Patients list / Staff list | P / T (or the top-bar buttons) |
+| Open a member of staff's panel | Left-click them, or a row in the Staff list |
+| Show / hide the A&E board | Hospital on the left-hand bar |
+| Patients list / Staff list | P / T (or the left-hand bar) |
 | Finances | F (or click the balance in the top bar) |
-| Build menu | B (or the Build button) |
+| Build menu | B (or Build on the left-hand bar) |
 | Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Left-click the room's floor |
 | Close a record, list or panel | Esc |

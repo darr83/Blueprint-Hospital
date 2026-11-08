@@ -30,12 +30,17 @@ public partial class NotificationFeed : PanelContainer
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 4);
         AddChild(column);
-        var title = new Label { Text = "NOTIFICATIONS" };
-        title.AddThemeColorOverride("font_color", new Color("#9FB0BC"));
+        var title = new Label { Text = "Notifications" };
+        title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         title.AddThemeFontSizeOverride("font_size", 13);
         column.AddChild(title);
         _list.AddThemeConstantOverride("separation", 3);
-        column.AddChild(_list);
+        _list.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
+        // Scrolls rather than running off the bottom of the screen on smaller displays.
+        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        scroll.AddChild(_list);
+        column.AddChild(scroll);
 
         _subscription = events.Subscribe<Notification>(_ => _dirty = true);
     }
@@ -59,7 +64,7 @@ public partial class NotificationFeed : PanelContainer
         if (items.Count == 0)
         {
             var quiet = new Label { Text = "All quiet.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
-            quiet.AddThemeColorOverride("font_color", new Color("#9FB0BC"));
+            quiet.AddThemeColorOverride("font_color", new Color("#5B6B79"));
             _list.AddChild(quiet);
         }
 
@@ -89,7 +94,7 @@ public partial class NotificationFeed : PanelContainer
             else
             {
                 var label = new Label { Text = text, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-                label.AddThemeColorOverride("font_color", new Color("#E8EDEE"));
+                label.AddThemeColorOverride("font_color", new Color("#17232E"));
                 label.AddThemeFontSizeOverride("font_size", 14);
                 row.AddChild(label);
             }

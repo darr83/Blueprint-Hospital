@@ -29,7 +29,7 @@ public partial class SettingsPanel : ModalPanel
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
-        buttons.AddChild(UiStyle.Button("Cancel", Close, 120));
+        buttons.AddChild(UiStyle.SecondaryButton("Cancel", Close, 120));
         buttons.AddChild(UiStyle.Button("Save", () =>
         {
             settings.Fullscreen = fullscreen.ButtonPressed;
