@@ -11,6 +11,7 @@
     ],
     "female_fraction": 1.0,
     "ambulance_probability": 0.3,
+    "crew_assessment": "abdominal pain in pregnancy, query ectopic",
     "presenting_complaint": "pelvic_pain",
     "symptoms": [
       {
@@ -125,6 +126,7 @@
     ],
     "female_fraction": 1.0,
     "ambulance_probability": 0.05,
+    "crew_assessment": "bleeding in early pregnancy",
     "presenting_complaint": "vaginal_bleeding",
     "symptoms": [
       {

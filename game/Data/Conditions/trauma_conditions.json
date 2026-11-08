@@ -11,6 +11,7 @@
     ],
     "female_fraction": 0.55,
     "ambulance_probability": 0.15,
+    "crew_assessment": "deformed ankle, potential fracture",
     "presenting_complaint": "limb_pain",
     "symptoms": [
       {
@@ -108,6 +109,7 @@
     ],
     "female_fraction": 0.7,
     "ambulance_probability": 0.9,
+    "crew_assessment": "fall, potential broken hip",
     "presenting_complaint": "limb_pain",
     "symptoms": [
       {

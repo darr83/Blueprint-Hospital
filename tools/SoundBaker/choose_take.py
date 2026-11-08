@@ -20,7 +20,9 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT = os.path.join(ROOT, "game", "Audio", "Sounds")
 
 # Ambience beds sit quietly under everything; voices and machines a little louder.
-LOUDNESS = {"amb_": -26, "chatter_": -22, "xray_hum": -24, "ct_scanner": -22, "footsteps": -24, "wheelchair": -24, "trolley": -24}
+LOUDNESS = {"amb_": -26, "chatter_": -22, "xray_hum": -24, "ct_scanner": -22, "footsteps": -24, "wheelchair": -24, "trolley": -24,
+            "ventilator": -26, "oxygen_hiss": -30, "snore": -26, "echo_room": -26, "cath_lab": -24, "eeg_room": -26,
+            "endoscopy": -26, "physio_gym": -24}
 DEFAULT_LOUDNESS = -18
 
 

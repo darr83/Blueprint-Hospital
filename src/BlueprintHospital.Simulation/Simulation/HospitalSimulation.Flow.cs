@@ -475,6 +475,7 @@ public sealed partial class HospitalSimulation
         if (_activeCapacityAlerts.Add(key))
         {
             Notifications.Add(Now, NotificationLevel.Critical, text, patient.Id, null, patient.Triage);
+            AnnounceFullCapacity();
         }
     }
 

@@ -11,6 +11,7 @@
     ],
     "female_fraction": 0.35,
     "ambulance_probability": 0.75,
+    "crew_assessment": "potential heart attack",
     "presenting_complaint": "chest_pain",
     "symptoms": [
       {
@@ -127,6 +128,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.1,
+    "crew_assessment": "chest pain, likely muscular",
     "presenting_complaint": "chest_pain",
     "symptoms": [
       {

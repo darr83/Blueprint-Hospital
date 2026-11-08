@@ -78,6 +78,9 @@ public sealed class StaffMember : Agent
 
     public StaffActivity Activity { get; set; } = StaffActivity.Idle;
 
+    /// <summary>Set while a tannoy call for this member is playing; they set off when it ends. Not saved.</summary>
+    public DateTime? PagedUntil { get; set; }
+
     public int? CurrentTaskId { get; set; }
 
     /// <summary>Game seconds of work left on the current task.</summary>

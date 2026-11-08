@@ -11,6 +11,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.02,
+    "crew_assessment": "ankle injury",
     "presenting_complaint": "limb_pain",
     "symptoms": [
       {
@@ -100,6 +101,7 @@
     ],
     "female_fraction": 0.4,
     "ambulance_probability": 0.03,
+    "crew_assessment": "laceration, bleeding controlled",
     "presenting_complaint": "bleeding_wound",
     "symptoms": [
       {
@@ -181,6 +183,7 @@
     ],
     "female_fraction": 0.55,
     "ambulance_probability": 0.6,
+    "crew_assessment": "potential anaphylaxis",
     "presenting_complaint": "facial_swelling",
     "symptoms": [
       {
@@ -289,6 +292,7 @@
     ],
     "female_fraction": 0.55,
     "ambulance_probability": 0.05,
+    "crew_assessment": "allergic reaction",
     "presenting_complaint": "rash",
     "symptoms": [
       {
@@ -367,6 +371,7 @@
     ],
     "female_fraction": 0.55,
     "ambulance_probability": 0.02,
+    "crew_assessment": "sore throat, unable to swallow",
     "presenting_complaint": "sore_throat",
     "symptoms": [
       {
@@ -454,6 +459,7 @@
     ],
     "female_fraction": 0.6,
     "ambulance_probability": 0.5,
+    "crew_assessment": "collapse, now alert",
     "presenting_complaint": "loss_of_consciousness",
     "symptoms": [
       {
@@ -546,6 +552,7 @@
     ],
     "female_fraction": 0.35,
     "ambulance_probability": 0.3,
+    "crew_assessment": "severe loin pain, potential kidney stone",
     "presenting_complaint": "loin_pain",
     "symptoms": [
       {
@@ -645,6 +652,7 @@
     ],
     "female_fraction": 0.55,
     "ambulance_probability": 0.05,
+    "crew_assessment": "swollen leg, query clot",
     "presenting_complaint": "calf_swelling",
     "symptoms": [
       {
