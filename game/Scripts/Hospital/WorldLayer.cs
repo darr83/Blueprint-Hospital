@@ -291,35 +291,62 @@ public partial class WorldLayer : Node2D
             Perimeter(space.Rect, space.IsDoor);
         }
 
-        const double h = WallThickness / 2;
-        foreach (var (x, y, horizontal) in walls.Where(w => !doors.Contains(w)))
+        // Every wall is cut into one-tile pieces that sort on their own, joined by a square post at
+        // every grid point a wall touches. Faces that meet a neighbour are left out, so straight
+        // runs, corners, T-junctions and crossings all join seamlessly from all four view angles.
+        var solid = walls.Where(w => !doors.Contains(w)).ToHashSet();
+        var joints = new Dictionary<(int X, int Y), Sides>();
+        void Join((int X, int Y) at, Sides side) => joints[at] = joints.GetValueOrDefault(at) | side;
+        foreach (var (x, y, horizontal) in solid)
         {
-            // Each one-tile piece sorts on its own, anchored at its front face.
             if (horizontal)
             {
-                AddProp(FrontFace(x, y - h, 1, WallThickness), c => IsoDraw.Box(c, x, y - h, 1, WallThickness, WallHeight, WallTop, sideColour: WallFace));
+                Join((x, y), Sides.East);
+                Join((x + 1, y), Sides.West);
             }
             else
             {
-                AddProp(FrontFace(x - h, y, WallThickness, 1), c => IsoDraw.Box(c, x - h, y, WallThickness, 1, WallHeight, WallTop, sideColour: WallFace));
+                Join((x, y), Sides.South);
+                Join((x, y + 1), Sides.North);
             }
         }
 
-        // Door posts where a doorway meets a wall, so openings read clearly.
-        bool IsWall((int, int, bool) e) => walls.Contains(e) && !doors.Contains(e);
-        foreach (var (x, y, horizontal) in doors)
+        var doorPoints = new HashSet<(int X, int Y)>();
+        foreach (var (x, y, horizontal) in doors.Where(d => !solid.Contains(d)))
         {
-            if (IsWall(horizontal ? (x - 1, y, true) : (x, y - 1, false)))
-            {
-                AddDoorPost(x, y);
-            }
+            doorPoints.Add((x, y));
+            doorPoints.Add(horizontal ? (x + 1, y) : (x, y + 1));
+        }
 
-            if (IsWall(horizontal ? (x + 1, y, true) : (x, y + 1, false)))
+        const double h = WallThickness / 2;
+        const double span = 1 - WallThickness;
+        foreach (var (x, y, horizontal) in solid)
+        {
+            if (horizontal)
             {
-                AddDoorPost(horizontal ? x + 1 : x, horizontal ? y : y + 1);
+                AddProp(FrontFace(x + h, y - h, span, WallThickness), c => Wall(c, x + h, y - h, span, WallThickness, Sides.East | Sides.West));
             }
+            else
+            {
+                AddProp(FrontFace(x - h, y + h, WallThickness, span), c => Wall(c, x - h, y + h, WallThickness, span, Sides.North | Sides.South));
+            }
+        }
+
+        foreach (var ((x, y), joined) in joints)
+        {
+            // Posts beside a doorway are its frame, in a darker trim.
+            var frame = doorPoints.Contains((x, y));
+            AddProp(FrontFace(x - h, y - h, WallThickness, WallThickness), c => Wall(c, x - h, y - h, WallThickness, WallThickness, joined, frame));
         }
     }
+
+    private static readonly Color WallSkirting = new("#9FB0BE");
+    private static readonly Color WallRim = new("#C3CDD6");
+    private static readonly Color FrameFace = new("#A9B7C3");
+    private static readonly Color FrameTop = new("#C7D2DB");
+
+    private static void Wall(CanvasItem c, double x, double y, double w, double l, Sides joined, bool frame = false) =>
+        IsoDraw.Prism(c, x, y, w, l, WallHeight, frame ? FrameTop : WallTop, frame ? FrameFace : WallFace, joined, skirting: frame ? FrameFace.Darkened(0.15f) : WallSkirting, rim: WallRim);
 
     /// <summary>The middle of whichever side of a footprint is nearest the viewer, so thin pieces sort right from every angle.</summary>
     private static Vector2 FrontFace(double x, double y, double w, double l)
@@ -330,12 +357,6 @@ public partial class WorldLayer : Node2D
             IsoDraw.ToScreen(x, y + (l / 2)), IsoDraw.ToScreen(x + w, y + (l / 2)),
         };
         return sides.MaxBy(p => p.Y);
-    }
-
-    private void AddDoorPost(int x, int y)
-    {
-        const double s = 0.22;
-        AddProp(FrontFace(x - s, y - s, s * 2, s * 2), c => IsoDraw.Box(c, x - s, y - s, s * 2, s * 2, WallHeight + 5, new Color("#B8C4CE"), sideColour: new Color("#9AA8B4")));
     }
 
     // ------------------------------------------------------------------ furniture
@@ -374,7 +395,7 @@ public partial class WorldLayer : Node2D
                         Chair(item.Tile, colour);
                         break;
                     default:
-                        Block(item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour);
+                        Block(item.ItemId, item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour);
                         break;
                 }
             }
@@ -404,11 +425,13 @@ public partial class WorldLayer : Node2D
                 c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
             }
 
-            var lift = Figures.Bed(c, cx, cy, made: !lying, headSouth);
-            if (lying)
+            Figures.Bed(c, cx, cy, made: !lying, headSouth, lift =>
             {
-                Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
-            }
+                if (lying)
+                {
+                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.Blanket(occupant!.Triage), lift, headSouth);
+                }
+            });
         }, animated: true);
     }
 
@@ -463,8 +486,8 @@ public partial class WorldLayer : Node2D
         });
     }
 
-    /// <summary>A box of furniture, split into one-tile slices along its length so each slice sorts correctly.</summary>
-    private void Block(double x, double y, double w, double l, float height, Color colour)
+    /// <summary>A piece of furniture, split into one-tile slices along its length so each slice sorts correctly.</summary>
+    private void Block(string itemId, double x, double y, double w, double l, float height, Color colour)
     {
         var alongX = w >= l;
         var length = alongX ? w : l;
@@ -473,7 +496,18 @@ public partial class WorldLayer : Node2D
         for (var i = 0; i < slices; i++)
         {
             var (sx, sy, sw, sl) = alongX ? (x + (i * step), y, step, l) : (x, y + (i * step), w, step);
-            AddProp(IsoDraw.ToScreen(sx + (sw / 2), sy + (sl / 2)), c => IsoDraw.Box(c, sx, sy, sw, sl, height, colour, shadow: false));
+            var joined = Sides.None;
+            if (i > 0)
+            {
+                joined |= alongX ? Sides.West : Sides.North;
+            }
+
+            if (i < slices - 1)
+            {
+                joined |= alongX ? Sides.East : Sides.South;
+            }
+
+            AddProp(IsoDraw.ToScreen(sx + (sw / 2), sy + (sl / 2)), c => FurnitureArt.Slice(c, itemId, sx, sy, sw, sl, (x, y, w, l), height, colour, joined));
         }
     }
 

@@ -45,8 +45,8 @@ public partial class OverlayLayer : Node2D
         foreach (var monitor in _world.Monitors)
         {
             var patient = _world.ConnectedPatient(monitor.Space);
-            var obs = patient?.CurrentObservations();
-            Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, obs?.HeartRate, obs?.OxygenSaturation, obs?.BloodPressure, patient?.LatestObservations?.News2.Total ?? 0);
+            var outline = patient is null ? (Color?)null : patient.Triage is null ? new Color("#F2F4F6") : Looks.TriageRing(patient.Triage);
+            Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LatestObservations?.News2.Total ?? 0);
         }
 
         foreach (var patient in sim.Patients.Where(p => _world.IsOnMap(p) && !_world.IsLying(p)))

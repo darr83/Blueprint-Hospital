@@ -4,6 +4,17 @@ using Godot;
 
 namespace BlueprintHospital.Hospital;
 
+/// <summary>Sides of a footprint on the grid: north is towards y = 0, west towards x = 0.</summary>
+[Flags]
+public enum Sides
+{
+    None = 0,
+    North = 1,
+    East = 2,
+    South = 4,
+    West = 8,
+}
+
 /// <summary>
 /// Drawing helpers for simple isometric geometry: floor quads and extruded boxes.
 /// Grid positions are in tiles; heights are in screen pixels (about 28 px per metre).
@@ -147,6 +158,84 @@ public static class IsoDraw
 
         canvas.DrawColoredPolygon(Array.ConvertAll(corners, c => c + up), top);
     }
+
+    /// <summary>
+    /// A box that is one piece of something larger (a wall run, a counter). Faces listed in
+    /// <paramref name="joined"/> touch a neighbouring piece, so they are not drawn: pieces then join
+    /// with no seams from every view angle. Optional skirting is a darker band along the foot of
+    /// each face, and the rim is a fine line along the outer top edges.
+    /// </summary>
+    public static void Prism(CanvasItem canvas, double x, double y, double w, double l, float height, Color top, Color face, Sides joined = Sides.None, float lift = 0, Color? skirting = null, float skirtingHeight = 4f, Color? rim = null)
+    {
+        var corners = new[] { ToScreen(x, y), ToScreen(x + w, y), ToScreen(x + w, y + l), ToScreen(x, y + l) };
+        var up = new Vector2(0, -height - lift);
+        var down = new Vector2(0, -lift);
+        var centre = (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
+        for (var i = 0; i < 4; i++)
+        {
+            if ((joined & EdgeSide(i)) != 0)
+            {
+                continue;
+            }
+
+            var a = corners[i];
+            var b = corners[(i + 1) % 4];
+            var mid = (a + b) / 2;
+            if (mid.Y <= centre.Y || height <= 0)
+            {
+                continue;
+            }
+
+            // Light from the upper left: the left-facing side is lighter than the right.
+            var shade = mid.X < centre.X ? 0f : 0.1f;
+            canvas.DrawColoredPolygon(new[] { a + down, b + down, b + up, a + up }, face.Darkened(shade));
+            if (skirting is { } skirt)
+            {
+                var s = new Vector2(0, -Math.Min(skirtingHeight, height));
+                canvas.DrawColoredPolygon(new[] { a + down, b + down, b + down + s, a + down + s }, skirt.Darkened(shade));
+            }
+        }
+
+        canvas.DrawColoredPolygon(Array.ConvertAll(corners, c => c + up), top);
+        if (rim is { } line)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                if ((joined & EdgeSide(i)) == 0)
+                {
+                    canvas.DrawLine(corners[i] + up, corners[(i + 1) % 4] + up, line, 1f, true);
+                }
+            }
+        }
+    }
+
+    /// <summary>The visible side faces of a box (as floor-to-top quads), for drawing details such as drawers or doors on them.</summary>
+    public static (Vector2 A, Vector2 B, Sides Side, bool Left)[] VisibleFaces(double x, double y, double w, double l)
+    {
+        var corners = new[] { ToScreen(x, y), ToScreen(x + w, y), ToScreen(x + w, y + l), ToScreen(x, y + l) };
+        var centre = (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
+        var faces = new System.Collections.Generic.List<(Vector2, Vector2, Sides, bool)>(2);
+        for (var i = 0; i < 4; i++)
+        {
+            var (a, b) = (corners[i], corners[(i + 1) % 4]);
+            var mid = (a + b) / 2;
+            if (mid.Y > centre.Y)
+            {
+                // Always left to right on screen, so details line up the same way at every angle.
+                faces.Add(a.X <= b.X ? (a, b, EdgeSide(i), mid.X < centre.X) : (b, a, EdgeSide(i), mid.X < centre.X));
+            }
+        }
+
+        return faces.ToArray();
+    }
+
+    private static Sides EdgeSide(int edge) => edge switch
+    {
+        0 => Sides.North,
+        1 => Sides.East,
+        2 => Sides.South,
+        _ => Sides.West,
+    };
 
     /// <summary>An ellipse lying on the floor (2:1), for shadows and selection rings.</summary>
     public static Vector2[] FloorEllipse(Vector2 centre, float radius, int segments = 20)
