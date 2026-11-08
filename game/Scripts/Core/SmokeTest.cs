@@ -5,6 +5,7 @@ using BlueprintHospital.UI;
 using System.Linq;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.Transport;
 using Godot;
 
@@ -48,6 +49,8 @@ public partial class SmokeTest : Node
         BuildItem,
         Departments,
         Recruitment,
+        Rota,
+        RotaBreaks,
         Ward,
         WardBed,
         Transport,
@@ -235,6 +238,22 @@ public partial class SmokeTest : Node
                 Screenshot("06b_recruitment");
                 hospital.Hud.ToggleRecruitment();
                 StaffWardAndAdmit(hospital);
+                OpenRota(hospital);
+                _frame = 0;
+                _stage = Stage.Rota;
+                break;
+
+            case Stage.Rota when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06d_rota");
+                hospital.Hud.Rota.ShowBreaksForTest();
+                _frame = 0;
+                _stage = Stage.RotaBreaks;
+                break;
+
+            case Stage.RotaBreaks when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06e_rota_breaks");
+                hospital.Hud.ToggleRota();
+                Check(!hospital.Hud.Rota.Visible, "The rota did not close.");
                 _frame = 0;
                 _stage = Stage.Ward;
                 break;
@@ -796,6 +815,30 @@ public partial class SmokeTest : Node
         hospital.SelectPatient(focus);
         Check(hospital.Hud.Record.Visible, "Patient record did not open.");
         GD.Print($"[smoke] Opened the record for {focus.FullName}.");
+    }
+
+    /// <summary>
+    /// Opens the staff rota, checks the night team are at home, moves an A&amp;E nurse to the ward and
+    /// back, and picks a doctor so their card shows.
+    /// </summary>
+    private void OpenRota(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        Check(sim.Staff.Any(s => s.Shift != sim.CurrentShift && !s.IsInBuilding), "The other shift's team should be at home.");
+        Check(sim.OnDutyStaff.All(s => s.Shift == sim.CurrentShift || s.Activity == StaffActivity.GoingHome || s.CurrentTaskId is not null || s.IsOnBreak), "Only the team on shift should be at work.");
+        var ward = sim.Wards.First();
+        var nurse = sim.OnDutyStaff.First(s => s.Role == StaffRole.Nurse && s.BaseRoomId is null);
+        Check(sim.MoveStaff(nurse.Id, ward.Id), "Could not move a nurse to the ward.");
+        Check(sim.MoveStaff(nurse.Id, null), "Could not move the nurse back to A&E.");
+        foreach (var member in sim.OnDutyStaff.Take(3))
+        {
+            member.Breaks.Insert(0, new PlannedBreak { Start = sim.Now.AddMinutes(-40), Minutes = 15, TakenAt = sim.Now.AddMinutes(-40), Done = true });
+        }
+
+        hospital.Hud.ToggleRota();
+        Check(hospital.Hud.Rota.Visible, "The rota did not open.");
+        hospital.Hud.Rota.Select(sim.OnDutyStaff.FirstOrDefault(s => s.Role == StaffRole.Doctor) ?? sim.Staff.First());
+        GD.Print($"[smoke] Rota: {sim.OnDutyStaff.Count()} on shift, {sim.Staff.Count(s => !s.IsOnDuty)} off duty.");
     }
 
     /// <summary>Saves the current frame when run with "--screenshots=DIR" (needs a real display, not --headless).</summary>

@@ -97,6 +97,6 @@ public sealed class JobCandidate
 
     public required int Age { get; init; }
 
-    /// <summary>Annual salary in pounds for the post (covered around the clock, see the finances).</summary>
+    /// <summary>Annual salary in pounds. Each hire covers one 12-hour shift a day (see the finances).</summary>
     public required int Salary { get; init; }
 }

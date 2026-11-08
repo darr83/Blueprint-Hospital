@@ -12,7 +12,7 @@ public enum MoneyCategory
     /// <summary>Payment for each patient admitted to a ward, plus each night they stay.</summary>
     Admissions,
 
-    /// <summary>Wages for every post, covered around the clock.</summary>
+    /// <summary>Wages for every hire on the day and night teams.</summary>
     Staff,
 
     Tests,
@@ -75,8 +75,11 @@ public sealed partial class HospitalSimulation
     /// <summary>Without a pharmacy on site, medicines are bought in from outside at this mark-up.</summary>
     public const double NoPharmacyMedicineMarkup = 1.5;
 
-    /// <summary>Each post is covered 24 hours a day, 7 days a week: about 4.5 people per post.</summary>
-    public const double StaffPerPost = 4.5;
+    /// <summary>
+    /// Each hire covers one 12-hour shift (days or nights) every day of the week: about 2.25 people. So a
+    /// day hire and a night hire together cost what a round-the-clock post did before shifts.
+    /// </summary>
+    public const double StaffPerPost = 2.25;
 
     /// <summary>Upkeep per square metre of building per day.</summary>
     public const double UpkeepPerSquareMetrePerDay = 0.6;
@@ -94,7 +97,7 @@ public sealed partial class HospitalSimulation
 
     public DayAccounts Today => Day(Now.Date);
 
-    /// <summary>What every post costs a day in wages.</summary>
+    /// <summary>What the day and night teams cost a day in wages.</summary>
     public long StaffCostPerDay => (long)Math.Round(_staff.Sum(s => s.Salary) * StaffPerPost / 365.0);
 
     public long UpkeepPerDay => (long)Math.Round(MainBuilding.AreaSquareMetres * UpkeepPerSquareMetrePerDay);

@@ -8,7 +8,7 @@ namespace BlueprintHospital.Simulation.Simulation;
 public sealed record StaffPosting(string? RoomId, string Name);
 
 /// <summary>How many of one kind of staff a place needs to run well, and how many it has.</summary>
-public sealed record StaffingNeed(string Place, string? RoomId, StaffRole Role, int Recommended, int Have)
+public sealed record StaffingNeed(string Place, string? RoomId, StaffRole Role, int Recommended, int Have, StaffShift Shift = StaffShift.Day)
 {
     public int Short => Math.Max(0, Recommended - Have);
 }
@@ -98,10 +98,19 @@ public sealed partial class HospitalSimulation
         return postings;
     }
 
-    /// <summary>A guide to the staff the hospital needs, place by place. The player is free to ignore it.</summary>
-    public IReadOnlyList<StaffingNeed> RecommendedStaffing()
+    /// <summary>
+    /// A guide to the staff the hospital needs, place by place and shift by shift (day and night).
+    /// Clinics and Outpatients reception only need a day team. The player is free to ignore it.
+    /// </summary>
+    public IReadOnlyList<StaffingNeed> RecommendedStaffing() =>
+        RecommendedForShift(StaffShift.Day).Concat(RecommendedForShift(StaffShift.Night).Where(n => !IsDayOnly(n.RoomId))).ToList();
+
+    private bool IsDayOnly(string? roomId) =>
+        roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception };
+
+    private IEnumerable<StaffingNeed> RecommendedForShift(StaffShift shift)
     {
-        int Have(StaffRole role, string? roomId) => _staff.Count(s => s.Role == role && s.BaseRoomId == roomId);
+        int Have(StaffRole role, string? roomId) => _staff.Count(s => s.Role == role && s.BaseRoomId == roomId && s.Shift == shift);
 
         var treatment = _spaces.Values.Count(s => s.IsTreatmentSpace);
         var triage = SpacesOfKind(CareSpaceKind.Triage).Count();
@@ -137,7 +146,7 @@ public sealed partial class HospitalSimulation
             needs.Add(new(clinic.Name, clinic.Id, StaffRole.Doctor, 1, Have(StaffRole.Doctor, clinic.Id)));
         }
 
-        return needs;
+        return needs.Select(n => n with { Shift = shift });
     }
 
     // ---------------------------------------------------------------- candidates
@@ -225,8 +234,11 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- hiring and letting go
 
-    /// <summary>Takes on a candidate, based at <paramref name="roomId"/> (null for A&amp;E or the whole hospital).</summary>
-    public StaffMember? Hire(int candidateId, string? roomId)
+    /// <summary>
+    /// Takes on a candidate, based at <paramref name="roomId"/> (null for A&amp;E or the whole hospital), on
+    /// <paramref name="shift"/> (by default whichever shift has fewer of their kind there).
+    /// </summary>
+    public StaffMember? Hire(int candidateId, string? roomId, StaffShift? shift = null)
     {
         if (_candidates.FirstOrDefault(c => c.Id == candidateId) is not { } candidate)
         {
@@ -253,15 +265,17 @@ public sealed partial class HospitalSimulation
             Age = candidate.Age,
             Salary = candidate.Salary,
             Fatigue = Random.Range(0.0, 0.1),
+            Shift = shift ?? ShorterShift(candidate.Role, roomId),
         };
         Join(member);
         var place = roomId is { } id && FindSpace(id) is { } room ? room.Name : PostingsFor(member.Role)[0].Name;
-        Notifications.Add(Now, NotificationLevel.Info, $"{member.Name} ({member.Grade}) has joined: {place}.");
+        var starts = member.Shift == CurrentShift ? "starting now" : $"starting at {NextStart(member.Shift):HH:mm}";
+        Notifications.Add(Now, NotificationLevel.Info, $"{member.Name} ({member.Grade}) has joined the {ShiftName(member.Shift)} team: {place}, {starts}.");
         return member;
     }
 
     /// <summary>Takes on a new member of staff straight away, without a candidate (starting teams, scenarios and tests).</summary>
-    public StaffMember HireStaff(StaffRole role, string? roomId = null, double? skill = null)
+    public StaffMember HireStaff(StaffRole role, string? roomId = null, double? skill = null, StaffShift? shift = null)
     {
         var grades = StaffGrades.For(role).ToList();
         var grade = skill is { } s ? StaffGrades.Of(role, s) : grades[0];
@@ -280,6 +294,7 @@ public sealed partial class HospitalSimulation
             Age = candidate.Age,
             Salary = grade.Salary,
             Fatigue = Random.Range(0.0, 0.15),
+            Shift = shift ?? CurrentShift,
         };
         Join(member);
         return member;
@@ -294,6 +309,15 @@ public sealed partial class HospitalSimulation
         }
 
         member.PlaceAt(HomeTile(member));
+        if (member.Shift == CurrentShift)
+        {
+            PlanBreaks(member, CurrentShiftStart);
+        }
+        else
+        {
+            member.Activity = StaffActivity.OffDuty;
+            member.StatusText = OffDutyText(member);
+        }
     }
 
     /// <summary>Lets a member of staff go. Whatever they were doing goes back on the board for someone else.</summary>
@@ -386,7 +410,7 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    /// <summary>A ward with nobody of the task's role of its own is covered by the A&amp;E team.</summary>
+    /// <summary>A ward with nobody of the task's role of its own at work is covered by the A&amp;E team.</summary>
     private bool CoveredByEmergencyTeam(ClinicalTask task, StaffMember member) =>
-        member.BaseRoomId is null && TeamFor(task) is { } ward && !_staff.Any(s => s.BaseRoomId == ward && s.Role == task.Role);
+        member.BaseRoomId is null && TeamFor(task) is { } ward && !_staff.Any(s => s.BaseRoomId == ward && s.Role == task.Role && s.IsOnDuty);
 }

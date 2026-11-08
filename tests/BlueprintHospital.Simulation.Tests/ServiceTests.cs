@@ -83,7 +83,7 @@ public class ServiceTests
     [Fact]
     public void Pneumonia_gets_a_chest_xray_in_the_xray_room_when_there_is_one()
     {
-        var h = Wing(5, new[] { ("xray_room", 9, 9) }, Array.Empty<(string, int, int)>());
+        var h = Wing(6, new[] { ("xray_room", 9, 9) }, Array.Empty<(string, int, int)>());
         var room = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.XRay);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
 
