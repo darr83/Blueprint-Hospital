@@ -14,7 +14,7 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
 | 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
-| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards done |
+| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards and 33 conditions done |
 
 ## Repository layout
 
@@ -138,6 +138,50 @@ Press **B** to open the build menu. Every room is built from a **template** in
   resize it (it keeps its name), or demolish it for a 50% refund. Rooms in use can't be moved or
   demolished, and the department always keeps at least one waiting room and one triage room.
 - **Money:** a new hospital has £750,000 to build with, shown in the top bar.
+
+### Conditions
+
+The game has 33 conditions, each with its own symptoms, observations, tests, treatment and
+outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
+
+| Condition | After A&E |
+|---|---|
+| Acute appendicitis | Transfer |
+| Acute asthma | Discharge |
+| Acute cholecystitis | Admit |
+| Acute heart failure | Admit |
+| Acute kidney injury | Admit |
+| Acute myocardial infarction | Transfer |
+| Acute pancreatitis | Admit |
+| Allergic reaction (hives) | Discharge |
+| Anaphylaxis | Discharge |
+| Ankle sprain | Discharge |
+| Atrial fibrillation with fast heart rate | Admit |
+| Biliary colic | Discharge |
+| COPD exacerbation | Admit |
+| Cellulitis | Discharge |
+| Community-acquired pneumonia | Admit |
+| Deep vein thrombosis | Discharge |
+| Diabetic ketoacidosis | Admit |
+| Ectopic pregnancy | Transfer |
+| Gastro-oesophageal reflux | Discharge |
+| Gastroenteritis | Discharge |
+| Hypoglycaemia | Discharge |
+| Migraine | Discharge |
+| Musculoskeletal chest pain | Discharge |
+| Pyelonephritis | Admit |
+| Renal colic | Discharge |
+| Seizure in known epilepsy | Discharge |
+| Simple laceration | Discharge |
+| Supraventricular tachycardia | Discharge |
+| Threatened miscarriage | Discharge |
+| Tonsillitis | Discharge |
+| Upper gastrointestinal bleed | Admit |
+| Urinary tract infection | Discharge |
+| Vasovagal syncope (faint) | Discharge |
+
+"Admit" goes to a ward bed when there is one, otherwise to another hospital. "Transfer" goes to
+another hospital (heart attack centre, or surgery until theatres are built).
 
 ### Wards
 

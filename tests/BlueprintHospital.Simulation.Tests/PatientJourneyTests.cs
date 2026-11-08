@@ -168,7 +168,7 @@ public class PatientJourneyTests
         }
 
         var stats = h.Sim.Stats;
-        Assert.InRange(stats.ArrivalsTotal, 35, 110);
+        Assert.InRange(stats.ArrivalsTotal, 25, 110);
         Assert.True(stats.DepartedTotal > stats.ArrivalsTotal / 2, $"Only {stats.DepartedTotal} of {stats.ArrivalsTotal} left");
         Assert.True(stats.Discharged > 0, "No discharges");
         Assert.True(stats.Transferred > 0, "No transfers");

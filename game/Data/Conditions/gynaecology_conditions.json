@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ectopic_pregnancy",
+    "name": "Ectopic pregnancy",
+    "department": "gynaecology",
+    "description": "A pregnancy outside the womb, usually in a fallopian tube. Rupture causes life-threatening bleeding.",
+    "prevalence": 1,
+    "age_range": [
+      16,
+      45
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.3,
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 0.6
+      },
+      {
+        "symptom": "shoulder_tip_pain",
+        "probability": 0.25
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        112,
+        14
+      ],
+      "diastolic_bp": [
+        70,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        4,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.5
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": 35,
+      "systolic_bp": -55,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "pregnancy_test",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Gynaecology referral",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "transfer",
+    "disposition_note": "Transferred to the gynaecology unit for urgent surgery (no operating theatre on site yet)."
+  },
+  {
+    "id": "threatened_miscarriage",
+    "name": "Threatened miscarriage",
+    "department": "gynaecology",
+    "description": "Bleeding in early pregnancy with the pregnancy still continuing.",
+    "prevalence": 2,
+    "age_range": [
+      16,
+      45
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.05,
+    "presenting_complaint": "vaginal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 1
+      },
+      {
+        "symptom": "pelvic_pain",
+        "probability": 0.6
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        86,
+        10
+      ],
+      "systolic_bp": [
+        118,
+        10
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0.0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "pregnancy_test",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Early pregnancy unit referral",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged with an early pregnancy unit scan booked for tomorrow."
+  }
+]

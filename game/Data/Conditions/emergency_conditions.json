@@ -5,31 +5,80 @@
     "department": "emergency",
     "description": "Stretched or torn ankle ligaments. The Ottawa ankle rules decide whether an X-ray is needed.",
     "prevalence": 7,
-    "age_range": [10, 65],
+    "age_range": [
+      10,
+      65
+    ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.02,
     "presenting_complaint": "limb_pain",
     "symptoms": [
-      { "symptom": "limb_pain", "probability": 1.0 },
-      { "symptom": "swelling", "probability": 0.9 }
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.9
+      }
     ],
     "observations": {
-      "heart_rate": [80, 9],
-      "systolic_bp": [126, 11],
-      "diastolic_bp": [78, 8],
-      "respiratory_rate": [15, 2],
-      "oxygen_saturation": [98.5, 0.8],
-      "temperature": [36.7, 0.3],
-      "pain_score": [3, 7]
+      "heart_rate": [
+        80,
+        9
+      ],
+      "systolic_bp": [
+        126,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        7
+      ]
     },
-    "initial_severity": [0.05, 0.1],
+    "initial_severity": [
+      0.05,
+      0.1
+    ],
     "deterioration_per_hour": 0,
-    "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
     "can_be_fatal": false,
     "key_investigations": [],
     "treatment": [
-      { "type": "medication", "medication": "ibuprofen", "essential": false },
-      { "type": "procedure", "name": "Ankle support and RICE advice", "performed_by": "nurse", "minutes": 10, "essential": true }
+      {
+        "type": "medication",
+        "medication": "ibuprofen",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Ankle support and RICE advice",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": true
+      }
     ],
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
@@ -41,33 +90,631 @@
     "department": "emergency",
     "description": "A clean cut to the skin that needs cleaning and closing.",
     "prevalence": 6,
-    "age_range": [4, 85],
+    "age_range": [
+      4,
+      85
+    ],
     "female_fraction": 0.4,
     "ambulance_probability": 0.03,
     "presenting_complaint": "bleeding_wound",
     "symptoms": [
-      { "symptom": "bleeding_wound", "probability": 1.0 }
+      {
+        "symptom": "bleeding_wound",
+        "probability": 1.0
+      }
     ],
     "observations": {
-      "heart_rate": [84, 9],
-      "systolic_bp": [126, 11],
-      "diastolic_bp": [78, 8],
-      "respiratory_rate": [15, 2],
-      "oxygen_saturation": [98.5, 0.8],
-      "temperature": [36.7, 0.3],
-      "pain_score": [2, 5]
+      "heart_rate": [
+        84,
+        9
+      ],
+      "systolic_bp": [
+        126,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
     },
-    "initial_severity": [0.05, 0.12],
+    "initial_severity": [
+      0.05,
+      0.12
+    ],
     "deterioration_per_hour": 0,
-    "deterioration_effects": { "heart_rate": 0, "systolic_bp": 0, "respiratory_rate": 0, "oxygen_saturation": 0, "temperature": 0 },
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
     "can_be_fatal": false,
     "key_investigations": [],
     "treatment": [
-      { "type": "procedure", "name": "Wound cleaning and closure", "performed_by": "doctor", "minutes": 20, "essential": true },
-      { "type": "medication", "medication": "paracetamol", "essential": false }
+      {
+        "type": "procedure",
+        "name": "Wound cleaning and closure",
+        "performed_by": "doctor",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
     ],
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
     "disposition_note": "Discharged after wound closure with wound care advice."
+  },
+  {
+    "id": "anaphylaxis",
+    "name": "Anaphylaxis",
+    "department": "emergency",
+    "description": "A severe, life-threatening allergic reaction. Intramuscular adrenaline is the first treatment.",
+    "prevalence": 1,
+    "age_range": [
+      5,
+      80
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.6,
+    "presenting_complaint": "facial_swelling",
+    "symptoms": [
+      {
+        "symptom": "facial_swelling",
+        "probability": 1
+      },
+      {
+        "symptom": "rash",
+        "probability": 0.85
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.7
+      },
+      {
+        "symptom": "wheeze",
+        "probability": 0.5
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        124,
+        14
+      ],
+      "systolic_bp": [
+        96,
+        16
+      ],
+      "diastolic_bp": [
+        58,
+        9
+      ],
+      "respiratory_rate": [
+        26,
+        3
+      ],
+      "oxygen_saturation": [
+        93,
+        2
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.4,
+      0.6
+    ],
+    "deterioration_per_hour": 0.25,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -50,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -12,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "adrenaline_im",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "chlorphenamine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "hydrocortisone",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "High-flow oxygen and lie flat",
+        "performed_by": "nurse",
+        "minutes": 3,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Observed for 6 hours with no recurrence. Discharged with two adrenaline auto-injectors and an allergy clinic referral."
+  },
+  {
+    "id": "allergic_reaction",
+    "name": "Allergic reaction (hives)",
+    "department": "emergency",
+    "description": "An itchy, lumpy rash from an allergy, without breathing or circulation problems.",
+    "prevalence": 3,
+    "age_range": [
+      5,
+      80
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.05,
+    "presenting_complaint": "rash",
+    "symptoms": [
+      {
+        "symptom": "rash",
+        "probability": 1
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        86,
+        10
+      ],
+      "systolic_bp": [
+        126,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.12
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -10,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "cetirizine",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on antihistamines with advice to avoid the trigger."
+  },
+  {
+    "id": "tonsillitis",
+    "name": "Tonsillitis",
+    "department": "emergency",
+    "description": "Infected tonsils, often from a virus; bacterial tonsillitis gets penicillin.",
+    "prevalence": 4,
+    "age_range": [
+      5,
+      45
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.02,
+    "presenting_complaint": "sore_throat",
+    "symptoms": [
+      {
+        "symptom": "sore_throat",
+        "probability": 1
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.75
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        10
+      ],
+      "systolic_bp": [
+        122,
+        10
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        38.2,
+        0.4
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -5,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0.4
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "phenoxymethylpenicillin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Discharged on penicillin V with advice on fluids and pain relief."
+  },
+  {
+    "id": "vasovagal_syncope",
+    "name": "Vasovagal syncope (faint)",
+    "department": "emergency",
+    "description": "A simple faint, triggered by standing, pain or emotion. The ECG is normal.",
+    "prevalence": 4,
+    "age_range": [
+      14,
+      70
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.5,
+    "presenting_complaint": "loss_of_consciousness",
+    "symptoms": [
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 1
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.5
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        72,
+        10
+      ],
+      "systolic_bp": [
+        118,
+        12
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.6,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.12
+    ],
+    "deterioration_per_hour": 0.0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "capillary_glucose"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Lying and standing blood pressure",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Normal ECG and lying/standing blood pressure. Discharged with advice about faints."
+  },
+  {
+    "id": "renal_colic",
+    "name": "Renal colic",
+    "department": "emergency",
+    "description": "Severe pain from a kidney stone passing down the ureter.",
+    "prevalence": 3,
+    "age_range": [
+      20,
+      70
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.3,
+    "presenting_complaint": "loin_pain",
+    "symptoms": [
+      {
+        "symptom": "loin_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "haematuria",
+        "probability": 0.6
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        10
+      ],
+      "systolic_bp": [
+        142,
+        14
+      ],
+      "diastolic_bp": [
+        86,
+        8
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urine_dipstick",
+      "urea_electrolytes",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "diclofenac",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Pain controlled. Discharged with analgesia, a sieve and urology follow-up for a CT scan."
+  },
+  {
+    "id": "deep_vein_thrombosis",
+    "name": "Deep vein thrombosis",
+    "department": "emergency",
+    "description": "A blood clot in a deep vein of the leg, which can travel to the lungs.",
+    "prevalence": 3,
+    "age_range": [
+      25,
+      90
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.05,
+    "presenting_complaint": "calf_swelling",
+    "symptoms": [
+      {
+        "symptom": "calf_swelling",
+        "probability": 1
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.75
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.6
+      },
+      {
+        "symptom": "red_hot_skin",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        84,
+        10
+      ],
+      "systolic_bp": [
+        130,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "d_dimer",
+      "full_blood_count",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "apixaban",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Started on apixaban and booked for a leg ultrasound scan tomorrow morning."
   }
 ]

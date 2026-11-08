@@ -182,5 +182,382 @@
       "Taste disturbance"
     ],
     "cost_per_dose": 2
+  },
+  {
+    "id": "bisoprolol",
+    "name": "Bisoprolol",
+    "drug_class": "Beta-blocker",
+    "route": "oral",
+    "typical_dose": "2.5 mg",
+    "indications": "Rate control in atrial fibrillation; heart failure.",
+    "contraindications": "Severe asthma, heart block, very low blood pressure.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Tiredness",
+      "Cold hands"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "adenosine",
+    "name": "Adenosine",
+    "drug_class": "Antiarrhythmic",
+    "route": "intravenous",
+    "typical_dose": "6 mg rapid bolus, then 12 mg if needed",
+    "indications": "Supraventricular tachycardia after vagal manoeuvres fail.",
+    "contraindications": "Asthma, heart block.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Brief chest tightness",
+      "Flushing"
+    ],
+    "cost_per_dose": 8
+  },
+  {
+    "id": "furosemide",
+    "name": "Furosemide",
+    "drug_class": "Loop diuretic",
+    "route": "intravenous",
+    "typical_dose": "40 mg",
+    "indications": "Fluid overload in heart failure.",
+    "contraindications": "Low blood pressure, dehydration.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Low potassium",
+      "Passing lots of urine"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "salbutamol_nebuliser",
+    "name": "Salbutamol nebuliser",
+    "drug_class": "Bronchodilator",
+    "route": "nebulised",
+    "typical_dose": "5 mg",
+    "indications": "Acute asthma, COPD exacerbation.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Tremor",
+      "Fast heart rate"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "ipratropium_nebuliser",
+    "name": "Ipratropium nebuliser",
+    "drug_class": "Bronchodilator",
+    "route": "nebulised",
+    "typical_dose": "500 micrograms",
+    "indications": "Severe asthma, COPD exacerbation.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Dry mouth"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "prednisolone",
+    "name": "Prednisolone",
+    "drug_class": "Corticosteroid",
+    "route": "oral",
+    "typical_dose": "40 mg once daily for 5 days",
+    "indications": "Asthma and COPD exacerbations.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Raised blood sugar",
+      "Indigestion"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "doxycycline",
+    "name": "Doxycycline",
+    "drug_class": "Tetracycline antibiotic",
+    "route": "oral",
+    "typical_dose": "200 mg first day, then 100 mg daily",
+    "indications": "Infective COPD exacerbation; cellulitis in penicillin allergy.",
+    "contraindications": "Pregnancy, children under 12.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Nausea",
+      "Sun sensitivity"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "nitrofurantoin",
+    "name": "Nitrofurantoin",
+    "drug_class": "Urinary antibiotic",
+    "route": "oral",
+    "typical_dose": "100 mg modified-release twice a day for 3 days",
+    "indications": "Lower urinary tract infection.",
+    "contraindications": "Poor kidney function.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Nausea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "gentamicin",
+    "name": "Gentamicin",
+    "drug_class": "Aminoglycoside antibiotic",
+    "route": "intravenous",
+    "typical_dose": "5 mg/kg once daily",
+    "indications": "Pyelonephritis and urosepsis.",
+    "contraindications": "Myasthenia gravis.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Kidney and hearing damage with high levels"
+    ],
+    "cost_per_dose": 6
+  },
+  {
+    "id": "co_amoxiclav",
+    "name": "Co-amoxiclav",
+    "drug_class": "Penicillin antibiotic",
+    "route": "intravenous",
+    "typical_dose": "1.2 g three times a day",
+    "indications": "Severe infections: cholecystitis, aspiration pneumonia.",
+    "contraindications": "Penicillin allergy.",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Diarrhoea"
+    ],
+    "cost_per_dose": 4
+  },
+  {
+    "id": "flucloxacillin",
+    "name": "Flucloxacillin",
+    "drug_class": "Penicillin antibiotic",
+    "route": "oral",
+    "typical_dose": "1 g four times a day",
+    "indications": "Cellulitis and other skin infections.",
+    "contraindications": "Penicillin allergy.",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Nausea",
+      "Diarrhoea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "phenoxymethylpenicillin",
+    "name": "Phenoxymethylpenicillin (penicillin V)",
+    "drug_class": "Penicillin antibiotic",
+    "route": "oral",
+    "typical_dose": "500 mg four times a day for 5 to 10 days",
+    "indications": "Bacterial tonsillitis.",
+    "contraindications": "Penicillin allergy.",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Diarrhoea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "fixed_rate_insulin",
+    "name": "Fixed-rate insulin infusion",
+    "drug_class": "Insulin",
+    "route": "intravenous",
+    "typical_dose": "0.1 units/kg/hour",
+    "indications": "Diabetic ketoacidosis.",
+    "contraindications": "Low potassium (correct first).",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Low blood sugar",
+      "Low potassium"
+    ],
+    "cost_per_dose": 5
+  },
+  {
+    "id": "sodium_chloride",
+    "name": "Sodium chloride 0.9%",
+    "drug_class": "Intravenous fluid",
+    "route": "intravenous",
+    "typical_dose": "1 litre",
+    "indications": "Fluid resuscitation, DKA, kidney injury.",
+    "contraindications": "Fluid overload.",
+    "allergy_groups": [],
+    "common_side_effects": [],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "glucose_10_percent",
+    "name": "Glucose 10%",
+    "drug_class": "Glucose",
+    "route": "intravenous",
+    "typical_dose": "150–200 mL",
+    "indications": "Severe hypoglycaemia.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "oral_glucose",
+    "name": "Glucose gel",
+    "drug_class": "Glucose",
+    "route": "oral",
+    "typical_dose": "15–20 g",
+    "indications": "Hypoglycaemia in a patient who can swallow.",
+    "contraindications": "Unable to swallow safely.",
+    "allergy_groups": [],
+    "common_side_effects": [],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "metoclopramide",
+    "name": "Metoclopramide",
+    "drug_class": "Antiemetic",
+    "route": "intravenous",
+    "typical_dose": "10 mg",
+    "indications": "Nausea in migraine.",
+    "contraindications": "Bowel obstruction, under 18s.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Restlessness"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "sumatriptan",
+    "name": "Sumatriptan",
+    "drug_class": "Triptan",
+    "route": "subcutaneous",
+    "typical_dose": "6 mg",
+    "indications": "Acute migraine.",
+    "contraindications": "Heart disease, uncontrolled blood pressure.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Tingling",
+      "Chest tightness"
+    ],
+    "cost_per_dose": 3
+  },
+  {
+    "id": "chlorphenamine",
+    "name": "Chlorphenamine",
+    "drug_class": "Antihistamine",
+    "route": "intravenous",
+    "typical_dose": "10 mg",
+    "indications": "Allergic reactions, after adrenaline in anaphylaxis.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "cetirizine",
+    "name": "Cetirizine",
+    "drug_class": "Antihistamine",
+    "route": "oral",
+    "typical_dose": "10 mg",
+    "indications": "Hives and mild allergic reactions.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Mild drowsiness"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "adrenaline_im",
+    "name": "Adrenaline (intramuscular)",
+    "drug_class": "Sympathomimetic",
+    "route": "intramuscular",
+    "typical_dose": "500 micrograms (0.5 mL of 1 in 1,000)",
+    "indications": "Anaphylaxis: the first and most important treatment.",
+    "contraindications": "None in anaphylaxis.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Fast heart rate",
+      "Shaking"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "hydrocortisone",
+    "name": "Hydrocortisone",
+    "drug_class": "Corticosteroid",
+    "route": "intravenous",
+    "typical_dose": "200 mg",
+    "indications": "Anaphylaxis (after adrenaline), severe asthma.",
+    "contraindications": "",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Raised blood sugar"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "diclofenac",
+    "name": "Diclofenac",
+    "drug_class": "NSAID",
+    "route": "rectal",
+    "typical_dose": "75 mg",
+    "indications": "Renal colic.",
+    "contraindications": "NSAID allergy, kidney impairment.",
+    "allergy_groups": [
+      "nsaid"
+    ],
+    "common_side_effects": [
+      "Indigestion"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "apixaban",
+    "name": "Apixaban",
+    "drug_class": "Anticoagulant",
+    "route": "oral",
+    "typical_dose": "10 mg twice a day for 7 days, then 5 mg twice a day",
+    "indications": "Deep vein thrombosis and pulmonary embolism.",
+    "contraindications": "Active bleeding.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Bleeding",
+      "Bruising"
+    ],
+    "cost_per_dose": 3
+  },
+  {
+    "id": "buscopan",
+    "name": "Hyoscine butylbromide (Buscopan)",
+    "drug_class": "Antispasmodic",
+    "route": "intravenous",
+    "typical_dose": "20 mg",
+    "indications": "Biliary and renal colic spasm.",
+    "contraindications": "Glaucoma, fast heart rate.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Dry mouth"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "lorazepam",
+    "name": "Lorazepam",
+    "drug_class": "Benzodiazepine",
+    "route": "intravenous",
+    "typical_dose": "4 mg",
+    "indications": "Seizure lasting over 5 minutes.",
+    "contraindications": "Respiratory depression.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness"
+    ],
+    "cost_per_dose": 2
   }
 ]

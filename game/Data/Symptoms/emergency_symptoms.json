@@ -68,5 +68,145 @@
     "patient_description": "I can't stop coughing and I'm bringing up green phlegm.",
     "body_system": "respiratory",
     "is_red_flag": false
+  },
+  {
+    "id": "wheeze",
+    "name": "Wheeze",
+    "patient_description": "My chest is tight and I'm wheezing.",
+    "body_system": "respiratory",
+    "is_red_flag": false
+  },
+  {
+    "id": "dysuria",
+    "name": "Pain passing urine",
+    "patient_description": "It burns when I pass water.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "urinary_frequency",
+    "name": "Passing urine often",
+    "patient_description": "I keep needing the toilet to pass water.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "loin_pain",
+    "name": "Loin pain",
+    "patient_description": "I've got a terrible pain in my side, round to my back.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "haematuria",
+    "name": "Blood in the urine",
+    "patient_description": "There's blood in my wee.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "excessive_thirst",
+    "name": "Excessive thirst",
+    "patient_description": "I'm so thirsty all the time and I keep weeing.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "right_upper_quadrant_pain",
+    "name": "Pain under the right ribs",
+    "patient_description": "The pain is up here under my right ribs, especially after fatty food.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "epigastric_pain_to_back",
+    "name": "Upper abdominal pain going through to the back",
+    "patient_description": "It's a terrible pain in the top of my stomach that goes straight through to my back.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": true
+  },
+  {
+    "id": "haematemesis",
+    "name": "Vomiting blood",
+    "patient_description": "I've been sick and there was blood in it.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": true
+  },
+  {
+    "id": "melaena",
+    "name": "Black tarry stools",
+    "patient_description": "My stools have gone black and sticky.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": true
+  },
+  {
+    "id": "rash",
+    "name": "Itchy rash",
+    "patient_description": "I've come out in an itchy, lumpy rash.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "facial_swelling",
+    "name": "Swelling of the lips, tongue or face",
+    "patient_description": "My lips and tongue are swelling up.",
+    "body_system": "skin",
+    "is_red_flag": true
+  },
+  {
+    "id": "sore_throat",
+    "name": "Sore throat",
+    "patient_description": "My throat is so sore I can hardly swallow.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "red_hot_skin",
+    "name": "Red, hot, tender skin",
+    "patient_description": "My leg is red, hot and really sore.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "calf_swelling",
+    "name": "Swollen calf",
+    "patient_description": "One calf is swollen and tight.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "photophobia",
+    "name": "Light hurts the eyes",
+    "patient_description": "The light is hurting my eyes.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "pelvic_pain",
+    "name": "Lower abdominal pain",
+    "patient_description": "I've got cramping pain low down in my tummy.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
+  },
+  {
+    "id": "shoulder_tip_pain",
+    "name": "Shoulder tip pain",
+    "patient_description": "There's an odd pain in the tip of my shoulder.",
+    "body_system": "general",
+    "is_red_flag": true
+  },
+  {
+    "id": "reduced_urine",
+    "name": "Passing very little urine",
+    "patient_description": "I've hardly passed any water today.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "tremor",
+    "name": "Shaking",
+    "patient_description": "I feel shaky.",
+    "body_system": "neurological",
+    "is_red_flag": false
   }
 ]

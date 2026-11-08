@@ -1,0 +1,200 @@
+[
+  {
+    "id": "migraine",
+    "name": "Migraine",
+    "department": "neurology",
+    "description": "A severe, throbbing one-sided headache, often with nausea and sensitivity to light.",
+    "prevalence": 4,
+    "age_range": [
+      15,
+      60
+    ],
+    "female_fraction": 0.75,
+    "ambulance_probability": 0.1,
+    "presenting_complaint": "headache",
+    "symptoms": [
+      {
+        "symptom": "headache",
+        "probability": 1
+      },
+      {
+        "symptom": "photophobia",
+        "probability": 0.8
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.7
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.35
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        84,
+        10
+      ],
+      "systolic_bp": [
+        128,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0.0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "metoclopramide",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sumatriptan",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Headache settled. Discharged with a migraine plan and GP follow-up."
+  },
+  {
+    "id": "breakthrough_seizure",
+    "name": "Seizure in known epilepsy",
+    "department": "neurology",
+    "description": "A typical seizure in someone with diagnosed epilepsy, now recovered.",
+    "prevalence": 3,
+    "age_range": [
+      16,
+      80
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.8,
+    "presenting_complaint": "seizures",
+    "symptoms": [
+      {
+        "symptom": "seizures",
+        "probability": 1
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.6
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        12
+      ],
+      "systolic_bp": [
+        134,
+        14
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        37.1,
+        0.3
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -10,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0.3
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "capillary_glucose",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Recovery position and seizure observations",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Check antiepileptic adherence",
+        "performed_by": "doctor",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Back to normal. Discharged with their usual antiepileptic medicine and an epilepsy nurse review."
+  }
+]
