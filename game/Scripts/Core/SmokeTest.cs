@@ -529,8 +529,15 @@ public partial class SmokeTest : Node
         Check(sim.CheckCorridorChair(new Simulation.World.GridCoord(desk.Rect.X + 2, desk.Rect.Y + 2)).Problems.Any(p => p.Contains("corridors")), "A chair should not go inside a room.");
 
         var clock = hospital.Session.Clock;
-        // Clinics run 09:00 to 16:30 on weekdays: run on to the next morning's clinic if need be.
-        var limit = clock.Now.Date.AddDays(1).AddHours(12);
+        // Clinics run 09:00 to 16:30 on weekdays: run on to the next weekday morning's clinic if need be
+        // (a Friday evening build would otherwise stop on Saturday, when there are no clinics).
+        var nextClinicDay = clock.Now.Date.AddDays(1);
+        while (nextClinicDay.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        {
+            nextClinicDay = nextClinicDay.AddDays(1);
+        }
+
+        var limit = nextClinicDay.AddHours(12);
         while (clock.Now < limit && !(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)
                                       && sim.Outpatients.Count(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting && !o.IsMoving) >= 1
                                       && sim.Outpatients.Any(o => o.Stage == Simulation.Patients.OutpatientStage.BeingSeen)))
