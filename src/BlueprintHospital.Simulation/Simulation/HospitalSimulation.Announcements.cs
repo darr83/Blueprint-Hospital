@@ -28,7 +28,7 @@ public enum AnnouncementKind
 /// A tannoy announcement. <see cref="Clips"/> are the recorded lines to play in order (after the chime);
 /// <see cref="Text"/> is what is said, for the notification feed and subtitles.
 /// </summary>
-public sealed record Announcement(AnnouncementKind Kind, string Text, IReadOnlyList<string> Clips) : IGameEvent;
+public sealed record Announcement(AnnouncementKind Kind, string Text, IReadOnlyList<string> Clips, int? PatientId = null) : IGameEvent;
 
 /// <summary>An ambulance that has phoned ahead and hasn't arrived yet.</summary>
 public sealed record PendingPreAlert(string ConditionId, DateTime DueAt);
@@ -96,7 +96,7 @@ public sealed partial class HospitalSimulation
         var number = BayNumber(bay);
         var place = number is { } n ? $"Resus {n}" : "Resus";
         Events.Publish(new Announcement(AnnouncementKind.StaffCall, $"{who} is required at {place}.",
-            new[] { $"call_{who.ToLowerInvariant()}_resus_{number?.ToString() ?? "x"}" }));
+            new[] { $"call_{who.ToLowerInvariant()}_resus_{number?.ToString() ?? "x"}" }, patient.Id));
         member.PagedUntil = Now + PageDelay;
         member.StatusText = $"Called to {bay.Name}";
         return true;
@@ -115,14 +115,14 @@ public sealed partial class HospitalSimulation
             if (patient.Condition.CanBeFatal && patient.Severity >= 0.95 && _arrestCalled.Add(patient.Id))
             {
                 var place = PlaceName(space);
-                Events.Publish(new Announcement(AnnouncementKind.CardiacArrest, $"Adult cardiac arrest, {place.Spoken}.", new[] { $"arrest_{place.Key}" }));
+                Events.Publish(new Announcement(AnnouncementKind.CardiacArrest, $"Adult cardiac arrest, {place.Spoken}.", new[] { $"arrest_{place.Key}" }, patient.Id));
             }
 
             if (space.Kind == CareSpaceKind.Resus && patient.Condition.Department == "trauma" && patient.ArrivalMethod == ArrivalMethod.Ambulance
                 && _traumaCalled.Add(patient.Id))
             {
                 var place = PlaceName(space);
-                Events.Publish(new Announcement(AnnouncementKind.TraumaCall, $"Trauma team to {place.Spoken}.", new[] { $"trauma_{place.Key}" }));
+                Events.Publish(new Announcement(AnnouncementKind.TraumaCall, $"Trauma team to {place.Spoken}.", new[] { $"trauma_{place.Key}" }, patient.Id));
             }
         }
     }

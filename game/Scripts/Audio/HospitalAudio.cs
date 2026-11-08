@@ -28,7 +28,13 @@ public partial class HospitalAudio : Node2D
     private const int MaxOneShots = 14;
     private const double FadeSpeed = 3.0;
 
-    private static readonly string[] Gibberish = { "gibberish_question", "gibberish_complaint", "gibberish_thanks", "gibberish_laugh" };
+    private static readonly string[] Gibberish =
+    {
+        "gibberish_question", "gibberish_complaint", "gibberish_thanks", "gibberish_laugh",
+        "gibberish_angry", "gibberish_scared", "gibberish_relieved", "sigh",
+    };
+
+    private static readonly string[] Sniffles = { "sneeze_1", "sneeze_2", "sniffle" };
     private static readonly string[] Coughs = { "cough_1", "cough_2", "cough_3" };
 
     private readonly Dictionary<string, Loop> _loops = new();
@@ -68,6 +74,8 @@ public partial class HospitalAudio : Node2D
         var announcer = new Announcer();
         AddChild(announcer);
         _subscriptions.Add(session.Events.Subscribe<Announcement>(announcer.Enqueue));
+        _subscriptions.Add(session.Events.Subscribe<Announcement>(OnAnnouncement));
+        _subscriptions.Add(session.Events.Subscribe<PatientArrived>(OnPatientArrived));
 
         _subscriptions.Add(session.Events.Subscribe<PatientLeft>(OnPatientLeft));
         _subscriptions.Add(session.Events.Subscribe<Notification>(OnNotification));
@@ -115,6 +123,7 @@ public partial class HospitalAudio : Node2D
         UpdateAmbulances();
         UpdateRandomVoices(zoom);
         UpdateBuildingAndMoney();
+        UpdatePack2(zoom);
         UpdateLoops(delta);
         _oneShots.RemoveAll(p => !IsInstanceValid(p));
     }
@@ -128,7 +137,13 @@ public partial class HospitalAudio : Node2D
 
         // Inside: steady, a little louder as you get closer; quieter overnight.
         var inside = (0.55 + (0.45 * SoundFalloff.ZoomGain(zoom, 0.3, 1.0))) * (night ? 0.55 : 1.0);
-        WantFlat("amb_hospital_day", inside, AudioSettings.AmbienceBus);
+        // Overnight, the proper night loop takes over from the muffled day one when it's there.
+        var nightLoop = night && SoundLibrary.Has("amb_hospital_night");
+        WantFlat(nightLoop ? "amb_hospital_night" : "amb_hospital_day", nightLoop ? inside / 0.55 * 0.8 : inside, AudioSettings.AmbienceBus);
+        if (IsRainyDay())
+        {
+            WantFlat("amb_rain", 0.35, AudioSettings.AmbienceBus);
+        }
 
         // Outside: the car park, mainly when you're zoomed right out.
         var outside = 0.6 * (1 - SoundFalloff.ZoomGain(zoom, 0.25, 0.7));
@@ -354,10 +369,21 @@ public partial class HospitalAudio : Node2D
                 var pos = _world.FootPosition(ambulance);
                 var zoom = GetViewport().GetCanvasTransform().X.X;
                 var gain = Spatial(pos, zoom, 0.35, 1.0);
-                PlayAt("ambulance_arrive", pos, gain * 0.7, AudioSettings.EffectsBus);
+                PlayAt("reversing_beep", pos, gain * 0.5, AudioSettings.EffectsBus);
+                PlayAt("ambulance_arrive", pos, gain * 0.7, AudioSettings.EffectsBus, delay: 2.5);
                 if (ambulance.Purpose == AmbulancePurpose.Arrival)
                 {
-                    PlayAt("ambulance_doors", pos, gain * 0.8, AudioSettings.EffectsBus, delay: 3.5);
+                    PlayAt("ambulance_doors", pos, gain * 0.8, AudioSettings.EffectsBus, delay: 6);
+                }
+            }
+            else if (ambulance.State == AmbulanceState.Departing && previous is AmbulanceState.AtBay)
+            {
+                var pos = _world.FootPosition(ambulance);
+                var gain = Spatial(pos, GetViewport().GetCanvasTransform().X.X, 0.35, 1.0);
+                PlayAt("ambulance_leave", pos, gain * 0.6, AudioSettings.EffectsBus);
+                if (ambulance.Purpose == AmbulancePurpose.Transfer && OffCooldown("siren_away", 30))
+                {
+                    PlayFlat("siren_away", 0.4, AudioSettings.EffectsBus, delay: 3);
                 }
             }
 
@@ -406,7 +432,10 @@ public partial class HospitalAudio : Node2D
         {
             var roll = _random.NextDouble();
             sound = roll < 0.3 ? Coughs[_random.Next(Coughs.Length)]
-                : roll < 0.75 ? (patient.Age < 12 ? "gibberish_child" : news2 >= 5 ? "gibberish_ouch" : Gibberish[_random.Next(Gibberish.Length)])
+                : roll < 0.42 ? Sniffles[_random.Next(Sniffles.Length)]
+                : roll < 0.8 ? (patient.Age < 6 ? "toddler_cry" : patient.Age < 12 ? "gibberish_child" : news2 >= 5 ? "gibberish_ouch" : Gibberish[_random.Next(Gibberish.Length)])
+                : roll < 0.88 && IsVomiting(patient) ? "retch"
+                : roll < 0.95 && IsDrunkHour() && patient.Age is >= 18 and < 50 ? "drunk_shout"
                 : null;
         }
 
@@ -488,6 +517,12 @@ public partial class HospitalAudio : Node2D
                 }
 
                 PlayFlat("death_sting", 0.9, AudioSettings.MusicBus, delay: monitor is null ? 0 : 1.5);
+                if (monitor is not null)
+                {
+                    // Relatives at the bedside.
+                    var pos = IsoDraw.ToScreen(monitor.X, monitor.Y);
+                    PlayAt("adult_cry", pos, Spatial(pos, GetViewport().GetCanvasTransform().X.X, 0.6, 1.3) * 0.5, AudioSettings.EffectsBus, delay: 9);
+                }
                 break;
             }
 
@@ -503,6 +538,12 @@ public partial class HospitalAudio : Node2D
 
     private void OnNotification(Notification n)
     {
+        if (n.Text.StartsWith("Unlocked ", StringComparison.Ordinal))
+        {
+            PlayUi("department_unlocked", 0.8);
+            return;
+        }
+
         if (n.Level == NotificationLevel.Critical && OffCooldown("notify_urgent", 3))
         {
             PlayUi("notify_urgent", 0.7);
@@ -519,6 +560,10 @@ public partial class HospitalAudio : Node2D
         {
             HookButton(button);
         }
+        else if (node is TabBar or TabContainer or Godot.Range)
+        {
+            HookControl(node);
+        }
         else if (node is ModalPanel && OffCooldown("panel", 0.3))
         {
             PlayUi("ui_panel_open", 0.6);
@@ -530,6 +575,10 @@ public partial class HospitalAudio : Node2D
         if (node is BaseButton button)
         {
             HookButton(button);
+        }
+        else if (node is TabBar or TabContainer or Godot.Range)
+        {
+            HookControl(node);
         }
 
         foreach (var child in node.GetChildren())
