@@ -38,6 +38,9 @@ public sealed class LayoutState
 {
     public long Balance { get; init; }
 
+    /// <summary>Floors in the building, counting the ground floor. Saves made before floors were added have 1.</summary>
+    public int Floors { get; init; } = 1;
+
     public IReadOnlyList<AreaState> BuildingExtensions { get; init; } = Array.Empty<AreaState>();
 
     public IReadOnlyList<RoomState> Rooms { get; init; } = Array.Empty<RoomState>();
@@ -98,19 +101,22 @@ public sealed partial class HospitalSimulation
         bool Open(GridCoord t) => _spaces.Values.Any(s => s != replacing && s.Rect.Contains(t)
             && (s.Kind == CareSpaceKind.Corridor || (s.Kind == CareSpaceKind.Waiting && template.Kind != CareSpaceKind.Waiting)));
 
+        // A lift or staircase has its door in the same place on every floor: choose it from the best floor.
+        var floors = template.IsShaft ? Enumerable.Range(0, Site.FloorCount).Select(f => Site.OnFloor(Site.Local(rect), f)).ToList() : new List<GridRect> { rect };
         (WallSide Side, int Start, int Run)? best = null;
-        foreach (var side in new[] { WallSide.South, WallSide.East, WallSide.North, WallSide.West })
+        foreach (var (side, onFloor) in new[] { WallSide.South, WallSide.East, WallSide.North, WallSide.West }.SelectMany(side => floors.Select(f => (side, f))))
         {
+            var r = onFloor;
             var length = side is WallSide.North or WallSide.South ? rect.Width : rect.Length;
             var run = 0;
             for (var i = 0; i < length; i++)
             {
                 var outside = side switch
                 {
-                    WallSide.North => new GridCoord(rect.X + i, rect.Y - 1),
-                    WallSide.South => new GridCoord(rect.X + i, rect.Bottom),
-                    WallSide.West => new GridCoord(rect.X - 1, rect.Y + i),
-                    _ => new GridCoord(rect.Right, rect.Y + i),
+                    WallSide.North => new GridCoord(r.X + i, r.Y - 1),
+                    WallSide.South => new GridCoord(r.X + i, r.Bottom),
+                    WallSide.West => new GridCoord(r.X - 1, r.Y + i),
+                    _ => new GridCoord(r.Right, r.Y + i),
                 };
 
                 // The corner tiles of a wall can't take a door, so they don't count.
@@ -166,6 +172,11 @@ public sealed partial class HospitalSimulation
             return new BuildCheck(0, new[] { $"Unknown room type '{plan.TemplateId}'." });
         }
 
+        if (template.IsShaft)
+        {
+            return CheckShaft(template, plan, replacingId);
+        }
+
         var room = Furnish(plan);
         var replacing = replacingId is null ? null : FindSpace(replacingId);
         var cost = template.IsCorridor ? CorridorCost(template, plan.Rect, replacing) : replacing is null ? room.BuildCost : MoveCost(replacing, room);
@@ -175,9 +186,9 @@ public sealed partial class HospitalSimulation
         {
             problems.Add($"Unlock {locked.Name} first (£{locked.OpeningCost:N0}, in the Departments tab).");
         }
-        if (!plan.Rect.Tiles().All(t => MainBuilding.Contains(t)))
+        if (!plan.Rect.Tiles().All(Site.IsIndoors))
         {
-            problems.Add("Must be inside the building. Extend the building first.");
+            problems.Add(Site.FloorOf(plan.Rect) == 0 ? "Must be inside the building. Extend the building first." : "Must be inside the building's outline on this floor.");
         }
 
         // Corridors may overlap other corridors (they simply join up); nothing else may overlap.
@@ -233,7 +244,7 @@ public sealed partial class HospitalSimulation
         return new BuildCheck(cost, problems, room);
     }
 
-    private static void CheckSize(RoomTemplate template, RoomPlan plan, List<string> problems)
+    internal static void CheckSize(RoomTemplate template, RoomPlan plan, List<string> problems)
     {
         var (w, d) = RoomLayoutEngine.LocalSize(plan.Rect, plan.DoorSide);
         if (template.IsCorridor)
@@ -263,7 +274,7 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>Each door must open onto a corridor or the waiting room (a waiting room's second door may open to the street).</summary>
-    private void CheckDoors(CareSpace room, CareSpace? replacing, List<string> problems)
+    internal void CheckDoors(CareSpace room, CareSpace? replacing, List<string> problems)
     {
         for (var i = 0; i < room.Doors.Count; i++)
         {
@@ -283,6 +294,12 @@ public sealed partial class HospitalSimulation
     private bool JoinsCirculation(GridRect rect, CareSpace? replacing)
     {
         if (MainBuilding.Entrances.Any(e => rect.Contains(e.Tile)))
+        {
+            return true;
+        }
+
+        // Upstairs, corridors start from the landing outside a lift or staircase door.
+        if (_spaces.Values.Where(s => s.IsShaft).SelectMany(s => s.Doors.SelectMany(d => DoorTiles(s, d).Select(t => Step(t, d.Side)))).Any(rect.Contains))
         {
             return true;
         }
@@ -331,7 +348,8 @@ public sealed partial class HospitalSimulation
     private IEnumerable<string> CheckReachable(IReadOnlyCollection<CareSpace> spaces)
     {
         var nav = EmergencyDepartmentLayout.BuildNavGrid(Site, spaces);
-        var reached = Flood(nav, WalkInSpawn);
+        var reached = nav.Reachable(WalkInSpawn);
+        var stepFree = Site.FloorCount > 1 ? nav.Reachable(WalkInSpawn, stepFreeOnly: true) : reached;
 
         foreach (var entrance in MainBuilding.Entrances.Where(e => !reached.Contains(e.Tile)))
         {
@@ -351,28 +369,11 @@ public sealed partial class HospitalSimulation
             {
                 yield return $"{space.Name} could not be reached.";
             }
-        }
-    }
-
-    private static HashSet<GridCoord> Flood(NavGrid nav, GridCoord start)
-    {
-        var seen = new HashSet<GridCoord> { start };
-        var queue = new Queue<GridCoord>();
-        queue.Enqueue(start);
-        while (queue.TryDequeue(out var c))
-        {
-            foreach (var side in new[] { WallSide.North, WallSide.East, WallSide.South, WallSide.West })
+            else if (NeedsLift(space) && !stepFree.Contains(space.PatientSpot) && !space.Beds.All(b => stepFree.Contains(b.PatientSpot)))
             {
-                var n = Step(c, side);
-                if (!seen.Contains(n) && nav.CanStep(c, n))
-                {
-                    seen.Add(n);
-                    queue.Enqueue(n);
-                }
+                yield return $"{space.Name} needs a lift: wheelchairs and trolleys can't use the stairs.";
             }
         }
-
-        return seen;
     }
 
     private static GridCoord Step(GridCoord c, WallSide side) => side switch
@@ -421,7 +422,8 @@ public sealed partial class HospitalSimulation
             return new BuildCheck(0, new[] { "That room no longer exists." });
         }
 
-        var problems = CheckRoomIsClear(space).ToList();
+        var parts = ShaftOf(space);
+        var problems = parts.SelectMany(CheckRoomIsClear).Distinct().ToList();
         if (RequiredKinds.Contains(space.Kind) && SpacesOfKind(space.Kind).Count() == 1)
         {
             problems.Add($"The department needs at least one {space.Name.ToLowerInvariant()}.");
@@ -429,12 +431,12 @@ public sealed partial class HospitalSimulation
 
         if (problems.Count == 0)
         {
-            problems.AddRange(CheckReachable(_spaces.Values.Where(s => s != space).ToList()));
+            problems.AddRange(CheckReachable(_spaces.Values.Where(s => !parts.Contains(s)).ToList()));
         }
 
         var value = space.Kind == CareSpaceKind.Corridor && Database.RoomTemplates.TryGetValue(space.TemplateId, out var corridor)
             ? CorridorCost(corridor, space.Rect, space)
-            : space.BuildCost;
+            : parts.Sum(p => p.BuildCost);
         return new BuildCheck(-(int)Math.Round(value * DemolitionRefund), problems);
     }
 
@@ -444,7 +446,7 @@ public sealed partial class HospitalSimulation
         var problems = new List<string>();
         var building = MainBuilding;
         var newTiles = area.Tiles().Where(t => !building.Contains(t)).ToList();
-        var cost = (int)Math.Round(newTiles.Count * Units.MetresPerTile * Units.MetresPerTile * ExtensionCostPerSquareMetre);
+        var cost = (int)Math.Round(newTiles.Count * Units.MetresPerTile * Units.MetresPerTile * ExtensionCostPerSquareMetre * Site.FloorCount);
 
         if (area.Width < 2 || area.Length < 2)
         {
@@ -523,6 +525,12 @@ public sealed partial class HospitalSimulation
         }
 
         var template = Database.RoomTemplates[plan.TemplateId];
+        if (template.IsShaft)
+        {
+            BuildShaft(template, plan, name ?? NextName(template), check.Cost);
+            return check;
+        }
+
         var id = NewRoomId(template);
         var room = Furnish(plan, id, name ?? NextName(template));
         _spaces[id] = room;
@@ -560,7 +568,11 @@ public sealed partial class HospitalSimulation
         }
 
         var space = _spaces[id];
-        _spaces.Remove(id);
+        foreach (var part in ShaftOf(space))
+        {
+            _spaces.Remove(part.Id);
+        }
+
         Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Demolished {space.Name}; £{-check.Cost:N0} refunded.");
         AfterLayoutChange();
@@ -577,7 +589,8 @@ public sealed partial class HospitalSimulation
 
         Site.ExtendBuilding(MainBuilding, area);
         Book(MoneyCategory.Construction, -check.Cost);
-        Notifications.Add(Now, NotificationLevel.Info, $"Extended the building by {Units.AreaSquareMetres(area.Width, area.Length):0} m² for £{check.Cost:N0}.");
+        var storeys = Site.FloorCount > 1 ? $" on all {Site.FloorCount} floors" : string.Empty;
+        Notifications.Add(Now, NotificationLevel.Info, $"Extended the building by {Units.AreaSquareMetres(area.Width, area.Length):0} m²{storeys} for £{check.Cost:N0}.");
         AfterLayoutChange();
         return check;
     }
@@ -586,7 +599,11 @@ public sealed partial class HospitalSimulation
     {
         if (FindSpace(id) is { } space && !string.IsNullOrWhiteSpace(name))
         {
-            space.Name = name.Trim();
+            foreach (var part in ShaftOf(space))
+            {
+                part.Name = name.Trim();
+            }
+
             Events.Publish(new LayoutChanged());
         }
     }
@@ -641,7 +658,7 @@ public sealed partial class HospitalSimulation
         {
             if (agent.Destination is { } destination)
             {
-                var path = Nav.FindPath(agent.Tile, destination);
+                var path = PathFor(agent, destination);
                 if (path.Count > 0)
                 {
                     agent.FollowPath(path);
@@ -677,6 +694,7 @@ public sealed partial class HospitalSimulation
     public LayoutState CaptureLayout() => new()
     {
         Balance = Balance,
+        Floors = Site.FloorCount,
         BuildingExtensions = MainBuilding.Extensions.Select(e => new AreaState(e.X, e.Y, e.Width, e.Length)).ToList(),
         Rooms = _spaces.Values.OrderBy(s => s.Id, StringComparer.Ordinal).Select(s =>
         {
@@ -694,6 +712,8 @@ public sealed partial class HospitalSimulation
         {
             Site.ExtendBuilding(MainBuilding, new GridRect(e.X, e.Y, e.Width, e.Length));
         }
+
+        Site.SetFloorCount(state.Floors);
 
         if (state.Rooms.Count > 0)
         {

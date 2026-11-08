@@ -211,7 +211,7 @@ public partial class BuildTool : Node2D
                 what = $"Built {Template.Name.ToLowerInvariant()}";
                 break;
             default:
-                result = _sim.ExtendBuilding(_rect);
+                result = _sim.ExtendBuilding(_sim.Site.Local(_rect));
                 what = "Extended the building";
                 break;
         }
@@ -272,7 +272,7 @@ public partial class BuildTool : Node2D
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
-            _ => _sim.CheckExtension(_rect),
+            _ => _sim.CheckExtension(_sim.Site.Local(_rect)),
         };
 
         QueueRedraw();

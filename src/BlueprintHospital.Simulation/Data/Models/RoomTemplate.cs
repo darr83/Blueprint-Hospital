@@ -46,6 +46,12 @@ public enum RoomLayoutKind
 
     /// <summary>A row of vending machines (up to 4) and a water machine, with a seat or two if there is room.</summary>
     Vending,
+
+    /// <summary>A lift car: empty floor, drawn as the lift. It stands in the same place on every floor.</summary>
+    Lift,
+
+    /// <summary>A flight of stairs, drawn as the steps. It stands in the same place on every floor.</summary>
+    Stairs,
 }
 
 /// <summary>What kind of unit a ward is, when it is more than a plain ward.</summary>
@@ -123,6 +129,9 @@ public sealed class RoomTemplate : IDataRecord
 
     /// <summary>True for corridors: open floor with no walls or furniture.</summary>
     public bool IsCorridor => Kind == CareSpaceKind.Corridor;
+
+    /// <summary>True for lifts and stairs, which are built through every floor at once.</summary>
+    public bool IsShaft => Kind is CareSpaceKind.Lift or CareSpaceKind.Stairs;
 
     public void Validate(ValidationContext context)
     {

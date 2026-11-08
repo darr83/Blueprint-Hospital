@@ -44,7 +44,8 @@ public static class EmergencyDepartmentLayout
     /// <summary>Builds the walkability grid: paths and floors walkable, walls blocking except at doors and entrances.</summary>
     public static NavGrid BuildNavGrid(SiteMap site, IEnumerable<CareSpace> spaces)
     {
-        var grid = new NavGrid(site.Width, site.Length);
+        var all = spaces as IReadOnlyCollection<CareSpace> ?? spaces.ToList();
+        var grid = new NavGrid(site.Width, site.GridLength, site.FloorStride);
         foreach (var tile in site.Bounds.Tiles())
         {
             grid.SetCost(tile, site[tile] switch
@@ -70,11 +71,29 @@ public static class EmergencyDepartmentLayout
             }
         }
 
-        foreach (var space in spaces.Where(s => s.HasWalls))
+        // Upper floors: the building's outline, walled all round (there are no street doors upstairs).
+        for (var floor = 1; floor < site.FloorCount; floor++)
+        {
+            foreach (var building in site.Buildings)
+            {
+                foreach (var tile in building.Areas.SelectMany(a => a.Tiles()))
+                {
+                    grid.SetCost(site.OnFloor(tile, floor), 1);
+                }
+
+                foreach (var (inside, outside, _) in building.OuterEdges())
+                {
+                    grid.BlockEdge(site.OnFloor(inside, floor), site.OnFloor(outside, floor));
+                }
+            }
+        }
+
+        foreach (var space in all.Where(s => s.HasWalls))
         {
             BlockPerimeter(grid, space.Rect, space.IsDoor);
         }
 
+        VerticalTransport.AddLinks(grid, site, all);
         return grid;
     }
 

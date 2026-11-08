@@ -9,7 +9,7 @@ namespace BlueprintHospital.Simulation.Core;
 /// </summary>
 public sealed class SaveGame
 {
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
 
     public int FormatVersion { get; init; } = CurrentFormatVersion;
 

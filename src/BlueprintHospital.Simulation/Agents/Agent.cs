@@ -8,7 +8,11 @@ public abstract class Agent
     /// <summary>Walking speed in tiles per game second (1.2 m/s).</summary>
     public const double DefaultWalkSpeed = 1.2 / Units.MetresPerTile;
 
-    private readonly Queue<GridCoord> _path = new();
+    /// <summary>Tiles still to walk, each with how far the ride to it counts as (0 for an ordinary step; more for a lift or stairs).</summary>
+    private readonly Queue<(GridCoord Tile, int Hop)> _path = new();
+
+    /// <summary>How far through the current lift ride or stair climb the agent is, in tiles.</summary>
+    private double _hopProgress;
 
     public int Id { get; init; }
 
@@ -27,7 +31,10 @@ public abstract class Agent
     public bool IsMoving => _path.Count > 0;
 
     /// <summary>The tiles still to walk through, in order, ending at <see cref="Destination"/>.</summary>
-    public IEnumerable<GridCoord> RemainingPath => _path;
+    public IEnumerable<GridCoord> RemainingPath => _path.Select(p => p.Tile);
+
+    /// <summary>True while riding a lift or climbing stairs to another floor.</summary>
+    public bool IsChangingFloor => _path.Count > 0 && _path.Peek().Hop > 0;
 
     public GridCoord Tile => new((int)Math.Floor(X), (int)Math.Floor(Y));
 
@@ -42,6 +49,7 @@ public abstract class Agent
         X = PreviousX = tile.X + 0.5;
         Y = PreviousY = tile.Y + 0.5;
         _path.Clear();
+        _hopProgress = 0;
         Destination = null;
     }
 
@@ -49,9 +57,11 @@ public abstract class Agent
     public void FollowPath(IReadOnlyList<GridCoord> path)
     {
         _path.Clear();
-        foreach (var tile in path)
+        _hopProgress = 0;
+        var nav = path as NavPath;
+        for (var i = 0; i < path.Count; i++)
         {
-            _path.Enqueue(tile);
+            _path.Enqueue((path[i], nav?.HopAt(i) ?? 0));
         }
 
         Destination = path.Count > 0 ? path[^1] : null;
@@ -60,6 +70,7 @@ public abstract class Agent
     public void StopMoving()
     {
         _path.Clear();
+        _hopProgress = 0;
         Destination = null;
     }
 
@@ -75,6 +86,7 @@ public abstract class Agent
         Y = y;
         Facing = facing;
         _path.Clear();
+        _hopProgress = 0;
         Destination = null;
     }
 
@@ -87,7 +99,25 @@ public abstract class Agent
 
         while (budget > 0 && _path.Count > 0)
         {
-            var next = _path.Peek();
+            var (next, hop) = _path.Peek();
+            if (hop > 0)
+            {
+                // In the lift or on the stairs: wait out the ride, then step out on the other floor.
+                _hopProgress += budget;
+                if (_hopProgress < hop)
+                {
+                    budget = 0;
+                    break;
+                }
+
+                budget = _hopProgress - hop;
+                _hopProgress = 0;
+                X = PreviousX = next.X + 0.5;
+                Y = PreviousY = next.Y + 0.5;
+                _path.Dequeue();
+                continue;
+            }
+
             var tx = next.X + 0.5;
             var ty = next.Y + 0.5;
             var dx = tx - X;

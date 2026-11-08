@@ -60,6 +60,28 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised by the rotate buttons: -1 anticlockwise (Q), +1 clockwise (E).</summary>
     public event Action<int>? RotateRequested;
 
+    /// <summary>Raised by the floor buttons: +1 up a floor (Page Up), -1 down (Page Down).</summary>
+    public event Action<int>? FloorStepRequested;
+
+    /// <summary>Raised by the "add floor" button: opens the Building tab of the build menu.</summary>
+    public event Action? AddFloorRequested;
+
+    private readonly Label _floorLabel = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    private Button? _floorUp;
+    private Button? _floorDown;
+
+    /// <summary>Shows which floor is in view on the floor switcher, and greys out the buttons at the top and bottom.</summary>
+    public void SetFloorShown(int floor, int floors)
+    {
+        _floorLabel.Text = SiteMap.FloorLabel(floor);
+        _floorLabel.TooltipText = $"{SiteMap.FloorName(floor)} of {floors}";
+        if (_floorUp is not null && _floorDown is not null)
+        {
+            _floorUp.Disabled = floor >= floors - 1;
+            _floorDown.Disabled = floor <= 0;
+        }
+    }
+
     /// <summary>Where the selected person is in the world and their name, for the tag above their head.</summary>
     public Func<(Vector2 World, string Name)?>? SelectionAnchor { get; set; }
 
@@ -300,8 +322,10 @@ public partial class MainHUD : CanvasLayer
         }
 
         var tile = new GridCoord(x, y);
-        var building = site.BuildingAt(tile);
-        var where = building is null ? Describe(site[tile]) : building.Name;
+        var local = site.Local(tile);
+        var floor = site.FloorOf(tile);
+        var building = site.BuildingAt(local);
+        var where = building is null ? (floor == 0 ? Describe(site[local]) : "Open air") : floor == 0 ? building.Name : $"{building.Name}, {SiteMap.FloorName(floor).ToLowerInvariant()}";
         foreach (var space in _session.Simulation.Spaces)
         {
             if (space.Rect.Contains(tile) && space.Kind != BlueprintHospital.Simulation.Hospital.CareSpaceKind.Corridor)
@@ -310,7 +334,7 @@ public partial class MainHUD : CanvasLayer
             }
         }
 
-        _hoverLabel.Text = $"{where}   ·   {Units.TilesToMetres(x):0.0} m, {Units.TilesToMetres(y):0.0} m";
+        _hoverLabel.Text = $"{where}   ·   {Units.TilesToMetres(local.X):0.0} m, {Units.TilesToMetres(local.Y):0.0} m";
     }
 
     // ---------------------------------------------------------------- top bar
@@ -655,6 +679,26 @@ public partial class MainHUD : CanvasLayer
         _mapControls.OffsetBottom = -Gap;
         _mapControls.OffsetTop = -Gap;
         _mapControls.AddThemeConstantOverride("separation", 6);
+        // Floor switcher: up, the floor in view, down, and a button to build another floor.
+        var addFloor = MapButton("+▲", "Build another floor (in the build menu's Building tab)", () => AddFloorRequested?.Invoke());
+        addFloor.AddThemeFontSizeOverride("font_size", 15);
+        _mapControls.AddChild(addFloor);
+        _floorUp = MapButton("▲", "Up a floor (Page Up)", () => FloorStepRequested?.Invoke(1));
+        _floorUp.AddThemeFontSizeOverride("font_size", 15);
+        _mapControls.AddChild(_floorUp);
+        var floorCard = new PanelContainer { CustomMinimumSize = new Vector2(44, 34), MouseFilter = Control.MouseFilterEnum.Pass };
+        var floorBox = UiStyle.Box(UiStyle.Blue, 8);
+        floorCard.AddThemeStyleboxOverride("panel", floorBox);
+        _floorLabel.AddThemeColorOverride("font_color", Colors.White);
+        _floorLabel.AddThemeFontSizeOverride("font_size", 18);
+        _floorLabel.MouseFilter = Control.MouseFilterEnum.Stop;
+        floorCard.AddChild(_floorLabel);
+        _mapControls.AddChild(floorCard);
+        _floorDown = MapButton("▼", "Down a floor (Page Down)", () => FloorStepRequested?.Invoke(-1));
+        _floorDown.AddThemeFontSizeOverride("font_size", 15);
+        _mapControls.AddChild(_floorDown);
+        SetFloorShown(0, 1);
+
         _mapControls.AddChild(MapButton("+", "Zoom in (mouse wheel)", () => ZoomRequested?.Invoke(1.25f)));
         _mapControls.AddChild(MapButton("−", "Zoom out (mouse wheel)", () => ZoomRequested?.Invoke(0.8f)));
         _mapControls.AddChild(MapButton("⟲", "Turn the view anticlockwise (Q)", () => RotateRequested?.Invoke(-1)));

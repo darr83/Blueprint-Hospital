@@ -784,7 +784,7 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            var path = Nav.FindPath(agent.Tile, new GridCoord(x, y));
+            var path = PathFor(agent, new GridCoord(x, y));
             if (path.Count > 0)
             {
                 agent.FollowPath(path);

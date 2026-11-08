@@ -36,7 +36,7 @@ public partial class OverlayLayer : Node2D
         }
 
         var sim = _world.Simulation;
-        foreach (var space in sim.Spaces.Where(s => s.Kind != CareSpaceKind.Corridor))
+        foreach (var space in sim.Spaces.Where(s => s.Kind != CareSpaceKind.Corridor && IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             RoomCard(space);
         }
@@ -50,7 +50,7 @@ public partial class OverlayLayer : Node2D
             Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LatestObservations?.News2.Total ?? 0);
         }
 
-        foreach (var patient in sim.Patients.Where(p => _world.IsOnMap(p) && !_world.IsLying(p)))
+        foreach (var patient in sim.Patients.Where(p => _world.IsOnMap(p) && !_world.IsLying(p) && _world.OnViewFloor(p)))
         {
             TriageMarker(patient, _world.FootPosition(patient) + new Vector2(0, _world.IsSeated(patient) ? -64 : -71));
         }
@@ -58,7 +58,7 @@ public partial class OverlayLayer : Node2D
         var zoom = GetViewport().GetCanvasTransform().X.X;
         foreach (var member in sim.Staff)
         {
-            if (member.Activity == StaffActivity.Working && (zoom >= BubbleZoom || ReferenceEquals(_world.Selected, member)))
+            if (member.Activity == StaffActivity.Working && _world.OnViewFloor(member) && (zoom >= BubbleZoom || ReferenceEquals(_world.Selected, member)))
             {
                 StaffBubble(member);
             }

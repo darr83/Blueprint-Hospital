@@ -30,11 +30,42 @@ public static class IsoDraw
     /// <summary>How many quarter turns the view is rotated (0 to 3). Q and E turn it.</summary>
     public static int Rotation { get; private set; }
 
-    /// <summary>The view turns about the middle of the site.</summary>
-    public static void SetSite(int width, int length)
+    private static int _floorStride;
+
+    /// <summary>The floor being looked at (0 = ground). Page Up and Page Down change it.</summary>
+    public static int ViewFloor { get; private set; }
+
+    /// <summary>How far the floor in view is from the ground floor's slice of the grid, in tiles.</summary>
+    public static double FloorShift => ViewFloor * _floorStride;
+
+    /// <summary>The view turns about the middle of the site. <paramref name="floorStride"/> is the grid rows from one floor to the next.</summary>
+    public static void SetSite(int width, int length, int floorStride = 0)
     {
         _centreX = width / 2.0;
         _centreY = length / 2.0;
+        _floorStride = floorStride;
+    }
+
+    public static void SetViewFloor(int floor) => ViewFloor = Math.Max(0, floor);
+
+    /// <summary>Which floor a grid position is on.</summary>
+    public static int FloorOf(double y) => _floorStride <= 0 || y < _floorStride ? 0 : (int)(y / _floorStride);
+
+    /// <summary>True if a grid position is on the floor in view, so it is drawn.</summary>
+    public static bool OnViewFloor(double y) => FloorOf(y) == ViewFloor;
+
+    /// <summary>Screen position of a ground-floor (site) grid point, whichever floor is in view: the grounds and the camera.</summary>
+    public static Vector2 ToScreenGround(double x, double y)
+    {
+        var (rx, ry) = Rotate(x, y);
+        return new((float)((rx - ry) * 32), (float)((rx + ry) * 16));
+    }
+
+    /// <summary>The ground-floor (site) grid point under a screen position.</summary>
+    public static (double X, double Y) ScreenToGroundGrid(Vector2 screen)
+    {
+        var (a, b) = (screen.X / 32.0, screen.Y / 16.0);
+        return Unrotate((a + b) / 2, (b - a) / 2);
     }
 
     public static void SetRotation(int quarterTurns) => Rotation = ((quarterTurns % 4) + 4) % 4;
@@ -64,18 +95,14 @@ public static class IsoDraw
         };
     }
 
-    /// <summary>Screen position of a grid point in the current view.</summary>
-    public static Vector2 ToScreen(double x, double y)
-    {
-        var (rx, ry) = Rotate(x, y);
-        return new((float)((rx - ry) * 32), (float)((rx + ry) * 16));
-    }
+    /// <summary>Screen position of a grid point in the current view. Points on the floor in view land over the site.</summary>
+    public static Vector2 ToScreen(double x, double y) => ToScreenGround(x, y - FloorShift);
 
-    /// <summary>The grid point under a screen position in the current view.</summary>
+    /// <summary>The grid point under a screen position in the current view, on the floor in view.</summary>
     public static (double X, double Y) ScreenToGrid(Vector2 screen)
     {
-        var (a, b) = (screen.X / 32.0, screen.Y / 16.0);
-        return Unrotate((a + b) / 2, (b - a) / 2);
+        var (x, y) = ScreenToGroundGrid(screen);
+        return (x, y + FloorShift);
     }
 
     public static GridCoord ScreenToTile(Vector2 screen)

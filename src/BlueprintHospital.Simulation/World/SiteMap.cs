@@ -119,9 +119,25 @@ public sealed class Building(string id, string name, GridRect footprint)
     };
 }
 
-/// <summary>The whole hospital site: ground tiles plus the buildings standing on it.</summary>
+/// <summary>
+/// The whole hospital site: ground tiles plus the buildings standing on it.
+/// <para>
+/// Upper floors share the site's grid: floor <c>f</c> is laid out below the site at Y offset
+/// <c>f × <see cref="FloorStride"/></c>, so a room, a person or a path tile on an upper floor is an ordinary
+/// <see cref="GridCoord"/> and all the geometry and pathfinding work unchanged. Every upper floor has the
+/// ground floor building's outline (<see cref="IsIndoors"/>), and lifts and stairs link the floors.
+/// </para>
+/// </summary>
 public sealed class SiteMap
 {
+    /// <summary>Empty rows between one floor's slice of the grid and the next, so floors never touch.</summary>
+    public const int FloorGap = 8;
+
+    /// <summary>Floors that can be added above the ground floor.</summary>
+    public const int MaxUpperFloors = 4;
+
+    private static readonly string[] FloorNames = { "Ground floor", "First floor", "Second floor", "Third floor", "Fourth floor", "Fifth floor" };
+
     private readonly TileKind[] _tiles;
     private readonly List<Building> _buildings = new();
 
@@ -145,6 +161,52 @@ public sealed class SiteMap
     public GridRect Bounds => new(0, 0, Width, Length);
 
     public IReadOnlyList<Building> Buildings => _buildings;
+
+    /// <summary>Floors in the building, counting the ground floor (1 until the player adds a floor).</summary>
+    public int FloorCount { get; private set; } = 1;
+
+    /// <summary>Rows of the grid from one floor to the same spot on the floor above.</summary>
+    public int FloorStride => Length + FloorGap;
+
+    /// <summary>Rows of grid the whole building takes, from the ground floor to the top floor.</summary>
+    public int GridLength => ((FloorCount - 1) * FloorStride) + Length;
+
+    public static string FloorName(int floor) => floor >= 0 && floor < FloorNames.Length ? FloorNames[floor] : $"Floor {floor}";
+
+    /// <summary>Short label for the floor switcher: G, 1, 2…</summary>
+    public static string FloorLabel(int floor) => floor == 0 ? "G" : floor.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Which floor a grid tile is on (0 = ground).</summary>
+    public int FloorOf(GridCoord c) => c.Y < FloorStride ? 0 : c.Y / FloorStride;
+
+    public int FloorOf(GridRect r) => FloorOf(new GridCoord(r.X, r.Y));
+
+    /// <summary>Which floor a fractional position (a person) is on.</summary>
+    public int FloorOf(double y) => FloorOf(new GridCoord(0, (int)Math.Floor(y)));
+
+    /// <summary>The same spot on the ground floor's slice of the grid (the site position under it).</summary>
+    public GridCoord Local(GridCoord c) => new(c.X, c.Y - (FloorOf(c) * FloorStride));
+
+    public GridRect Local(GridRect r) => r with { Y = r.Y - (FloorOf(r) * FloorStride) };
+
+    /// <summary>A ground floor (site) position moved up to <paramref name="floor"/>.</summary>
+    public GridCoord OnFloor(GridCoord local, int floor) => new(local.X, local.Y + (floor * FloorStride));
+
+    public GridRect OnFloor(GridRect local, int floor) => local with { Y = local.Y + (floor * FloorStride) };
+
+    /// <summary>True if the tile is building floor on its floor: inside the ground floor outline, on a floor that exists.</summary>
+    public bool IsIndoors(GridCoord c)
+    {
+        var floor = FloorOf(c);
+        var local = Local(c);
+        return floor < FloorCount && local.Y < Length && BuildingAt(local) is not null;
+    }
+
+    /// <summary>Adds a floor on top of the building. Checks and payment are made by the caller.</summary>
+    internal void AddFloor() => FloorCount++;
+
+    /// <summary>Sets how many floors there are (loading a save).</summary>
+    internal void SetFloorCount(int floors) => FloorCount = Math.Clamp(floors, 1, MaxUpperFloors + 1);
 
     public bool InBounds(GridCoord c) => Bounds.Contains(c);
 

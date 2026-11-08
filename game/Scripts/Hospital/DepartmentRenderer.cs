@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Simulation.Hospital;
@@ -43,6 +44,8 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.OutreachOffice] = new Color("#E6DFEE"),
         [CareSpaceKind.Cafeteria] = new Color("#EFE3D2"),
         [CareSpaceKind.VendingPoint] = new Color("#ECE2D6"),
+        [CareSpaceKind.Lift] = new Color("#C9CFD5"),
+        [CareSpaceKind.Stairs] = new Color("#D8D4CC"),
     };
 
     private HospitalSimulation _sim = null!;
@@ -60,7 +63,7 @@ public partial class DepartmentRenderer : Node2D
             return;
         }
 
-        foreach (var space in _sim.Spaces.OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
+        foreach (var space in _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
         {
             var r = space.Rect;
             var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
@@ -80,6 +83,22 @@ public partial class DepartmentRenderer : Node2D
         }
 
         DrawWayfinding();
+        foreach (var space in _sim.Spaces.Where(s => s.IsShaft && IsoDraw.OnViewFloor(s.Rect.Y)))
+        {
+            if (space.Kind == CareSpaceKind.Lift)
+            {
+                DrawLift(space);
+            }
+            else
+            {
+                DrawStairs(space);
+            }
+        }
+
+        if (IsoDraw.ViewFloor > 0)
+        {
+            return;
+        }
 
         // Ambulance bay markings: one box per handover slot.
         foreach (var slot in _sim.AmbulanceBayPatientTiles)
@@ -94,7 +113,7 @@ public partial class DepartmentRenderer : Node2D
     /// </summary>
     private void DrawWayfinding()
     {
-        foreach (var space in _sim.Spaces.Where(s => s.HasWalls && s.Doors.Count > 0))
+        foreach (var space in _sim.Spaces.Where(s => s.HasWalls && s.Doors.Count > 0 && IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             var colour = space.Kind switch
             {
@@ -115,6 +134,7 @@ public partial class DepartmentRenderer : Node2D
                 CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery => new Color("#455A64"),
                 CareSpaceKind.PlasterRoom => new Color("#8D6E63"),
                 CareSpaceKind.PhysioGym => new Color("#2E7D32"),
+                CareSpaceKind.Lift or CareSpaceKind.Stairs => new Color("#37474F"),
                 _ => (Color?)null,
             };
             if (colour is not { } c)
@@ -135,6 +155,95 @@ public partial class DepartmentRenderer : Node2D
             Line(new[] { ends.A, ends.B }, c, 6f);
         }
     }
+
+    /// <summary>A lift car: a brushed steel floor plate with a chequer tread, and the landing doors' sill at the doorway.</summary>
+    private void DrawLift(CareSpace space)
+    {
+        var r = space.Rect;
+        const double inset = 0.45;
+        var (x, y, w, l) = (r.X + inset, r.Y + inset, r.Width - (2 * inset), r.Length - (2 * inset));
+        IsoDraw.FloorQuad(this, x, y, w, l, new Color("#9EA7B0"));
+        for (var i = 1; i < 6; i++)
+        {
+            var t = i / 6.0;
+            Line(new[] { (x + (w * t), y), (x + (w * t), y + l) }, new Color("#B9C1C9"), 1.5f);
+            Line(new[] { (x, y + (l * t)), (x + w, y + (l * t)) }, new Color("#B9C1C9"), 1.5f);
+        }
+
+        IsoDraw.FloorOutline(this, x, y, w, l, new Color("#5E6B77"), 2f);
+
+        // The sill and the two sliding door leaves, drawn open, at the doorway.
+        if (space.Doors.Count > 0)
+        {
+            var door = space.Doors[0];
+            var (a, b) = DoorEnds(r, door, -0.15);
+            Line(new[] { a, b }, new Color("#6D7883"), 7f);
+        }
+    }
+
+    /// <summary>A flight of stairs: treads rising away from the door, with a handrail down each side and an arrow up.</summary>
+    private void DrawStairs(CareSpace space)
+    {
+        var r = space.Rect;
+        const double inset = 0.45;
+        var (x, y, w, l) = (r.X + inset, r.Y + inset, r.Width - (2 * inset), r.Length - (2 * inset));
+        var side = space.DoorSide;
+        var alongY = side is WallSide.North or WallSide.South;
+        var depth = alongY ? l : w;
+        var steps = Math.Max(4, (int)Math.Round(depth * 2));
+        for (var i = 0; i < steps; i++)
+        {
+            // Step 0 is at the door; each one further in is a little darker, as if higher and catching less light.
+            var from = i * depth / steps;
+            var to = (i + 1) * depth / steps;
+            var shade = new Color("#E2DDD3").Darkened(0.04f + (0.3f * i / steps));
+            var (sx, sy, sw, sl) = side switch
+            {
+                WallSide.South => (x, y + l - to, w, to - from),
+                WallSide.North => (x, y + from, w, to - from),
+                WallSide.East => (x + w - to, y, to - from, l),
+                _ => (x + from, y, to - from, l),
+            };
+            IsoDraw.FloorQuad(this, sx, sy, sw, sl, shade);
+            IsoDraw.FloorOutline(this, sx, sy, sw, sl, new Color("#8C857A"), 1f);
+        }
+
+        // Handrails along both long sides.
+        var rail = new Color("#5D4E3C");
+        if (alongY)
+        {
+            Line(new[] { (x + 0.15, y), (x + 0.15, y + l) }, rail, 3f);
+            Line(new[] { (x + w - 0.15, y), (x + w - 0.15, y + l) }, rail, 3f);
+        }
+        else
+        {
+            Line(new[] { (x, y + 0.15), (x + w, y + 0.15) }, rail, 3f);
+            Line(new[] { (x, y + l - 0.15), (x + w, y + l - 0.15) }, rail, 3f);
+        }
+
+        // An arrow pointing up the flight, away from the door.
+        var (cx, cy) = (x + (w / 2), y + (l / 2));
+        var (dx, dy) = side switch
+        {
+            WallSide.South => (0.0, -1.0),
+            WallSide.North => (0.0, 1.0),
+            WallSide.East => (-1.0, 0.0),
+            _ => (1.0, 0.0),
+        };
+        var half = depth * 0.3;
+        var tip = (cx + (dx * half), cy + (dy * half));
+        Line(new[] { (cx - (dx * half), cy - (dy * half)), tip }, new Color("#37474F"), 4f);
+        Line(new[] { (tip.Item1 - (dx * 0.6) - (dy * 0.5), tip.Item2 - (dy * 0.6) + (dx * 0.5)), tip, (tip.Item1 - (dx * 0.6) + (dy * 0.5), tip.Item2 - (dy * 0.6) - (dx * 0.5)) }, new Color("#37474F"), 4f);
+    }
+
+    /// <summary>The two ends of a doorway, <paramref name="gap"/> tiles outside the wall (negative: inside).</summary>
+    private static ((double X, double Y) A, (double X, double Y) B) DoorEnds(GridRect r, Doorway door, double gap) => door.Side switch
+    {
+        WallSide.North => ((r.X + door.Offset, r.Y - gap), (r.X + door.Offset + door.Width, r.Y - gap)),
+        WallSide.South => ((r.X + door.Offset, r.Bottom + gap), (r.X + door.Offset + door.Width, r.Bottom + gap)),
+        WallSide.West => ((r.X - gap, r.Y + door.Offset), (r.X - gap, r.Y + door.Offset + door.Width)),
+        _ => ((r.Right + gap, r.Y + door.Offset), (r.Right + gap, r.Y + door.Offset + door.Width)),
+    };
 
     private void Line((double X, double Y)[] points, Color colour, float width = 3f)
     {
