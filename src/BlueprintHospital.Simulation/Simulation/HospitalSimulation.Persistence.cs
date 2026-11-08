@@ -94,6 +94,12 @@ public sealed class PatientState
 
     public int? BusyWithTaskId { get; init; }
 
+    public Mobility Mobility { get; init; }
+
+    public GridCoord? PendingMove { get; init; }
+
+    public int? PushedByStaffId { get; init; }
+
     public DateTime QueuedSince { get; init; }
 
     public DateTime? TransferAmbulanceDueAt { get; init; }
@@ -246,6 +252,12 @@ public sealed class PeopleState
     public int NextTaskId { get; init; }
 
     public int NextAmbulanceId { get; init; }
+
+    public List<JobCandidate> Candidates { get; init; } = new();
+
+    public DateTime? CandidatesDate { get; init; }
+
+    public int NextCandidateId { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -281,6 +293,9 @@ public sealed partial class HospitalSimulation
         NextStaffId = _nextStaffId,
         NextTaskId = _nextTaskId,
         NextAmbulanceId = _nextAmbulanceId,
+        Candidates = _candidates.ToList(),
+        CandidatesDate = _candidatesDate,
+        NextCandidateId = _nextCandidateId,
     };
 
     /// <summary>
@@ -385,6 +400,10 @@ public sealed partial class HospitalSimulation
         _nextStaffId = Math.Max(state.NextStaffId, _staff.Count == 0 ? 1 : _staff.Max(s => s.Id) + 1);
         _nextTaskId = Math.Max(state.NextTaskId, _tasks.Count == 0 ? 1 : _tasks.Keys.Max() + 1);
         _nextAmbulanceId = Math.Max(state.NextAmbulanceId, 1);
+        _candidates.Clear();
+        _candidates.AddRange(state.Candidates.Where(c => Enum.IsDefined(c.Role)));
+        _candidatesDate = state.CandidatesDate;
+        _nextCandidateId = Math.Max(state.NextCandidateId, _candidates.Count == 0 ? 1 : _candidates.Max(c => c.Id) + 1);
 
         // A saved game can't carry on the old random sequence, so start a new one.
         Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));
@@ -414,6 +433,20 @@ public sealed partial class HospitalSimulation
         SyncRoomStaff();
         Resume(state.Patients.Select(p => (p.Id, p.Position)), id => _patients.GetValueOrDefault(id));
         Resume(state.Staff.Select(s => (s.Id, s.Position)), id => FindStaff(id));
+
+        foreach (var patient in _patients.Values)
+        {
+            // Whoever was pushing carries on at pushing pace.
+            if (patient.PushedByStaffId is { } pusherId && FindStaff(pusherId) is { } pusher && patient.IsMoving)
+            {
+                pusher.PushingPatientId = patient.Id;
+                patient.WalkSpeed = pusher.WalkSpeed = Agent.DefaultWalkSpeed * PushSpeedFactor;
+            }
+            else
+            {
+                patient.PushedByStaffId = null;
+            }
+        }
     }
 
     // ------------------------------------------------------------------ patients
@@ -429,7 +462,8 @@ public sealed partial class HospitalSimulation
         Triage = p.Triage, TriageReason = p.TriageReason, TriagedAt = p.TriagedAt, KnownSymptoms = p.KnownSymptoms.ToList(),
         HistoryTaken = p.HistoryTaken, FirstSeenByDoctorAt = p.FirstSeenByDoctorAt, Investigations = p.Investigations.ToList(),
         WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven,
-        Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId, QueuedSince = p.QueuedSince,
+        Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
+        Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
@@ -472,6 +506,9 @@ public sealed partial class HospitalSimulation
         p.CareSpaceId = s.CareSpaceId;
         p.Seat = s.Seat;
         p.BusyWithTaskId = s.BusyWithTaskId;
+        p.Mobility = s.Mobility;
+        p.PendingMove = s.PendingMove;
+        p.PushedByStaffId = s.PushedByStaffId;
         p.QueuedSince = s.QueuedSince;
         p.TransferAmbulanceDueAt = s.TransferAmbulanceDueAt;
         p.BedIndex = s.BedIndex;

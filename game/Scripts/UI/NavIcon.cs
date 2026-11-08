@@ -11,6 +11,7 @@ public partial class NavIcon : Control
         Build,
         Patients,
         Staff,
+        Hire,
         Finances,
         Routes,
         Grid,
@@ -61,6 +62,13 @@ public partial class NavIcon : Control
                 DrawRect(new Rect2(4, 3, 16, 18), c, false, w);
                 DrawArc(new Vector2(12, 10), 3, 0, Mathf.Tau, 20, c, w, true);
                 L(8, 17, 16, 17);
+                break;
+            case Kind.Hire:
+                // A person with a plus beside them.
+                DrawArc(new Vector2(9, 8), 3.5f, 0, Mathf.Tau, 20, c, w, true);
+                DrawArc(new Vector2(9, 21), 7, Mathf.Pi, Mathf.Tau, 20, c, w, true);
+                L(19, 6, 19, 14);
+                L(15, 10, 23, 10);
                 break;
             case Kind.Finances:
                 L(4, 20, 4, 10);

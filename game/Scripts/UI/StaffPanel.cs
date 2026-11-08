@@ -29,6 +29,8 @@ public partial class StaffPanel : PanelContainer
     private StaffMember? _member;
     private string _queueSignature = string.Empty;
     private double _refresh;
+    private Button _letGo = null!;
+    private double _confirmLetGo;
 
     /// <summary>Raised when the player closes the panel.</summary>
     public event Action? CloseRequested;
@@ -110,12 +112,17 @@ public partial class StaffPanel : PanelContainer
         find.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         find.CustomMinimumSize = new Vector2(0, 44);
         buttons.AddChild(find);
+        _letGo = UiStyle.SecondaryButton("Let go", OnLetGo);
+        _letGo.TooltipText = "Let this member of staff go. Whatever they were doing goes back to the team.";
+        _letGo.CustomMinimumSize = new Vector2(0, 44);
+        buttons.AddChild(_letGo);
         column.AddChild(buttons);
     }
 
     public void Show(StaffMember member)
     {
         _member = member;
+        ResetLetGo();
         _queueSignature = string.Empty;
         Visible = true;
         Refresh();
@@ -128,12 +135,50 @@ public partial class StaffPanel : PanelContainer
             return;
         }
 
+        if (_confirmLetGo > 0)
+        {
+            _confirmLetGo -= delta;
+            if (_confirmLetGo <= 0)
+            {
+                ResetLetGo();
+            }
+        }
+
         _refresh -= delta;
         if (_refresh <= 0)
         {
             _refresh = 0.4;
             Refresh();
         }
+    }
+
+    /// <summary>The first press asks to confirm; the second, within a few seconds, lets them go.</summary>
+    private void OnLetGo()
+    {
+        if (_member is null)
+        {
+            return;
+        }
+
+        if (_confirmLetGo <= 0)
+        {
+            _confirmLetGo = 4;
+            _letGo.Text = "Confirm: let go";
+            _letGo.AddThemeColorOverride("font_color", UiStyle.Red);
+            return;
+        }
+
+        _sim.Fire(_member.Id);
+        _member = null;
+        ResetLetGo();
+        CloseRequested?.Invoke();
+    }
+
+    private void ResetLetGo()
+    {
+        _confirmLetGo = 0;
+        _letGo.Text = "Let go";
+        _letGo.RemoveThemeColorOverride("font_color");
     }
 
     private void Refresh()
@@ -230,14 +275,5 @@ public partial class StaffPanel : PanelContainer
         }
     }
 
-    private static string RoleName(StaffRole role) => role switch
-    {
-        StaffRole.Receptionist => "receptionist",
-        StaffRole.Nurse => "nurse",
-        StaffRole.Doctor => "doctor",
-        StaffRole.Radiographer => "radiographer",
-        StaffRole.Surgeon => "surgeon",
-        StaffRole.Pharmacist => "pharmacist",
-        _ => role.ToString().ToLowerInvariant(),
-    };
+    private static string RoleName(StaffRole role) => StaffGrades.RoleName(role);
 }

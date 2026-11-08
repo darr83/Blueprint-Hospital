@@ -40,6 +40,14 @@ public enum PatientStage
     Gone,
 }
 
+/// <summary>How a patient gets about: on their own feet, in a wheelchair, or lying on a trolley.</summary>
+public enum Mobility
+{
+    Walking,
+    Wheelchair,
+    Trolley,
+}
+
 public enum PatientOutcome
 {
     None,
@@ -202,6 +210,15 @@ public sealed class Patient : Agent
 
     /// <summary>Id of the task currently being done to this patient, so two staff don't treat them at once.</summary>
     public int? BusyWithTaskId { get; set; }
+
+    /// <summary>Walking, wheelchair or trolley. Patients who can't walk wait for a porter to move them.</summary>
+    public Mobility Mobility { get; set; } = Mobility.Walking;
+
+    /// <summary>Where the patient is waiting to be pushed to, while they wait for a porter.</summary>
+    public GridCoord? PendingMove { get; set; }
+
+    /// <summary>The porter (or nurse) pushing the patient's wheelchair or trolley right now.</summary>
+    public int? PushedByStaffId { get; set; }
 
     /// <summary>When the patient joined their current queue (for ordering by waiting time).</summary>
     public DateTime QueuedSince { get; set; }

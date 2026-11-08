@@ -58,5 +58,17 @@ internal sealed class SimulationHarness
         }
     }
 
+    /// <summary>Hires everyone the recommended staffing says is missing, the way a player following it would.</summary>
+    public void StaffToRecommended()
+    {
+        foreach (var need in Sim.RecommendedStaffing())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                Sim.HireStaff(need.Role, need.RoomId, skill: 0.7);
+            }
+        }
+    }
+
     public string Journey(Patient p) => string.Join(Environment.NewLine, p.Timeline.Select(t => $"{t.Time:HH:mm:ss} {t.Text}"));
 }

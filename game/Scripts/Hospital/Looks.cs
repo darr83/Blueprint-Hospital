@@ -10,7 +10,7 @@ namespace BlueprintHospital.Hospital;
 /// <summary>
 /// Uniforms and appearances. Staff follow common UK hospital practice: doctors in scrubs,
 /// registered nurses in mid-blue tunics with white piping, senior nurses in navy with red piping,
-/// everyone clinical bare below the elbows; reception staff in their own uniform with a lanyard.
+/// everyone clinical bare below the elbows; porters in green polo shirts; reception staff in their own uniform with a lanyard.
 /// </summary>
 public static class Looks
 {
@@ -49,7 +49,7 @@ public static class Looks
             StaffRole.Doctor => new PersonLook(
                 Top: new Color("#1F8A8A"), Trousers: new Color("#1A7676"), Skin: skin, Hair: hair,
                 Stethoscope: true, Lanyard: true, LongHair: longHair),
-            StaffRole.Nurse when member.Grade.Contains("Senior", StringComparison.OrdinalIgnoreCase) || member.Grade.Contains("Sister", StringComparison.OrdinalIgnoreCase) => new PersonLook(
+            StaffRole.Nurse when StaffGrades.IsSeniorNurse(member) || member.Grade.Contains("Senior", StringComparison.OrdinalIgnoreCase) || member.Grade.Contains("Sister", StringComparison.OrdinalIgnoreCase) => new PersonLook(
                 Top: new Color("#1D3A6E"), Trousers: new Color("#18233A"), Skin: skin, Hair: hair,
                 Piping: new Color("#E04848"), Tunic: true, Lanyard: true, LongHair: longHair),
             StaffRole.Nurse => new PersonLook(
@@ -64,6 +64,9 @@ public static class Looks
             StaffRole.Pharmacist => new PersonLook(
                 Top: new Color("#F3F5F7"), Trousers: new Color("#3A3F4A"), Skin: skin, Hair: hair,
                 Lanyard: true, LongSleeves: true, LongHair: longHair),
+            StaffRole.Porter => new PersonLook(
+                Top: new Color("#3C6E47"), Trousers: new Color("#22262B"), Skin: skin, Hair: hair,
+                Lanyard: true, LongHair: longHair),
             _ => new PersonLook(
                 Top: new Color("#7C6AA8"), Trousers: new Color("#2E2E38"), Skin: skin, Hair: hair,
                 Lanyard: true, LongSleeves: true, LongHair: longHair),

@@ -19,10 +19,10 @@ public sealed partial class HospitalSimulation
     /// <summary>How long ward patients wait for medicines to take home when there is no pharmacy on site.</summary>
     public static readonly TimeSpan OutsidePharmacyDelay = TimeSpan.FromHours(4);
 
-    public bool HasPharmacy => SpacesOfKind(CareSpaceKind.Pharmacy).Any();
+    public bool HasPharmacy => SpacesOfKind(CareSpaceKind.Pharmacy).Any(IsStaffed);
 
     /// <summary>Whether the hospital can do this test now (imaging needs its room).</summary>
-    public bool CanDo(InvestigationDefinition test) => test.Room is not { } room || SpacesOfKind(room).Any();
+    public bool CanDo(InvestigationDefinition test) => test.Room is not { } room || SpacesOfKind(room).Any(IsStaffed);
 
     /// <summary>The kind of room a task is done in by that room's own staff, if any.</summary>
     private CareSpaceKind? ServiceRoomKind(ClinicalTask task) => task.Kind switch
@@ -36,9 +36,14 @@ public sealed partial class HospitalSimulation
     /// <summary>Whether this member of staff's team does the task: service work in their own room, ward work on their ward, or A&amp;E work.</summary>
     private bool IsForMember(ClinicalTask task, StaffMember member)
     {
+        if (task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Porter)
+        {
+            return true;
+        }
+
         if (ServiceRoomKind(task) is not { } kind)
         {
-            return TeamFor(task) == member.BaseRoomId;
+            return TeamFor(task) == member.BaseRoomId || CoveredByEmergencyTeam(task, member);
         }
 
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
@@ -101,7 +106,7 @@ public sealed partial class HospitalSimulation
     private void RequestSurgery(Patient patient, ConditionDefinition diagnosed)
     {
         var operation = diagnosed.Operation!;
-        if (!SpacesOfKind(CareSpaceKind.Theatre).Any())
+        if (!SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed))
         {
             ArrangeTransfer(patient, diagnosed, $"Needs {operation.Name.ToLowerInvariant()}, but there is no operating theatre on site, so they are being transferred to a neighbouring hospital.");
             return;
@@ -163,7 +168,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Work that can no longer be done because its room has gone is cancelled or sent elsewhere.</summary>
     private void CancelUnavailableWork()
     {
-        foreach (var task in _tasks.Values.Where(t => t.AssignedStaffId is null && ServiceRoomKind(t) is { } kind && !SpacesOfKind(kind).Any()).ToList())
+        foreach (var task in _tasks.Values.Where(t => t.AssignedStaffId is null && ServiceRoomKind(t) is { } kind && !SpacesOfKind(kind).Any(IsStaffed)).ToList())
         {
             RemoveTask(task);
             if (FindPatient(task.PatientId) is not { } patient)
@@ -187,84 +192,6 @@ public sealed partial class HospitalSimulation
                     break;
             }
         }
-    }
-
-    // ---------------------------------------------------------------- room teams
-
-    /// <summary>
-    /// Wards and service rooms bring their own staff, who join when the room is built and leave when it
-    /// is demolished: each ward has a nurse for every <see cref="PatientsPerWardNurse"/> beds and a doctor;
-    /// each X-ray or CT room a radiographer; each theatre a surgeon; each pharmacy a pharmacist.
-    /// </summary>
-    private void SyncRoomStaff()
-    {
-        var rooms = _spaces.Values.Where(s => s.IsWard || s.IsServiceRoom).ToDictionary(s => s.Id);
-        foreach (var member in _staff.Where(s => s.BaseRoomId is { } id && !rooms.ContainsKey(id)).ToList())
-        {
-            if (member.CurrentTaskId is { } taskId && _tasks.TryGetValue(taskId, out var task))
-            {
-                RemoveTask(task);
-            }
-
-            _staff.Remove(member);
-        }
-
-        foreach (var room in rooms.Values)
-        {
-            var team = _staff.Where(s => s.BaseRoomId == room.Id).ToList();
-            if (room.IsWard)
-            {
-                var nurses = Math.Max(1, (room.Beds.Count + PatientsPerWardNurse - 1) / PatientsPerWardNurse);
-                var haveNurses = team.Count(s => s.Role == StaffRole.Nurse);
-                for (var i = haveNurses; i < nurses; i++)
-                {
-                    Hire(StaffRole.Nurse, i == 0 ? "Ward sister" : "Ward nurse", room);
-                }
-
-                foreach (var spare in team.Where(s => s.Role == StaffRole.Nurse && s.CurrentTaskId is null).Skip(nurses).ToList())
-                {
-                    _staff.Remove(spare);
-                }
-
-                if (!team.Any(s => s.Role == StaffRole.Doctor))
-                {
-                    Hire(StaffRole.Doctor, "Ward doctor (FY1)", room);
-                }
-
-                continue;
-            }
-
-            var (role, grade) = room.Kind switch
-            {
-                CareSpaceKind.XRay => (StaffRole.Radiographer, "Radiographer"),
-                CareSpaceKind.CT => (StaffRole.Radiographer, "CT radiographer"),
-                CareSpaceKind.Theatre => (StaffRole.Surgeon, "Consultant surgeon"),
-                _ => (StaffRole.Pharmacist, "Pharmacist"),
-            };
-            if (team.Count == 0)
-            {
-                Hire(role, grade, room);
-            }
-        }
-
-        CancelUnavailableWork();
-    }
-
-    private void Hire(StaffRole role, string grade, CareSpace room)
-    {
-        var (skill, years, salary) = grade switch
-        {
-            "Ward sister" => (0.8, 10, 43_000),
-            "Ward nurse" => (0.6, 3, 31_000),
-            "Ward doctor (FY1)" => (0.55, 1, 36_000),
-            "Radiographer" => (0.7, 5, 35_000),
-            "CT radiographer" => (0.75, 8, 41_000),
-            "Consultant surgeon" => (0.85, 15, 105_000),
-            _ => (0.75, 6, 46_000),
-        };
-        var member = MakeStaff(role, grade, skill, 1.0, years, salary, room.DepartmentId, room.Id);
-        _staff.Add(member);
-        member.PlaceAt(HomeTile(member));
     }
 
     /// <summary>Where a service room's staff wait between tasks.</summary>

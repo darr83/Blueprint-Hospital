@@ -39,7 +39,9 @@ public partial class SmokeTest : Node
         StaffPanel,
         BuildPreview,
         RoomPanel,
+        Recruitment,
         Ward,
+        Transport,
         Imaging,
         Rotate,
         Ambulance,
@@ -172,14 +174,31 @@ public partial class SmokeTest : Node
             case Stage.RoomPanel when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("06_room_panel");
                 hospital.Hud.RoomInfo.Close();
-                BuildWardAndAdmit(hospital);
+                BuildWard(hospital);
+                hospital.Hud.ToggleRecruitment();
+                Check(hospital.Hud.Recruitment.Visible, "Recruitment did not open.");
+                _frame = 0;
+                _stage = Stage.Recruitment;
+                break;
+
+            case Stage.Recruitment when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06b_recruitment");
+                hospital.Hud.ToggleRecruitment();
+                StaffWardAndAdmit(hospital);
                 _frame = 0;
                 _stage = Stage.Ward;
                 break;
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
-                BuildImagingAndScan(hospital);
+                BuildImagingAndSendForScan(hospital);
+                _frame = 0;
+                _stage = Stage.Transport;
+                break;
+
+            case Stage.Transport when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("09a_porter_trolley");
+                FinishScan(hospital);
                 _frame = 0;
                 _stage = Stage.Imaging;
                 break;
@@ -344,7 +363,7 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>Builds a ward south of the new corridor, then sends in patients with pneumonia and runs the clock until some are on it.</summary>
-    private static void BuildWardAndAdmit(HospitalScene hospital)
+    private static void BuildWard(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
@@ -352,7 +371,32 @@ public partial class SmokeTest : Node
         Check(ward.CanBuild, "Ward refused: " + string.Join("; ", ward.Problems));
         var built = sim.Wards.Single();
         Check(built.Beds.Count >= 8, $"Ward should have two rows of beds, has {built.Beds.Count}.");
-        Check(sim.Staff.Any(s => s.BaseRoomId == built.Id), "Ward team not hired.");
+        Check(!sim.Staff.Any(s => s.BaseRoomId == built.Id), "A new ward should come with no staff.");
+        Check(sim.RecommendedStaffing().Any(n => n.RoomId == built.Id && n.Short > 0), "The new ward should show as short of staff.");
+    }
+
+    /// <summary>Hires the ward's recommended team from the candidates (topping up directly if none fit), then admits patients.</summary>
+    private static void StaffWardAndAdmit(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var built = sim.Wards.Single();
+        foreach (var need in sim.RecommendedStaffing().Where(n => n.RoomId == built.Id).ToList())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                var candidate = sim.Candidates.FirstOrDefault(c => c.Role == need.Role);
+                if (candidate is not null)
+                {
+                    sim.Hire(candidate.Id, built.Id);
+                }
+                else
+                {
+                    sim.HireStaff(need.Role, built.Id, 0.7);
+                }
+            }
+        }
+
+        Check(sim.Staff.Count(s => s.BaseRoomId == built.Id) >= 2, "Ward team not hired.");
 
         var patients = Enumerable.Range(0, 4).Select(_ => sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "community_acquired_pneumonia")).ToList();
         var clock = hospital.Session.Clock;
@@ -368,16 +412,46 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>Builds an X-ray room north of the corridor, then X-rays a patient with a broken ankle.</summary>
-    private static void BuildImagingAndScan(HospitalScene hospital)
+    private void BuildImagingAndSendForScan(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
         var xray = sim.BuildRoom(sim.AutoPlan("xray_room", new Simulation.World.GridRect(b.X - 30, b.Y, 10, 9)));
         Check(xray.CanBuild, "X-ray room refused: " + string.Join("; ", xray.Problems));
         var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
-        Check(sim.Staff.Any(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Radiographer), "No radiographer hired.");
+        sim.HireStaff(Simulation.Staff.StaffRole.Radiographer);
+        Check(sim.Staff.Any(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Radiographer), "No radiographer posted to the X-ray room.");
 
-        var patient = sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "ankle_fracture");
+        // An ambulance patient with pneumonia goes to X-ray on a trolley, pushed by a porter.
+        var patient = sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "community_acquired_pneumonia");
+        _scanPatient = patient;
+        var clock = hospital.Session.Clock;
+        var pushedFor = 0;
+        for (var i = 0; i < 8 * 3600 && pushedFor < 4 && patient.Stage != Simulation.Patients.PatientStage.Gone; i++)
+        {
+            clock.Step();
+            // Wait until they are out in a corridor, clear of doorways, for the screenshot.
+            var inCorridor = sim.Spaces.Any(c => c.Kind == Simulation.Hospital.CareSpaceKind.Corridor && c.Rect.Contains(patient.Tile));
+            pushedFor = patient.PushedByStaffId is not null && patient.IsMoving && patient.Destination == room.PatientSpot && inCorridor ? pushedFor + 1 : 0;
+        }
+
+        clock.SetSpeed(SimulationSpeed.Paused);
+        Check(pushedFor >= 4, "No porter pushed the patient: " + string.Join(" / ", patient.Timeline.Select(t => t.Text)));
+        var porter = sim.FindStaff(patient.PushedByStaffId!.Value)!;
+        Check(porter.Role == Simulation.Staff.StaffRole.Porter, $"Pushed by a {porter.Role}, not a porter.");
+        hospital.Camera.SnapTo(hospital.World.FootPosition(patient) + new Vector2(0, -20), 1.6f);
+        GD.Print($"[smoke] Patient at {patient.X:0.0},{patient.Y:0.0}, porter at {porter.X:0.0},{porter.Y:0.0}.");
+        GD.Print($"[smoke] {porter.Name} (porter) is pushing {patient.FullName} ({patient.Mobility}) at {clock.Now:HH:mm}.");
+    }
+
+    private Simulation.Patients.Patient? _scanPatient;
+
+    /// <summary>Runs on until the patient is on the X-ray table.</summary>
+    private void FinishScan(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
+        var patient = _scanPatient!;
         var clock = hospital.Session.Clock;
         for (var i = 0; i < 8 * 3600 && (patient.IsMoving || patient.Tile != room.PatientSpot) && patient.Stage != Simulation.Patients.PatientStage.Gone; i++)
         {

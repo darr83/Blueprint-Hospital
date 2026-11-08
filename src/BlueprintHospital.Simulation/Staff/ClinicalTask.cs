@@ -28,6 +28,9 @@ public enum TaskKind
 
     /// <summary>The pharmacist prepares medicines to take home before a ward discharge.</summary>
     DispenseMedicines,
+
+    /// <summary>A porter pushes a patient's wheelchair or trolley to where they need to be.</summary>
+    MovePatient,
 }
 
 /// <summary>

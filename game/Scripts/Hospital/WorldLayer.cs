@@ -150,15 +150,25 @@ public partial class WorldLayer : Node2D
         return best;
     }
 
+    /// <summary>On a trolley away from a bed: being pushed, or waiting for a porter.</summary>
+    public bool OnTrolley(Patient patient) =>
+        patient.Mobility == Mobility.Trolley && patient.IsAlive && !InBed(patient) && !IsSeated(patient)
+        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null);
+
+    /// <summary>Sitting in a wheelchair: being pushed, or waiting for a porter.</summary>
+    public bool InWheelchair(Patient patient) =>
+        patient.Mobility == Mobility.Wheelchair && !IsSeated(patient)
+        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null);
+
     /// <summary>Lying on a bed in a treatment space, or on an ambulance trolley.</summary>
     public bool IsLying(Patient patient)
     {
         if (patient.IsMoving)
         {
-            return false;
+            return OnTrolley(patient);
         }
 
-        return patient.Stage == PatientStage.InAmbulanceQueue || InBed(patient);
+        return patient.Stage == PatientStage.InAmbulanceQueue || InBed(patient) || OnTrolley(patient);
     }
 
     /// <summary>Lying on the bed of a treatment space or a ward.</summary>
@@ -491,8 +501,9 @@ public partial class WorldLayer : Node2D
                 _ => true,
             };
 
-            // Seated people sit just in front of their chair.
-            Position = foot + new Vector2(0, world.IsSeated(agent) ? 1 : 0);
+            // Seated people sit just in front of their chair. A trolley is long, so it sorts by its
+            // nearest corner: walls behind it don't cover it as it passes.
+            Position = foot + new Vector2(0, world.IsSeated(agent) ? 1 : agent is Patient p2 && world.OnTrolley(p2) ? TrolleyDepth(p2, foot) : 0);
             QueueRedraw();
         }
 
@@ -519,11 +530,26 @@ public partial class WorldLayer : Node2D
                     }
                     else
                     {
-                        Figures.Standing(this, foot, look, world.Time, member.IsMoving, member.Id * 7);
+                        var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
+                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7);
                     }
 
                     break;
             }
+        }
+
+        private float TrolleyDepth(Patient patient, Vector2 foot)
+        {
+            var (x, y) = world.Interpolated(patient);
+            var (fx, fy) = patient.Facing;
+            var (nx, ny) = (-fy, fx);
+            var nearest = float.MinValue;
+            foreach (var (a, b) in new[] { (2.0, 0.7), (2.0, -0.7), (-2.0, 0.7), (-2.0, -0.7) })
+            {
+                nearest = Math.Max(nearest, IsoDraw.ToScreen(x + (fx * a) + (nx * b), y + (fy * a) + (ny * b)).Y);
+            }
+
+            return Math.Max(0, nearest - foot.Y - 2);
         }
 
         private void DrawPatient(Patient patient, Vector2 foot)
@@ -547,8 +573,29 @@ public partial class WorldLayer : Node2D
                 return;
             }
 
+            if (world.OnTrolley(patient))
+            {
+                // Being pushed on a trolley, or waiting on one for a porter.
+                var (gx, gy) = world.Interpolated(patient);
+                if (selected)
+                {
+                    var ring = IsoDraw.FloorEllipse(foot, 42, 32);
+                    DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
+                }
+
+                var lift = Figures.Trolley(this, gx, gy, patient.Facing);
+                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.Blanket(patient.Triage), lift);
+                return;
+            }
+
             DrawRing(foot, selected ? new Color("#FFEB3B") : Looks.TriageRing(patient.Triage));
-            if (world.IsSeated(patient))
+            if (world.InWheelchair(patient))
+            {
+                Figures.WheelchairBack(this, foot);
+                Figures.Seated(this, foot, look, alpha);
+                Figures.WheelchairFront(this, foot);
+            }
+            else if (world.IsSeated(patient))
             {
                 Figures.Seated(this, foot, look, alpha);
             }

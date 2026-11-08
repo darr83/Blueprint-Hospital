@@ -144,6 +144,8 @@ public sealed partial class HospitalSimulation
     {
         var dt = SimulationClock.TickLength.TotalSeconds;
 
+        RefreshCandidatesIfDue();
+
         if (_options.AutomaticArrivals)
         {
             GenerateArrivals(dt);
@@ -163,6 +165,8 @@ public sealed partial class HospitalSimulation
         {
             member.Move(dt);
         }
+
+        KeepPushersWithPatients();
 
         UpdateAmbulances();
         UpdatePhysiology(dt);
@@ -241,7 +245,8 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- helpers
 
-    internal void WalkTo(Patient patient, GridCoord destination)
+    /// <summary>Sets the patient off along a path straight away (see <c>WalkTo</c> for porters).</summary>
+    private void Go(Patient patient, GridCoord destination)
     {
         var path = Nav.FindPath(patient.Tile, destination);
         if (path.Count > 0)
@@ -348,45 +353,21 @@ public sealed partial class HospitalSimulation
 
     private void CreateStartingStaff()
     {
-        StaffMember Make(StaffRole role, string grade, double skill, double speed, int years, int salary) =>
-            MakeStaff(role, grade, skill, speed, years, salary, EmergencyDepartmentLayout.Department, null);
-
-        _staff.Add(Make(StaffRole.Receptionist, "Receptionist", 0.5, 1.0, 4, 23_000));
-        _staff.Add(Make(StaffRole.Nurse, "Senior emergency nurse", 0.85, 1.1, 12, 47_000));
-        _staff.Add(Make(StaffRole.Nurse, "Emergency nurse", 0.7, 1.0, 6, 37_000));
-        _staff.Add(Make(StaffRole.Nurse, "Registered nurse", 0.6, 1.0, 3, 31_000));
-        _staff.Add(Make(StaffRole.Nurse, "Registered nurse", 0.55, 0.95, 1, 29_000));
-        _staff.Add(Make(StaffRole.Doctor, "Emergency medicine registrar", 0.8, 1.05, 7, 63_000));
-        _staff.Add(Make(StaffRole.Doctor, "Junior doctor (FY2)", 0.55, 0.95, 2, 40_000));
-
+        // A small A&E team to open with. Everyone else, and everyone for new rooms, is hired by the player.
+        HireStaff(StaffRole.Receptionist, skill: 0.5);
+        HireStaff(StaffRole.Nurse, skill: 0.75);
+        HireStaff(StaffRole.Nurse, skill: 0.65);
+        HireStaff(StaffRole.Nurse, skill: 0.55);
+        HireStaff(StaffRole.Nurse, skill: 0.5);
+        HireStaff(StaffRole.Doctor, skill: 0.8);
+        HireStaff(StaffRole.Doctor, skill: 0.55);
+        HireStaff(StaffRole.Porter, skill: 0.4);
+        HireStaff(StaffRole.Porter, skill: 0.4);
+        RefreshCandidatesIfDue();
         foreach (var member in _staff)
         {
             member.PlaceAt(HomeTile(member));
         }
-    }
-
-    private StaffMember MakeStaff(StaffRole role, string grade, double skill, double speed, int years, int salary, string department, string? wardId)
-    {
-        var names = Database.Names.Values.First();
-        var female = Random.Chance(0.6);
-        var first = Random.Pick(female ? names.FemaleFirstNames : names.MaleFirstNames);
-        var surname = Random.Pick(names.Surnames);
-        var title = role == StaffRole.Doctor ? "Dr " : string.Empty;
-        return new StaffMember
-        {
-            Id = _nextStaffId++,
-            Name = $"{title}{first} {surname}",
-            Role = role,
-            Grade = grade,
-            DepartmentId = department,
-            BaseRoomId = wardId,
-            Skill = skill,
-            Speed = speed,
-            YearsExperience = years,
-            Age = 23 + years + Random.Range(0, 6),
-            Salary = salary,
-            Fatigue = Random.Range(0.0, 0.15),
-        };
     }
 
     internal GridCoord HomeTile(StaffMember member)
@@ -402,6 +383,9 @@ public sealed partial class HospitalSimulation
                 return Waiting.StaffSpot;
             case StaffRole.Doctor:
                 return BaseSeat(member, CareSpaceKind.DoctorsOffice);
+            case StaffRole.Porter:
+                // Porters wait in the main corridor, ready to go.
+                return WaitingPlace(5 + _staff.Where(s => s.Role == StaffRole.Porter).ToList().IndexOf(member));
             default:
                 return BaseSeat(member, CareSpaceKind.NursesStation);
         }

@@ -102,6 +102,7 @@ public sealed partial class HospitalSimulation
         if (ambulance.Purpose == AmbulancePurpose.Arrival)
         {
             patient.PlaceAt(AmbulanceBayPatientTiles[slot]);
+            UpdateMobility(patient);
             patient.QueuedSince = Now;
             patient.Log(Now, $"Arrived by ambulance ({ambulance.CallSign}). Waiting for handover to A&E staff.");
             Stats.AmbulanceArrived();

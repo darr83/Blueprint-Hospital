@@ -10,6 +10,9 @@ public enum StaffRole
     Radiographer,
     Surgeon,
     Pharmacist,
+
+    /// <summary>Moves patients who can't walk: wheelchairs and trolleys.</summary>
+    Porter,
 }
 
 public enum StaffActivity
@@ -34,7 +37,7 @@ public sealed class StaffMember : Agent
     public required string DepartmentId { get; init; }
 
     /// <summary>The room this member of staff is based in (a ward, X-ray, CT, theatre or pharmacy); null for A&amp;E staff.</summary>
-    public string? BaseRoomId { get; init; }
+    public string? BaseRoomId { get; set; }
 
     public int Age { get; init; }
 
@@ -71,6 +74,9 @@ public sealed class StaffMember : Agent
     public HashSet<int> Caseload { get; } = new();
 
     public int TasksCompleted { get; set; }
+
+    /// <summary>The patient whose wheelchair or trolley this member of staff is pushing, if any.</summary>
+    public int? PushingPatientId { get; set; }
 
     /// <summary>Multiplier on task duration from speed and tiredness.</summary>
     public double DurationFactor => (1.0 / Speed) * (1.0 + (Fatigue * 0.4));

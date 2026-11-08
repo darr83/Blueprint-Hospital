@@ -63,6 +63,21 @@ public abstract class Agent
         Destination = null;
     }
 
+    /// <summary>
+    /// Puts the agent at (<paramref name="x"/>, <paramref name="y"/>) facing <paramref name="facing"/>,
+    /// e.g. a porter keeping behind the trolley they push. Drawing interpolates from the last position.
+    /// </summary>
+    public void FollowAt(double x, double y, (double X, double Y) facing)
+    {
+        PreviousX = X;
+        PreviousY = Y;
+        X = x;
+        Y = y;
+        Facing = facing;
+        _path.Clear();
+        Destination = null;
+    }
+
     /// <summary>Moves along the path for <paramref name="seconds"/> of game time.</summary>
     public void Move(double seconds)
     {

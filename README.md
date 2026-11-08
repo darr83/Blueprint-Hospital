@@ -77,6 +77,7 @@ Then:
 | Show / hide the A&E board | Hospital on the left-hand bar |
 | Patients list / Staff list | P / T (or the left-hand bar) |
 | Finances | F (or click the balance in the top bar) |
+| Recruitment (hire staff) | H (or Hire in the left-hand bar) |
 | Build menu | B (or Build on the left-hand bar) |
 | Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Left-click the room's floor |
@@ -221,8 +222,9 @@ such as pneumonia. Drag it out like any room: beds go in a row along the wall op
 the aisle, so a longer or deeper ward holds more beds. The build menu shows how many beds each size
 gives.
 
-- **Ward team:** each ward brings one nurse for every 6 beds (the first is the ward sister) and a
-  ward doctor. They look after that ward's patients only, and leave if the ward is demolished.
+- **Ward team:** a new ward comes empty. Recruitment recommends one nurse for every 6 beds and a
+  doctor; hire them onto the ward and they look after that ward's patients. Until a ward has its
+  own nurse or doctor, the A&E team covers it. If the ward is demolished, its staff move to A&E.
 - **Admission:** when an A&E doctor decides a patient needs admitting, the patient waits in their
   cubicle until a bed is free, then a nurse takes them up. Leaving A&E for the ward stops the
   4-hour clock. A full ward blocks A&E cubicles, as in a real hospital; the A&E board shows ward
@@ -235,8 +237,8 @@ gives.
 
 ### Imaging, theatres and pharmacy
 
-Build these from **Build → Services**. Each brings its own member of staff, who leaves if the room
-is demolished.
+Build these from **Build → Services**. Each room opens once you hire someone to work in it (see
+**Staff and recruitment**); if it is demolished, they wait for a new room of the same kind.
 
 - **X-ray room** (radiographer): chest X-rays and X-rays of injured limbs. **CT scanner** (CT
   radiographer): CT head and CT pulmonary angiogram. The patient is taken from their cubicle to the
@@ -251,6 +253,29 @@ is demolished.
 
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
 staff rooms.
+
+### Staff and recruitment
+
+- **Grades:** nurses are Band 5, 6, 7, 8 or 9 by how good they are (Band 7 and above wear navy);
+  doctors are Junior Doctor, Doctor, Registrar or Consultant. Radiographers, surgeons, pharmacists,
+  porters and receptionists have one grade each. Any nurse or doctor can work in A&E or on any ward.
+- **Recruitment** (H) lists eight candidates, refreshed every morning at 08:00, with their grade,
+  skill, experience, pace and salary. Choose where each will work and press Hire. Rooms never come
+  with staff: everyone is hired by you.
+- **Recommended team:** the same panel shows, for A&E, porters and each room, how many of each kind
+  of staff it recommends and how many you have. It's a guide only.
+- **Letting staff go:** open their card and press Let go twice. Whatever they were doing goes back
+  on the board for someone else.
+
+### Moving patients
+
+- Patients who can walk, walk. Patients who can't wait where they are until a **porter** pushes
+  them: on a **trolley** if they are Red, are going to theatre, or came by ambulance and aren't fit
+  to sit; in a **wheelchair** if they came by ambulance and are fit to sit (Green), are Amber and
+  aged 75 or over, or are being admitted. Everyone walks out when they go home.
+- Ambulance crews wheel their own patients in from the bay on their stretcher.
+- The game starts with two porters. With none, a nurse does the pushing; a nurse also steps in
+  if a move has waited 10 minutes for a porter.
 
 ## Building an executable
 

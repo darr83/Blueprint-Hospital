@@ -79,10 +79,12 @@ public partial class MainHUD : CanvasLayer
 
     public FinancePanel Finances { get; } = new() { Name = "Finances", Visible = false };
 
+    public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
+
     /// <summary>True while the A&amp;E board and notifications column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, Finances };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, Finances, Recruitment };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -93,7 +95,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = false;
         RoomInfo.Close();
     }
 
@@ -103,6 +105,18 @@ public partial class MainHUD : CanvasLayer
         var show = !Finances.Visible;
         HideRightPanels();
         Finances.Visible = show;
+    }
+
+    /// <summary>Opens recruitment, or closes it.</summary>
+    public void ToggleRecruitment()
+    {
+        var show = !Recruitment.Visible;
+        HideRightPanels();
+        Recruitment.Visible = show;
+        if (show)
+        {
+            Recruitment.Refresh();
+        }
     }
 
     /// <summary>Opens the build menu, or closes it.</summary>
@@ -190,6 +204,9 @@ public partial class MainHUD : CanvasLayer
         Finances.Initialise(sim);
         DockRight(Finances, 452);
         root.AddChild(Finances);
+        Recruitment.Initialise(sim);
+        DockRight(Recruitment, 440);
+        root.AddChild(Recruitment);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -373,6 +390,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, ToggleBuild, "Build rooms and corridors, and extend the building (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, () => ToggleRoster(true), "Who is on shift and what they are doing (T)"));
+        column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
         column.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
         column.AddChild(NavButton("Routes", NavIcon.Kind.Routes, () => RoutesToggled?.Invoke(), "Show where patients and staff are walking (R)"));
@@ -429,6 +447,7 @@ public partial class MainHUD : CanvasLayer
         Set("Build", Build.Visible);
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
         Set("Staff", Roster.Visible && _rosterShowsStaff);
+        Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);
         Set("Routes", _routesShown);
         Set("Grid", _gridShown);

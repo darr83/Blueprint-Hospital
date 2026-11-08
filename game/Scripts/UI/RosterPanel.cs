@@ -137,6 +137,7 @@ public partial class RosterPanel : PanelContainer
                     StaffRole.Radiographer => new Color("#8E2448"),
                     StaffRole.Surgeon => new Color("#00897B"),
                     StaffRole.Pharmacist => new Color("#43A047"),
+                    StaffRole.Porter => new Color("#3C6E47"),
                     _ => new Color("#6E5A8C"),
                 };
                 AddRow(colour, text, () => StaffClicked?.Invoke(member));

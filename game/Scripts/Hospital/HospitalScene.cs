@@ -244,7 +244,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -263,6 +263,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.F:
                 _hud.ToggleFinances();
+                break;
+            case Key.H:
+                _hud.ToggleRecruitment();
                 break;
             case Key.Space:
                 _session.Clock.SetSpeed(_session.Clock.IsPaused ? SimulationSpeed.Normal : SimulationSpeed.Paused);

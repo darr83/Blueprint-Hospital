@@ -70,6 +70,11 @@ public sealed partial class HospitalSimulation
             patient.BusyWithTaskId = null;
         }
 
+        if (task.Kind == TaskKind.MovePatient && FindPatient(task.PatientId) is { } pushed && pushed.PushedByStaffId is { } pusher && pusher == task.AssignedStaffId)
+        {
+            EndPush(pushed);
+        }
+
         if (task.SpaceId is { } spaceId && FindSpace(spaceId) is { } room && room.ReservedByStaffId == task.AssignedStaffId)
         {
             room.ReservedByStaffId = null;
@@ -195,7 +200,7 @@ public sealed partial class HospitalSimulation
     private void ChooseTask(StaffMember member)
     {
         var candidates = _tasks.Values
-            .Where(t => t.AssignedStaffId is null && t.Role == member.Role && IsForMember(t, member) && CanStart(t))
+            .Where(t => t.AssignedStaffId is null && (t.Role == member.Role || NurseCanCover(t, member)) && IsForMember(t, member) && CanStart(t))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
@@ -220,6 +225,12 @@ public sealed partial class HospitalSimulation
         member.Activity = StaffActivity.WalkingToTask;
         var patient = _patients[best.PatientId];
         member.StatusText = $"{best.Label}: {patient.FullName}";
+        if (best.Kind == TaskKind.MovePatient)
+        {
+            WalkTo(member, StaffPositionFor(best, patient));
+            return;
+        }
+
         patient.BusyWithTaskId = best.Id;
 
         if (best.Kind == TaskKind.Triage && FreeTriageRoom() is { } triage)
@@ -252,6 +263,10 @@ public sealed partial class HospitalSimulation
         WalkTo(member, StaffPositionFor(best, patient));
     }
 
+    /// <summary>A nurse pushes a patient themselves when the move has waited too long for a porter.</summary>
+    private bool NurseCanCover(ClinicalTask task, StaffMember member) =>
+        task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseCoversPorterAfter;
+
     private void TakeBreak(StaffMember member)
     {
         var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
@@ -268,6 +283,11 @@ public sealed partial class HospitalSimulation
         if (!_patients.TryGetValue(task.PatientId, out var patient) || !patient.IsInDepartment && patient.Stage != PatientStage.WalkingIn)
         {
             return false;
+        }
+
+        if (task.Kind == TaskKind.MovePatient)
+        {
+            return patient.PendingMove is not null;
         }
 
         if (patient.BusyWithTaskId is not null && patient.BusyWithTaskId != task.Id)
@@ -295,6 +315,24 @@ public sealed partial class HospitalSimulation
                 return triage.StaffSpot;
             case TaskKind.Imaging or TaskKind.Surgery or TaskKind.DispenseMedicines when task.SpaceId is { } roomId && FindSpace(roomId) is { } room:
                 return room.StaffSpot;
+            case TaskKind.MovePatient:
+                // Beside the patient where they are now, not where they are going.
+                if (patient.CareSpaceId is { } here && FindSpace(here) is { } current && current.PatientSpot == patient.Tile)
+                {
+                    return current.StaffSpot;
+                }
+
+                if (BedOf(patient) is { } lyingIn && lyingIn.PatientSpot == patient.Tile)
+                {
+                    return lyingIn.StaffSpot;
+                }
+
+                if (_spaces.Values.FirstOrDefault(s => s.IsServiceRoom && s.PatientSpot == patient.Tile) is { } table)
+                {
+                    return table.StaffSpot;
+                }
+
+                return BesideTile(patient.Tile);
         }
 
         if (BedOf(patient) is { } bed)
@@ -307,7 +345,11 @@ public sealed partial class HospitalSimulation
             return space.StaffSpot;
         }
 
-        var target = patient.Destination ?? patient.Tile;
+        return BesideTile(patient.Destination ?? patient.Tile);
+    }
+
+    private GridCoord BesideTile(GridCoord target)
+    {
         foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1) })
         {
             var t = new GridCoord(target.X + dx, target.Y + dy);
@@ -328,7 +370,7 @@ public sealed partial class HospitalSimulation
         TaskKind.Register => QueueTile(0),
         TaskKind.Triage when task.SpaceId is { } id && FindSpace(id) is { } triage => triage.PatientSpot,
         TaskKind.Imaging or TaskKind.Surgery when task.SpaceId is { } id && FindSpace(id) is { } room => room.PatientSpot,
-        _ => patient.Destination ?? patient.Tile,
+        _ => patient.PendingMove ?? patient.Destination ?? patient.Tile,
     };
 
     private void ProgressTask(StaffMember member, ClinicalTask task, double dt)
@@ -336,6 +378,12 @@ public sealed partial class HospitalSimulation
         if (!_patients.TryGetValue(task.PatientId, out var patient) || (!patient.IsInDepartment && task.Kind != TaskKind.Register))
         {
             RemoveTask(task);
+            return;
+        }
+
+        if (task.Kind == TaskKind.MovePatient)
+        {
+            ProgressPush(member, task, patient);
             return;
         }
 
@@ -347,7 +395,7 @@ public sealed partial class HospitalSimulation
                 WalkTo(member, staffSpot);
             }
 
-            var patientInPlace = !patient.IsMoving && patient.Tile == PatientPositionFor(task, patient);
+            var patientInPlace = !patient.IsMoving && patient.PendingMove is null && patient.Tile == PatientPositionFor(task, patient);
             if (member.IsMoving || !patientInPlace)
             {
                 return;

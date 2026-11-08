@@ -163,6 +163,87 @@ public static class Figures
         c.DrawColoredPolygon(HairCap(head), look.Hair);
     }
 
+    /// <summary>
+    /// A patient lying under a blanket on a trolley that points along <paramref name="dir"/> (the way it is
+    /// being pushed). Patients go feet first, so the head is at the back, by the porter.
+    /// </summary>
+    public static void LyingAlong(CanvasItem c, double gx, double gy, (double X, double Y) dir, PersonLook look, Color blanket, float lift)
+    {
+        var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
+        var (fx, fy) = len < 1e-6 ? (0.0, 1.0) : (dir.X / len, dir.Y / len);
+        var (nx, ny) = (-fy, fx);
+        var up = new Vector2(0, -lift - 1);
+
+        // Local (along, across) to screen: "along" runs from the head (negative) to the feet (positive).
+        Vector2 At(double along, double across) => IsoDraw.ToScreen(gx + (fx * along) + (nx * across), gy + (fy * along) + (ny * across)) + up;
+
+        const double r = 0.2;
+        // Corners as (across, along, start angle), going round in order as in Lying.
+        var corners = new[] { (-0.55 + r, -0.95 + r, Math.PI), (0.55 - r, -0.95 + r, 1.5 * Math.PI), (0.55 - r, 1.75 - r, 0.0), (-0.55 + r, 1.75 - r, 0.5 * Math.PI) };
+        var cover = new Vector2[corners.Length * 5];
+        var i = 0;
+        foreach (var (across, along, start) in corners)
+        {
+            for (var k = 0; k < 5; k++)
+            {
+                var a = start + (Math.PI / 2 * (k / 4.0));
+                cover[i++] = At(along + (Math.Sin(a) * r), across + (Math.Cos(a) * r));
+            }
+        }
+
+        c.DrawColoredPolygon(cover, blanket);
+        var head = At(-1.45, 0) + new Vector2(0, -3);
+        c.DrawCircle(head, 7.5f, look.Skin);
+        c.DrawColoredPolygon(HairCap(head), look.Hair);
+    }
+
+    /// <summary>A patient trolley (stretcher) pointing along <paramref name="dir"/>. Returns the mattress height.</summary>
+    public static float Trolley(CanvasItem c, double gx, double gy, (double X, double Y) dir)
+    {
+        const float frame = 12f;
+        var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
+        var (fx, fy) = len < 1e-6 ? (0.0, 1.0) : (dir.X / len, dir.Y / len);
+        var (nx, ny) = (-fy, fx);
+
+        // Wheels at the corners, a slim frame, the mattress, and a push bar at the head end.
+        foreach (var (along, across) in new[] { (-1.7, -0.55), (-1.7, 0.55), (1.7, -0.55), (1.7, 0.55) })
+        {
+            IsoDraw.OrientedBox(c, gx + (fx * along) + (nx * across), gy + (fy * along) + (ny * across), dir, 0.2, 0.2, 3, new Color("#2F363C"));
+        }
+
+        IsoDraw.OrientedBox(c, gx, gy, dir, 0.3, 0.3, frame - 4, new Color("#8C979F"), 3);
+        IsoDraw.OrientedBox(c, gx, gy, dir, 4.0, 1.4, 3, new Color("#AEB8C1"), frame - 4);
+        IsoDraw.OrientedBox(c, gx, gy, dir, 3.8, 1.25, 4, new Color("#EEF2F5"), frame - 1);
+        IsoDraw.OrientedBox(c, gx - (fx * 2.0), gy - (fy * 2.0), dir, 0.15, 1.4, 12, new Color("#7F8A93"), frame);
+        return frame + 3;
+    }
+
+    /// <summary>A wheelchair whose seat centre is at <paramref name="foot"/>, drawn behind and beside the person in it.</summary>
+    public static void WheelchairBack(CanvasItem c, Vector2 foot)
+    {
+        c.DrawColoredPolygon(IsoDraw.FloorEllipse(foot + new Vector2(0, 2), 15), new Color(0, 0, 0, 0.2f));
+        var frame = new Color("#3A4148");
+        c.DrawRect(new Rect2(foot + new Vector2(-10, -38), new Vector2(20, 22)), new Color("#2B4A6B"));
+        c.DrawLine(foot + new Vector2(-10, -42), foot + new Vector2(-10, -12), frame, 2f);
+        c.DrawLine(foot + new Vector2(10, -42), foot + new Vector2(10, -12), frame, 2f);
+        c.DrawRect(new Rect2(foot + new Vector2(-10, -15), new Vector2(20, 5)), new Color("#2B4A6B"));
+    }
+
+    /// <summary>The wheelchair's big wheels and footplate, drawn in front of the person.</summary>
+    public static void WheelchairFront(CanvasItem c, Vector2 foot)
+    {
+        var tyre = new Color("#22272B");
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var hub = foot + new Vector2(side * 12, -9);
+            c.DrawArc(hub, 9, 0, Mathf.Tau, 20, tyre, 2.5f, true);
+            c.DrawArc(hub, 7, 0, Mathf.Tau, 16, new Color("#9AA5AE"), 1f, true);
+            c.DrawCircle(hub, 1.6f, new Color("#9AA5AE"));
+        }
+
+        c.DrawLine(foot + new Vector2(-6, 3), foot + new Vector2(6, 3), new Color("#3A4148"), 2f);
+    }
+
     /// <summary>A hospital bed (about 0.8 m by 2.1 m) with its head against the north. Returns the mattress height.</summary>
     public static float Bed(CanvasItem c, double gx, double gy, bool made, bool headSouth = false)
     {

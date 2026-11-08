@@ -34,24 +34,36 @@ public class ServiceTests
             x += w;
         }
 
+        h.StaffToRecommended();
         return h;
     }
 
     private static void Build(BuildCheck result, string what) => Assert.True(result.CanBuild, $"{what}: {string.Join("; ", result.Problems)}");
 
     [Fact]
-    public void Each_service_room_brings_its_own_member_of_staff()
+    public void Service_rooms_open_once_someone_is_hired_to_work_in_them()
     {
-        var h = Wing(1, new[] { ("xray_room", 9, 9), ("pharmacy", 8, 8) }, new[] { ("operating_theatre", 12, 12) });
-        CareSpace Room(CareSpaceKind kind) => h.Sim.Spaces.Single(s => s.Kind == kind);
+        var h = new SimulationHarness(1);
+        Build(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)), "extension");
+        Build(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 30, B.Y + 10, 34, 6), WallSide.South)), "corridor");
+        Build(h.Sim.BuildRoom(h.Sim.AutoPlan("xray_room", new GridRect(B.X - 30, B.Y + 1, 9, 9))), "xray_room");
+        var xray = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.XRay);
+        var chestXray = h.Database.Investigations["chest_xray"];
 
-        Assert.Equal(StaffRole.Radiographer, h.Sim.Staff.Single(s => s.BaseRoomId == Room(CareSpaceKind.XRay).Id).Role);
-        Assert.Equal(StaffRole.Surgeon, h.Sim.Staff.Single(s => s.BaseRoomId == Room(CareSpaceKind.Theatre).Id).Role);
-        Assert.Equal(StaffRole.Pharmacist, h.Sim.Staff.Single(s => s.BaseRoomId == Room(CareSpaceKind.Pharmacy).Id).Role);
+        // Rooms come empty: no radiographer, so no X-rays yet.
+        Assert.DoesNotContain(h.Sim.Staff, s => s.Role == StaffRole.Radiographer);
+        Assert.False(h.Sim.CanDo(chestXray));
+        Assert.Contains(h.Sim.RecommendedStaffing(), n => n.RoomId == xray.Id && n.Role == StaffRole.Radiographer && n.Short == 1);
 
-        var xray = Room(CareSpaceKind.XRay).Id;
-        Assert.True(h.Sim.DemolishRoom(xray).CanBuild);
-        Assert.DoesNotContain(h.Sim.Staff, s => s.BaseRoomId == xray);
+        var radiographer = h.Sim.HireStaff(StaffRole.Radiographer);
+        Assert.Equal(xray.Id, radiographer.BaseRoomId);
+        Assert.True(h.Sim.CanDo(chestXray));
+
+        // Demolishing the room keeps the radiographer, waiting for a new room.
+        Assert.True(h.Sim.DemolishRoom(xray.Id).CanBuild);
+        Assert.Contains(radiographer, h.Sim.Staff);
+        Assert.Null(radiographer.BaseRoomId);
+        Assert.False(h.Sim.CanDo(chestXray));
     }
 
     [Fact]

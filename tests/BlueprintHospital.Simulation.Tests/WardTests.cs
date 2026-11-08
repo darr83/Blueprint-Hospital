@@ -20,6 +20,7 @@ public class WardTests
         Assert.True(corridor.CanBuild, string.Join("; ", corridor.Problems));
         var ward = h.Sim.BuildRoom(h.Sim.AutoPlan("medical_ward", new GridRect(B.X - 30, B.Y + 17, widthTiles, lengthTiles)));
         Assert.True(ward.CanBuild, string.Join("; ", ward.Problems));
+        h.StaffToRecommended();
         return (h, h.Sim.Wards.Single());
     }
 
@@ -76,15 +77,18 @@ public class WardTests
     }
 
     [Fact]
-    public void Building_a_ward_brings_its_own_team()
+    public void Hiring_to_the_recommended_team_staffs_the_ward()
     {
         var (h, ward) = WithWard();
         var team = h.Sim.Staff.Where(s => s.BaseRoomId == ward.Id).ToList();
         Assert.Contains(team, s => s.Role == StaffRole.Doctor);
         Assert.Equal((ward.Beds.Count + 5) / 6, team.Count(s => s.Role == StaffRole.Nurse));
+        Assert.All(h.Sim.RecommendedStaffing(), n => Assert.Equal(0, n.Short));
 
+        // Demolishing the ward moves its nurses and doctor to A&E rather than losing them.
         Assert.True(h.Sim.DemolishRoom(ward.Id).CanBuild);
         Assert.DoesNotContain(h.Sim.Staff, s => s.BaseRoomId == ward.Id);
+        Assert.All(team, m => Assert.Contains(m, h.Sim.Staff));
     }
 
     [Fact]

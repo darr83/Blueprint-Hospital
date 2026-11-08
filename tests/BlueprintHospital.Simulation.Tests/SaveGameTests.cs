@@ -59,6 +59,7 @@ public class FullSaveTests
         Assert.True(h.Sim.ExtendBuilding(new World.GridRect(B.X - 30, B.Y, 30, 34)).CanBuild);
         Assert.True(h.Sim.BuildRoom(new Simulation.RoomPlan("corridor", new World.GridRect(B.X - 30, B.Y + 9, 34, 8), World.WallSide.South)).CanBuild);
         Assert.True(h.Sim.BuildRoom(h.Sim.AutoPlan("medical_ward", new World.GridRect(B.X - 30, B.Y + 17, 26, 15))).CanBuild);
+        h.StaffToRecommended();
         h.RunFor(TimeSpan.FromHours(10));
         return h;
     }
