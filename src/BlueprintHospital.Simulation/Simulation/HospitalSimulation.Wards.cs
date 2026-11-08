@@ -197,6 +197,7 @@ public sealed partial class HospitalSimulation
         patient.DischargeDueAt = Now.AddHours(Random.Range(stay[0], stay[1]));
         patient.Log(Now, $"Admitted to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
         Stats.RecordAdmission(patient, Now);
+        PayForAttendance(patient);
 
         foreach (var doctor in _staff.Where(s => s.WardId is null))
         {

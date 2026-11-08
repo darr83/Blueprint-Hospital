@@ -180,6 +180,15 @@ public sealed partial class HospitalSimulation
         }
 
         patient.Stage = outcome == PatientOutcome.Died ? PatientStage.Gone : PatientStage.Leaving;
+        if (patient.LeftEmergencyAt is null)
+        {
+            PayForAttendance(patient);
+        }
+        else
+        {
+            PayForAdmission(patient);
+        }
+
         Stats.RecordDeparture(patient, Now);
         Events.Publish(new PatientLeft(patient, outcome));
     }
@@ -269,6 +278,7 @@ public sealed partial class HospitalSimulation
         order.Status = InvestigationStatus.Resulted;
         order.ResultedAt = Now;
         Stats.InvestigationCost += test.Cost;
+        Book(MoneyCategory.Tests, -test.Cost);
         patient.Log(Now, $"{test.Name}: {order.Summary}", important: order.Abnormal);
         if (order.Abnormal)
         {

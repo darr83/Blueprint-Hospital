@@ -14,7 +14,7 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
 | 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
-| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards and 33 conditions done |
+| 4. Departments, wards, pharmacy, surgery, finances | In progress: wards, 33 conditions and finances done |
 
 ## Repository layout
 
@@ -72,6 +72,7 @@ Then:
 | Toggle building grid | G |
 | Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
 | Patients list / Staff list | P / T (or the top-bar buttons) |
+| Finances | F (or click the balance in the top bar) |
 | Build menu | B (or the Build button) |
 | Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Left-click the room's floor |
@@ -138,6 +139,18 @@ Press **B** to open the build menu. Every room is built from a **template** in
   resize it (it keeps its name), or demolish it for a 50% refund. Rooms in use can't be moved or
   demolished, and the department always keeps at least one waiting room and one triage room.
 - **Money:** a new hospital has £750,000 to build with, shown in the top bar.
+
+### Money
+
+The balance in the top bar is the hospital's money. Click it (or press **F**) for the finances:
+today, yesterday and the last week by category, and what the hospital costs to run each day.
+
+- **Income** is a simplified NHS tariff: each A&E attendance earns £450 (Red), £250 (Amber) or
+  £130 (Green) when the patient leaves A&E, and each ward admission earns £1,200 plus £300 a night
+  when the patient goes home. Patients who leave without being seen earn nothing.
+- **Running costs:** wages for every post (each covered around the clock, about 4.5 people per
+  post), building upkeep of £0.60 per m² a day, and every test and medicine as it is used.
+- **Building work** is paid up front. If the money runs out, building stops until it comes back.
 
 ### Conditions
 

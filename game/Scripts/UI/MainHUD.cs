@@ -15,7 +15,7 @@ public partial class MainHUD : CanvasLayer
     private readonly Label _dateLabel = new();
     private readonly Label _timeLabel = new();
     private readonly Label _hoverLabel = new();
-    private readonly Label _balanceLabel = new();
+    private readonly Button _balanceLabel = new() { Flat = true, FocusMode = Control.FocusModeEnum.None };
     private readonly System.Collections.Generic.Dictionary<SimulationSpeed, Button> _speedButtons = new();
     private GameSession _session = null!;
     private System.IDisposable? _speedSubscription;
@@ -38,13 +38,24 @@ public partial class MainHUD : CanvasLayer
 
     public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
 
+    public FinancePanel Finances { get; } = new() { Name = "Finances", Visible = false };
+
+    /// <summary>Opens the finances, or closes them.</summary>
+    public void ToggleFinances()
+    {
+        var show = !Finances.Visible;
+        Record.Visible = Roster.Visible = Build.Visible = false;
+        RoomInfo.Close();
+        Finances.Visible = show;
+    }
+
     /// <summary>Opens the build menu, or closes it.</summary>
     public void ToggleBuild()
     {
         Build.Visible = !Build.Visible;
         if (Build.Visible)
         {
-            Record.Visible = Roster.Visible = false;
+            Record.Visible = Roster.Visible = Finances.Visible = false;
             RoomInfo.Close();
         }
     }
@@ -52,7 +63,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Shows one room's details, closing the other right-hand panels.</summary>
     public void ShowRoom(BlueprintHospital.Simulation.Hospital.CareSpace room)
     {
-        Record.Visible = Roster.Visible = Build.Visible = false;
+        Record.Visible = Roster.Visible = Build.Visible = Finances.Visible = false;
         RoomInfo.Show(room);
     }
 
@@ -61,6 +72,7 @@ public partial class MainHUD : CanvasLayer
     {
         Record.Visible = false;
         Build.Visible = false;
+        Finances.Visible = false;
         RoomInfo.Close();
         Roster.Visible = !(Roster.Visible && _rosterShowsStaff == staff);
         _rosterShowsStaff = staff;
@@ -103,6 +115,9 @@ public partial class MainHUD : CanvasLayer
         RoomInfo.Initialise(sim);
         DockRight(RoomInfo, 372);
         root.AddChild(RoomInfo);
+        Finances.Initialise(sim);
+        DockRight(Finances, 452);
+        root.AddChild(Finances);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -157,10 +172,14 @@ public partial class MainHUD : CanvasLayer
         name.AddThemeColorOverride("font_color", Colors.White);
         row.AddChild(name);
         row.AddChild(new Control { CustomMinimumSize = new Vector2(16, 0) });
-        _balanceLabel.AddThemeColorOverride("font_color", new Color("#9BE7B5"));
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color" })
+        {
+            _balanceLabel.AddThemeColorOverride(state, new Color("#9BE7B5"));
+        }
+
         _balanceLabel.AddThemeFontSizeOverride("font_size", 18);
-        _balanceLabel.TooltipText = "Money available to build with";
-        _balanceLabel.MouseFilter = Control.MouseFilterEnum.Stop;
+        _balanceLabel.TooltipText = "Money in the bank. Click for finances (F)";
+        _balanceLabel.Pressed += ToggleFinances;
         row.AddChild(_balanceLabel);
         row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
@@ -258,7 +277,12 @@ public partial class MainHUD : CanvasLayer
 
     private void RefreshClock()
     {
-        _balanceLabel.Text = $"£{_session.Simulation.Balance:N0}";
+        var balance = _session.Simulation.Balance;
+        _balanceLabel.Text = $"£{balance:N0}";
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color" })
+        {
+            _balanceLabel.AddThemeColorOverride(state, balance < 0 ? new Color("#FFB4AE") : new Color("#9BE7B5"));
+        }
         var now = _session.Clock.Now;
         _dateLabel.Text = now.ToString("dddd d MMMM yyyy");
         _timeLabel.Text = now.ToString("HH:mm");

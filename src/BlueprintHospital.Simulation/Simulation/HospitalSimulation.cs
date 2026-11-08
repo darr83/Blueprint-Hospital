@@ -174,6 +174,7 @@ public sealed partial class HospitalSimulation
         AllocateSpaces();
         UpdateTaskPriorities();
         UpdateStaff(dt);
+        ChargeRunningCosts(dt);
         RemoveDepartedPatients();
         Stats.Update(this);
     }

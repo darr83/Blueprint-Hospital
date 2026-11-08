@@ -60,11 +60,21 @@ public sealed class Building(string id, string name, GridRect footprint)
 
     public bool Contains(GridCoord c) => Footprint.Contains(c) || _extensions.Any(e => e.Contains(c));
 
-    public double AreaSquareMetres => Areas.SelectMany(a => a.Tiles()).Distinct().Count() * Units.MetresPerTile * Units.MetresPerTile;
+    public double AreaSquareMetres => _area ??= Areas.SelectMany(a => a.Tiles()).Distinct().Count() * Units.MetresPerTile * Units.MetresPerTile;
 
-    internal void AddExtension(GridRect area) => _extensions.Add(area);
+    private double? _area;
 
-    internal void ClearExtensions() => _extensions.Clear();
+    internal void AddExtension(GridRect area)
+    {
+        _extensions.Add(area);
+        _area = null;
+    }
+
+    internal void ClearExtensions()
+    {
+        _extensions.Clear();
+        _area = null;
+    }
 
     /// <summary>Every edge between a floor tile of the building and a tile outside it: where the outer walls stand.</summary>
     public IEnumerable<(GridCoord Inside, GridCoord Outside, WallSide Side)> OuterEdges()

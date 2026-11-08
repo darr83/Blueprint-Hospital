@@ -301,6 +301,7 @@ public sealed partial class HospitalSimulation
                 record.Note = $"{med.TypicalDose}, {med.Route}";
                 patient.Log(Now, $"{med.Name} {med.TypicalDose} ({med.Route}) given by {member.Name}.");
                 Stats.MedicationCost += med.CostPerDose;
+                Book(MoneyCategory.Medicines, -med.CostPerDose);
                 patient.Analgesia = Math.Min(0.7, patient.Analgesia + med.DrugClass switch
                 {
                     "Opioid analgesic" => 0.5,

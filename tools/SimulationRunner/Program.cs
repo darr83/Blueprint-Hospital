@@ -35,6 +35,11 @@ Console.WriteLine($"Arrivals {st.ArrivalsTotal} ({st.AmbulanceArrivalsTotal} by 
 Console.WriteLine($"4-hour performance {st.FourHourPerformance:P0}. Avg time to doctor {st.AverageTimeToDoctorMinutes:0} min. Avg handover {st.AverageHandoverMinutes:0} min.");
 Console.WriteLine($"Diagnoses {st.DiagnosesMade}, accuracy {st.DiagnosticAccuracy:P0}, missed {st.MissedDiagnoses}. Triage R/A/G {st.TriagedTotal[TriageCategory.Red]}/{st.TriagedTotal[TriageCategory.Amber]}/{st.TriagedTotal[TriageCategory.Green]}.");
 Console.WriteLine($"Investigation spend £{st.InvestigationCost}, medication spend £{st.MedicationCost}.");
+Console.WriteLine($"Balance £{sim.Balance:N0} (started £{BlueprintHospital.Simulation.Simulation.HospitalSimulation.StartingBalance:N0}). Staff £{sim.StaffCostPerDay:N0}/day, upkeep £{sim.UpkeepPerDay:N0}/day.");
+foreach (var day in sim.Accounts.Reverse())
+{
+    Console.WriteLine($"  {day.Date:ddd}: in £{day.Income:N0}, out £{-day.Spending:N0}, net £{day.Net:N0}  ({string.Join(", ", day.Amounts.Select(a => $"{a.Key} {a.Value:N0}"))})");
+}
 foreach (var s in sim.Staff)
 {
     Console.WriteLine($"  {s.Grade,-30} {s.Name,-24} tasks {s.TasksCompleted,4} fatigue {s.Fatigue:0.00} {s.StatusText}");

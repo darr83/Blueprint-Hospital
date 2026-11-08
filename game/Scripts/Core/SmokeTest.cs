@@ -35,6 +35,7 @@ public partial class SmokeTest : Node
         BuildPreview,
         RoomPanel,
         Ward,
+        Finances,
         WaitForLoad,
         Done,
     }
@@ -159,6 +160,16 @@ public partial class SmokeTest : Node
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
+                hospital.Hud.ToggleFinances();
+                Check(hospital.Hud.Finances.Visible, "Finances did not open.");
+                Check(hospital.Session.Simulation.Today[Simulation.Simulation.MoneyCategory.Construction] < 0, "Building work was not booked.");
+                _frame = 0;
+                _stage = Stage.Finances;
+                break;
+
+            case Stage.Finances when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("08_finances");
+                hospital.Hud.ToggleFinances();
                 var clock = hospital.Session.Clock;
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);

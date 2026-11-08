@@ -130,6 +130,7 @@ public partial class HospitalScene : Node2D
     {
         _world.Selected = patient;
         _hud.Roster.Visible = false;
+        _hud.Finances.Visible = false;
         _hud.Record.Show(patient);
         if (centre && patient.IsInDepartment)
         {
@@ -224,10 +225,11 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.Finances.Visible:
                 ClearSelection();
                 _hud.Roster.Visible = false;
                 _hud.Build.Visible = false;
+                _hud.Finances.Visible = false;
                 _hud.RoomInfo.Close();
                 break;
             case Key.B:
@@ -242,6 +244,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.T:
                 _hud.ToggleRoster(staff: true);
+                break;
+            case Key.F:
+                _hud.ToggleFinances();
                 break;
             case Key.Space:
                 _session.Clock.SetSpeed(_session.Clock.IsPaused ? SimulationSpeed.Normal : SimulationSpeed.Paused);

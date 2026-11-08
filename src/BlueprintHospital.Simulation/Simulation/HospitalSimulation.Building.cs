@@ -498,7 +498,7 @@ public sealed partial class HospitalSimulation
         var id = NewRoomId(template);
         var room = Furnish(plan, id, name ?? NextName(template));
         _spaces[id] = room;
-        Balance -= check.Cost;
+        Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Built {room.Name} ({room.AreaSquareMetres:0} m²) for £{check.Cost:N0}.");
         AfterLayoutChange();
         return check;
@@ -516,7 +516,7 @@ public sealed partial class HospitalSimulation
         var old = _spaces[id];
         var moved = Furnish(plan, id, old.Name);
         _spaces[id] = moved;
-        Balance -= check.Cost;
+        Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Rebuilt {moved.Name} for £{check.Cost:N0}.");
         AfterLayoutChange();
         return check;
@@ -532,7 +532,7 @@ public sealed partial class HospitalSimulation
 
         var space = _spaces[id];
         _spaces.Remove(id);
-        Balance -= check.Cost;
+        Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Demolished {space.Name}; £{-check.Cost:N0} refunded.");
         AfterLayoutChange();
         return check;
@@ -547,7 +547,7 @@ public sealed partial class HospitalSimulation
         }
 
         Site.ExtendBuilding(MainBuilding, area);
-        Balance -= check.Cost;
+        Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Extended the building by {Units.AreaSquareMetres(area.Width, area.Length):0} m² for £{check.Cost:N0}.");
         AfterLayoutChange();
         return check;
