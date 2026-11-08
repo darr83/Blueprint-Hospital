@@ -27,9 +27,6 @@ public partial class BuildPanel : PanelContainer
     private BuildTool _tool = null!;
     private string _tab = "A&E";
     private RoomTemplate? _selected;
-    private SpinBox? _width;
-    private SpinBox? _length;
-    private RichTextLabel? _details;
 
     public void Initialise(HospitalSimulation simulation, BuildTool tool)
     {
@@ -83,7 +80,7 @@ public partial class BuildPanel : PanelContainer
         _status.CustomMinimumSize = new Vector2(0, 40);
         _status.AddThemeColorOverride("default_color", new Color("#E8EDEE"));
         column.AddChild(_status);
-        column.AddChild(Hint("R turns the room · Left click builds · Right click or Esc stops"));
+        column.AddChild(Hint("Drag to build · Right click or Esc stops"));
 
         _tool.CheckChanged += RefreshStatus;
         _tool.Built += text => _status.Text = $"[color=#9BE7B5]{text}[/color]";
@@ -111,8 +108,6 @@ public partial class BuildPanel : PanelContainer
             child.QueueFree();
         }
 
-        _width = _length = null;
-        _details = null;
 
         switch (name)
         {
@@ -143,20 +138,23 @@ public partial class BuildPanel : PanelContainer
         list.AddThemeConstantOverride("v_separation", 4);
         foreach (var template in templates)
         {
+            var min = $"{template.MinWidthM:0.#} × {template.MinLengthM:0.#} m";
             var button = new Button
             {
-                Text = template.Name,
+                Text = $"{template.Name}\nmin {min}",
                 ToggleMode = true,
                 FocusMode = FocusModeEnum.None,
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 36),
+                CustomMinimumSize = new Vector2(0, 50),
                 TooltipText = template.Description,
+                ClipText = true,
             };
-            button.SetPressedNoSignal(template == _selected);
+            button.AddThemeFontSizeOverride("font_size", 15);
+            button.SetPressedNoSignal(template == _selected && _tool.Mode == BuildMode.Room);
             button.Pressed += () =>
             {
                 _selected = template;
-                _tool.Cancel();
+                _tool.StartRoom(template);
                 ShowTab(_tab);
             };
             list.AddChild(button);
@@ -168,78 +166,21 @@ public partial class BuildPanel : PanelContainer
             return;
         }
 
-        _body.AddChild(Text($"[b]{t.Name}[/b]\n[color=#B8C4CE]{t.Description}[/color]"));
+        _body.AddChild(Text(
+            $"[b]{t.Name}[/b]\n[color=#B8C4CE]{t.Description}[/color]\n"
+            + $"[color=#B8C4CE]Minimum[/color]  {t.MinWidthM:0.#} × {t.MinLengthM:0.#} m   [color=#B8C4CE]Maximum[/color]  {t.MaxWidthM:0.#} × {t.MaxLengthM:0.#} m\n"
+            + $"[color=#B8C4CE]Cost[/color]  £{t.BaseCost:N0} + £{t.CostPerSquareMetre:N0} per m² + furniture\n"
+            + $"[color=#B8C4CE]Staffing[/color]  {t.Staffing}"));
 
-        var sizes = new HBoxContainer();
-        sizes.AddThemeConstantOverride("separation", 4);
-        foreach (var size in t.Sizes)
+        // How the room fills up as it grows, laid out at a few example sizes.
+        var rows = t.Sizes.Select(size =>
         {
-            var s = size;
-            var button = new Button
-            {
-                Text = $"{s.Name}\n{s.WidthM:0.#} × {s.LengthM:0.#} m",
-                FocusMode = FocusModeEnum.None,
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 50),
-                ClipText = true,
-            };
-            button.AddThemeFontSizeOverride("font_size", 15);
-            button.Pressed += () =>
-            {
-                _width!.SetValueNoSignal(s.WidthM);
-                _length!.SetValueNoSignal(s.LengthM);
-                StartPlacing();
-            };
-            sizes.AddChild(button);
-        }
-
-        _body.AddChild(sizes);
-
-        // Custom size in metres, in half-metre steps.
-        var custom = new HBoxContainer();
-        custom.AddThemeConstantOverride("separation", 6);
-        custom.AddChild(Small("Size"));
-        var standard = t.Sizes.FirstOrDefault(s => s.Name == "Standard") ?? t.Sizes[0];
-        _width = Spin(t.MinWidthM, t.MaxWidthM, standard.WidthM);
-        _length = Spin(t.MinLengthM, t.MaxLengthM, standard.LengthM);
-        custom.AddChild(_width);
-        custom.AddChild(Small("×"));
-        custom.AddChild(_length);
-        custom.AddChild(Small("m"));
-        var place = UiStyle.Button("Place", StartPlacing, 80);
-        place.FocusMode = FocusModeEnum.None;
-        custom.AddChild(place);
-        _body.AddChild(custom);
-        _body.AddChild(Hint("Width runs along the wall with the door; length is the depth of the room."));
-
-        _details = Text(string.Empty);
-        _body.AddChild(_details);
-        _width.ValueChanged += _ => RefreshDetails();
-        _length.ValueChanged += _ => RefreshDetails();
-        RefreshDetails();
-    }
-
-    private void StartPlacing()
-    {
-        if (_selected is null || _width is null || _length is null)
-        {
-            return;
-        }
-
-        _tool.StartRoom(_selected, Units.MetresToTiles(_width.Value), Units.MetresToTiles(_length.Value), _tool.DoorSide);
-        RefreshDetails();
-    }
-
-    private void RefreshDetails()
-    {
-        if (_selected is not { } t || _details is null || _width is null || _length is null)
-        {
-            return;
-        }
-
-        var (w, d) = (Units.MetresToTiles(_width.Value), Units.MetresToTiles(_length.Value));
-        var room = RoomLayoutEngine.Build(t, _sim.Database, "preview", t.Name, new GridRect(0, 0, w, d), WallSide.South);
-        _details.Text = Describe(t, room, _sim);
+            var (w, d) = (Units.MetresToTiles(size.WidthM), Units.MetresToTiles(size.LengthM));
+            var room = RoomLayoutEngine.Build(t, _sim.Database, "preview", t.Name, new GridRect(0, 0, w, d), WallSide.South);
+            return $"{size.WidthM:0.#} × {size.LengthM:0.#} m  →  {Capacity(t, room)}, about £{room.BuildCost:N0}";
+        });
+        _body.AddChild(Text("[color=#B8C4CE]Grows with size[/color]\n" + string.Join("\n", rows)));
+        _body.AddChild(Hint("Click a room type, then drag on the floor from corner to corner. The door goes on the wall that touches a corridor, and the furniture fills the room to fit."));
     }
 
     /// <summary>Size, capacity, cost, equipment and staffing of a laid-out room, for the build menu and room panel.</summary>
@@ -351,7 +292,7 @@ public partial class BuildPanel : PanelContainer
 
         if (check.CanBuild)
         {
-            var verb = _tool.MovingId is null ? "Click to build" : "Click to move here";
+            var verb = _tool.MovingId is null ? "Release to build" : "Release to rebuild here";
             _status.Text = $"[color=#9BE7B5]✓ {verb}: £{check.Cost:N0}[/color]";
             return;
         }
@@ -382,13 +323,4 @@ public partial class BuildPanel : PanelContainer
         label.AddThemeFontSizeOverride("font_size", 13);
         return label;
     }
-
-    private static SpinBox Spin(double min, double max, double value) => new()
-    {
-        MinValue = min,
-        MaxValue = max,
-        Step = 0.5,
-        Value = value,
-        CustomMinimumSize = new Vector2(78, 0),
-    };
 }

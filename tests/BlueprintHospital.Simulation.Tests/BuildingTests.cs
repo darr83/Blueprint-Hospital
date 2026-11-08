@@ -170,3 +170,78 @@ public class BuildingTests
         h.RunUntil(() => h.Sim.SpacesOfKind(CareSpaceKind.Triage).All(t => t.ReservedByStaffId is not null), TimeSpan.FromHours(2), "both triage rooms in use");
     }
 }
+
+public class DragToBuildTests
+{
+    private static readonly GridRect B = StarterSite.MainBuildingFootprint;
+
+    private static SimulationHarness WithWestWing()
+    {
+        var h = new SimulationHarness();
+        Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 16, B.Y, 16, 26)).CanBuild);
+        Assert.True(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 16, B.Y + 9, 20, 8), WallSide.South)).CanBuild);
+        return h;
+    }
+
+    [Fact]
+    public void Door_goes_on_the_wall_that_touches_a_corridor()
+    {
+        var h = WithWestWing();
+
+        // North of the new corridor: the door must face south onto it.
+        var north = h.Sim.AutoPlan("minors_cubicle", new GridRect(B.X - 16, B.Y, 8, 9));
+        Assert.Equal(WallSide.South, north.DoorSide);
+
+        // South of it: the door faces north.
+        var south = h.Sim.AutoPlan("staff_room", new GridRect(B.X - 16, B.Y + 17, 8, 8));
+        Assert.Equal(WallSide.North, south.DoorSide);
+        Assert.True(h.Sim.CheckRoomAt("staff_room", new GridRect(B.X - 16, B.Y + 17, 8, 8)).CanBuild);
+    }
+
+    [Fact]
+    public void Room_away_from_any_corridor_is_refused_with_a_reason()
+    {
+        var h = WithWestWing();
+        var check = h.Sim.CheckRoomAt("minors_cubicle", new GridRect(B.X - 16, B.Y + 18, 8, 7));
+        Assert.True(check.CanBuild || check.Problems.Any());
+        var isolated = h.Sim.CheckRoomAt("minors_cubicle", new GridRect(B.X - 15, B.Y + 19, 7, 7));
+        Assert.Contains(isolated.Problems, p => p.Contains("corridor"));
+    }
+
+    [Fact]
+    public void Either_side_can_be_the_long_one()
+    {
+        var h = WithWestWing();
+        // 7 m along the corridor but only 3.5 m deep is too shallow for a resus bay (minimum 5 x 4 m).
+        Assert.Contains(h.Sim.CheckRoomAt("resus_bay", new GridRect(B.X - 16, B.Y + 2, 14, 7)).Problems, p => p.Contains("Too small"));
+        // 5 m along the corridor and 4.5 m deep is fine.
+        var deep = h.Sim.CheckRoomAt("resus_bay", new GridRect(B.X - 16, B.Y, 10, 9));
+        Assert.True(deep.CanBuild, string.Join("; ", deep.Problems));
+    }
+
+    [Fact]
+    public void Bigger_rooms_get_more_furniture()
+    {
+        var h = WithWestWing();
+        var small = h.Sim.CheckRoomAt("waiting_room", new GridRect(B.X - 16, B.Y + 17, 10, 8));
+        var large = h.Sim.CheckRoomAt("waiting_room", new GridRect(B.X - 16, B.Y + 17, 16, 9));
+        Assert.True(small.CanBuild, string.Join("; ", small.Problems));
+        Assert.True(large.CanBuild, string.Join("; ", large.Problems));
+        Assert.True(large.Preview!.Seats.Count > small.Preview!.Seats.Count);
+    }
+
+    [Fact]
+    public void Dragged_room_survives_save_and_load_with_its_door()
+    {
+        var h = WithWestWing();
+        var plan = h.Sim.AutoPlan("doctors_office", new GridRect(B.X - 16, B.Y + 17, 12, 8));
+        Assert.True(h.Sim.BuildRoom(plan).CanBuild);
+        var built = h.Sim.Spaces.Single(s => s.TemplateId == "doctors_office" && s.Rect.X < B.X);
+
+        var fresh = new SimulationHarness();
+        fresh.Sim.RestoreLayout(SaveSerializer.Deserialize(SaveSerializer.Serialize(new SaveGame { Layout = h.Sim.CaptureLayout() })).Layout!);
+        var loaded = fresh.Sim.Space(built.Id);
+        Assert.Equal(built.Doors, loaded.Doors);
+        Assert.Equal(built.Seats, loaded.Seats);
+    }
+}

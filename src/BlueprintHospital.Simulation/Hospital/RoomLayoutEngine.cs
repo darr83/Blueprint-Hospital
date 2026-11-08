@@ -41,13 +41,30 @@ public static class RoomLayoutEngine
         + (int)Math.Round(template.CostPerSquareMetre * Units.AreaSquareMetres(rect.Width, rect.Length))
         + furniture.Sum(f => database.Furniture.TryGetValue(f.ItemId, out var item) ? item.Cost : 0);
 
-    /// <summary>Lays out a room of the given template in <paramref name="rect"/> with its door on <paramref name="doorSide"/>.</summary>
-    public static CareSpace Build(RoomTemplate template, GameDatabase database, string id, string name, GridRect rect, WallSide doorSide)
+    /// <summary>
+    /// Lays out a room of the given template in <paramref name="rect"/> with its door on <paramref name="doorSide"/>.
+    /// The door is centred on the wall unless <paramref name="doorStart"/> and <paramref name="doorRun"/> give the
+    /// stretch of wall (in tiles from the room's corner) that opens onto a corridor; it is then centred on that stretch.
+    /// <paramref name="extraDoors"/> are further doorways (a waiting room's street door); when null, a template with
+    /// <see cref="RoomTemplate.DoorBothEnds"/> gets one opposite the main door.
+    /// </summary>
+    public static CareSpace Build(
+        RoomTemplate template, GameDatabase database, string id, string name, GridRect rect, WallSide doorSide,
+        int? doorStart = null, int? doorRun = null, IReadOnlyList<Doorway>? extraDoors = null)
     {
         var frame = new Frame(rect, doorSide);
-        var doorWidth = Math.Clamp(Units.MetresToTiles(template.DoorWidthM), 1, Math.Max(1, frame.W - 2));
+        var run = Math.Clamp(doorRun ?? frame.W, 1, frame.W);
+        var doorWidth = Math.Clamp(Units.MetresToTiles(template.DoorWidthM), 1, Math.Max(1, Math.Min(run, frame.W - 2)));
         var doorOffset = (frame.W - doorWidth) / 2;
-        var plan = new Plan(frame, database, doorOffset, doorWidth, template.DoorBothEnds);
+        if (doorStart is { } start)
+        {
+            // Centre on the corridor stretch, then turn the wall offset into the room's own frame.
+            var along = Math.Clamp(start + ((run - doorWidth) / 2), 1, Math.Max(1, frame.W - doorWidth - 1));
+            doorOffset = doorSide == WallSide.North ? frame.W - along - doorWidth : along;
+        }
+
+        var backDoor = extraDoors is null ? template.DoorBothEnds : extraDoors.Count > 0;
+        var plan = new Plan(frame, database, doorOffset, doorWidth, backDoor);
 
         switch (template.Layout)
         {
@@ -67,7 +84,11 @@ public static class RoomLayoutEngine
         }
 
         var doors = new List<Doorway> { frame.Door(doorOffset, doorWidth, back: false) };
-        if (template.DoorBothEnds)
+        if (extraDoors is not null)
+        {
+            doors.AddRange(extraDoors);
+        }
+        else if (template.DoorBothEnds)
         {
             doors.Add(frame.Door(doorOffset, doorWidth, back: true));
         }

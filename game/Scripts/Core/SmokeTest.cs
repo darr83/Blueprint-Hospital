@@ -223,8 +223,8 @@ public partial class SmokeTest : Node
 
         hospital.Hud.ToggleBuild();
         var template = sim.Database.RoomTemplates["majors_cubicle"];
-        hospital.BuildTool.StartRoom(template, 8, 9);
-        hospital.BuildTool.PreviewAt(new Simulation.World.GridCoord(b.X - 6, b.Y + 4));
+        hospital.BuildTool.StartRoom(template);
+        hospital.BuildTool.PreviewDrag(new Simulation.World.GridCoord(b.X - 10, b.Y), new Simulation.World.GridCoord(b.X - 1, b.Y + 8));
         Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");

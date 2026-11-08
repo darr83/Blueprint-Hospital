@@ -11,8 +11,12 @@ namespace BlueprintHospital.Simulation.Simulation;
 /// <summary>Raised whenever rooms, corridors or the building change, so the view can redraw.</summary>
 public sealed record LayoutChanged : IGameEvent;
 
-/// <summary>A room the player wants to build: template, footprint and which wall the door is in.</summary>
-public sealed record RoomPlan(string TemplateId, GridRect Rect, WallSide DoorSide);
+/// <summary>
+/// A room the player wants to build: template, footprint and which wall the door is in. When
+/// <see cref="DoorStart"/> and <see cref="DoorRun"/> are set, the door is centred on that stretch of the wall
+/// (tiles from the room's corner) rather than on the whole wall.
+/// </summary>
+public sealed record RoomPlan(string TemplateId, GridRect Rect, WallSide DoorSide, int? DoorStart = null, int? DoorRun = null);
 
 /// <summary>
 /// The answer to "can I build this here?": the cost, every reason it can't be built (empty if it
@@ -24,7 +28,7 @@ public sealed record BuildCheck(int Cost, IReadOnlyList<string> Problems, CareSp
 }
 
 /// <summary>A room as stored in a save file.</summary>
-public sealed record RoomState(string Id, string Name, string Template, int X, int Y, int Width, int Length, WallSide DoorSide);
+public sealed record RoomState(string Id, string Name, string Template, int X, int Y, int Width, int Length, WallSide DoorSide, int? DoorStart = null, int? DoorRun = null);
 
 /// <summary>An area of ground as stored in a save file.</summary>
 public sealed record AreaState(int X, int Y, int Width, int Length);
@@ -71,7 +75,81 @@ public sealed partial class HospitalSimulation
     public CareSpace Furnish(RoomPlan plan, string? id = null, string? name = null)
     {
         var template = Database.RoomTemplates[plan.TemplateId];
-        return RoomLayoutEngine.Build(template, Database, id ?? "preview", name ?? template.Name, plan.Rect, plan.DoorSide);
+        var extra = template.DoorBothEnds ? StreetDoors(plan.Rect) : null;
+        return RoomLayoutEngine.Build(template, Database, id ?? "preview", name ?? template.Name, plan.Rect, plan.DoorSide, plan.DoorStart, plan.DoorRun, extra);
+    }
+
+    /// <summary>
+    /// Plans a room dragged out over <paramref name="rect"/>: the door goes on the wall with the longest
+    /// stretch onto a corridor (or the waiting room), centred on that stretch.
+    /// </summary>
+    public RoomPlan AutoPlan(string templateId, GridRect rect, string? replacingId = null)
+    {
+        var template = Database.RoomTemplates[templateId];
+        if (template.IsCorridor)
+        {
+            return new RoomPlan(templateId, rect, WallSide.South);
+        }
+
+        var replacing = replacingId is null ? null : FindSpace(replacingId);
+        bool Open(GridCoord t) => _spaces.Values.Any(s => s != replacing && s.Rect.Contains(t)
+            && (s.Kind == CareSpaceKind.Corridor || (s.Kind == CareSpaceKind.Waiting && template.Kind != CareSpaceKind.Waiting)));
+
+        (WallSide Side, int Start, int Run)? best = null;
+        foreach (var side in new[] { WallSide.South, WallSide.East, WallSide.North, WallSide.West })
+        {
+            var length = side is WallSide.North or WallSide.South ? rect.Width : rect.Length;
+            var run = 0;
+            for (var i = 0; i < length; i++)
+            {
+                var outside = side switch
+                {
+                    WallSide.North => new GridCoord(rect.X + i, rect.Y - 1),
+                    WallSide.South => new GridCoord(rect.X + i, rect.Bottom),
+                    WallSide.West => new GridCoord(rect.X - 1, rect.Y + i),
+                    _ => new GridCoord(rect.Right, rect.Y + i),
+                };
+
+                // The corner tiles of a wall can't take a door, so they don't count.
+                run = i > 0 && i < length - 1 && Open(outside) ? run + 1 : 0;
+                if (run > 0 && (best is null || run > best.Value.Run))
+                {
+                    best = (side, i - run + 1, run);
+                }
+            }
+        }
+
+        return best is { } b ? new RoomPlan(templateId, rect, b.Side, b.Start, b.Run) : new RoomPlan(templateId, rect, WallSide.South, 1, 0);
+    }
+
+    /// <summary>Checks a room dragged out over <paramref name="rect"/>, with its door placed automatically.</summary>
+    public BuildCheck CheckRoomAt(string templateId, GridRect rect, string? replacingId = null) =>
+        CheckRoom(AutoPlan(templateId, rect, replacingId), replacingId);
+
+    /// <summary>Doorways where a room's wall lines up with an entrance in the building's outer wall.</summary>
+    private List<Doorway> StreetDoors(GridRect rect)
+    {
+        var doors = new List<Doorway>();
+        foreach (var e in MainBuilding.Entrances.Where(e => !e.IsAmbulanceEntrance))
+        {
+            var tiles = Enumerable.Range(0, e.WidthTiles)
+                .Select(i => e.Side is WallSide.North or WallSide.South ? new GridCoord(e.Tile.X + i, e.Tile.Y) : new GridCoord(e.Tile.X, e.Tile.Y + i))
+                .Where(t => rect.Contains(t) && e.Side switch
+                {
+                    WallSide.North => t.Y == rect.Y,
+                    WallSide.South => t.Y == rect.Bottom - 1,
+                    WallSide.West => t.X == rect.X,
+                    _ => t.X == rect.Right - 1,
+                })
+                .ToList();
+            if (tiles.Count > 0)
+            {
+                var offset = e.Side is WallSide.North or WallSide.South ? tiles.Min(t => t.X) - rect.X : tiles.Min(t => t.Y) - rect.Y;
+                doors.Add(new Doorway(e.Side, offset, tiles.Count));
+            }
+        }
+
+        return doors;
     }
 
     // ------------------------------------------------------------------ checks
@@ -150,13 +228,16 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var (wm, dm) = (Units.TilesToMetres(w), Units.TilesToMetres(d));
-        if (wm < template.MinWidthM - 1e-6 || dm < template.MinLengthM - 1e-6)
+        // Rooms are dragged out, so either side may be the long one.
+        var (wm, dm) = (Units.TilesToMetres(Math.Min(w, d)), Units.TilesToMetres(Math.Max(w, d)));
+        var (minShort, minLong) = (Math.Min(template.MinWidthM, template.MinLengthM), Math.Max(template.MinWidthM, template.MinLengthM));
+        var (maxShort, maxLong) = (Math.Min(template.MaxWidthM, template.MaxLengthM), Math.Max(template.MaxWidthM, template.MaxLengthM));
+        if (wm < minShort - 1e-6 || dm < minLong - 1e-6)
         {
-            problems.Add($"Too small: a {template.Name.ToLowerInvariant()} needs at least {template.MinWidthM:0.#} × {template.MinLengthM:0.#} m.");
+            problems.Add($"Too small: a {template.Name.ToLowerInvariant()} needs at least {template.MinWidthM:0.#} × {template.MinLengthM:0.#} m (this is {Units.TilesToMetres(plan.Rect.Width):0.#} × {Units.TilesToMetres(plan.Rect.Length):0.#} m).");
         }
 
-        if (wm > template.MaxWidthM + 1e-6 || dm > template.MaxLengthM + 1e-6)
+        if (wm > maxShort + 1e-6 || dm > maxLong + 1e-6)
         {
             problems.Add($"Too big: a {template.Name.ToLowerInvariant()} can be at most {template.MaxWidthM:0.#} × {template.MaxLengthM:0.#} m.");
         }
@@ -174,7 +255,7 @@ public sealed partial class HospitalSimulation
             var toStreet = i > 0 && DoorTiles(room, door).All(t => MainBuilding.IsOpening(t, door.Side));
             if (!ok && !toStreet)
             {
-                problems.Add(i == 0 ? "The door must open onto a corridor." : "The second door must open onto a corridor or the main entrance.");
+                problems.Add(i == 0 ? "Must touch a corridor so it can have a door." : "The second door must open onto a corridor or the main entrance.");
             }
         }
     }
@@ -554,7 +635,8 @@ public sealed partial class HospitalSimulation
         Rooms = _spaces.Values.OrderBy(s => s.Id, StringComparer.Ordinal).Select(s =>
         {
             var (w, d) = RoomLayoutEngine.LocalSize(s.Rect, s.DoorSide);
-            return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide);
+            var door = s.Doors.FirstOrDefault();
+            return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide, door?.Offset, door?.Width);
         }).ToList(),
     };
 
@@ -570,9 +652,10 @@ public sealed partial class HospitalSimulation
         {
             var rooms = state.Rooms
                 .Where(r => Database.RoomTemplates.ContainsKey(r.Template))
-                .Select(r => RoomLayoutEngine.Build(
-                    Database.RoomTemplates[r.Template], Database, r.Id, r.Name,
-                    RoomLayoutEngine.RectFor(new GridCoord(r.X, r.Y), r.Width, r.Length, r.DoorSide), r.DoorSide))
+                .Select(r => Furnish(
+                    new RoomPlan(r.Template, RoomLayoutEngine.RectFor(new GridCoord(r.X, r.Y), r.Width, r.Length, r.DoorSide), r.DoorSide, r.DoorStart, r.DoorRun),
+                    r.Id,
+                    r.Name))
                 .ToList();
 
             if (RequiredKinds.All(k => rooms.Any(r => r.Kind == k)))

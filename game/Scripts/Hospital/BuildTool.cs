@@ -17,9 +17,10 @@ public enum BuildMode
 }
 
 /// <summary>
-/// Places rooms, corridors and building extensions. Shows a see-through preview that is green
-/// when it can be built and red when it can't, with the furniture the room will get. Rooms follow
-/// the cursor (R turns them, left click builds); corridors and extensions are dragged out.
+/// Places rooms, corridors and building extensions, all by dragging from corner to corner.
+/// While dragging, a see-through preview is green with the price when it can be built and red
+/// with the reason when it can't. A room shows the furniture that will fill it and where its door
+/// will go: on the wall that touches a corridor. Releasing the mouse builds it.
 /// </summary>
 public partial class BuildTool : Node2D
 {
@@ -37,11 +38,6 @@ public partial class BuildTool : Node2D
 
     public RoomTemplate? Template { get; private set; }
 
-    /// <summary>Room size in tiles: along the door wall, and deep.</summary>
-    public (int Width, int Depth) Size { get; private set; }
-
-    public WallSide DoorSide { get; private set; } = WallSide.South;
-
     /// <summary>The room being moved, if this is a move rather than a new room.</summary>
     public string? MovingId { get; private set; }
 
@@ -55,11 +51,12 @@ public partial class BuildTool : Node2D
     /// <summary>False while a test or tutorial drives the preview with <see cref="PreviewAt"/>.</summary>
     public bool FollowMouse { get; set; } = true;
 
-    /// <summary>Moves the preview to a tile without the mouse (for the smoke test).</summary>
-    public void PreviewAt(GridCoord tile)
+    /// <summary>Drags the preview from one tile to another without the mouse (for the smoke test).</summary>
+    public void PreviewDrag(GridCoord from, GridCoord to)
     {
         FollowMouse = false;
-        _hover = tile;
+        _dragStart = from;
+        _hover = to;
         Refresh(force: true);
     }
 
@@ -82,12 +79,11 @@ public partial class BuildTool : Node2D
         ZIndex = 5;
     }
 
-    public void StartRoom(RoomTemplate template, int widthTiles, int depthTiles, WallSide door = WallSide.South, string? movingId = null)
+    /// <summary>Starts dragging out a room; with <paramref name="movingId"/>, the drag rebuilds that room at a new place or size.</summary>
+    public void StartRoom(RoomTemplate template, string? movingId = null)
     {
         Mode = BuildMode.Room;
         Template = template;
-        Size = (widthTiles, depthTiles);
-        DoorSide = door;
         MovingId = movingId;
         Restart();
     }
@@ -125,18 +121,6 @@ public partial class BuildTool : Node2D
         Stopped?.Invoke();
     }
 
-    public void Rotate()
-    {
-        DoorSide = DoorSide switch
-        {
-            WallSide.South => WallSide.West,
-            WallSide.West => WallSide.North,
-            WallSide.North => WallSide.East,
-            _ => WallSide.South,
-        };
-        Refresh(force: true);
-    }
-
     private void Restart()
     {
         _dragStart = null;
@@ -168,16 +152,8 @@ public partial class BuildTool : Node2D
                 return true;
 
             case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true }:
-                if (Mode == BuildMode.Room)
-                {
-                    Place();
-                }
-                else
-                {
-                    _dragStart = _hover;
-                    Refresh(force: true);
-                }
-
+                _dragStart = _hover;
+                Refresh(force: true);
                 return true;
 
             case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: false } when _dragStart is not null:
@@ -185,10 +161,6 @@ public partial class BuildTool : Node2D
                 Place();
                 _dragStart = null;
                 Refresh(force: true);
-                return true;
-
-            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.R } when Mode == BuildMode.Room:
-                Rotate();
                 return true;
 
             case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape }:
@@ -211,12 +183,12 @@ public partial class BuildTool : Node2D
         switch (Mode)
         {
             case BuildMode.Room when MovingId is { } id:
-                result = _sim.MoveRoom(id, new RoomPlan(Template!.Id, _rect, DoorSide));
+                result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id));
                 what = $"Moved {_sim.FindSpace(id)?.Name}";
                 break;
             case BuildMode.Room:
             case BuildMode.Corridor:
-                result = _sim.BuildRoom(new RoomPlan(Template!.Id, _rect, DoorSide));
+                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect));
                 what = $"Built {Template.Name.ToLowerInvariant()}";
                 break;
             default:
@@ -264,14 +236,9 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        _rect = Mode switch
-        {
-            BuildMode.Room => RoomRect(),
-            BuildMode.Corridor => CorridorRect(),
-            _ => DragRect(),
-        };
+        _rect = Mode == BuildMode.Corridor ? CorridorRect() : DragRect();
 
-        var key = $"{Mode}|{_rect}|{DoorSide}|{_sim.Balance}|{_dragStart}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}";
         if (!force && key == _planKey)
         {
             return;
@@ -280,7 +247,8 @@ public partial class BuildTool : Node2D
         _planKey = key;
         Check = Mode switch
         {
-            BuildMode.Room => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, DoorSide), MovingId),
+            BuildMode.Room when _dragStart is null => new BuildCheck(0, new[] { $"Drag out the {Template!.Name.ToLowerInvariant()} from corner to corner." }),
+            BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId),
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag along the floor to lay the corridor." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
@@ -289,12 +257,6 @@ public partial class BuildTool : Node2D
 
         QueueRedraw();
         CheckChanged?.Invoke();
-    }
-
-    private GridRect RoomRect()
-    {
-        var probe = RoomLayoutEngine.RectFor(default, Size.Width, Size.Depth, DoorSide);
-        return new GridRect(_hover.X - (probe.Width / 2), _hover.Y - (probe.Length / 2), probe.Width, probe.Length);
     }
 
     private GridRect CorridorRect()
@@ -327,6 +289,15 @@ public partial class BuildTool : Node2D
     {
         if (!Active || Check is null)
         {
+            return;
+        }
+
+        if (_dragStart is null)
+        {
+            // Before the drag starts, just mark the tile under the cursor.
+            var t = new[] { P(_hover.X, _hover.Y), P(_hover.X + 1, _hover.Y), P(_hover.X + 1, _hover.Y + 1), P(_hover.X, _hover.Y + 1) };
+            DrawColoredPolygon(t, new Color(Good, 0.35f));
+            DrawPolyline(t.Append(t[0]).ToArray(), Good, 2f, true);
             return;
         }
 

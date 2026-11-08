@@ -105,10 +105,9 @@ public partial class HospitalScene : Node2D
         _hud.Initialise(_session, _build);
         _hud.RoomInfo.MoveRequested += room =>
         {
-            var (w, d) = RoomLayoutEngine.LocalSize(room.Rect, room.DoorSide);
             _hud.RoomInfo.Close();
             _hud.Build.Visible = true;
-            _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], w, d, room.DoorSide, room.Id);
+            _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
         _hud.GridToggled += ToggleGrid;
         _hud.MenuRequested += OpenPauseMenu;

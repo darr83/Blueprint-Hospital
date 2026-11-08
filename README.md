@@ -73,8 +73,7 @@ Then:
 | Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
 | Patients list / Staff list | P / T (or the top-bar buttons) |
 | Build menu | B (or the Build button) |
-| Turn a room while placing it | R |
-| Build / stop building | Left click / right click or Esc |
+| Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Left-click the room's floor |
 | Close a record, list or panel | Esc |
 | Menu (save, load, settings, quit) | Esc (when nothing is open) |
@@ -117,14 +116,17 @@ Press **B** to open the build menu. Every room is built from a **template** in
 `game/Data/RoomTemplates`, with furniture from `game/Data/Furniture`, all at real sizes in metres.
 
 - **Rooms** (A&E: Minors and Majors cubicles, Resus bay, Triage room, Waiting room; Staff:
-  doctors' office, nurses' station, staff room) come in **Small, Standard and Large**, or any
-  custom size in half-metre steps within the template's limits. The menu shows the size, area,
-  capacity, cost, equipment, furniture and staffing before you build.
-- **Placing:** the room follows the cursor as a see-through preview with its furniture and door.
-  It is **green** with the price when it can be built and **red** with the reasons when it can't:
-  outside the building, overlapping another room, too small or too big, the door not opening onto a
-  corridor, cutting off another room or an entrance, or not enough money. **R** turns the room so
-  its door faces another way, and the furniture is laid out again for the new direction.
+  doctors' office, nurses' station, staff room) are **dragged out from corner to corner at any
+  size**, in half-metre steps, above each type's minimum (shown on its button) and below its
+  maximum. Either side can be the long one. The menu shows what the room holds at a few example
+  sizes before you build.
+- **Placing:** while you drag, a see-through preview shows the furniture and door. It is
+  **green** with the price when it can be built and **red** with the reasons when it can't:
+  outside the building, overlapping another room, too small or too big, not touching a corridor,
+  cutting off another room or an entrance, or not enough money. Release the mouse to build.
+- **Doors are automatic:** the door goes on the wall with the longest stretch touching a corridor
+  (or the waiting room), centred on that stretch. A waiting room that lines up with the main
+  entrance also gets a street door.
 - **Furniture adapts** to the room: beds, monitors and chairs keep their real size, and a bigger
   waiting room or office simply gets more seats.
 - **Corridors** come in 2 m, 2.5 m, 3 m and 4 m (trolley) widths and are dragged out. Each must
@@ -343,7 +345,7 @@ withhold it if they match. Patient allergies come from `game/Data/PatientBackgro
   drawn (`box`, `chair`, `bed` or `monitor`), colour, cost and whether it is medical equipment.
 - `RoomTemplates/` lists each room: `kind` (what the simulation uses it for), `layout` (how it is
   furnished: `bed_space`, `triage`, `waiting`, `office`, `staff_room` or `none` for corridors),
-  preset `sizes`, minimum and maximum width and length in metres, door width, costs, staffing text
+  example `sizes` (shown in the menu), minimum and maximum width and length in metres, door width, costs, staffing text
   and the furniture it may use. Loading checks every furniture id exists and that each layout has
   the items it needs.
 
