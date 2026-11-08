@@ -41,15 +41,15 @@ public sealed partial class HospitalSimulation
     /// <summary>The doctor has decided the patient needs admitting.</summary>
     private void RequestWardBed(Patient patient, ConditionDefinition diagnosed, string? note = null)
     {
-        if (!Wards.Any())
+        if (WardsFor(patient).Count == 0)
         {
-            ArrangeTransfer(patient, diagnosed, "No ward on site, so they are being transferred to a neighbouring hospital for admission.");
+            ArrangeTransfer(patient, diagnosed, NoWardReason(patient));
             return;
         }
 
         patient.Stage = PatientStage.AwaitingBed;
         patient.BedRequestedAt = Now;
-        patient.Log(Now, note ?? $"{diagnosed.DispositionNote} Referred to the medical team; waiting for a ward bed.", important: true);
+        patient.Log(Now, note ?? $"{diagnosed.DispositionNote} Referred to the {DepartmentName(DepartmentOf(patient))} team; waiting for a ward bed.", important: true);
         Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} needs a ward bed.", patient.Id, patient.CareSpaceId, patient.Triage);
     }
 
@@ -93,22 +93,26 @@ public sealed partial class HospitalSimulation
             }
 
             var diagnosed = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
-            if (!Wards.Any() || Now - patient.BedRequestedAt > MaxWaitForBed)
+            var wards = WardsFor(patient);
+            if (wards.Count == 0 || Now - patient.BedRequestedAt > MaxWaitForBed)
             {
-                var reason = Wards.Any()
+                var reason = wards.Count > 0
                     ? $"No ward bed after {MaxWaitForBed.TotalHours:0} hours, so they are being transferred to a neighbouring hospital."
-                    : "No ward on site, so they are being transferred to a neighbouring hospital for admission.";
+                    : NoWardReason(patient);
                 ArrangeTransfer(patient, diagnosed, reason);
                 continue;
             }
 
-            if (FreeWardBed() is { } free)
+            if (FreeWardBed(patient) is { } free)
             {
                 _activeCapacityAlerts.Remove("wards");
                 free.Bed.OccupantId = patient.Id;
                 patient.ReservedWardId = free.Ward.Id;
                 patient.ReservedBedIndex = free.Index;
-                patient.Log(Now, $"Bed {free.Index + 1} on {free.Ward.Name} allocated.");
+                var outlier = free.Ward.DepartmentId == EmergencyDepartmentId && DepartmentOf(patient) != EmergencyDepartmentId && !patient.ForObservation
+                    ? $" Their {DepartmentName(DepartmentOf(patient))} ward is full, so they go to the A&E ward for now."
+                    : string.Empty;
+                patient.Log(Now, $"Bed {free.Index + 1} on {free.Ward.Name} allocated.{outlier}");
                 AddTask(TaskKind.EscortToWard, StaffRole.Nurse, patient, 5, $"Take to {free.Ward.Name}");
             }
             else if (Now - patient.BedRequestedAt > TimeSpan.FromHours(1))
@@ -131,22 +135,6 @@ public sealed partial class HospitalSimulation
                 AddTask(TaskKind.WardRound, StaffRole.Doctor, patient, 10, "Ward round review");
             }
         }
-    }
-
-    private (CareSpace Ward, WardBed Bed, int Index)? FreeWardBed()
-    {
-        foreach (var ward in Wards)
-        {
-            for (var i = 0; i < ward.Beds.Count; i++)
-            {
-                if (ward.Beds[i].OccupantId is null)
-                {
-                    return (ward, ward.Beds[i], i);
-                }
-            }
-        }
-
-        return null;
     }
 
     private void ReleaseReservedBed(Patient patient)
@@ -200,9 +188,9 @@ public sealed partial class HospitalSimulation
         patient.ReservedBedIndex = null;
         patient.AdmittedAt = Now;
         patient.LeftEmergencyAt = Now;
-        var stay = diagnosed.LengthOfStayHours;
+        var stay = patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe : diagnosed.LengthOfStayHours;
         patient.DischargeDueAt = Now.AddHours(Random.Range(stay[0], stay[1]));
-        patient.Log(Now, $"Admitted to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
+        patient.Log(Now, $"{(patient.ForObservation ? "Moved for observation" : "Admitted")} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
         Stats.RecordAdmission(patient, Now);
         PayForAttendance(patient);
 

@@ -173,6 +173,12 @@ public sealed class ConditionDefinition : IDataRecord
     /// <summary>For admitted patients: [shortest, longest] stay on the ward in hours.</summary>
     public double[] LengthOfStayHours { get; init; } = { 24, 72 };
 
+    /// <summary>
+    /// For patients who go home: [shortest, longest] hours of observation on the A&amp;E ward first,
+    /// when it has a free bed (e.g. 4 to 6 hours after anaphylaxis). Null if they can go straight home.
+    /// </summary>
+    public double[]? ObserveHours { get; init; }
+
     public double ChanceOf(string symptomId) =>
         Symptoms.FirstOrDefault(s => s.Symptom == symptomId)?.Probability ?? 0;
 

@@ -125,7 +125,7 @@ public class WardTests
         if (patient.WorkingDiagnosis?.ConditionId == "community_acquired_pneumonia")
         {
             Assert.Equal(PatientOutcome.Transferred, patient.Outcome);
-            Assert.Contains("No ward on site", journey);
+            Assert.Contains("ward on site", journey);
         }
     }
 

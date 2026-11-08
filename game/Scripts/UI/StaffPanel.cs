@@ -62,6 +62,14 @@ public partial class StaffPanel : PanelContainer
         who.AddChild(_name);
         who.AddChild(_role);
         header.AddChild(who);
+        header.AddChild(NameEditing.Attach(who, _name, () => _member?.Name, name =>
+        {
+            if (_member is { } m)
+            {
+                _sim.RenameStaff(m.Id, name);
+                Refresh();
+            }
+        }));
         var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
         close.TooltipText = "Close (Esc)";
         close.CustomMinimumSize = new Vector2(40, 40);

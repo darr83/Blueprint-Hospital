@@ -47,7 +47,8 @@ public sealed partial class HospitalSimulation
         }
 
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
-               && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id);
+               && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
+               && (task.Kind != TaskKind.Surgery || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept)));
     }
 
     /// <summary>The member of staff starts work in their room; for a scan or an operation the patient is taken there.</summary>
@@ -106,9 +107,12 @@ public sealed partial class HospitalSimulation
     private void RequestSurgery(Patient patient, ConditionDefinition diagnosed)
     {
         var operation = diagnosed.Operation!;
-        if (!SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed))
+        if (!HasTheatreFor(diagnosed.Department))
         {
-            ArrangeTransfer(patient, diagnosed, $"Needs {operation.Name.ToLowerInvariant()}, but there is no operating theatre on site, so they are being transferred to a neighbouring hospital.");
+            var why = SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed)
+                ? $"no theatre here takes {DepartmentName(diagnosed.Department)} patients"
+                : "there is no operating theatre on site";
+            ArrangeTransfer(patient, diagnosed, $"Needs {operation.Name.ToLowerInvariant()}, but {why}, so they are being transferred to a neighbouring hospital.");
             return;
         }
 
@@ -135,6 +139,7 @@ public sealed partial class HospitalSimulation
         }
 
         patient.EffectiveTreatmentGiven = true;
+        patient.HadSurgery = true;
         patient.Severity = Math.Min(patient.Severity, 0.6) * 0.7;
         Stats.OperationsDone++;
         Book(MoneyCategory.Operations, OperationTariff);
@@ -168,7 +173,11 @@ public sealed partial class HospitalSimulation
     /// <summary>Work that can no longer be done because its room has gone is cancelled or sent elsewhere.</summary>
     private void CancelUnavailableWork()
     {
-        foreach (var task in _tasks.Values.Where(t => t.AssignedStaffId is null && ServiceRoomKind(t) is { } kind && !SpacesOfKind(kind).Any(IsStaffed)).ToList())
+        bool CanStillBeDone(ClinicalTask t) => t.Kind == TaskKind.Surgery
+            ? SurgeryDepartment(t.Detail) is { } dept && HasTheatreFor(dept)
+            : ServiceRoomKind(t) is not { } kind || SpacesOfKind(kind).Any(IsStaffed);
+
+        foreach (var task in _tasks.Values.Where(t => t.AssignedStaffId is null && !CanStillBeDone(t)).ToList())
         {
             RemoveTask(task);
             if (FindPatient(task.PatientId) is not { } patient)
@@ -184,7 +193,7 @@ public sealed partial class HospitalSimulation
                     RequestReviewIfResultsComplete(patient);
                     break;
                 case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery:
-                    ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "The operating theatre has closed, so they are being transferred to a neighbouring hospital.");
+                    ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "No operating theatre here can take them any more, so they are being transferred to a neighbouring hospital.");
                     break;
                 case TaskKind.DispenseMedicines:
                     patient.MedicinesReadyAt = Now + OutsidePharmacyDelay;

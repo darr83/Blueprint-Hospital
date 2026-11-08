@@ -352,6 +352,9 @@ public sealed partial class HospitalSimulation
         var diagnosed = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
         switch (diagnosed.Disposition)
         {
+            case Disposition.Discharge when diagnosed.ObserveHours is not null && StartObservation(patient, diagnosed):
+                break;
+
             case Disposition.Discharge:
                 AddTask(TaskKind.Discharge, StaffRole.Nurse, patient, 5, "Discharge with advice");
                 break;

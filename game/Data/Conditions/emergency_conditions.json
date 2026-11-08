@@ -274,7 +274,8 @@
     ],
     "recovery_per_hour": 0.4,
     "disposition": "discharge",
-    "disposition_note": "Observed for 6 hours with no recurrence. Discharged with two adrenaline auto-injectors and an allergy clinic referral."
+    "disposition_note": "Observed for 6 hours with no recurrence. Discharged with two adrenaline auto-injectors and an allergy clinic referral.",
+    "observe_hours": [4, 6]
   },
   {
     "id": "allergic_reaction",
@@ -530,7 +531,8 @@
     ],
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
-    "disposition_note": "Normal ECG and lying/standing blood pressure. Discharged with advice about faints."
+    "disposition_note": "Normal ECG and lying/standing blood pressure. Discharged with advice about faints.",
+    "observe_hours": [2, 4]
   },
   {
     "id": "renal_colic",

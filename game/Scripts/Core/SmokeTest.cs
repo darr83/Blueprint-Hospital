@@ -44,11 +44,13 @@ public partial class SmokeTest : Node
         BuildPreview,
         RoomPanel,
         BuildItem,
+        Departments,
         Recruitment,
         Ward,
         WardBed,
         Transport,
         Imaging,
+        Theatre,
         Rotate,
         Ambulance,
         Finances,
@@ -204,6 +206,16 @@ public partial class SmokeTest : Node
 
             case Stage.BuildItem when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("06a_build_item");
+                hospital.Hud.HideRightPanels();
+                hospital.Hud.Build.Visible = true;
+                hospital.Hud.Build.ShowTab("Departments");
+                _frame = 0;
+                _stage = Stage.Departments;
+                break;
+
+            case Stage.Departments when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("06c_departments");
+                hospital.Hud.Build.ShowTab("A&E");
                 hospital.SetMode(GameMode.Play);
                 Check(!hospital.Hud.Build.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should close the build menu and item panel.");
                 BuildWard(hospital);
@@ -245,6 +257,14 @@ public partial class SmokeTest : Node
 
             case Stage.Imaging when scene is HospitalScene hospital && _frame >= 20:
                 Screenshot("09_imaging");
+                BuildTheatre(hospital);
+                _frame = 0;
+                _stage = Stage.Theatre;
+                break;
+
+            case Stage.Theatre when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("09b_theatre_access");
+                hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
                 hospital.ToggleRoutes();
@@ -401,6 +421,28 @@ public partial class SmokeTest : Node
         Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
+    }
+
+    /// <summary>Unlocks Gynaecology, extends the wing west and builds a theatre, then ticks it for gynaecology and opens its room panel.</summary>
+    private static void BuildTheatre(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        sim.AdjustBalance(1_000_000);
+        Check(sim.UnlockDepartment("gynaecology").CanBuild, "Could not unlock gynaecology.");
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 32, b.Y - 14, 32, 14));
+        Check(wing.CanBuild, "Theatre wing refused: " + string.Join("; ", wing.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 20, b.Y - 14, 6, 24), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Theatre corridor refused: " + string.Join("; ", corridor.Problems));
+        var built = sim.BuildRoom(sim.AutoPlan("operating_theatre", new Simulation.World.GridRect(b.X - 32, b.Y - 14, 12, 12)));
+        Check(built.CanBuild, "Theatre refused: " + string.Join("; ", built.Problems));
+        var theatre = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.Theatre);
+        Check(theatre.AllowedDepartments.Count == 0, "A new theatre should not be open to every department.");
+        sim.SetTheatreAccess(theatre.Id, "gynaecology", true);
+        hospital.ClearSelectionForTest();
+        hospital.SetMode(GameMode.Build);
+        hospital.Hud.ShowRoom(theatre);
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(theatre.Rect.X + 6, theatre.Rect.Y + 6), 0.9f);
     }
 
     /// <summary>Build mode: clicking bare floor in the new cubicle opens the room, and clicking a member of staff does nothing.</summary>

@@ -195,7 +195,8 @@
     ],
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
-    "disposition_note": "Back to normal. Discharged with their usual antiepileptic medicine and an epilepsy nurse review."
+    "disposition_note": "Back to normal. Discharged with their usual antiepileptic medicine and an epilepsy nurse review.",
+    "observe_hours": [4, 6]
   },
   {
     "id": "subarachnoid_haemorrhage",

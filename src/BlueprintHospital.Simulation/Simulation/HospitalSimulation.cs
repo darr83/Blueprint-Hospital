@@ -92,6 +92,7 @@ public sealed partial class HospitalSimulation
         AmbulanceParkingTiles = AmbulanceBayPatientTiles.Select(t => new GridCoord(t.X + 6, t.Y)).ToArray();
         AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + 19, site.Length - 1);
 
+        UnlockStartingDepartments();
         if (_options.Start == StartingHospital.EmptyBuilding)
         {
             ClearToEmptyBuilding();
@@ -407,8 +408,13 @@ public sealed partial class HospitalSimulation
             case StaffRole.Doctor:
                 return BaseSeat(member, CareSpaceKind.DoctorsOffice);
             case StaffRole.Porter:
-                // Porters wait in the main corridor, ready to go.
-                return WaitingPlace(5 + _staff.Where(s => s.Role == StaffRole.Porter).ToList().IndexOf(member));
+            {
+                // Free porters wait in the staff room (from the far seats, leaving the near ones for
+                // staff on a break); without one they wait in the main corridor.
+                var index = Math.Max(0, _staff.Where(s => s.Role == StaffRole.Porter).ToList().IndexOf(member));
+                var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
+                return seats.Count > 0 ? seats[seats.Count - 1 - (index % seats.Count)] : WaitingPlace(5 + index);
+            }
             default:
                 return BaseSeat(member, CareSpaceKind.NursesStation);
         }

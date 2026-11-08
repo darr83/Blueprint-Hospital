@@ -222,10 +222,28 @@ outcome. Doctors only see what a real doctor would: symptoms, observations and t
 theatre and then a ward bed; without a theatre the patient is transferred. "Transfer" goes to a
 specialist centre elsewhere (heart attack centre, neurosurgery).
 
+### Departments
+
+Every condition belongs to a department (`"department"` in its data). **A&E**, **Acute and General
+Medicine** and the shared services (imaging, theatres, pharmacy) are open from the start. The other
+specialties (Cardiology, Neurology, Gastroenterology, Gynaecology, and Trauma and Orthopaedics) are
+locked: unlock one in **Build → Departments** by paying its opening cost, and its rooms (such as its
+ward) appear in the build menu. Then hire its team.
+
+- Admitted patients go to a ward of **their own specialty**: heart failure to a Cardiology ward,
+  pneumonia to a Medical ward. If the hospital has no ward for that specialty, they are transferred
+  to a neighbouring hospital, even if another ward has room.
+- The **A&E ward** belongs to A&E. When a patient's specialty ward is full they wait there instead of
+  in a cubicle. Patients who need a few hours of observation before going home (anaphylaxis,
+  hypoglycaemia, a seizure, asthma, a faint: `observe_hours` in the condition data) move there too,
+  freeing their cubicle; with no free bed they go home from the cubicle as before. Patients back from
+  theatre can recover there if their specialty has no ward.
+
 ### Wards
 
 Build a **Medical ward** (Build → Wards) to admit patients who need more than a few hours of care,
-such as pneumonia. Drag it out like any room: beds go in a row along the wall opposite the door,
+such as pneumonia. Specialty wards (Cardiology ward and so on) and the A&E ward are built the same
+way. Drag it out like any room: beds go in a row along the wall opposite the door,
 2.5 m apart, each with a bedside locker. From **7.5 m deep** a second row faces the first across
 the aisle, so a longer or deeper ward holds more beds. The build menu shows how many beds each size
 gives.
@@ -234,10 +252,10 @@ gives.
   doctor; hire them onto the ward and they look after that ward's patients. Until a ward has its
   own nurse or doctor, the A&E team covers it. If the ward is demolished, its staff move to A&E.
 - **Admission:** when an A&E doctor decides a patient needs admitting, the patient waits in their
-  cubicle until a bed is free, then a nurse takes them up. Leaving A&E for the ward stops the
+  cubicle until a bed on their specialty's ward (or the A&E ward) is free, then a nurse takes them up. Leaving A&E for the ward stops the
   4-hour clock. A full ward blocks A&E cubicles, as in a real hospital; the A&E board shows ward
-  beds and anyone waiting for one. After 6 hours without a bed, or if there is no ward at all, the
-  patient is transferred to a neighbouring hospital.
+  beds and anyone waiting for one. After 6 hours without a bed, or if there is no ward for their
+  specialty, the patient is transferred to a neighbouring hospital.
 - **On the ward:** the ward doctor clerks each admission (and may spot and correct a wrong A&E
   diagnosis), nurses do observations, and a ward round decides when the patient is well enough to
   go home. Each condition sets its usual length of stay (`length_of_stay_hours`).
@@ -254,7 +272,10 @@ Build these from **Build → Services**. Each room opens once you hire someone t
   diagnose without that scan: a broken ankle or a bleed on the brain is much easier to miss.
 - **Operating theatre** (consultant surgeon): appendicectomy, ectopic pregnancy and hip fracture
   operations. The patient waits in their cubicle for theatre, has the operation, then needs a ward
-  bed to recover in. If the A&E diagnosis was wrong, the surgeon finds out in theatre.
+  bed to recover in. If the A&E diagnosis was wrong, the surgeon finds out in theatre. Each theatre
+  only takes the departments ticked in its room panel (Gastroenterology for appendicitis, Gynaecology
+  for ectopic pregnancy, Trauma and Orthopaedics for hip fractures, or All departments); a new theatre
+  has none ticked. Patients whose department has no theatre are transferred.
 - **Pharmacy** (pharmacist): buys medicines at list price and dispenses ward patients' medicines to
   take home. Without one, medicines cost 50% more and every ward discharge waits about 4 hours for
   medicines from an outside pharmacy.
@@ -283,6 +304,8 @@ staff rooms.
   with staff: everyone is hired by you.
 - **Recommended team:** the same panel shows, for A&E, porters and each room, how many of each kind
   of staff it recommends and how many you have. It's a guide only.
+- **Names:** press **Rename** on a member of staff's or a patient's card to change their name. Rooms
+  are renamed by typing in the name box on the room panel.
 - **Letting staff go:** open their card and press Let go twice. Whatever they were doing goes back
   on the board for someone else.
 
@@ -293,6 +316,7 @@ staff rooms.
   to sit; in a **wheelchair** if they came by ambulance and are fit to sit (Green), are Amber and
   aged 75 or over, or are being admitted. Everyone walks out when they go home.
 - Ambulance crews wheel their own patients in from the bay on their stretcher.
+- Free porters wait in the staff room (in a corridor if there isn't one).
 - The game starts with two porters. With none, a nurse does the pushing; a nurse also steps in
   if a move has waited 10 minutes for a porter.
 
@@ -378,8 +402,10 @@ Add an entry to any file in `game/Data/Departments/`:
 }
 ```
 
-Exactly one department (A&E) has `starts_unlocked: true`. Set `is_shared_service` for services such
-as Radiology that serve other departments.
+Exactly one department (A&E) has `starts_unlocked: true`. Departments with an `opening_cost` of 0,
+and shared services (`is_shared_service`, such as Radiology), are also open from the start; the
+rest are unlocked in game by paying their opening cost. Give the department a ward by adding a room
+template with `"kind": "ward"` and its `"department"`.
 
 Add `"triage_investigations": ["ecg"]` to a symptom to make triage nurses request those tests
 whenever a patient has it.

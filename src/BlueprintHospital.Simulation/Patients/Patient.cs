@@ -118,9 +118,9 @@ public sealed class Patient : Agent
 
     public required string HospitalNumber { get; init; }
 
-    public required string FirstName { get; init; }
+    public required string FirstName { get; set; }
 
-    public required string Surname { get; init; }
+    public required string Surname { get; set; }
 
     public string FullName => $"{FirstName} {Surname}";
 
@@ -239,6 +239,12 @@ public sealed class Patient : Agent
     public string? ReservedWardId { get; set; }
 
     public int? ReservedBedIndex { get; set; }
+
+    /// <summary>Has had an operation this stay (so can recover on the A&amp;E ward if their specialty has no ward).</summary>
+    public bool HadSurgery { get; set; }
+
+    /// <summary>Going to the A&amp;E ward only to be observed for a few hours before going home.</summary>
+    public bool ForObservation { get; set; }
 
     /// <summary>When the doctor asked for a ward bed.</summary>
     public DateTime? BedRequestedAt { get; set; }

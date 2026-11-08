@@ -15,9 +15,15 @@ public class ServiceTests
     /// A west wing with a corridor across it, rooms north of the corridor and rooms south of it.
     /// <paramref name="north"/> and <paramref name="south"/> are (template, width in tiles, depth in tiles), placed left to right.
     /// </summary>
-    private static SimulationHarness Wing(int seed, (string Template, int W, int D)[] north, (string Template, int W, int D)[] south)
+    private static SimulationHarness Wing(int seed, (string Template, int W, int D)[] north, (string Template, int W, int D)[] south, params string[] unlock)
     {
         var h = new SimulationHarness(seed);
+        foreach (var department in unlock)
+        {
+            h.Sim.AdjustBalance(h.Sim.Database.Departments[department].OpeningCost);
+            Build(h.Sim.UnlockDepartment(department), department);
+        }
+
         Build(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)), "extension");
         Build(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 30, B.Y + 10, 34, 6), WallSide.South)), "corridor");
         var x = B.X - 30;
@@ -32,6 +38,14 @@ public class ServiceTests
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 16, w, d))), template);
             x += w;
+        }
+
+        foreach (var theatre in h.Sim.Spaces.Where(s => s.Kind == CareSpaceKind.Theatre).ToList())
+        {
+            foreach (var department in h.Sim.SurgicalDepartments)
+            {
+                h.Sim.SetTheatreAccess(theatre.Id, department.Id, true);
+            }
         }
 
         h.StaffToRecommended();
@@ -100,7 +114,7 @@ public class ServiceTests
     [Fact]
     public void Appendicitis_goes_to_theatre_then_recovers_on_a_ward()
     {
-        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("medical_ward", 16, 10) });
+        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("gastro_ward", 16, 10) }, "gastroenterology");
         var theatre = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.Theatre);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
 

@@ -61,7 +61,7 @@ public partial class BuildPanel : PanelContainer
         tabs.AddThemeConstantOverride("h_separation", 6);
         tabs.AddThemeConstantOverride("v_separation", 6);
         var categories = _sim.Database.RoomTemplates.Values.Where(t => !t.IsCorridor).Select(t => t.Category).Distinct().ToList();
-        foreach (var name in categories.Append("Corridors").Append("Building"))
+        foreach (var name in categories.Append("Corridors").Append("Building").Append("Departments"))
         {
             var tab = new Button { Text = name, ToggleMode = true, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 34), ThemeTypeVariation = UiStyle.Secondary };
             tab.AddThemeFontSizeOverride("font_size", 14);
@@ -124,6 +124,9 @@ public partial class BuildPanel : PanelContainer
             case "Building":
                 ShowBuilding();
                 break;
+            case "Departments":
+                ShowDepartments();
+                break;
             default:
                 ShowRooms(name);
                 break;
@@ -146,9 +149,10 @@ public partial class BuildPanel : PanelContainer
         foreach (var template in templates)
         {
             var min = $"{template.MinWidthM:0.#} × {template.MinLengthM:0.#} m";
+            var locked = !_sim.IsUnlocked(template.Department);
             var button = new Button
             {
-                Text = $"{template.Name}\nmin {min}",
+                Text = locked ? $"{template.Name}\nLocked" : $"{template.Name}\nmin {min}",
                 ToggleMode = true,
                 FocusMode = FocusModeEnum.None,
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
@@ -158,10 +162,23 @@ public partial class BuildPanel : PanelContainer
             };
             button.AddThemeFontSizeOverride("font_size", 15);
             button.SetPressedNoSignal(template == _selected && _tool.Mode == BuildMode.Room);
+            if (locked)
+            {
+                button.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+            }
+
             button.Pressed += () =>
             {
                 _selected = template;
-                _tool.StartRoom(template);
+                if (_sim.IsUnlocked(template.Department))
+                {
+                    _tool.StartRoom(template);
+                }
+                else
+                {
+                    _tool.Cancel();
+                }
+
                 ShowTab(_tab);
             };
             list.AddChild(button);
@@ -170,6 +187,13 @@ public partial class BuildPanel : PanelContainer
         _body.AddChild(list);
         if (_selected is not { } t)
         {
+            return;
+        }
+
+        if (!_sim.IsUnlocked(t.Department) && _sim.Database.Departments.TryGetValue(t.Department, out var dept))
+        {
+            _body.AddChild(Text($"[b]{t.Name}[/b]\n[color=#5B6B79]{t.Description}[/color]\n\n[color=#8A5300]Part of {dept.Name}, which isn't open yet. Unlock it to build its rooms.[/color]"));
+            _body.AddChild(UnlockButton(dept));
             return;
         }
 
@@ -277,6 +301,54 @@ public partial class BuildPanel : PanelContainer
         var extend = UiStyle.Button("Extend the building", () => _tool.StartExtension());
         extend.FocusMode = FocusModeEnum.None;
         _body.AddChild(extend);
+    }
+
+    // ------------------------------------------------------------------ departments
+
+    private void ShowDepartments()
+    {
+        _body.AddChild(Hint("A&E, General Medicine and the shared services are open from the start. Unlock a specialty to build its ward, then hire its team. Patients whose specialty you don't have are transferred to another hospital."));
+        foreach (var department in _sim.Database.Departments.Values.OrderBy(d => d.IsSharedService).ThenBy(d => d.OpeningCost).ThenBy(d => d.Name))
+        {
+            var unlocked = _sim.IsUnlocked(department.Id);
+            var wards = _sim.WardsOf(department.Id).ToList();
+            var open = department.StartsUnlocked || department.OpeningCost == 0 ? "Open from the start" : "Unlocked";
+            var wardText = wards.Count == 0 ? "no ward yet" : $"{wards.Count} ward{(wards.Count == 1 ? string.Empty : "s")}, {wards.Sum(w => w.Beds.Count)} beds";
+            var status = !unlocked
+                ? $"[color=#8A5300]Locked · £{department.OpeningCost:N0} to unlock[/color]"
+                : department.IsSharedService
+                    ? "[color=#2E8B57]Shared service, open from the start[/color]"
+                    : $"[color=#2E8B57]{open}[/color] · {wardText}";
+            var card = new PanelContainer();
+            card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Ground, 10, UiStyle.Border, 10));
+            var column = new VBoxContainer();
+            column.AddThemeConstantOverride("separation", 4);
+            card.AddChild(column);
+            column.AddChild(Text($"[color={department.Colour}]●[/color] [b]{department.Name}[/b]\n[color=#5B6B79]{department.Description}[/color]\n{status}"));
+            if (!unlocked)
+            {
+                column.AddChild(UnlockButton(department));
+            }
+
+            _body.AddChild(card);
+        }
+    }
+
+    private Button UnlockButton(DepartmentDefinition department)
+    {
+        var check = _sim.CheckUnlock(department.Id);
+        var button = UiStyle.Button($"Unlock {department.Name} (£{department.OpeningCost:N0})", () =>
+        {
+            var result = _sim.UnlockDepartment(department.Id);
+            _status.Text = result.CanBuild
+                ? $"[color=#2E8B57]✓ {department.Name} unlocked. Its rooms are in the build menu.[/color]"
+                : $"[color=#C4373D]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
+            ShowTab(_tab);
+        });
+        button.FocusMode = FocusModeEnum.None;
+        button.Disabled = !check.CanBuild;
+        button.TooltipText = check.CanBuild ? string.Empty : string.Join("\n", check.Problems);
+        return button;
     }
 
     // ------------------------------------------------------------------ status

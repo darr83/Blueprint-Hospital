@@ -8,14 +8,289 @@
     "department": "general_medicine",
     "layout": "ward",
     "sizes": [
-      { "name": "4 beds", "width_m": 10.5, "length_m": 5.5 },
-      { "name": "10 beds", "width_m": 13, "length_m": 8 },
-      { "name": "18 beds", "width_m": 23, "length_m": 8 }
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
     ],
-    "min_width_m": 5, "min_length_m": 5, "max_width_m": 30, "max_length_m": 16,
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
     "door_width_m": 2.0,
-    "base_cost": 15000, "cost_per_square_metre": 1200,
-    "staffing": "One ward nurse for every 6 beds and a ward doctor join when the ward opens. They look after the ward's patients only.",
-    "furniture": ["hospital_bed", "bedside_locker", "station_counter", "clinical_cupboard", "hand_basin", "visitor_chair"]
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "emergency_ward",
+    "name": "A&E ward",
+    "category": "Wards",
+    "description": "A&E's own general ward. Patients who need a few hours of observation after treatment go here instead of holding a cubicle, and admitted patients wait here when their specialty's ward is full.",
+    "kind": "ward",
+    "department": "emergency",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "cardiology_ward",
+    "name": "Cardiology ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted with heart conditions such as heart failure and atrial fibrillation. Needs the Cardiology department unlocked.",
+    "kind": "ward",
+    "department": "cardiology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "neurology_ward",
+    "name": "Neurology ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted with stroke and other conditions of the brain and nerves. Needs the Neurology department unlocked.",
+    "kind": "ward",
+    "department": "neurology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "gastro_ward",
+    "name": "Gastroenterology ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted with pancreatitis, gallbladder problems and bleeding from the gut. Needs the Gastroenterology department unlocked.",
+    "kind": "ward",
+    "department": "gastroenterology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "gynaecology_ward",
+    "name": "Gynaecology ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted with gynaecology patients, including after an operation for ectopic pregnancy. Needs the Gynaecology department unlocked.",
+    "kind": "ward",
+    "department": "gynaecology",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "orthopaedic_ward",
+    "name": "Trauma and orthopaedic ward",
+    "category": "Wards",
+    "description": "Beds for patients admitted with broken bones, including hip fractures after their operation. Needs the Trauma and orthopaedic department unlocked.",
+    "kind": "ward",
+    "department": "trauma_orthopaedics",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward. They look after the ward's patients only.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
   }
 ]

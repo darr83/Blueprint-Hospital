@@ -17,6 +17,7 @@ public partial class RoomPanel : PanelContainer
 {
     private readonly LineEdit _name = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly RichTextLabel _info = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly VBoxContainer _access = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly RichTextLabel _problems = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false };
     private readonly Button _move = new() { Text = "Move or resize", TooltipText = "Drag out the room again where you want it, at the size you want", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly Button _demolish = new() { Text = "Demolish", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
@@ -60,6 +61,8 @@ public partial class RoomPanel : PanelContainer
 
         _info.AddThemeColorOverride("default_color", new Color("#17232E"));
         column.AddChild(_info);
+        _access.AddThemeConstantOverride("separation", 2);
+        column.AddChild(_access);
 
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 6);
@@ -85,6 +88,7 @@ public partial class RoomPanel : PanelContainer
         _problems.Text = string.Empty;
         Visible = true;
         Refresh();
+        BuildAccess(room);
     }
 
     public void Close()
@@ -125,6 +129,78 @@ public partial class RoomPanel : PanelContainer
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";
         _move.Visible = room.Kind != CareSpaceKind.Corridor;
+    }
+
+    /// <summary>For a theatre: a tick for each department whose patients may be operated on in it, and one for all of them.</summary>
+    private void BuildAccess(CareSpace room)
+    {
+        foreach (var child in _access.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        _access.Visible = room.Kind == CareSpaceKind.Theatre;
+        if (!_access.Visible)
+        {
+            return;
+        }
+
+        var departments = _sim.SurgicalDepartments;
+        var heading = new Label { Text = "Departments that can use this theatre" };
+        heading.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _access.AddChild(heading);
+
+        var all = Tick("All departments", UiStyle.TextDark);
+        all.SetPressedNoSignal(departments.All(d => room.AllowedDepartments.Contains(d.Id)));
+        all.Toggled += on =>
+        {
+            foreach (var d in departments)
+            {
+                _sim.SetTheatreAccess(room.Id, d.Id, on);
+            }
+
+            BuildAccess(room);
+        };
+        _access.AddChild(all);
+
+        foreach (var department in departments)
+        {
+            var unlocked = _sim.IsUnlocked(department.Id);
+            var tick = Tick(unlocked ? department.Name : $"{department.Name} (locked)", unlocked ? UiStyle.TextDark : UiStyle.TextMuted);
+            tick.TooltipText = unlocked ? $"Let {department.Name} patients have operations here" : $"Unlock {department.Name} in Build › Departments first";
+            tick.SetPressedNoSignal(room.AllowedDepartments.Contains(department.Id));
+            var id = department.Id;
+            tick.Toggled += on =>
+            {
+                _sim.SetTheatreAccess(room.Id, id, on);
+                BuildAccess(room);
+            };
+            _access.AddChild(tick);
+        }
+
+        if (room.AllowedDepartments.Count == 0)
+        {
+            var warning = new Label { Text = "Nobody can use this theatre until you tick a department.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+            warning.AddThemeColorOverride("font_color", UiStyle.AmberText);
+            _access.AddChild(warning);
+        }
+    }
+
+    /// <summary>A plain tick box (the theme otherwise styles it like a button).</summary>
+    private static CheckBox Tick(string text, Color colour)
+    {
+        var tick = new CheckBox { Text = text, FocusMode = FocusModeEnum.None, ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed", "focus", "disabled" })
+        {
+            tick.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
+        }
+
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })
+        {
+            tick.AddThemeColorOverride(state, colour);
+        }
+
+        return tick;
     }
 
     private string Usage(CareSpace room)

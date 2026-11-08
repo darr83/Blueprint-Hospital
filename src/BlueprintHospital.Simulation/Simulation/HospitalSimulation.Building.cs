@@ -168,6 +168,10 @@ public sealed partial class HospitalSimulation
         var cost = template.IsCorridor ? CorridorCost(template, plan.Rect, replacing) : replacing is null ? room.BuildCost : MoveCost(replacing, room);
 
         CheckSize(template, plan, problems);
+        if (!IsUnlocked(template.Department) && Database.Departments.TryGetValue(template.Department, out var locked))
+        {
+            problems.Add($"Unlock {locked.Name} first (£{locked.OpeningCost:N0}, in the Departments tab).");
+        }
         if (!plan.Rect.Tiles().All(t => MainBuilding.Contains(t)))
         {
             problems.Add("Must be inside the building. Extend the building first.");
@@ -536,6 +540,7 @@ public sealed partial class HospitalSimulation
 
         var old = _spaces[id];
         var moved = Furnish(plan, id, old.Name);
+        moved.AllowedDepartments.UnionWith(old.AllowedDepartments);
         _spaces[id] = moved;
         Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Rebuilt {moved.Name} for £{check.Cost:N0}.");
@@ -606,7 +611,9 @@ public sealed partial class HospitalSimulation
             CareSpaceKind.Majors => "Majors",
             CareSpaceKind.Resus => "Resus",
             CareSpaceKind.Triage => "Triage",
-            CareSpaceKind.Ward => "Ward",
+            CareSpaceKind.Ward when template.Department == "general_medicine" => "Ward",
+            CareSpaceKind.Ward when template.Department == EmergencyDepartmentId => "A&E ward",
+            CareSpaceKind.Ward => template.Name,
             CareSpaceKind.Theatre => "Theatre",
             CareSpaceKind.Pharmacy => "Pharmacy",
             _ => template.Name,

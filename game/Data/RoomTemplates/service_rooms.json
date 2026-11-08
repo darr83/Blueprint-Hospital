@@ -26,7 +26,7 @@
     "door_width_m": 1.5,
     "base_cost": 10000,
     "cost_per_square_metre": 1500,
-    "staffing": "A radiographer joins when the room opens.",
+    "staffing": "Hire a radiographer from Recruitment (H) to run it.",
     "furniture": [
       "xray_table",
       "xray_tube",
@@ -61,7 +61,7 @@
     "door_width_m": 1.5,
     "base_cost": 20000,
     "cost_per_square_metre": 1800,
-    "staffing": "A CT radiographer joins when the scanner opens.",
+    "staffing": "Hire a radiographer from Recruitment (H) to run it.",
     "furniture": [
       "ct_table",
       "ct_gantry",
@@ -96,7 +96,7 @@
     "door_width_m": 2.0,
     "base_cost": 40000,
     "cost_per_square_metre": 2500,
-    "staffing": "A consultant surgeon joins when the theatre opens.",
+    "staffing": "Hire a consultant surgeon from Recruitment (H). Tick which departments may use it in the room panel.",
     "furniture": [
       "operating_table",
       "anaesthetic_machine",
@@ -132,7 +132,7 @@
     "door_width_m": 1.0,
     "base_cost": 8000,
     "cost_per_square_metre": 900,
-    "staffing": "A pharmacist joins when the pharmacy opens.",
+    "staffing": "Hire a pharmacist from Recruitment (H) to run it.",
     "furniture": [
       "pharmacy_counter",
       "staff_chair",

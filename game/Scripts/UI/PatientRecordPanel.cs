@@ -62,6 +62,14 @@ public partial class PatientRecordPanel : PanelContainer
         who.AddChild(_title);
         who.AddChild(_subtitle);
         header.AddChild(who);
+        header.AddChild(NameEditing.Attach(who, _title, () => _patient?.FullName, name =>
+        {
+            if (_patient is { } p)
+            {
+                _sim.RenamePatient(p.Id, name);
+                Refresh();
+            }
+        }));
         var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
         close.TooltipText = "Close (Esc)";
         close.CustomMinimumSize = new Vector2(40, 40);

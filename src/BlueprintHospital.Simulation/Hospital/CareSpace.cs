@@ -117,6 +117,9 @@ public sealed class CareSpace
 
     public bool IsWard => Kind == CareSpaceKind.Ward;
 
+    /// <summary>For an operating theatre: the departments whose patients may be operated on in it.</summary>
+    public HashSet<string> AllowedDepartments { get; } = new();
+
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy;
 

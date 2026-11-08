@@ -27,7 +27,7 @@ public enum StaffActivity
 /// <summary>An employee. Staff choose their own work from the task board according to role and clinical priority.</summary>
 public sealed class StaffMember : Agent
 {
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
     public required StaffRole Role { get; init; }
 

@@ -211,7 +211,8 @@
     ],
     "recovery_per_hour": 0.3,
     "disposition": "discharge",
-    "disposition_note": "Peak flow improved after nebulisers. Discharged with a 5-day course of prednisolone and an asthma action plan."
+    "disposition_note": "Peak flow improved after nebulisers. Discharged with a 5-day course of prednisolone and an asthma action plan.",
+    "observe_hours": [3, 5]
   },
   {
     "id": "copd_exacerbation",
@@ -1236,7 +1237,8 @@
     ],
     "recovery_per_hour": 0.8,
     "disposition": "discharge",
-    "disposition_note": "Glucose back to normal after treatment and a meal. Discharged with a diabetes team review of their insulin."
+    "disposition_note": "Glucose back to normal after treatment and a meal. Discharged with a diabetes team review of their insulin.",
+    "observe_hours": [2, 4]
   },
   {
     "id": "pulmonary_embolism",

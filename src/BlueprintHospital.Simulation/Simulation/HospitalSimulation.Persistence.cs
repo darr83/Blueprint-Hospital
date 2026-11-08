@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Agents;
 using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Medical;
@@ -107,6 +108,10 @@ public sealed class PatientState
     public int? BedIndex { get; init; }
 
     public string? ReservedWardId { get; init; }
+
+    public bool ForObservation { get; init; }
+
+    public bool HadSurgery { get; init; }
 
     public int? ReservedBedIndex { get; init; }
 
@@ -258,6 +263,12 @@ public sealed class PeopleState
     public DateTime? CandidatesDate { get; init; }
 
     public int NextCandidateId { get; init; }
+
+    /// <summary>Departments paid for (null in older saves: just the ones open from the start).</summary>
+    public List<string>? UnlockedDepartments { get; init; }
+
+    /// <summary>Each theatre's ticked departments (null in older saves: every theatre takes everyone).</summary>
+    public Dictionary<string, List<string>>? TheatreAccess { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -296,6 +307,8 @@ public sealed partial class HospitalSimulation
         Candidates = _candidates.ToList(),
         CandidatesDate = _candidatesDate,
         NextCandidateId = _nextCandidateId,
+        UnlockedDepartments = _unlockedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList(),
+        TheatreAccess = SpacesOfKind(CareSpaceKind.Theatre).ToDictionary(t => t.Id, t => t.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList()),
     };
 
     /// <summary>
@@ -404,6 +417,24 @@ public sealed partial class HospitalSimulation
         _candidates.AddRange(state.Candidates.Where(c => Enum.IsDefined(c.Role)));
         _candidatesDate = state.CandidatesDate;
         _nextCandidateId = Math.Max(state.NextCandidateId, _candidates.Count == 0 ? 1 : _candidates.Max(c => c.Id) + 1);
+        if (state.UnlockedDepartments is { } unlocked)
+        {
+            _unlockedDepartments.Clear();
+            _unlockedDepartments.UnionWith(unlocked.Where(Database.Departments.ContainsKey));
+        }
+
+        foreach (var theatre in SpacesOfKind(CareSpaceKind.Theatre))
+        {
+            theatre.AllowedDepartments.Clear();
+            if (state.TheatreAccess is null)
+            {
+                theatre.AllowedDepartments.UnionWith(SurgicalDepartments.Select(d => d.Id));
+            }
+            else if (state.TheatreAccess.TryGetValue(theatre.Id, out var allowed))
+            {
+                theatre.AllowedDepartments.UnionWith(allowed.Where(Database.Departments.ContainsKey));
+            }
+        }
 
         // A saved game can't carry on the old random sequence, so start a new one.
         Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));
@@ -465,6 +496,7 @@ public sealed partial class HospitalSimulation
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
+        ForObservation = p.ForObservation, HadSurgery = p.HadSurgery,
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
@@ -513,6 +545,8 @@ public sealed partial class HospitalSimulation
         p.TransferAmbulanceDueAt = s.TransferAmbulanceDueAt;
         p.BedIndex = s.BedIndex;
         p.ReservedWardId = s.ReservedWardId;
+        p.ForObservation = s.ForObservation;
+        p.HadSurgery = s.HadSurgery;
         p.ReservedBedIndex = s.ReservedBedIndex;
         p.BedRequestedAt = s.BedRequestedAt;
         p.LeftEmergencyAt = s.LeftEmergencyAt;
