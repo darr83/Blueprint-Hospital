@@ -93,6 +93,11 @@ public partial class WorldLayer : Node2D
             }
         }
 
+        foreach (var chair in _sim.CorridorChairs)
+        {
+            _seatTiles.Add(chair.Tile);
+        }
+
         BuildWalls();
         BuildFurniture();
         _layoutDirty = false;
@@ -216,6 +221,11 @@ public partial class WorldLayer : Node2D
         foreach (var s in _sim.Staff)
         {
             present.Add(s);
+        }
+
+        foreach (var o in _sim.Outpatients)
+        {
+            present.Add(o);
         }
 
         foreach (var gone in _agentNodes.Keys.Where(a => !present.Contains(a)).ToList())
@@ -369,6 +379,14 @@ public partial class WorldLayer : Node2D
                 }
             }
         }
+
+        if (_sim.Database.Furniture.TryGetValue(HospitalSimulation.CorridorChairItem, out var chairDef))
+        {
+            foreach (var chair in _sim.CorridorChairs)
+            {
+                Chair(chair.Tile, new Color(chairDef.Colour));
+            }
+        }
     }
 
     private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false)
@@ -520,6 +538,22 @@ public partial class WorldLayer : Node2D
                 case Patient patient:
                     DrawPatient(patient, foot);
                     break;
+
+                case Outpatient outpatient:
+                {
+                    DrawRing(foot, ReferenceEquals(world.Selected, outpatient) ? new Color("#FFEB3B") : Looks.OutpatientRing);
+                    var clinicLook = Looks.Outpatient(outpatient, world.Simulation.FindAppointment(outpatient.AppointmentId));
+                    if (world.IsSeated(outpatient))
+                    {
+                        Figures.Seated(this, foot, clinicLook);
+                    }
+                    else
+                    {
+                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17);
+                    }
+
+                    break;
+                }
 
                 case StaffMember member:
                     DrawRing(foot, ReferenceEquals(world.Selected, member) ? new Color("#FFEB3B") : (Color?)null);

@@ -12,6 +12,7 @@ public partial class NavIcon : Control
         Patients,
         Staff,
         Hire,
+        Clinics,
         Finances,
         Routes,
         Grid,
@@ -69,6 +70,15 @@ public partial class NavIcon : Control
                 DrawArc(new Vector2(9, 21), 7, Mathf.Pi, Mathf.Tau, 20, c, w, true);
                 L(19, 6, 19, 14);
                 L(15, 10, 23, 10);
+                break;
+            case Kind.Clinics:
+                // A calendar page.
+                DrawRect(new Rect2(3, 5, 18, 16), c, false, w);
+                L(3, 10, 21, 10);
+                L(8, 3, 8, 7);
+                L(16, 3, 16, 7);
+                DrawRect(new Rect2(7, 13, 3, 3), c);
+                DrawRect(new Rect2(14, 13, 3, 3), c);
                 break;
             case Kind.Finances:
                 L(4, 20, 4, 10);

@@ -158,7 +158,7 @@ public sealed partial class HospitalSimulation
         HandleShiftChange();
         foreach (var member in _staff)
         {
-            var working = member.CurrentTaskId is not null;
+            var working = member.CurrentTaskId is not null || member.Activity == StaffActivity.Working;
             member.Fatigue = Math.Clamp(member.Fatigue + ((working ? FatigueWhenWorkingPerHour : FatigueWhenIdlePerHour) * dt / 3600.0), 0, 1);
 
             switch (member.Activity)
@@ -182,6 +182,12 @@ public sealed partial class HospitalSimulation
 
             if (member.Activity is StaffActivity.WalkingToBreak)
             {
+                continue;
+            }
+
+            if (IsClinicStaff(member))
+            {
+                UpdateClinicStaff(member);
                 continue;
             }
 

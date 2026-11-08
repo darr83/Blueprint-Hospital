@@ -98,5 +98,15 @@
     "starts_unlocked": false,
     "is_shared_service": false,
     "opening_cost": 225000
+  },
+  {
+    "id": "outpatients",
+    "name": "Outpatients",
+    "short_name": "OPD",
+    "description": "Reception and waiting for booked clinic appointments. Every clinic's patients check in here.",
+    "colour": "#00897B",
+    "starts_unlocked": false,
+    "is_shared_service": true,
+    "opening_cost": 0
   }
 ]

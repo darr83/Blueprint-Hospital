@@ -35,6 +35,9 @@ public partial class ItemPanel : PanelContainer
     /// <summary>True when showing a bed in play mode rather than an item in build mode.</summary>
     public bool AsBed { get; private set; }
 
+    /// <summary>True when the item is a waiting chair placed in a corridor rather than part of a room.</summary>
+    private bool IsCorridorChair => Item is not null && _sim.CorridorChairs.Contains(Item);
+
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;
@@ -104,7 +107,7 @@ public partial class ItemPanel : PanelContainer
     private void Refresh()
     {
         _refresh = 0.5;
-        if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !room.Furniture.Contains(Item))
+        if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !(room.Furniture.Contains(Item) || IsCorridorChair))
         {
             Close();
             return;
@@ -129,6 +132,17 @@ public partial class ItemPanel : PanelContainer
             return;
         }
 
+        if (IsCorridorChair)
+        {
+            var waitingOn = _sim.Outpatients.FirstOrDefault(o => o.Seat == Item.Tile && !o.IsMoving && o.Tile == Item.Tile);
+            var who = waitingOn is not null && _sim.FindAppointment(waitingOn.AppointmentId) is { } a ? a.FullName : "Free";
+            _title.Text = "Waiting chair";
+            _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}For[/color]  clinic patients waiting to be called\n{muted}Sitting here[/color]  {who}";
+            _action.Text = $"Remove chair (refund £{_sim.CorridorChairCost / 2:N0})";
+            _action.Visible = true;
+            return;
+        }
+
         _title.Text = def?.Name ?? Item.ItemId;
         var kind = def?.IsEquipment == true ? "Medical equipment" : "Furniture";
         var size = def is null ? string.Empty : $"\n{muted}Size[/color]  {def.WidthM:0.0} m × {def.DepthM:0.0} m";
@@ -142,6 +156,13 @@ public partial class ItemPanel : PanelContainer
     {
         if (Room is not { } room || Item is not { } item)
         {
+            return;
+        }
+
+        if (!AsBed && IsCorridorChair)
+        {
+            _sim.RemoveCorridorChair(item.Tile);
+            Close();
             return;
         }
 

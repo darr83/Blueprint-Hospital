@@ -65,6 +65,16 @@ public sealed partial class HospitalSimulation
             postings.AddRange(Wards.Select(w => new StaffPosting(w.Id, w.Name)));
         }
 
+        if (role == StaffRole.Doctor)
+        {
+            postings.AddRange(ClinicRooms.OrderBy(c => c.Id, StringComparer.Ordinal).Select(c => new StaffPosting(c.Id, c.Name)));
+        }
+
+        if (role == StaffRole.Receptionist)
+        {
+            postings.AddRange(SpacesOfKind(CareSpaceKind.OutpatientReception).OrderBy(c => c.Id, StringComparer.Ordinal).Select(c => new StaffPosting(c.Id, c.Name)));
+        }
+
         return postings;
     }
 
@@ -100,6 +110,16 @@ public sealed partial class HospitalSimulation
                 _ => StaffRole.Radiographer,
             };
             needs.Add(new(room.Name, room.Id, role, 1, Have(role, room.Id)));
+        }
+
+        foreach (var reception in SpacesOfKind(CareSpaceKind.OutpatientReception).OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            needs.Add(new(reception.Name, reception.Id, StaffRole.Receptionist, 1, Have(StaffRole.Receptionist, reception.Id)));
+        }
+
+        foreach (var clinic in ClinicRooms.OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            needs.Add(new(clinic.Name, clinic.Id, StaffRole.Doctor, 1, Have(StaffRole.Doctor, clinic.Id)));
         }
 
         return needs;

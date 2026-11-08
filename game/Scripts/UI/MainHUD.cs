@@ -81,6 +81,9 @@ public partial class MainHUD : CanvasLayer
 
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
+    /// <summary>The outpatient clinics' calendars.</summary>
+    public ClinicsPanel Clinics { get; } = new() { Name = "Clinics", Visible = false };
+
     /// <summary>A bed (play mode) or a piece of furniture or equipment (build mode).</summary>
     public ItemPanel ItemInfo { get; } = new() { Name = "ItemInfo", Visible = false };
 
@@ -93,7 +96,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board and notifications column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, ItemInfo, Finances, Recruitment };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, ItemInfo, Finances, Recruitment, Clinics };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -104,7 +107,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = false;
         RoomInfo.Close();
         ItemInfo.Close();
     }
@@ -115,6 +118,17 @@ public partial class MainHUD : CanvasLayer
         var show = !Finances.Visible;
         HideRightPanels();
         Finances.Visible = show;
+    }
+
+    /// <summary>Opens the clinic calendars, or closes them.</summary>
+    public void ToggleClinics()
+    {
+        var show = !Clinics.Visible;
+        HideRightPanels();
+        if (show)
+        {
+            Clinics.ShowToday();
+        }
     }
 
     /// <summary>Opens recruitment, or closes it.</summary>
@@ -217,6 +231,9 @@ public partial class MainHUD : CanvasLayer
         Recruitment.Initialise(sim);
         DockRight(Recruitment, 440);
         root.AddChild(Recruitment);
+        Clinics.Initialise(sim);
+        DockRight(Clinics, 480);
+        root.AddChild(Clinics);
         ItemInfo.Initialise(sim);
         DockRight(ItemInfo, 360);
         ItemInfo.AnchorBottom = 0;
@@ -454,6 +471,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, () => ToggleRoster(true), "Who is on shift and what they are doing (T)"));
+        column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
         column.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
@@ -518,6 +536,7 @@ public partial class MainHUD : CanvasLayer
         }
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
         Set("Staff", Roster.Visible && _rosterShowsStaff);
+        Set("Clinics", Clinics.Visible);
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);
         Set("Routes", _routesShown);

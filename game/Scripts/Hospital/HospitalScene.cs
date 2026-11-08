@@ -159,6 +159,7 @@ public partial class HospitalScene : Node2D
         };
         _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
         _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
+        _hud.Clinics.OutpatientClicked += o => SelectOutpatient(o, centre: true);
         _hud.StaffInfo.CloseRequested += ClearSelection;
         _hud.StaffInfo.FocusRequested += m => _camera.GlideTo(_world.FootPosition(m));
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
@@ -168,6 +169,7 @@ public partial class HospitalScene : Node2D
         {
             Patient p when _world.IsOnMap(p) => (_world.FootPosition(p), p.FullName),
             StaffMember m => (_world.FootPosition(m), m.Name),
+            Outpatient o when _session.Simulation.FindAppointment(o.AppointmentId) is { } a => (_world.FootPosition(o), a.FullName),
             _ => null,
         };
     }
@@ -225,12 +227,27 @@ public partial class HospitalScene : Node2D
         }
     }
 
+    /// <summary>Selects a clinic patient and opens the clinic calendars with them picked out.</summary>
+    public void SelectOutpatient(Outpatient outpatient, bool centre = false)
+    {
+        SetMode(GameMode.Play);
+        _world.Selected = outpatient;
+        _hud.HideRightPanels();
+        _hud.Clinics.SelectedOutpatientId = outpatient.Id;
+        _hud.Clinics.ShowToday();
+        if (centre)
+        {
+            _camera.GlideTo(_world.FootPosition(outpatient));
+        }
+    }
+
     /// <summary>For the smoke test: deselects whoever is selected.</summary>
     public void ClearSelectionForTest() => ClearSelection();
 
     private void ClearSelection()
     {
         _world.Selected = null;
+        _hud.Clinics.SelectedOutpatientId = null;
         _hud.Record.Visible = false;
         _hud.StaffInfo.Visible = false;
     }
@@ -281,7 +298,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -302,6 +319,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.F:
                 _hud.ToggleFinances();
+                break;
+            case Key.C:
+                _hud.ToggleClinics();
                 break;
             case Key.H:
                 _hud.ToggleRecruitment();
@@ -352,6 +372,9 @@ public partial class HospitalScene : Node2D
                     return;
                 case StaffMember member:
                     SelectStaff(member);
+                    return;
+                case Outpatient outpatient:
+                    SelectOutpatient(outpatient);
                     return;
             }
 
@@ -435,6 +458,34 @@ public partial class HospitalScene : Node2D
                 if (depth > bestDepth)
                 {
                     best = (space, item);
+                    bestDepth = depth;
+                }
+            }
+        }
+
+        // Waiting chairs placed in the corridors.
+        if (!bedsOnly)
+        {
+            foreach (var chair in _session.Simulation.CorridorChairs)
+            {
+                var corridor = _session.Simulation.Spaces.FirstOrDefault(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(chair.Tile));
+                if (corridor is null)
+                {
+                    continue;
+                }
+
+                const double pad = 0.1;
+                var lift = new Vector2(0, -0.9f * IsoDraw.PixelsPerMetre);
+                var floor = new[]
+                {
+                    IsoDraw.ToScreen(chair.X - pad, chair.Y - pad), IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y - pad),
+                    IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y + chair.Length + pad), IsoDraw.ToScreen(chair.X - pad, chair.Y + chair.Length + pad),
+                };
+                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
+                var depth = IsoDraw.ToScreen(chair.CentreX, chair.CentreY).Y;
+                if (Geometry2D.IsPointInPolygon(world, hull) && depth > bestDepth)
+                {
+                    best = (corridor, chair);
                     bestDepth = depth;
                 }
             }

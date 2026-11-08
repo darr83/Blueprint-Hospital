@@ -41,6 +41,9 @@ public sealed class LayoutState
     public IReadOnlyList<AreaState> BuildingExtensions { get; init; } = Array.Empty<AreaState>();
 
     public IReadOnlyList<RoomState> Rooms { get; init; } = Array.Empty<RoomState>();
+
+    /// <summary>Chairs placed in corridors for clinic patients.</summary>
+    public IReadOnlyList<GridCoord> CorridorChairs { get; init; } = Array.Empty<GridCoord>();
 }
 
 /// <summary>Building: placing, moving and demolishing rooms and corridors, extending the building, and paying for it.</summary>
@@ -632,8 +635,9 @@ public sealed partial class HospitalSimulation
     {
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
         SyncRoomStaff();
+        PruneCorridorChairs();
 
-        foreach (var agent in _patients.Values.Cast<Agent>().Concat(_staff))
+        foreach (var agent in _patients.Values.Cast<Agent>().Concat(_staff).Concat(_outpatients))
         {
             if (agent.Destination is { } destination)
             {
@@ -680,6 +684,7 @@ public sealed partial class HospitalSimulation
             var door = s.Doors.FirstOrDefault();
             return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide, door?.Offset, door?.Width);
         }).ToList(),
+        CorridorChairs = _corridorChairs.Select(c => c.Tile).ToList(),
     };
 
     /// <summary>Replaces the starter layout with a saved one. Call before the game starts running.</summary>
@@ -710,6 +715,9 @@ public sealed partial class HospitalSimulation
             }
         }
 
+        _corridorChairs.Clear();
+        _corridorChairs.AddRange(state.CorridorChairs.Distinct().Select(ChairAt));
+        PruneCorridorChairs();
         Balance = state.Balance;
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
         SyncRoomStaff();

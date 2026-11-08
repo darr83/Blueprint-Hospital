@@ -222,6 +222,23 @@ public partial class RoomPanel : PanelContainer
             return $"{used} of {room.Beds.Count} beds\n[color=#5B6B79]Ward team[/color]  {string.Join(", ", team)}";
         }
 
+        if (room.Kind == CareSpaceKind.Clinic)
+        {
+            var problems = _sim.ClinicProblems(room);
+            var today = _sim.CalendarFor(room.Id, _sim.Now).ToList();
+            var seen = today.Count(a => a.Status == Simulation.Patients.AppointmentStatus.Seen);
+            var doctors = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Name);
+            return (problems.Count > 0 ? $"[color=#C4373D]Not running: needs {string.Join(" and ", problems)}[/color]" : $"{seen} of {today.Count} seen today (Clinics, C)")
+                   + $"\n[color=#5B6B79]Clinic doctor[/color]  {string.Join(", ", doctors)}";
+        }
+
+        if (room.Kind == CareSpaceKind.OutpatientReception)
+        {
+            var desk = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Name).ToList();
+            var waiting = _sim.Outpatients.Count(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting);
+            return $"{waiting} clinic patients waiting\n[color=#5B6B79]On the desk[/color]  {(desk.Count > 0 ? string.Join(", ", desk) : "[color=#C4373D]no receptionist[/color]")}";
+        }
+
         var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => room.Rect.Contains(s.Tile));
         return room.Kind switch
         {

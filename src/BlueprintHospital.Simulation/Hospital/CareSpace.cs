@@ -27,6 +27,12 @@ public enum CareSpaceKind
 
     /// <summary>Dispenses medicines; run by a pharmacist.</summary>
     Pharmacy,
+
+    /// <summary>An outpatient clinic room: a doctor sees booked patients at set times.</summary>
+    Clinic,
+
+    /// <summary>Where clinic patients check in and wait; run by a receptionist.</summary>
+    OutpatientReception,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

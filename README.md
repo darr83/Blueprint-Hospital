@@ -79,11 +79,14 @@ Then:
 | Show / hide the A&E board | Hospital on the left-hand bar |
 | Patients list / Staff list | P / T (or the left-hand bar) |
 | Finances | F (or click the balance in the top bar) |
+| Clinics (today's and tomorrow's booked patients) | C (or Clinics in the left-hand bar); Play mode: left-click a clinic patient |
 | Recruitment (hire staff) | H (or Hire in the left-hand bar) |
 | Build menu | Build mode (B, or Build on the left-hand bar) |
 | Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Build mode: left-click the room's floor |
 | Furniture or equipment details | Build mode: left-click the item |
+| Place waiting chairs in corridors | Build → Corridors → Place waiting chairs, then click corridor tiles |
+| Remove a corridor chair | Build mode: left-click the chair, then Remove |
 | Close a record, list or panel | Esc |
 | Menu (save, load, settings, quit) | Esc (when nothing is open) |
 
@@ -282,6 +285,28 @@ Build these from **Build → Services**. Each room opens once you hire someone t
 
 The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
 staff rooms.
+
+### Outpatient clinics
+
+Build these from **Build → Clinics**: an **Outpatients reception** (desk and seats) and one or more
+clinic rooms (medical, cardiology, neurology, gastroenterology, gynaecology, gynaecology
+examination room and fracture clinic). Specialty clinics need their department unlocked first.
+
+- A clinic runs with a **doctor posted to it** and a **receptionist posted to Outpatients
+  reception** (choose the posting when hiring). Without them its appointments are cancelled and a
+  notification says what is missing.
+- Each running clinic keeps a **calendar**, booked for today and tomorrow, Monday to Friday, in two
+  sessions: 09:00 to 12:00 and 13:30 to 16:30. Slot length and payment depend on the clinic
+  (`Data/Clinics/clinics.json`). About 85% of slots are booked; about 8% of patients don't attend
+  and some arrive late.
+- Patients walk in from the car park a little before their time, queue at the Outpatients desk, are
+  checked in by the receptionist, then sit on a free chair: in Outpatients reception or on **chairs
+  placed in the corridors** (£120 each; doorways must stay clear). With no free chair they stand.
+- The clinic doctor calls each patient in at their appointment time, sees them, and they go home.
+  The hospital is paid per patient seen (Clinics in the finances).
+- Open **Clinics** (C) to see each clinic's calendar: who is booked, arriving, waiting (and for how
+  long), in clinic, seen or did not attend. Click a patient's name to find them on the map. Clinic
+  patients have a lilac ring.
 
 ### Starting a new game
 
@@ -523,6 +548,12 @@ withhold it if they match. Patient allergies come from `game/Data/PatientBackgro
   and a multiplier per weekday.
 - `PatientBackgrounds/` lists past medical history, regular medications and allergies, with how
   likely each is at different ages.
+
+### Clinics
+
+- `Clinics/` has one entry per clinic room template (`id` matches the template): `appointment_minutes`,
+  `tariff` (paid per patient seen), the `reasons` patients are booked for, and `female_only` for
+  gynaecology. Loading checks every clinic room template has an entry.
 
 ### Room templates and furniture
 

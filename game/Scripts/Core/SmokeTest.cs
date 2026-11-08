@@ -30,6 +30,8 @@ public partial class SmokeTest : Node
     private long _savedBalance;
     private int _savedPatients;
     private int _savedOnWard;
+    private int _savedAppointments;
+    private int _savedChairs;
 
     private enum Stage
     {
@@ -51,6 +53,9 @@ public partial class SmokeTest : Node
         Transport,
         Imaging,
         Theatre,
+        Clinics,
+        ClinicChair,
+        ClinicCalendar,
         Rotate,
         Ambulance,
         Finances,
@@ -264,6 +269,28 @@ public partial class SmokeTest : Node
 
             case Stage.Theatre when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("09b_theatre_access");
+                BuildClinics(hospital);
+                _frame = 0;
+                _stage = Stage.Clinics;
+                break;
+
+            case Stage.Clinics when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09c_clinic_waiting");
+                ClickCorridorChair(hospital);
+                _frame = 0;
+                _stage = Stage.ClinicChair;
+                break;
+
+            case Stage.ClinicChair when scene is HospitalScene hospital && _frame >= 4:
+                Screenshot("09d_corridor_chair");
+                hospital.SetMode(GameMode.Play);
+                ClickOutpatient(hospital);
+                _frame = 0;
+                _stage = Stage.ClinicCalendar;
+                break;
+
+            case Stage.ClinicCalendar when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09e_clinic_calendar");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -329,7 +356,7 @@ public partial class SmokeTest : Node
 
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
-                Check(hospital.Session.Simulation.Today[Simulation.Simulation.MoneyCategory.Construction] < 0, "Building work was not booked.");
+                Check(hospital.Session.Simulation.Accounts.Take(2).Any(d => d[Simulation.Simulation.MoneyCategory.Construction] < 0), "Building work was not booked.");
                 _frame = 0;
                 _stage = Stage.Finances;
                 break;
@@ -346,6 +373,8 @@ public partial class SmokeTest : Node
                 _savedBalance = hospital.Session.Simulation.Balance;
                 _savedPatients = hospital.Session.Simulation.Patients.Count();
                 _savedOnWard = hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
+                _savedAppointments = hospital.Session.Simulation.Appointments.Count;
+                _savedChairs = hospital.Session.Simulation.CorridorChairs.Count;
                 manager.SaveGame(SlotName, _savedCamera);
                 GD.Print("[smoke] Game saved.");
                 manager.LoadGame(SlotName);
@@ -359,6 +388,8 @@ public partial class SmokeTest : Node
                 Check(hospital.Session.Simulation.Balance == _savedBalance, "Balance not restored.");
                 Check(hospital.Session.Simulation.Patients.Count() == _savedPatients, $"Patients not restored ({hospital.Session.Simulation.Patients.Count()} of {_savedPatients}).");
                 Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
+                Check(hospital.Session.Simulation.Appointments.Count == _savedAppointments, "Clinic appointments not restored.");
+                Check(hospital.Session.Simulation.CorridorChairs.Count == _savedChairs, "Corridor chairs not restored.");
                 GD.Print($"[smoke] {_savedPatients} patients restored, {_savedOnWard} on the ward.");
                 SaveManager.Delete(SlotName);
                 GD.Print("[smoke] Save reloaded and verified.");
@@ -443,6 +474,97 @@ public partial class SmokeTest : Node
         hospital.SetMode(GameMode.Build);
         hospital.Hud.ShowRoom(theatre);
         hospital.Camera.SnapTo(IsoDraw.ToScreen(theatre.Rect.X + 6, theatre.Rect.Y + 6), 0.9f);
+    }
+
+    /// <summary>
+    /// Builds an Outpatients reception and a medical clinic east of the theatre corridor, staffs them,
+    /// puts waiting chairs in the corridor and runs the clock until clinic patients are waiting and being seen.
+    /// </summary>
+    private static void BuildClinics(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.SetMode(GameMode.Build);
+        hospital.Hud.HideRightPanels();
+        var reception = sim.BuildRoom(sim.AutoPlan("outpatient_reception", new Simulation.World.GridRect(b.X - 14, b.Y - 14, 12, 8)));
+        Check(reception.CanBuild, "Outpatients reception refused: " + string.Join("; ", reception.Problems));
+        var clinicBuilt = sim.BuildRoom(sim.AutoPlan("medical_clinic", new Simulation.World.GridRect(b.X - 14, b.Y - 6, 8, 6)));
+        Check(clinicBuilt.CanBuild, "Medical clinic refused: " + string.Join("; ", clinicBuilt.Problems));
+        var desk = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.OutpatientReception);
+        var clinic = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.Clinic);
+        Check(sim.ClinicProblems(clinic).Count == 2, "A new clinic should need a doctor and a receptionist.");
+        Check(sim.PostingsFor(Simulation.Staff.StaffRole.Doctor).Any(p => p.RoomId == clinic.Id), "Doctors can't be posted to the clinic.");
+        sim.HireStaff(Simulation.Staff.StaffRole.Receptionist, desk.Id, skill: 0.7);
+        sim.HireStaff(Simulation.Staff.StaffRole.Doctor, clinic.Id, skill: 0.7);
+        Check(sim.IsClinicRunning(clinic), "The staffed clinic is not running: " + string.Join(", ", sim.ClinicProblems(clinic)));
+
+        // Waiting chairs along the corridor, through the build tool like a player would.
+        var tool = hospital.BuildTool;
+        tool.StartChairs();
+        var placed = 0;
+        for (var y = b.Y - 13; y < b.Y - 1 && placed < 6; y++)
+        {
+            var tile = new Simulation.World.GridCoord(b.X - 15, y);
+            if (!sim.CheckCorridorChair(tile).CanBuild)
+            {
+                continue;
+            }
+
+            tool.PreviewDrag(tile, tile);
+            tool.Confirm();
+            placed = sim.CorridorChairs.Count;
+        }
+
+        tool.Cancel();
+        tool.FollowMouse = true;
+        Check(placed >= 4, $"Only {placed} corridor chairs could be placed.");
+        Check(sim.CheckCorridorChair(new Simulation.World.GridCoord(desk.Rect.X + 2, desk.Rect.Y + 2)).Problems.Any(p => p.Contains("corridors")), "A chair should not go inside a room.");
+
+        var clock = hospital.Session.Clock;
+        // Clinics run 09:00 to 16:30 on weekdays: run on to the next morning's clinic if need be.
+        var limit = clock.Now.Date.AddDays(1).AddHours(12);
+        while (clock.Now < limit && !(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)
+                                      && sim.Outpatients.Count(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting && !o.IsMoving) >= 1
+                                      && sim.Outpatients.Any(o => o.Stage == Simulation.Patients.OutpatientStage.BeingSeen)))
+        {
+            clock.Step();
+        }
+
+        // Let whoever was just checked in reach their chair.
+        for (var i = 0; i < 120 && sim.Outpatients.Any(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting && o.IsMoving); i++)
+        {
+            clock.Step();
+        }
+
+        var booked = sim.CalendarFor(clinic.Id, clock.Now).Count();
+        GD.Print($"[smoke] Clinic at {clock.Now:HH:mm}: {booked} booked today, {sim.Appointments.Count(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)} seen, {sim.Outpatients.Count} outpatients in the building.");
+        Check(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen), "No clinic patient was seen.");
+        Check(sim.Today[Simulation.Simulation.MoneyCategory.Clinics] > 0, "Clinic income was not booked.");
+        clock.SetSpeed(SimulationSpeed.Paused);
+        hospital.SetMode(GameMode.Play);
+        hospital.Hud.HideRightPanels();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 14, b.Y - 7), 0.95f);
+    }
+
+    /// <summary>Build mode: clicking a corridor chair opens it with a Remove button.</summary>
+    private static void ClickCorridorChair(HospitalScene hospital)
+    {
+        hospital.SetMode(GameMode.Build);
+        hospital.Hud.HideRightPanels();
+        var sim = hospital.Session.Simulation;
+        var chair = sim.CorridorChairs.First();
+        hospital.ClickAt(IsoDraw.ToScreen(chair.CentreX, chair.CentreY));
+        Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.Item == chair, "Clicking a corridor chair in build mode did not open it.");
+    }
+
+    /// <summary>Play mode: clicking a clinic patient opens the clinic calendars.</summary>
+    private static void ClickOutpatient(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var outpatient = sim.Outpatients.Where(o => !o.IsMoving).OrderBy(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting ? 0 : 1).First();
+        hospital.ClickAt(hospital.World.FootPosition(outpatient) + new Vector2(0, -30));
+        Check(hospital.World.Selected == outpatient, "Clicking a clinic patient did not select them.");
+        Check(hospital.Hud.Clinics.Visible, "Clicking a clinic patient did not open the clinic calendars.");
     }
 
     /// <summary>Build mode: clicking bare floor in the new cubicle opens the room, and clicking a member of staff does nothing.</summary>

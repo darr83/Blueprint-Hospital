@@ -27,6 +27,9 @@ public enum MoneyCategory
 
     /// <summary>Payment for each operation done in theatre.</summary>
     Operations,
+
+    /// <summary>Payment for each outpatient seen in clinic.</summary>
+    Clinics,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

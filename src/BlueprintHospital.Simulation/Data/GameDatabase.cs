@@ -1,4 +1,5 @@
 using BlueprintHospital.Simulation.Data.Models;
+using BlueprintHospital.Simulation.Hospital;
 
 namespace BlueprintHospital.Simulation.Data;
 
@@ -18,6 +19,7 @@ public sealed class GameDatabase
     public const string PatientBackgroundsFolder = "PatientBackgrounds";
     public const string FurnitureFolder = "Furniture";
     public const string RoomTemplatesFolder = "RoomTemplates";
+    public const string ClinicsFolder = "Clinics";
 
     private GameDatabase()
     {
@@ -43,6 +45,9 @@ public sealed class GameDatabase
 
     public IReadOnlyDictionary<string, RoomTemplate> RoomTemplates { get; private init; } = null!;
 
+    /// <summary>How each clinic room runs its appointments, by room template id.</summary>
+    public IReadOnlyDictionary<string, ClinicDefinition> Clinics { get; private init; } = null!;
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -64,6 +69,7 @@ public sealed class GameDatabase
             PatientBackgrounds = RecordLoader.LoadFolder<PatientBackground>(source, PatientBackgroundsFolder, errors),
             Furniture = RecordLoader.LoadFolder<FurnitureDefinition>(source, FurnitureFolder, errors),
             RoomTemplates = RecordLoader.LoadFolder<RoomTemplate>(source, RoomTemplatesFolder, errors),
+            Clinics = RecordLoader.LoadFolder<ClinicDefinition>(source, ClinicsFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);
@@ -92,6 +98,11 @@ public sealed class GameDatabase
                         ? "exactly one department must have starts_unlocked set to true; none do."
                         : $"exactly one department must have starts_unlocked set to true; found {string.Join(", ", starting)}."));
             }
+        }
+
+        foreach (var template in RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Clinic && !Clinics.ContainsKey(t.Id)))
+        {
+            errors.Add(new DataValidationError(RoomTemplatesFolder, template.Id, "kind", $"clinic room '{template.Id}' needs an entry with the same id in {ClinicsFolder}."));
         }
 
         foreach (var condition in Conditions.Values)

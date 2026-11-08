@@ -14,6 +14,9 @@ public enum BuildMode
     Room,
     Corridor,
     Extend,
+
+    /// <summary>Placing waiting chairs in corridors, one click per chair.</summary>
+    Chair,
 }
 
 /// <summary>
@@ -95,6 +98,15 @@ public partial class BuildTool : Node2D
         Restart();
     }
 
+    /// <summary>Starts placing waiting chairs in corridors: each click places one.</summary>
+    public void StartChairs()
+    {
+        Mode = BuildMode.Chair;
+        Template = null;
+        MovingId = null;
+        Restart();
+    }
+
     public void StartExtension()
     {
         Mode = BuildMode.Extend;
@@ -149,6 +161,11 @@ public partial class BuildTool : Node2D
 
                 return true;
 
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode == BuildMode.Chair:
+                Refresh(force: true);
+                Place();
+                return true;
+
             case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true }:
                 _dragStart = _hover;
                 Refresh(force: true);
@@ -183,6 +200,10 @@ public partial class BuildTool : Node2D
             case BuildMode.Room when MovingId is { } id:
                 result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id));
                 what = $"Moved {_sim.FindSpace(id)?.Name}";
+                break;
+            case BuildMode.Chair:
+                result = _sim.PlaceCorridorChair(_hover);
+                what = "Placed a waiting chair";
                 break;
             case BuildMode.Room:
             case BuildMode.Corridor:
@@ -245,6 +266,7 @@ public partial class BuildTool : Node2D
         _planKey = key;
         Check = Mode switch
         {
+            BuildMode.Chair => _sim.CheckCorridorChair(_hover),
             BuildMode.Room when _dragStart is null => new BuildCheck(0, new[] { $"Drag out the {Template!.Name.ToLowerInvariant()} from corner to corner." }),
             BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId),
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
@@ -274,7 +296,7 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        if (_dragStart is null)
+        if (_dragStart is null && Mode != BuildMode.Chair)
         {
             // Before the drag starts, just mark the tile under the cursor.
             var t = new[] { P(_hover.X, _hover.Y), P(_hover.X + 1, _hover.Y), P(_hover.X + 1, _hover.Y + 1), P(_hover.X, _hover.Y + 1) };

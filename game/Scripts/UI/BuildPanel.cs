@@ -256,6 +256,7 @@ public partial class BuildPanel : PanelContainer
         CareSpaceKind.XRay or CareSpaceKind.CT => "1 patient at a time",
         CareSpaceKind.Theatre => "1 operation at a time",
         CareSpaceKind.Pharmacy => "Dispenses for every ward",
+        CareSpaceKind.Clinic => "1 booked patient at a time",
         _ => LayoutCapacity(template, room),
     };
 
@@ -286,6 +287,17 @@ public partial class BuildPanel : PanelContainer
         lay.Pressed += () => _tool.StartCorridor();
         _body.AddChild(lay);
         _body.AddChild(Hint("2.5 m is the usual minimum in clinical areas; 4 m lets two trolleys pass."));
+
+        _body.AddChild(Text($"[b]Waiting chairs[/b]\n[color=#5B6B79]Clinic patients wait on chairs in Outpatients reception and on chairs placed along the corridors. Each chair costs £{_sim.CorridorChairCost:N0}. Click a corridor tile to place one; keep doorways clear. In Build mode, click a chair to remove it.[/color]"));
+        var chairs = new Button
+        {
+            Text = $"Place waiting chairs ({_sim.CorridorChairs.Count} placed)",
+            FocusMode = FocusModeEnum.None,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 44),
+        };
+        chairs.Pressed += () => _tool.StartChairs();
+        _body.AddChild(chairs);
     }
 
     private void ShowBuilding()
@@ -363,7 +375,7 @@ public partial class BuildPanel : PanelContainer
 
         if (check.CanBuild)
         {
-            var verb = _tool.MovingId is null ? "Release to build" : "Release to rebuild here";
+            var verb = _tool.Mode == BuildMode.Chair ? "Click to place a chair" : _tool.MovingId is null ? "Release to build" : "Release to rebuild here";
             _status.Text = $"[color=#2E8B57]✓ {verb}: £{check.Cost:N0}[/color]";
             return;
         }

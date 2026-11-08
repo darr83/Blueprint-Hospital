@@ -216,6 +216,28 @@ public sealed class StatsState
     public List<double> RecentHandoverMinutes { get; init; } = new();
 }
 
+/// <summary>A clinic patient walking around the hospital.</summary>
+public sealed class OutpatientState
+{
+    public int Id { get; init; }
+
+    public int AppointmentId { get; init; }
+
+    public string ClinicId { get; init; } = string.Empty;
+
+    public OutpatientStage Stage { get; init; }
+
+    public GridCoord? Seat { get; init; }
+
+    public DateTime? BusyUntil { get; init; }
+
+    public string StatusText { get; init; } = string.Empty;
+
+    public double WalkSpeed { get; init; }
+
+    public PositionState Position { get; init; } = new(0, 0);
+}
+
 /// <summary>Everyone and everything happening in the hospital, for saving (format 3 onwards).</summary>
 public sealed class PeopleState
 {
@@ -272,6 +294,19 @@ public sealed class PeopleState
 
     /// <summary>Each theatre's ticked departments (null in older saves: every theatre takes everyone).</summary>
     public Dictionary<string, List<string>>? TheatreAccess { get; init; }
+
+    public List<Appointment> Appointments { get; init; } = new();
+
+    public List<OutpatientState> Outpatients { get; init; } = new();
+
+    public List<ClinicConsult> Consults { get; init; } = new();
+
+    /// <summary>Clinic days already booked, as "clinic|yyyy-MM-dd".</summary>
+    public List<string> BookedClinicDays { get; init; } = new();
+
+    public int NextAppointmentId { get; init; }
+
+    public int NextOutpatientId { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -313,6 +348,16 @@ public sealed partial class HospitalSimulation
         NextCandidateId = _nextCandidateId,
         UnlockedDepartments = _unlockedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         TheatreAccess = SpacesOfKind(CareSpaceKind.Theatre).ToDictionary(t => t.Id, t => t.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList()),
+        Appointments = _appointments.ToList(),
+        Outpatients = _outpatients.Select(o => new OutpatientState
+        {
+            Id = o.Id, AppointmentId = o.AppointmentId, ClinicId = o.ClinicId, Stage = o.Stage, Seat = o.Seat, BusyUntil = o.BusyUntil,
+            StatusText = o.StatusText, WalkSpeed = o.WalkSpeed, Position = PositionOf(o),
+        }).ToList(),
+        Consults = _consults.Values.OrderBy(c => c.ClinicId, StringComparer.Ordinal).ToList(),
+        BookedClinicDays = _bookedClinicDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
+        NextAppointmentId = _nextAppointmentId,
+        NextOutpatientId = _nextOutpatientId,
     };
 
     /// <summary>
@@ -466,8 +511,10 @@ public sealed partial class HospitalSimulation
             member.StatusText = "Available";
         }
 
+        RestoreClinics(state);
         SyncRoomStaff();
         Resume(state.Patients.Select(p => (p.Id, p.Position)), id => _patients.GetValueOrDefault(id));
+        Resume(state.Outpatients.Select(o => (o.Id, o.Position)), id => FindOutpatient(id));
         Resume(state.Staff.Select(s => (s.Id, s.Position)), id => FindStaff(id));
 
         foreach (var patient in _patients.Values)
@@ -483,6 +530,34 @@ public sealed partial class HospitalSimulation
                 patient.PushedByStaffId = null;
             }
         }
+    }
+
+    private void RestoreClinics(PeopleState state)
+    {
+        _appointments.Clear();
+        _outpatients.Clear();
+        _consults.Clear();
+        _bookedClinicDays.Clear();
+        _appointments.AddRange(state.Appointments.Where(a => FindSpace(a.ClinicId) is not null || a.Status is AppointmentStatus.Seen or AppointmentStatus.DidNotAttend or AppointmentStatus.Cancelled));
+        foreach (var saved in state.Outpatients.Where(o => FindAppointment(o.AppointmentId) is not null))
+        {
+            var outpatient = new Outpatient
+            {
+                Id = saved.Id, AppointmentId = saved.AppointmentId, ClinicId = saved.ClinicId, Stage = saved.Stage, Seat = saved.Seat,
+                BusyUntil = saved.BusyUntil, StatusText = saved.StatusText, WalkSpeed = saved.WalkSpeed > 0 ? saved.WalkSpeed : Agent.DefaultWalkSpeed,
+            };
+            outpatient.PlaceAt(new GridCoord(saved.Position.X, saved.Position.Y));
+            _outpatients.Add(outpatient);
+        }
+
+        foreach (var consult in state.Consults.Where(c => FindOutpatient(c.OutpatientId) is not null && FindStaff(c.StaffId) is not null))
+        {
+            _consults[consult.ClinicId] = consult;
+        }
+
+        _bookedClinicDays.UnionWith(state.BookedClinicDays);
+        _nextAppointmentId = Math.Max(state.NextAppointmentId, _appointments.Count == 0 ? 1 : _appointments.Max(a => a.Id) + 1);
+        _nextOutpatientId = Math.Max(state.NextOutpatientId, _outpatients.Count == 0 ? 1 : _outpatients.Max(o => o.Id) + 1);
     }
 
     // ------------------------------------------------------------------ patients

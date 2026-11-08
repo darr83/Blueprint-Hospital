@@ -81,6 +81,22 @@ public static class Looks
         LongSleeves: true,
         LongHair: patient.Sex == Sex.Female && patient.Id % 4 != 0);
 
+    /// <summary>A clinic patient in their own clothes, with a coat on (they have come from home).</summary>
+    public static PersonLook Outpatient(Outpatient outpatient, Appointment? appointment)
+    {
+        var seed = outpatient.AppointmentId + 3;
+        return new PersonLook(
+            Top: ClothesColours[(seed * 5) % ClothesColours.Length],
+            Trousers: TrouserColours[(seed * 3) % TrouserColours.Length],
+            Skin: SkinTones[(seed * 11) % SkinTones.Length],
+            Hair: appointment?.Age >= 65 ? new Color("#B8B8B8") : HairColours[(seed * 7) % HairColours.Length],
+            LongSleeves: true,
+            LongHair: appointment?.Sex == Sex.Female && seed % 4 != 0);
+    }
+
+    /// <summary>Clinic patients have a soft lilac ring, so they stand apart from A&amp;E patients.</summary>
+    public static readonly Color OutpatientRing = new("#9C8AD0", 0.85f);
+
     /// <summary>The blanket shows the patient's triage category at a glance.</summary>
     public static Color Blanket(TriageCategory? category) => category switch
     {
