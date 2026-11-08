@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
@@ -322,7 +323,8 @@ public partial class StaffRotaPanel : PanelContainer
         foreach (var ward in _sim.Wards.OrderBy(w => w.Id, StringComparer.Ordinal))
         {
             var used = ward.Beds.Count(b => b.OccupantId.HasValue);
-            places.Add(new(ward.Id, ward.Name, $"{ward.Beds.Count} beds · {used} in use", new[] { StaffRole.Nurse, StaffRole.Doctor }));
+            var doctors = _sim.UnitOf(ward) == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
+            places.Add(new(ward.Id, ward.Name, $"{ward.Beds.Count} beds · {used} in use", new[] { StaffRole.Nurse, doctors }));
         }
 
         foreach (var clinic in _sim.ClinicRooms)
@@ -338,7 +340,9 @@ public partial class StaffRotaPanel : PanelContainer
         foreach (var room in _sim.Spaces.Where(s => s.IsServiceRoom).OrderBy(s => s.Kind).ThenBy(s => s.Id, StringComparer.Ordinal))
         {
             var role = HospitalSimulation.RoleForRoom(room.Kind);
-            places.Add(new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
+            places.Add(room.Kind == CareSpaceKind.Theatre
+                ? new(room.Id, room.Name, "Surgeons and anaesthetists", new[] { role, StaffRole.Anaesthetist })
+                : new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
         }
 
         places.Add(new(null, "Whole hospital", "Porters", new[] { StaffRole.Porter }));

@@ -16,7 +16,8 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>Where an obs monitor stands, and the room whose patient it is connected to.</summary>
-public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y);
+/// <summary>An obs monitor; on a ward (ICU, HDU) it shows the patient in the bed beside it.</summary>
+public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y, WardBed? Bed = null);
 
 /// <summary>
 /// Everything that stands up from the floor: walls, furniture, equipment, people and vehicles.
@@ -461,7 +462,8 @@ public partial class WorldLayer : Node2D
 
     private void AddObsMonitor(CareSpace space, double gx, double gy)
     {
-        _monitors.Add(new ObsMonitorInfo(space, gx, gy));
+        var bed = space.Beds.Count == 0 ? null : space.Beds.MinBy(b => Math.Pow(b.PatientSpot.X + 0.5 - gx, 2) + Math.Pow(b.PatientSpot.Y + 0.5 - gy, 2));
+        _monitors.Add(new ObsMonitorInfo(space, gx, gy, bed));
         AddProp(IsoDraw.ToScreen(gx, gy), c => Figures.MonitorStand(c, gx, gy));
     }
 
@@ -469,6 +471,18 @@ public partial class WorldLayer : Node2D
     public IReadOnlyList<ObsMonitorInfo> Monitors => _monitors;
 
     /// <summary>The patient connected to a monitor: whoever is on the bed (or in the triage chair).</summary>
+    /// <summary>The patient a monitor is showing: the one in its bed on a ward, otherwise the room's patient.</summary>
+    public Patient? ConnectedPatient(ObsMonitorInfo monitor)
+    {
+        if (monitor.Bed is not { } bed)
+        {
+            return ConnectedPatient(monitor.Space);
+        }
+
+        var patient = bed.OccupantId is { } id ? _sim.FindPatient(id) : null;
+        return patient is not null && !patient.IsMoving && patient.Tile == bed.PatientSpot ? patient : null;
+    }
+
     public Patient? ConnectedPatient(CareSpace space)
     {
         var patient = space.Kind == CareSpaceKind.Triage

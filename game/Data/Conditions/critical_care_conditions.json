@@ -71,10 +71,10 @@
       ]
     },
     "initial_severity": [
-      0.55,
-      0.78
+      0.5,
+      0.72
     ],
-    "deterioration_per_hour": 0.08,
+    "deterioration_per_hour": 0.06,
     "deterioration_effects": {
       "heart_rate": 25,
       "systolic_bp": -25,

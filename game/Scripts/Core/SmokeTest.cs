@@ -60,6 +60,7 @@ public partial class SmokeTest : Node
         ClinicChair,
         ClinicCalendar,
         Specialty,
+        CriticalCare,
         Rotate,
         Ambulance,
         Finances,
@@ -318,6 +319,13 @@ public partial class SmokeTest : Node
 
             case Stage.Specialty when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09f_specialty_rooms");
+                BuildIntensiveCare(hospital);
+                _frame = 0;
+                _stage = Stage.CriticalCare;
+                break;
+
+            case Stage.CriticalCare when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09g_intensive_care");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -619,6 +627,51 @@ public partial class SmokeTest : Node
         GD.Print($"[smoke] Built {lab.Name}, {echo.Name} and the early pregnancy unit with their specialists.");
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 21, b.Y - 22), 0.8f);
+    }
+
+    /// <summary>
+    /// An intensive care unit south of the ward, reached by a new corridor: hires its anaesthetist and
+    /// nurses, then sends in patients with septic shock and runs the clock until one is on ICU.
+    /// </summary>
+    private static void BuildIntensiveCare(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.HideRightPanels();
+        sim.AdjustBalance(2_000_000);
+        Check(sim.UnlockDepartment("critical_care").CanBuild, "Could not unlock critical care.");
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 30, b.Y + 34, 30, 10));
+        Check(wing.CanBuild, "Critical care wing refused: " + string.Join("; ", wing.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 4, b.Y + 17, 4, 27), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Critical care corridor refused: " + string.Join("; ", corridor.Problems));
+        var built = sim.BuildRoom(sim.AutoPlan("intensive_care_unit", new Simulation.World.GridRect(b.X - 30, b.Y + 34, 26, 10)));
+        Check(built.CanBuild, "ICU refused: " + string.Join("; ", built.Problems));
+        var icu = sim.Wards.Single(w => w.TemplateId == "intensive_care_unit");
+        Check(icu.Furniture.Count(f => f.ItemId == "ventilator") == icu.Beds.Count, "Every ICU bed should have a ventilator.");
+        Check(!sim.IsIntensiveCareOpen(icu), "An ICU should not open without an anaesthetist.");
+        foreach (var need in sim.RecommendedStaffing().Where(n => n.RoomId == icu.Id).ToList())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                sim.HireStaff(need.Role, icu.Id, 0.75, need.Shift);
+            }
+        }
+
+        Check(sim.IsIntensiveCareOpen(icu), "The ICU did not open with an anaesthetist.");
+        var patients = Enumerable.Range(0, 3).Select(_ => sim.SpawnPatient(Simulation.Patients.ArrivalMethod.Ambulance, "septic_shock")).ToList();
+        var clock = hospital.Session.Clock;
+        bool InIcuBed(Simulation.Patients.Patient p) =>
+            p.Stage == Simulation.Patients.PatientStage.OnWard && p.CareSpaceId == icu.Id && p.BedIndex is { } bed && p.Tile == icu.Beds[bed].PatientSpot && !p.IsMoving;
+        for (var i = 0; i < 12 * 3600 && !patients.Any(InIcuBed); i++)
+        {
+            clock.Step();
+        }
+
+        var onIcu = sim.Patients.Count(InIcuBed);
+        Check(onIcu >= 1, "No patient reached intensive care: " + string.Join(" | ", patients.Select(p => p.Timeline.LastOrDefault()?.Text)));
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(icu.Rect.X + (icu.Rect.Width / 2.0), icu.Rect.Y + (icu.Rect.Length / 2.0)), 1.1f);
+        GD.Print($"[smoke] Built {icu.Name} with {icu.Beds.Count} ventilated beds; {onIcu} on ICU at {clock.Now:HH:mm}.");
     }
 
     /// <summary>Build mode: clicking a corridor chair opens it with a Remove button.</summary>

@@ -110,6 +110,12 @@ public partial class HospitalAudio
                     break;
 
                 case CareSpaceKind.Ward when space.Beds.Any(b => b.OccupantId is not null):
+                    if (sim.UnitOf(space) == Simulation.Data.Models.WardUnit.IntensiveCare)
+                    {
+                        // Ventilators breathing at every occupied ICU bed.
+                        Want($"vent:{space.Id}", "ventilator", centre, Spatial(centre, zoom, 0.8, 1.4) * 0.35, AudioSettings.EffectsBus);
+                    }
+
                     if (night)
                     {
                         Want($"snore:{space.Id}", "snore", centre, Spatial(centre, zoom, 0.9, 1.5) * 0.35, AudioSettings.EffectsBus);

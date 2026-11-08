@@ -82,6 +82,12 @@ public static class Looks
             StaffRole.Physiotherapist => new PersonLook(
                 Top: Colors.White, Trousers: new Color("#1A3A5C"), Skin: skin, Hair: hair,
                 Piping: new Color("#1A5E8A"), Tunic: true, Lanyard: true, LongHair: longHair),
+            StaffRole.Anaesthetist => new PersonLook(
+                Top: new Color("#3F5FA8"), Trousers: new Color("#36549A"), Skin: skin, Hair: hair,
+                Lanyard: true, LongHair: longHair),
+            StaffRole.OutreachNurse => new PersonLook(
+                Top: new Color("#1D3A6E"), Trousers: new Color("#18233A"), Skin: skin, Hair: hair,
+                Piping: new Color("#F2B134"), Tunic: true, Lanyard: true, LongHair: longHair),
             StaffRole.Porter => new PersonLook(
                 Top: new Color("#3C6E47"), Trousers: new Color("#22262B"), Skin: skin, Hair: hair,
                 Lanyard: true, LongHair: longHair),

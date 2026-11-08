@@ -283,6 +283,8 @@ public partial class RecruitmentPanel : PanelContainer
         StaffRole.Endoscopist => new Color("#2C4F7C"),
         StaffRole.PlasterTechnician => new Color("#5D6B78"),
         StaffRole.Physiotherapist => new Color("#1A5E8A"),
+        StaffRole.Anaesthetist => new Color("#2E4A9E"),
+        StaffRole.OutreachNurse => new Color("#B23A48"),
         StaffRole.Porter => new Color("#3C6E47"),
         _ => new Color("#6E5A8C"),
     };
