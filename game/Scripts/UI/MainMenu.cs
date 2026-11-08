@@ -58,6 +58,10 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
+        else
+        {
+            ArtShots.Begin(this);
+        }
     }
 
     /// <summary>Opens the New Game panel: the hospital's name and how to start.</summary>
