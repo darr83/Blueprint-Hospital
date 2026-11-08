@@ -65,6 +65,10 @@ public partial class HospitalAudio : Node2D
         _siren = new AudioStreamPlayer { Bus = AudioSettings.EffectsBus };
         AddChild(_siren);
 
+        var announcer = new Announcer();
+        AddChild(announcer);
+        _subscriptions.Add(session.Events.Subscribe<Announcement>(announcer.Enqueue));
+
         _subscriptions.Add(session.Events.Subscribe<PatientLeft>(OnPatientLeft));
         _subscriptions.Add(session.Events.Subscribe<Notification>(OnNotification));
         _subscriptions.Add(session.Events.Subscribe<NewDayStarted>(_ => PlayUi("new_day", 0.6)));

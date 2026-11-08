@@ -11,6 +11,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.08,
+    "crew_assessment": "chest pain, query indigestion",
     "presenting_complaint": "chest_pain",
     "symptoms": [
       {
@@ -101,6 +102,7 @@
     ],
     "female_fraction": 0.45,
     "ambulance_probability": 0.2,
+    "crew_assessment": "abdominal pain, query appendicitis",
     "presenting_complaint": "abdominal_pain",
     "symptoms": [
       {
@@ -218,6 +220,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.1,
+    "crew_assessment": "vomiting and diarrhoea, dehydrated",
     "presenting_complaint": "vomiting",
     "symptoms": [
       {
@@ -319,6 +322,7 @@
     ],
     "female_fraction": 0.7,
     "ambulance_probability": 0.1,
+    "crew_assessment": "upper abdominal pain, query gallstones",
     "presenting_complaint": "abdominal_pain",
     "symptoms": [
       {
@@ -421,6 +425,7 @@
     ],
     "female_fraction": 0.6,
     "ambulance_probability": 0.3,
+    "crew_assessment": "abdominal pain with fever, query gallbladder",
     "presenting_complaint": "abdominal_pain",
     "symptoms": [
       {
@@ -533,6 +538,7 @@
     ],
     "female_fraction": 0.45,
     "ambulance_probability": 0.5,
+    "crew_assessment": "severe abdominal pain, query pancreatitis",
     "presenting_complaint": "abdominal_pain",
     "symptoms": [
       {
@@ -643,6 +649,7 @@
     ],
     "female_fraction": 0.4,
     "ambulance_probability": 0.6,
+    "crew_assessment": "vomiting blood, potential G I bleed",
     "presenting_complaint": "haematemesis",
     "symptoms": [
       {

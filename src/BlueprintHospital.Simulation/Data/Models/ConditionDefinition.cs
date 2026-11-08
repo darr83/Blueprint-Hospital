@@ -148,6 +148,9 @@ public sealed class ConditionDefinition : IDataRecord
 
     public double AmbulanceProbability { get; init; }
 
+    /// <summary>What an ambulance crew would say on a pre-alert, e.g. "potential heart attack". Spoken on the tannoy.</summary>
+    public string CrewAssessment { get; init; } = string.Empty;
+
     /// <summary>The symptom the patient gives as their reason for coming. Always present.</summary>
     public string PresentingComplaint { get; init; } = string.Empty;
 

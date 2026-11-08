@@ -180,6 +180,8 @@ public sealed partial class HospitalSimulation
             GenerateArrivals(dt);
         }
 
+        DispatchDuePreAlerts();
+
         foreach (var ambulance in _ambulances)
         {
             ambulance.Move(dt);
@@ -199,6 +201,8 @@ public sealed partial class HospitalSimulation
 
         UpdateAmbulances();
         UpdatePhysiology(dt);
+        UpdateEmergencyCalls();
+        UpdateGeneralAnnouncements();
         UpdatePatientFlow();
         UpdateWards();
         UpdateClinics(dt);
@@ -228,7 +232,15 @@ public sealed partial class HospitalSimulation
         var count = Random.Poisson(expected);
         for (var i = 0; i < count; i++)
         {
-            AdmitNewPatient(_generator.Generate(Now));
+            var patient = _generator.Generate(Now);
+            if (NeedsPreAlert(patient))
+            {
+                PreAlert(patient);
+            }
+            else
+            {
+                AdmitNewPatient(patient);
+            }
         }
     }
 

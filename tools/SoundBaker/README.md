@@ -13,3 +13,12 @@ How the game's sounds are made.
 
 In the game, `game/Scripts/Audio/HospitalAudio.cs` plays everything, and a missing file is just silent.
 Run with `-- --log-sounds` to print each sound as it plays.
+
+## Tannoy announcements
+
+- `generate_pa.py --list` writes every line to `pa_lines.json` and counts characters (free).
+- `ELEVENLABS_API_KEY=... python3 tools/SoundBaker/generate_pa.py` records each line in two voices
+  (`_f` female, `_m` male) into `game/Audio/Sounds/pa/`. Existing takes are skipped.
+- The simulation publishes an `Announcement` event with the clip names to play; `Announcer.cs` plays the
+  chime and the lines in turn on the Announcements bus, which adds the ceiling-speaker sound.
+- Pack 2 sounds in `sounds.json` are marked `"pack": 2`.

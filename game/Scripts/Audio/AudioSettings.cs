@@ -14,6 +14,7 @@ public sealed class AudioSettings
     public const string EffectsBus = "Effects";
     public const string InterfaceBus = "Interface";
     public const string MusicBus = "Music";
+    public const string AnnouncementsBus = "Announcements";
 
     private static AudioSettings? _current;
 
@@ -30,6 +31,9 @@ public sealed class AudioSettings
 
     public float Music { get; set; } = 0.6f;
 
+    /// <summary>Tannoy announcements; 0 turns them off.</summary>
+    public float Announcements { get; set; } = 0.8f;
+
     public static AudioSettings Load()
     {
         var settings = new AudioSettings();
@@ -41,6 +45,7 @@ public sealed class AudioSettings
             settings.Effects = Read(config, "effects", settings.Effects);
             settings.Interface = Read(config, "interface", settings.Interface);
             settings.Music = Read(config, "music", settings.Music);
+            settings.Announcements = Read(config, "announcements", settings.Announcements);
         }
 
         return settings;
@@ -54,6 +59,7 @@ public sealed class AudioSettings
         config.SetValue("volume", "effects", Effects);
         config.SetValue("volume", "interface", Interface);
         config.SetValue("volume", "music", Music);
+        config.SetValue("volume", "announcements", Announcements);
         config.Save(FilePath);
     }
 
@@ -65,6 +71,8 @@ public sealed class AudioSettings
         SetBus(EffectsBus, Effects);
         SetBus(InterfaceBus, Interface);
         SetBus(MusicBus, Music);
+        SetBus(AnnouncementsBus, Announcements);
+        Announcer.SetUpTannoyBus();
     }
 
     private static void SetBus(string name, float volume)

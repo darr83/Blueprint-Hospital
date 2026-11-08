@@ -185,6 +185,16 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
+            if (member.PagedUntil is { } paged)
+            {
+                if (Now < paged && member.CurrentTaskId is not null)
+                {
+                    continue;
+                }
+
+                member.PagedUntil = null;
+            }
+
             if (IsClinicStaff(member))
             {
                 UpdateClinicStaff(member);
@@ -266,7 +276,11 @@ public sealed partial class HospitalSimulation
             member.Caseload.Add(patient.Id);
         }
 
-        WalkTo(member, StaffPositionFor(best, patient));
+        // Paged doctors wait for the tannoy call to finish; ProgressTask walks them over afterwards.
+        if (!PageForResus(member, best, patient))
+        {
+            WalkTo(member, StaffPositionFor(best, patient));
+        }
     }
 
     /// <summary>A nurse pushes a patient themselves when the move has waited too long for a porter.</summary>

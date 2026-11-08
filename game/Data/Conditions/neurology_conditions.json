@@ -11,6 +11,7 @@
     ],
     "female_fraction": 0.75,
     "ambulance_probability": 0.1,
+    "crew_assessment": "severe headache",
     "presenting_complaint": "headache",
     "symptoms": [
       {
@@ -111,6 +112,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.8,
+    "crew_assessment": "seizure, known epileptic",
     "presenting_complaint": "seizures",
     "symptoms": [
       {
@@ -211,6 +213,7 @@
     ],
     "female_fraction": 0.6,
     "ambulance_probability": 0.6,
+    "crew_assessment": "sudden severe headache, potential bleed on the brain",
     "presenting_complaint": "headache",
     "symptoms": [
       {
@@ -323,6 +326,7 @@
     ],
     "female_fraction": 0.5,
     "ambulance_probability": 0.85,
+    "crew_assessment": "potential stroke, F A S T positive",
     "presenting_complaint": "weakness",
     "symptoms": [
       {

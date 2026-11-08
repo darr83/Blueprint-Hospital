@@ -183,6 +183,40 @@ def main():
     save("transferred", mix(whoosh * 0.4, at(bell(784, 1.0, 0.35) * 0.7, 0.1)), peak=0.45)
     save("game_saved", mix(click * 0.6, at(bell(1397, 0.7, 0.25), 0.03)), peak=0.4)
 
+    # ---- pack 2
+    # Pagers: a short triple chirp and the classic long two-tone bleep.
+    chirp = fade(tone(2900, 0.06, (1.0, 0.2)), 0.002, 0.01)
+    save("pager_chirp", seq(chirp, silence(0.05), chirp, silence(0.05), chirp), peak=0.45)
+    save("pager_bleep", seq(*[fade(tone(f, 0.12, (1.0, 0.25)), 0.003, 0.01) for f in (2400, 3000) * 4]), peak=0.45)
+
+    # Ward call bell: a soft repeating two-note buzzer at the nurses' station.
+    ding = lambda f: fade(tone(f, 0.35, (1.0, 0.4, 0.1), attack=0.004, decay=0.18), 0.004, 0.05)
+    save("call_bell", seq(ding(988), ding(784), silence(0.4), ding(988), ding(784)), peak=0.45)
+
+    # Infusion pump: insistent triple beep, repeated.
+    pump = fade(tone(1800, 0.09, (1.0, 0.3, 0.1)), 0.002, 0.01)
+    triple = seq(pump, silence(0.07), pump, silence(0.07), pump, silence(0.45))
+    save("iv_pump_alarm", seq(triple, triple), peak=0.4)
+
+    # Clinic and triage "next patient" display chime.
+    save("next_patient", mix(bell(1047, 1.0, 0.35), at(bell(1568, 1.1, 0.4), 0.14)), peak=0.45)
+
+    # Department unlocked: rising four-note fanfare of bells.
+    save("department_unlocked", mix(*[at(bell(f, 1.6, 0.6) * 0.8, i * 0.13) for i, f in enumerate((523, 659, 784, 1047))]), peak=0.6)
+
+    # Patient deteriorating: two falling notes with an edge, quieter than the alarms.
+    edge_ = lambda f: fade(tone(f, 0.22, (1.0, 0.5, 0.3, 0.15), attack=0.004, decay=0.15), 0.004, 0.04)
+    save("deteriorating", seq(edge_(880), silence(0.04), edge_(659)), peak=0.5)
+
+    # Interface: tab switch and slider tick.
+    save("ui_tab", fade(tone(1600, 0.04, (1.0, 0.2), attack=0.001, decay=0.012), 0.001, 0.01), peak=0.35)
+    save("ui_tick", fade(tone(2400, 0.02, (1.0,), attack=0.0005, decay=0.006), 0.0005, 0.005), peak=0.25)
+
+    # Tannoy: speaker hiss with a click on and off, played under announcements.
+    hiss = noise(1.2, lowpass=5000, highpass=600) * 0.06
+    pop = fade(noise(0.015, lowpass=3000), 0.0005, 0.005) * 0.5
+    save("tannoy_open", mix(hiss, pop, at(pop * 0.6, 1.17)), peak=0.25)
+
 
 if __name__ == "__main__":
     main()

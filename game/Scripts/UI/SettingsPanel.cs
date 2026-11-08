@@ -34,6 +34,7 @@ public partial class SettingsPanel : ModalPanel
         var effects = AddSlider("Effects", 0, 1, 0.05, audio.Effects, Percent);
         var interfaceSounds = AddSlider("Interface", 0, 1, 0.05, audio.Interface, Percent);
         var music = AddSlider("Music", 0, 1, 0.05, audio.Music, Percent);
+        var announcements = AddSlider("Announcements", 0, 1, 0.05, audio.Announcements, v => v <= 0.001 ? "Off" : Percent(v));
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
@@ -52,6 +53,7 @@ public partial class SettingsPanel : ModalPanel
             audio.Effects = (float)effects.Value;
             audio.Interface = (float)interfaceSounds.Value;
             audio.Music = (float)music.Value;
+            audio.Announcements = (float)announcements.Value;
             audio.Save();
             audio.Apply();
             Close();
