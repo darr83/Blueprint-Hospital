@@ -601,7 +601,7 @@ public partial class WorldLayer : Node2D
                     }
                     else
                     {
-                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17);
+                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17, away: WalkingAway(outpatient, outpatient.IsMoving));
                     }
 
                     break;
@@ -617,7 +617,7 @@ public partial class WorldLayer : Node2D
                     else
                     {
                         var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
-                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7);
+                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing));
                     }
 
                     break;
@@ -686,8 +686,20 @@ public partial class WorldLayer : Node2D
             }
             else
             {
-                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha);
+                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving));
             }
+        }
+
+        /// <summary>True when someone walking is heading up the screen, so they are seen from behind.</summary>
+        private static bool WalkingAway(Agent who, bool moving)
+        {
+            if (!moving)
+            {
+                return false;
+            }
+
+            var (fx, fy) = who.Facing;
+            return (IsoDraw.ToScreen(fx, fy) - IsoDraw.ToScreen(0, 0)).Y < -0.01f;
         }
 
         private void DrawRing(Vector2 foot, Color? colour)

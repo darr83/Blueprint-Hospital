@@ -187,14 +187,21 @@ public partial class ArtGallery : Node2D
 
                 Row(165, 150, staff.Select((s, i) => (s.Label, Person(s, i + 1))));
                 Row(420, 150, staff2.Select((s, i) => (s.Label, Person(s, i + 20))));
-                Row(680, 150, Enumerable.Range(0, 8).Select(i => (i switch
+                var nurse = Looks.Staff(new StaffMember { Id = 7, Name = "Nurse", Role = StaffRole.Nurse, Grade = "Band 5 nurse", DepartmentId = "ed" });
+                string Who(int i) => $"Patient {_patients[i % _patients.Length].Age}{(_patients[i % _patients.Length].Sex == Sex.Female ? "F" : "M")}";
+                Row(680, 150, new (string, Action<CanvasItem>)[]
                 {
-                    0 => "Patient walking",
-                    5 => "Patient seated",
-                    _ => $"Patient {_patients[i % _patients.Length].Age}{(_patients[i % _patients.Length].Sex == Sex.Female ? "F" : "M")}",
-                }, (Action<CanvasItem>)(i == 5
-                    ? c => Figures.Seated(c, foot, P(i))
-                    : c => Figures.Standing(c, foot, P(i), time, i == 0, i * 13)))));
+                    ("Patient walking", c => Figures.Standing(c, foot, P(0), time, true, 0)),
+                    ("Walking away", c => Figures.Standing(c, foot, P(1), time, true, 13, away: true)),
+                    (Who(2), c => Figures.Standing(c, foot, P(2), time, false, 26)),
+                    (Who(3), c => Figures.Standing(c, foot, P(3), time, false, 39)),
+                    (Who(4), c => Figures.Standing(c, foot, P(4), time, false, 52)),
+                    (Who(6), c => Figures.Standing(c, foot, P(6), time, false, 78)),
+                    ("Patient seated", c => Figures.Seated(c, foot, P(5))),
+                    ("Nurse, away", c => Figures.Standing(c, foot, nurse, time, true, 49, away: true)),
+                    ("Porter, away", c => Figures.Standing(c, foot, Looks.Staff(new StaffMember { Id = 9, Name = "P", Role = StaffRole.Porter, Grade = "Porter", DepartmentId = "ed" }), time, true, 63, away: true)),
+                    ("Surgeon, away", c => Figures.Standing(c, foot, Looks.Staff(new StaffMember { Id = 11, Name = "S", Role = StaffRole.Surgeon, Grade = "Consultant", DepartmentId = "ed" }), time, true, 77, away: true)),
+                });
                 break;
             }
 

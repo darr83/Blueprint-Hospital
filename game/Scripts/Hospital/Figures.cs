@@ -4,6 +4,18 @@ using Godot;
 
 namespace BlueprintHospital.Hospital;
 
+/// <summary>How someone wears their hair.</summary>
+public enum HairStyle
+{
+    Short,
+    Crop,
+    Curly,
+    Long,
+    Ponytail,
+    Bun,
+    Bald,
+}
+
 /// <summary>What a person is wearing and looks like.</summary>
 public sealed record PersonLook(
     Color Top,
@@ -15,7 +27,23 @@ public sealed record PersonLook(
     bool Stethoscope = false,
     bool Lanyard = false,
     bool LongSleeves = false,
-    bool LongHair = false);
+    bool LongHair = false,
+    HairStyle? Style = null,
+    Color? Cap = null,
+    bool Mask = false,
+    bool Collar = false,
+    bool Pocket = false,
+    bool FobWatch = false,
+    bool Beard = false,
+    bool Glasses = false,
+    bool Skirt = false,
+    Color? Jacket = null,
+    Color? ShoeColour = null,
+    bool Stick = false)
+{
+    /// <summary>The hair style, falling back to long or short hair.</summary>
+    public HairStyle Hairdo => Style ?? (LongHair ? HairStyle.Long : HairStyle.Short);
+}
 
 /// <summary>
 /// Flat-shaded people and clinical equipment in the game's isometric style. People are drawn
@@ -27,117 +55,399 @@ public static class Figures
     public static readonly Color Shoes = new("#2B2F33");
     public static readonly Color Outline = new("#1D2B36");
 
-    /// <summary>A standing (or walking) person whose feet are at <paramref name="foot"/>.</summary>
-    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f)
+    /// <summary>
+    /// A standing (or walking) person whose feet are at <paramref name="foot"/>. With
+    /// <paramref name="away"/> they are seen from behind, walking away from the viewer.
+    /// </summary>
+    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f, bool away = false)
     {
         c.DrawColoredPolygon(IsoDraw.FloorEllipse(foot, 10), new Color(0, 0, 0, 0.2f * alpha));
-        var swing = walking ? (float)Math.Sin((time * 9) + seed) * 3.2f : 0f;
+        var phase = (time * 9) + seed;
+        var swing = walking ? (float)Math.Sin(phase) * 3.2f : 0f;
+        var bob = walking ? -(float)Math.Abs(Math.Cos(phase)) * 1.1f : 0f;
 
-        // Legs and shoes.
+        // Legs (or a skirt and legs) and shoes.
         var trousers = A(look.Trousers, alpha);
-        c.DrawLine(foot + new Vector2(-3.5f, -21), foot + new Vector2(-3.5f + swing, -3), trousers, 5.5f);
-        c.DrawLine(foot + new Vector2(3.5f, -21), foot + new Vector2(3.5f - swing, -3), trousers, 5.5f);
-        c.DrawCircle(foot + new Vector2(-3.5f + swing, -2), 3f, A(Shoes, alpha));
-        c.DrawCircle(foot + new Vector2(3.5f - swing, -2), 3f, A(Shoes, alpha));
+        var shoes = A(look.ShoeColour ?? Shoes, alpha);
+        var legs = look.Skirt ? A(look.Skin.Darkened(0.15f), alpha) : trousers;
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var s2 = side * swing * (away ? -1 : 1);
+            var shade = side > 0 ? legs.Darkened(0.1f) : legs;
+            c.DrawLine(foot + new Vector2(side * 3.5f, -21 + bob), foot + new Vector2((side * 3.5f) + (side < 0 ? s2 : -s2), -3), shade, look.Skirt ? 3.5f : 5.5f);
+            var toe = foot + new Vector2((side * 3.5f) + (side < 0 ? s2 : -s2), -2);
+            c.DrawColoredPolygon(Ellipse(toe + new Vector2(0, away ? -0.5f : 0.4f), 3.3f, 2.3f, 10), shoes);
+        }
 
-        Body(c, foot, look, -swing, alpha, drop: 0);
+        if (look.Skirt)
+        {
+            c.DrawColoredPolygon(new[] { foot + new Vector2(-8, -20 + bob), foot + new Vector2(8, -20 + bob), foot + new Vector2(9.5f, -10 + bob), foot + new Vector2(-9.5f, -10 + bob) }, trousers);
+            c.DrawLine(foot + new Vector2(2, -20 + bob), foot + new Vector2(3, -10 + bob), A(look.Trousers.Darkened(0.15f), alpha), 1f);
+        }
+
+        Body(c, foot, look, -swing, alpha, drop: bob, away);
+
+        if (look.Stick && !away)
+        {
+            // A walking stick in the right hand, planted a little ahead.
+            var hand = foot + new Vector2(10.5f - (swing * 0.6f), -22 + bob);
+            c.DrawLine(hand + new Vector2(-1.5f, -1), hand + new Vector2(1.5f, -1), A(new Color("#5A3B22"), alpha), 2f);
+            c.DrawLine(hand, foot + new Vector2(12.5f, 1), A(new Color("#6B4A2E"), alpha), 1.6f);
+        }
     }
 
     /// <summary>A person sitting on a chair whose seat centre is at <paramref name="foot"/>.</summary>
     public static void Seated(CanvasItem c, Vector2 foot, PersonLook look, float alpha = 1f)
     {
         var trousers = A(look.Trousers, alpha);
+        var shins = look.Skirt ? A(look.Skin.Darkened(0.15f), alpha) : trousers;
 
         // Thighs forward (towards the viewer), shins down to the floor.
         c.DrawLine(foot + new Vector2(-3.5f, -15), foot + new Vector2(-4.5f, -10), trousers, 5.5f);
-        c.DrawLine(foot + new Vector2(3.5f, -15), foot + new Vector2(4.5f, -10), trousers, 5.5f);
-        c.DrawLine(foot + new Vector2(-4.5f, -10), foot + new Vector2(-4.5f, 2), trousers, 5f);
-        c.DrawLine(foot + new Vector2(4.5f, -10), foot + new Vector2(4.5f, 2), trousers, 5f);
-        c.DrawCircle(foot + new Vector2(-4.5f, 3), 3f, A(Shoes, alpha));
-        c.DrawCircle(foot + new Vector2(4.5f, 3), 3f, A(Shoes, alpha));
+        c.DrawLine(foot + new Vector2(3.5f, -15), foot + new Vector2(4.5f, -10), trousers.Darkened(0.08f), 5.5f);
+        c.DrawLine(foot + new Vector2(-4.5f, -10), foot + new Vector2(-4.5f, 2), shins, look.Skirt ? 3.5f : 5f);
+        c.DrawLine(foot + new Vector2(4.5f, -10), foot + new Vector2(4.5f, 2), shins.Darkened(0.08f), look.Skirt ? 3.5f : 5f);
+        if (look.Skirt)
+        {
+            c.DrawColoredPolygon(new[] { foot + new Vector2(-8.5f, -16), foot + new Vector2(8.5f, -16), foot + new Vector2(9, -8), foot + new Vector2(-9, -8) }, trousers);
+        }
 
-        Body(c, foot, look, 0, alpha, drop: 7);
+        var shoes = A(look.ShoeColour ?? Shoes, alpha);
+        c.DrawColoredPolygon(Ellipse(foot + new Vector2(-4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
+        c.DrawColoredPolygon(Ellipse(foot + new Vector2(4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
+
+        Body(c, foot, look, 0, alpha, drop: 7, away: false);
     }
 
-    private static void Body(CanvasItem c, Vector2 foot, PersonLook look, float armSwing, float alpha, float drop)
+    private static void Body(CanvasItem c, Vector2 foot, PersonLook look, float armSwing, float alpha, float drop, bool away)
     {
         Vector2 P(float x, float y) => foot + new Vector2(x, y + drop);
-        var top = A(look.Top, alpha);
+        var outer = look.Jacket ?? look.Top;
+        var top = A(outer, alpha);
         var skin = A(look.Skin, alpha);
 
-        // Torso; a tunic comes down over the hips.
-        var hem = look.Tunic ? -16f : -19f;
+        // Torso; a tunic or a coat comes down over the hips.
+        var hem = look.Tunic || look.Jacket is not null ? -16f : -19f;
         var torso = new[] { P(-9, -37), P(-6.5f, -41), P(6.5f, -41), P(9, -37), P(8.5f, hem), P(-8.5f, hem) };
         c.DrawColoredPolygon(torso, top);
-        c.DrawColoredPolygon(new[] { P(1, -41), P(6.5f, -41), P(9, -37), P(8.5f, hem), P(3, hem) }, A(look.Top.Darkened(0.12f), alpha));
-        c.DrawPolyline(torso.Append(torso[0]).ToArray(), A(look.Top.Darkened(0.35f), alpha), 1f, true);
+        c.DrawColoredPolygon(new[] { P(1, -41), P(6.5f, -41), P(9, -37), P(8.5f, hem), P(3, hem) }, A(outer.Darkened(0.12f), alpha));
+        c.DrawPolyline(torso.Append(torso[0]).ToArray(), A(outer.Darkened(0.35f), alpha), 1f, true);
 
-        // Neckline: scrubs and tunics have a V-neck.
-        c.DrawColoredPolygon(new[] { P(-3, -41), P(3, -41), P(0, -36) }, skin);
+        if (look.Jacket is not null && !away)
+        {
+            // Open coat: the top underneath shows down the middle, with the lapels either side.
+            c.DrawColoredPolygon(new[] { P(-3.5f, -41), P(3.5f, -41), P(2.5f, hem), P(-2.5f, hem) }, A(look.Top, alpha));
+            c.DrawLine(P(-3.5f, -41), P(-2.5f, hem), A(outer.Darkened(0.3f), alpha), 1f);
+            c.DrawLine(P(3.5f, -41), P(2.5f, hem), A(outer.Darkened(0.3f), alpha), 1f);
+            c.DrawColoredPolygon(new[] { P(-3.5f, -41), P(-6, -41), P(-3, -33) }, A(outer.Lightened(0.12f), alpha));
+            c.DrawColoredPolygon(new[] { P(3.5f, -41), P(6, -41), P(3, -33) }, A(outer.Darkened(0.05f), alpha));
+        }
+        else if (!away && look.Collar)
+        {
+            // Polo or shirt collar, with a short button placket.
+            c.DrawColoredPolygon(new[] { P(-1.2f, -41), P(1.2f, -41), P(0, -38) }, skin);
+            c.DrawColoredPolygon(new[] { P(-5, -42), P(-0.8f, -41), P(-2, -37.5f) }, A(look.Top.Lightened(0.15f), alpha));
+            c.DrawColoredPolygon(new[] { P(5, -42), P(0.8f, -41), P(2, -37.5f) }, A(look.Top.Lightened(0.05f), alpha));
+            c.DrawLine(P(0, -38), P(0, -33), A(look.Top.Darkened(0.25f), alpha), 1f);
+        }
+        else if (!away)
+        {
+            // Scrubs and tunics have a V-neck.
+            c.DrawColoredPolygon(new[] { P(-3, -41), P(3, -41), P(0, -36) }, skin);
+        }
+        else
+        {
+            c.DrawLine(P(-3.5f, -41), P(3.5f, -41), A(outer.Darkened(0.3f), alpha), 1.2f);
+        }
+
         if (look.Piping is { } piping)
         {
             var trim = A(piping, alpha);
-            c.DrawPolyline(new[] { P(-3.5f, -41), P(0, -35.5f), P(3.5f, -41) }, trim, 1.4f);
+            if (!away)
+            {
+                c.DrawPolyline(new[] { P(-3.5f, -41), P(0, -35.5f), P(3.5f, -41) }, trim, 1.4f);
+            }
+
             c.DrawLine(P(-8.5f, hem), P(8.5f, hem), trim, 1.4f);
             c.DrawLine(P(-8.6f, -30), P(-8.4f, hem), trim, 1f);
             c.DrawLine(P(8.6f, -30), P(8.4f, hem), trim, 1f);
         }
 
-        // Arms: short sleeves and bare forearms (bare below the elbows), unless in own clothes.
+        if (!away)
+        {
+            if (look.Pocket)
+            {
+                // Breast pocket with two pens.
+                c.DrawRect(new Rect2(P(-7, -35), new Vector2(4.5f, 4)), A(look.Top.Darkened(0.1f), alpha));
+                c.DrawLine(P(-6, -35), P(-6, -37), A(new Color("#1E4F9E"), alpha), 1f);
+                c.DrawLine(P(-4.5f, -35), P(-4.5f, -36.5f), A(new Color("#202020"), alpha), 1f);
+            }
+
+            if (look.FobWatch)
+            {
+                c.DrawLine(P(5, -38), P(5, -35.5f), A(new Color("#B9C3CB"), alpha), 0.8f);
+                c.DrawCircle(P(5, -34), 1.7f, A(new Color("#E9EEF2"), alpha));
+                c.DrawArc(P(5, -34), 1.7f, 0, Mathf.Tau, 10, A(new Color("#7D8A95"), alpha), 0.6f, true);
+            }
+        }
+
+        // Arms: short sleeves and bare forearms (bare below the elbows), unless in long sleeves or a coat.
+        var longSleeves = look.LongSleeves || look.Jacket is not null;
         foreach (var side in new[] { -1f, 1f })
         {
             var shoulder = P(side * 9, -38);
             var elbow = P(side * 10.5f, -30 + (armSwing * side * 0.3f));
             var hand = P(side * 10.5f + (armSwing * side * 0.6f), -22);
-            c.DrawLine(shoulder, elbow, top, 5f);
-            c.DrawLine(elbow, hand, look.LongSleeves ? top : skin, 4f);
+            var sleeve = side > 0 ? A(outer.Darkened(0.1f), alpha) : top;
+            c.DrawLine(shoulder, elbow, sleeve, 5f);
+            if (!longSleeves)
+            {
+                c.DrawLine(elbow + new Vector2(-2.4f, 0), elbow + new Vector2(2.4f, 0), A(outer.Darkened(0.25f), alpha), 0.8f);
+            }
+
+            c.DrawLine(elbow, hand, longSleeves ? sleeve : skin, 4f);
             c.DrawCircle(hand, 2.4f, skin);
         }
 
         // Neck and head.
         c.DrawRect(new Rect2(P(-2.5f, -45), new Vector2(5, 5)), skin);
         var head = P(0, -50.5f);
-        if (look.LongHair)
+        if (away)
         {
-            c.DrawRect(new Rect2(head + new Vector2(-7.5f, -1), new Vector2(15, 9)), A(look.Hair, alpha));
+            HeadFromBehind(c, head, look, alpha);
+        }
+        else
+        {
+            HeadFront(c, head, look, alpha, eyesOpen: true);
         }
 
-        c.DrawCircle(head, 7.5f, skin);
-        c.DrawArc(head, 7.5f, 0, Mathf.Tau, 24, A(look.Skin.Darkened(0.3f), alpha), 1f, true);
-        c.DrawColoredPolygon(HairCap(head), A(look.Hair, alpha));
-
-        // Eyes and a hint of a smile.
-        var eye = A(new Color("#2A211C"), alpha);
-        c.DrawCircle(head + new Vector2(-2.6f, 1.2f), 0.95f, eye);
-        c.DrawCircle(head + new Vector2(2.6f, 1.2f), 0.95f, eye);
-        c.DrawLine(head + new Vector2(-1.4f, 4.3f), head + new Vector2(1.4f, 4.3f), A(look.Skin.Darkened(0.35f), alpha), 0.9f, true);
+        if (!away && look.Mask)
+        {
+            // Surgical mask pulled down under the chin.
+            c.DrawColoredPolygon(new[] { P(-4.5f, -44.5f), P(4.5f, -44.5f), P(3.5f, -40.5f), P(-3.5f, -40.5f) }, A(new Color("#8FC3E6"), alpha));
+            c.DrawLine(P(-4.5f, -44), P(-7, -47), A(Colors.White, alpha), 0.6f);
+            c.DrawLine(P(4.5f, -44), P(7, -47), A(Colors.White, alpha), 0.6f);
+        }
 
         if (look.Stethoscope)
         {
             var steth = A(new Color("#2E3A44"), alpha);
-            c.DrawPolyline(new[] { P(-4.5f, -41), P(-3.5f, -35), P(0, -32), P(3.5f, -35), P(4.5f, -41) }, steth, 1.5f);
-            c.DrawCircle(P(0, -31), 1.9f, A(new Color("#B9C3CB"), alpha));
+            if (away)
+            {
+                c.DrawPolyline(new[] { P(-5, -40), P(-2, -42), P(2, -42), P(5, -40) }, steth, 1.5f);
+            }
+            else
+            {
+                c.DrawPolyline(new[] { P(-4.5f, -41), P(-3.5f, -35), P(0, -32), P(3.5f, -35), P(4.5f, -41) }, steth, 1.5f);
+                c.DrawCircle(P(0, -31), 1.9f, A(new Color("#B9C3CB"), alpha));
+            }
         }
 
         if (look.Lanyard)
         {
-            c.DrawPolyline(new[] { P(-2, -41), P(1.5f, -30), P(2.5f, -41) }, A(new Color("#005EB8"), alpha), 1f);
-            c.DrawRect(new Rect2(P(0, -30), new Vector2(4, 5)), A(Colors.White, alpha));
+            if (away)
+            {
+                c.DrawLine(P(-2.5f, -41.5f), P(2.5f, -41.5f), A(new Color("#005EB8"), alpha), 1f);
+            }
+            else
+            {
+                c.DrawPolyline(new[] { P(-2, -41), P(1.5f, -30), P(2.5f, -41) }, A(new Color("#005EB8"), alpha), 1f);
+                c.DrawRect(new Rect2(P(0, -30), new Vector2(4, 5)), A(Colors.White, alpha));
+                c.DrawRect(new Rect2(P(0.6f, -29.3f), new Vector2(1.4f, 1.6f)), A(new Color("#9AB4CC"), alpha));
+            }
         }
     }
 
-    private static Vector2[] HairCap(Vector2 head)
+    /// <summary>The face and hair from the front: ears, eyes, brows, a hint of a smile, and any beard, glasses or theatre cap.</summary>
+    private static void HeadFront(CanvasItem c, Vector2 head, PersonLook look, float alpha, bool eyesOpen)
+    {
+        var skin = A(look.Skin, alpha);
+        var hair = A(look.Hair, alpha);
+        var style = look.Cap is null ? look.Hairdo : HairStyle.Crop;
+        if (look.Cap is null && style is HairStyle.Long or HairStyle.Ponytail)
+        {
+            // Hair falling behind the shoulders.
+            var length = style == HairStyle.Long ? 10f : 4f;
+            c.DrawColoredPolygon(new[] { head + new Vector2(-8, -1), head + new Vector2(8, -1), head + new Vector2(7.5f, length), head + new Vector2(-7.5f, length) }, hair);
+        }
+
+        // Ears, then the face.
+        c.DrawCircle(head + new Vector2(-7.3f, 1), 1.8f, skin);
+        c.DrawCircle(head + new Vector2(7.3f, 1), 1.8f, A(look.Skin.Darkened(0.08f), alpha));
+        c.DrawCircle(head, 7.5f, skin);
+        c.DrawCircle(head + new Vector2(2.5f, 1), 5.5f, A(new Color(look.Skin.Darkened(0.06f), 0.5f), alpha));
+        c.DrawArc(head, 7.5f, 0, Mathf.Tau, 24, A(look.Skin.Darkened(0.3f), alpha), 1f, true);
+
+        if (look.Beard)
+        {
+            var beard = new Vector2[12];
+            for (var i = 0; i < 10; i++)
+            {
+                var a = Mathf.Pi * i / 9f;
+                beard[i] = head + new Vector2(Mathf.Cos(a) * 7.6f, Mathf.Sin(a) * 7.8f + 0.5f);
+            }
+
+            beard[10] = head + new Vector2(-6, 2);
+            beard[11] = head + new Vector2(6, 2);
+            c.DrawColoredPolygon(new[] { beard[11] }.Concat(beard[..10]).Append(beard[10]).ToArray(), hair);
+            c.DrawLine(head + new Vector2(-1.6f, 4.4f), head + new Vector2(1.6f, 4.4f), A(look.Skin.Darkened(0.2f), alpha), 1.1f, true);
+        }
+
+        if (look.Cap is { } cap)
+        {
+            // Theatre cap tied at the back, pulled down over the hair.
+            var dome = new Vector2[13];
+            for (var i = 0; i <= 10; i++)
+            {
+                var a = Mathf.Pi + (i * Mathf.Pi / 10);
+                dome[i] = head + new Vector2(Mathf.Cos(a) * 8.3f, Mathf.Sin(a) * 8.6f - 0.3f);
+            }
+
+            dome[11] = head + new Vector2(8, -1.2f);
+            dome[12] = head + new Vector2(-8, -1.2f);
+            c.DrawColoredPolygon(dome, A(cap, alpha));
+            c.DrawLine(head + new Vector2(-8, -1.6f), head + new Vector2(8, -1.6f), A(cap.Darkened(0.25f), alpha), 1.4f);
+            c.DrawCircle(head + new Vector2(-3.5f, -5), 0.9f, A(cap.Lightened(0.35f), alpha));
+            c.DrawCircle(head + new Vector2(2.5f, -6.2f), 0.9f, A(cap.Lightened(0.35f), alpha));
+            c.DrawCircle(head + new Vector2(4.5f, -3.2f), 0.9f, A(cap.Lightened(0.35f), alpha));
+        }
+        else
+        {
+            HairFront(c, head, style, hair);
+        }
+
+        // Eyes, brows and a hint of a smile.
+        var eye = A(new Color("#2A211C"), alpha);
+        if (eyesOpen)
+        {
+            c.DrawCircle(head + new Vector2(-2.6f, 1.2f), 0.95f, eye);
+            c.DrawCircle(head + new Vector2(2.6f, 1.2f), 0.95f, eye);
+            var brow = A(look.Hair.Darkened(0.2f), alpha);
+            c.DrawLine(head + new Vector2(-3.8f, -1.2f), head + new Vector2(-1.6f, -1.5f), brow, 0.8f, true);
+            c.DrawLine(head + new Vector2(1.6f, -1.5f), head + new Vector2(3.8f, -1.2f), brow, 0.8f, true);
+        }
+
+        if (!look.Beard)
+        {
+            c.DrawArc(head + new Vector2(0, 2.6f), 1.9f, 0.5f, Mathf.Pi - 0.5f, 6, A(look.Skin.Darkened(0.38f), alpha), 0.9f, true);
+        }
+
+        if (look.Glasses)
+        {
+            var frame = A(new Color("#2B2F33"), alpha);
+            c.DrawArc(head + new Vector2(-2.7f, 1.2f), 2f, 0, Mathf.Tau, 10, frame, 0.7f, true);
+            c.DrawArc(head + new Vector2(2.7f, 1.2f), 2f, 0, Mathf.Tau, 10, frame, 0.7f, true);
+            c.DrawLine(head + new Vector2(-0.7f, 1), head + new Vector2(0.7f, 1), frame, 0.7f);
+        }
+    }
+
+    /// <summary>Hair as seen from the front, for each style.</summary>
+    private static void HairFront(CanvasItem c, Vector2 head, HairStyle style, Color hair)
+    {
+        switch (style)
+        {
+            case HairStyle.Bald:
+                // A fringe of hair round the sides only.
+                c.DrawArc(head + new Vector2(0, 0.5f), 7.6f, Mathf.Pi * 0.95f, Mathf.Pi * 1.18f, 5, hair, 2.2f, true);
+                c.DrawArc(head + new Vector2(0, 0.5f), 7.6f, Mathf.Pi * 1.82f, Mathf.Pi * 2.05f, 5, hair, 2.2f, true);
+                c.DrawCircle(head + new Vector2(-2.5f, -4.5f), 1.4f, new Color(1, 1, 1, 0.25f));
+                return;
+
+            case HairStyle.Curly:
+                c.DrawColoredPolygon(HairCap(head, 8.6f, 1.2f), hair);
+                for (var i = 0; i < 7; i++)
+                {
+                    var a = Mathf.Pi + (i * Mathf.Pi / 6);
+                    c.DrawCircle(head + new Vector2(Mathf.Cos(a) * 8, (Mathf.Sin(a) * 8) - 0.8f), 2.6f, hair);
+                }
+
+                return;
+
+            case HairStyle.Crop:
+                c.DrawColoredPolygon(HairCap(head, 7.8f, -0.5f, fringe: false), hair);
+                return;
+
+            case HairStyle.Bun:
+                c.DrawCircle(head + new Vector2(0, -8.5f), 3.4f, hair);
+                c.DrawColoredPolygon(HairCap(head, 7.9f, -0.5f), hair);
+                return;
+
+            case HairStyle.Ponytail:
+                // The tail shows just past the neck on one side.
+                c.DrawColoredPolygon(HairCap(head, 7.9f, -0.5f), hair);
+                c.DrawColoredPolygon(new[] { head + new Vector2(5.5f, 2), head + new Vector2(8, 3), head + new Vector2(8.5f, 9), head + new Vector2(6.5f, 8) }, hair.Darkened(0.1f));
+                return;
+
+            default:
+                c.DrawColoredPolygon(HairCap(head, 7.9f, -0.5f), hair);
+                return;
+        }
+    }
+
+    /// <summary>The back of the head: hair over almost all of it (or the theatre cap's ties), ears showing.</summary>
+    private static void HeadFromBehind(CanvasItem c, Vector2 head, PersonLook look, float alpha)
+    {
+        var skin = A(look.Skin, alpha);
+        var hair = A(look.Hair, alpha);
+        c.DrawCircle(head + new Vector2(-7.3f, 1), 1.8f, skin);
+        c.DrawCircle(head + new Vector2(7.3f, 1), 1.8f, skin);
+        c.DrawCircle(head, 7.5f, skin);
+        if (look.Cap is { } cap)
+        {
+            c.DrawColoredPolygon(Ellipse(head + new Vector2(0, -0.8f), 8.2f, 7.8f), A(cap, alpha));
+            c.DrawLine(head + new Vector2(-1, 3), head + new Vector2(-3, 8), A(cap.Darkened(0.2f), alpha), 1.2f);
+            c.DrawLine(head + new Vector2(1, 3), head + new Vector2(3, 8), A(cap.Darkened(0.2f), alpha), 1.2f);
+            return;
+        }
+
+        switch (look.Hairdo)
+        {
+            case HairStyle.Bald:
+                c.DrawArc(head + new Vector2(0, 0.5f), 7.4f, Mathf.Pi * -0.05f, Mathf.Pi * 1.05f, 12, hair, 3f, true);
+                break;
+            case HairStyle.Long:
+                c.DrawColoredPolygon(new[] { head + new Vector2(-8, -1), head + new Vector2(8, -1), head + new Vector2(7.5f, 11), head + new Vector2(-7.5f, 11) }, hair);
+                c.DrawCircle(head, 8f, hair);
+                break;
+            case HairStyle.Ponytail:
+                c.DrawCircle(head, 7.9f, hair);
+                c.DrawColoredPolygon(new[] { head + new Vector2(-2, 5), head + new Vector2(2, 5), head + new Vector2(1.2f, 13), head + new Vector2(-1.2f, 13) }, hair);
+                c.DrawLine(head + new Vector2(-1.8f, 6), head + new Vector2(1.8f, 6), A(look.Hair.Darkened(0.45f), alpha), 1.2f);
+                break;
+            case HairStyle.Bun:
+                c.DrawCircle(head, 7.9f, hair);
+                c.DrawCircle(head + new Vector2(0, -3), 3.8f, hair.Darkened(0.12f));
+                break;
+            case HairStyle.Curly:
+                c.DrawCircle(head + new Vector2(0, -0.5f), 8.4f, hair);
+                for (var i = 0; i < 9; i++)
+                {
+                    var a = Mathf.Pi * 0.9f + (i * Mathf.Pi * 1.2f / 8);
+                    c.DrawCircle(head + new Vector2(Mathf.Cos(a) * 8, Mathf.Sin(a) * 8), 2.6f, hair);
+                }
+
+                break;
+            default:
+                // Short hair, ending above the neck.
+                c.DrawColoredPolygon(Ellipse(head + new Vector2(0, -0.6f), 7.9f, 7.4f), hair);
+                break;
+        }
+
+        c.DrawArc(head + new Vector2(0, -1), 6, Mathf.Pi * 1.15f, Mathf.Pi * 1.45f, 5, A(look.Hair.Lightened(0.25f), alpha), 1f, true);
+    }
+
+    private static Vector2[] HairCap(Vector2 head, float radius = 7.9f, float lift = -0.5f, bool fringe = true)
     {
         // Upper part of the head plus a short fringe.
         var points = new Vector2[13];
         for (var i = 0; i <= 10; i++)
         {
             var a = Mathf.Pi + (i * Mathf.Pi / 10);
-            points[i] = head + new Vector2(Mathf.Cos(a) * 7.9f, Mathf.Sin(a) * 7.9f - 0.5f);
+            points[i] = head + new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius + lift);
         }
 
-        points[11] = head + new Vector2(4, -2);
-        points[12] = head + new Vector2(-6, -1.5f);
+        points[11] = head + (fringe ? new Vector2(4, -2) : new Vector2(5, -3.2f));
+        points[12] = head + (fringe ? new Vector2(-6, -1.5f) : new Vector2(-5, -3.2f));
         return points;
     }
 
@@ -223,7 +533,11 @@ public static class Figures
         c.DrawColoredPolygon(IsoDraw.FloorEllipse(face + new Vector2(1, 5), 8), new Color(0, 0, 0, 0.1f));
         c.DrawCircle(face, 7.5f, look.Skin);
         c.DrawArc(face, 7.5f, 0, Mathf.Tau, 24, look.Skin.Darkened(0.25f), 1f, true);
-        c.DrawColoredPolygon(HairCap(face), look.Hair);
+        HairFront(c, face, look.Hairdo == HairStyle.Long ? HairStyle.Short : look.Hairdo, look.Hair);
+        if (look.Glasses)
+        {
+            c.DrawLine(face + new Vector2(-4.5f, 1), face + new Vector2(4.5f, 1), new Color("#2B2F33"), 0.7f);
+        }
 
         // Resting, eyes closed.
         var lid = look.Skin.Darkened(0.45f);
