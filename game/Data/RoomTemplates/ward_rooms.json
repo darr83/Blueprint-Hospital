@@ -456,5 +456,213 @@
       "hand_basin",
       "visitor_chair"
     ]
+  },
+  {
+    "id": "surgical_assessment_unit",
+    "name": "Surgical assessment unit",
+    "category": "Wards",
+    "description": "A&E sends General Surgery patients here, so they wait for theatre or a ward bed in a proper bed instead of an A&E cubicle.",
+    "kind": "ward",
+    "department": "general_surgery",
+    "layout": "ward",
+    "unit": "assessment",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "surgical_ward",
+    "name": "Surgical ward",
+    "category": "Wards",
+    "description": "Where General Surgery patients recover after their operation, and where gallbladder, pancreatitis and bowel patients are looked after.",
+    "kind": "ward",
+    "department": "general_surgery",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this ward.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "day_surgery_unit",
+    "name": "Day surgery unit",
+    "category": "Wards",
+    "description": "Patients come round here after a small operation and go home the same day.",
+    "kind": "ward",
+    "department": "general_surgery",
+    "layout": "ward",
+    "unit": "day_surgery",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 24,
+    "max_length_m": 12,
+    "door_width_m": 2.0,
+    "base_cost": 12000,
+    "cost_per_square_metre": 1100,
+    "staffing": "Hire a nurse for every 6 beds and a ward doctor from Recruitment (H), posted to this unit.",
+    "furniture": [
+      "hospital_bed",
+      "bedside_locker",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair"
+    ]
+  },
+  {
+    "id": "intensive_care_unit",
+    "name": "Intensive care unit",
+    "category": "Wards",
+    "description": "For the sickest patients: a ventilator and monitor at every bed, and a nurse for each patient. Takes very sick patients from Resus and the wards.",
+    "kind": "ward",
+    "department": "critical_care",
+    "layout": "ward",
+    "unit": "intensive_care",
+    "sizes": [
+      {
+        "name": "3 beds",
+        "width_m": 11.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "6 beds",
+        "width_m": 11.5,
+        "length_m": 8
+      },
+      {
+        "name": "10 beds",
+        "width_m": 18.5,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 60000,
+    "cost_per_square_metre": 2400,
+    "staffing": "Hire an anaesthetist, posted to the unit, to run it (it takes no patients without one), and a nurse for every bed.",
+    "furniture": [
+      "hospital_bed",
+      "ventilator",
+      "obs_monitor",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "high_dependency_unit",
+    "name": "High dependency unit",
+    "category": "Wards",
+    "description": "A step down from intensive care, and where patients go after a big operation. Closer monitoring than a ward, a nurse for every two patients.",
+    "kind": "ward",
+    "department": "critical_care",
+    "layout": "ward",
+    "unit": "high_dependency",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "10 beds",
+        "width_m": 13,
+        "length_m": 8
+      },
+      {
+        "name": "18 beds",
+        "width_m": 23,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 35000,
+    "cost_per_square_metre": 1800,
+    "staffing": "Hire a doctor posted to the unit and a nurse for every two beds.",
+    "furniture": [
+      "hospital_bed",
+      "obs_monitor",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin"
+    ]
   }
 ]

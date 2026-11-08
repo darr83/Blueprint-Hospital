@@ -197,6 +197,12 @@ public sealed class Patient : Agent
     /// <summary>True when every essential step for the true condition has been given.</summary>
     public bool EffectiveTreatmentGiven { get; set; }
 
+    /// <summary>
+    /// A Red-triaged patient a doctor has seen at the bedside with NEWS2 back under 7. Their monitor
+    /// stops showing red (until their NEWS2 climbs to 7 again).
+    /// </summary>
+    public bool RedStabilised { get; set; }
+
     /// <summary>Fraction of pain relieved by analgesia (0..0.7).</summary>
     public double Analgesia { get; set; }
 
@@ -229,6 +235,65 @@ public sealed class Patient : Agent
 
     public bool IsInDepartment => Stage is not (PatientStage.Gone or PatientStage.Leaving) && IsAlive;
 
+    /// <summary>NEWS2 from the live observations the bedside monitor shows right now.</summary>
+    public int LiveNews2 => News2.Calculate(CurrentObservations()).Total;
+
+    /// <summary>
+    /// The monitor shows red (patients in a bed, cubicle or bay only): it turns red at NEWS2 7 (or on a Red triage a doctor hasn't yet stabilised) and
+    /// stays red until NEWS2 is back to 5 or less. While it is red they only get better with someone sitting with them
+    /// (a healthcare assistant) and once a doctor has reviewed them. Set by the simulation each tick.
+    /// </summary>
+    public bool MonitorIsRed => MonitorRed && IsInDepartment;
+
+    /// <summary>The stored red-monitor state (see <see cref="MonitorIsRed"/>).</summary>
+    public bool MonitorRed { get; set; }
+
+    /// <summary>A doctor has reviewed them since the monitor last turned red.</summary>
+    public bool RedReviewed { get; set; }
+
+    /// <summary>
+    /// Works out whether the monitor is red now, from the live NEWS2 and whether it was red a moment ago.
+    /// Only a patient with a bed, cubicle or bay of their own is on a monitor; the waiting room and the
+    /// ambulance queue have none.
+    /// </summary>
+    public bool UpdateMonitorRed()
+    {
+        if (Triage is not { } triage || !IsInDepartment || CareSpaceId is null)
+        {
+            return MonitorRed = false;
+        }
+
+        var news = LiveNews2;
+        var was = MonitorRed;
+        MonitorRed = news >= RedMonitorNews2
+            || (triage == TriageCategory.Red && !RedStabilised)
+            || (MonitorRed && news > MonitorClearNews2 && !SettledBelowRed);
+        if (MonitorRed && !was)
+        {
+            RedReviewed = false;
+        }
+
+        return MonitorRed;
+    }
+
+    /// <summary>The colour the monitor's border shows: red while <see cref="MonitorIsRed"/>, amber for a stabilised Red patient.</summary>
+    public TriageCategory? MonitorColour => Triage is null ? null
+        : MonitorIsRed ? TriageCategory.Red
+        : Triage == TriageCategory.Red ? TriageCategory.Amber
+        : Triage;
+
+    /// <summary>The NEWS2 at which the monitor turns red and a doctor must come to the bedside.</summary>
+    public const int RedMonitorNews2 = 7;
+
+    /// <summary>
+    /// Under 7 and as well as their illness lets them be: clearly better than on arrival, or nearly recovered.
+    /// Some patients' usual NEWS2 is 6 (e.g. a fast heart rate that settles slowly); the monitor clears for them too.
+    /// </summary>
+    public bool SettledBelowRed => Severity <= Math.Max(0.05, InitialSeverity - 0.15);
+
+    /// <summary>A red monitor goes back to normal once NEWS2 is this or lower.</summary>
+    public const int MonitorClearNews2 = 5;
+
     /// <summary>Still in A&amp;E (in the hospital and not yet on a ward).</summary>
     public bool IsInEmergency => IsInDepartment && Stage != PatientStage.OnWard && LeftEmergencyAt is null;
 
@@ -249,10 +314,34 @@ public sealed class Patient : Agent
     /// <summary>Treated in the ambulatory care unit and going home the same day, instead of being admitted.</summary>
     public bool SameDay { get; set; }
 
+    /// <summary>
+    /// The level of care the patient needs now: 0 for a ward, 2 for high dependency (HDU), 3 for
+    /// intensive care (ICU). Set on admission, after a big operation, by outreach and on ward rounds.
+    /// </summary>
+    public int CareLevel { get; set; }
+
+    /// <summary>Had a day case operation: comes round on a day surgery unit and goes home the same day.</summary>
+    public bool DayCase { get; set; }
+
+    /// <summary>Waiting for theatre on an assessment unit (e.g. the surgical assessment unit) rather than in A&amp;E.</summary>
+    public bool PreOp { get; set; }
+
+    /// <summary>Already on a ward but needs a bed on another (up to ICU/HDU, down from them, or out of an assessment unit).</summary>
+    public DateTime? WardMoveRequestedAt { get; set; }
+
+    /// <summary>Hours spent on an intensive care unit this stay (paid for at the critical care rate).</summary>
+    public double IntensiveCareHours { get; set; }
+
+    /// <summary>Hours spent on a high dependency unit this stay.</summary>
+    public double HighDependencyHours { get; set; }
+
     /// <summary>Physiotherapy sessions on the ward this stay.</summary>
     public int PhysioSessions { get; set; }
 
     public DateTime? LastPhysioAt { get; set; }
+
+    /// <summary>When they last got something to eat or drink from a cafe or vending machine; it keeps them patient for a while.</summary>
+    public DateTime? LastRefreshmentAt { get; set; }
 
     /// <summary>When the doctor asked for a ward bed.</summary>
     public DateTime? BedRequestedAt { get; set; }

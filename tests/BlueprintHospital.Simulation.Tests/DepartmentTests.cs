@@ -154,26 +154,26 @@ public class DepartmentTests
     public void A_theatre_only_takes_the_departments_ticked_for_it()
     {
         var h = Wing(seed: 7);
-        h.Sim.UnlockDepartment("gastroenterology");
+        h.Sim.UnlockDepartment("general_surgery");
         var theatre = BuildSouth(h, "operating_theatre", 0, 12, 12);
-        BuildSouth(h, "gastro_ward", 12, 16, 10);
+        BuildSouth(h, "surgical_ward", 12, 16, 10);
         h.StaffToRecommended();
         Assert.Empty(theatre.AllowedDepartments);
-        Assert.Contains(h.Sim.SurgicalDepartments, d => d.Id == "gastroenterology");
+        Assert.Contains(h.Sim.SurgicalDepartments, d => d.Id == "general_surgery");
         Assert.DoesNotContain(h.Sim.SurgicalDepartments, d => d.Id == "cardiology");
 
-        // Ticked for gynaecology only: appendicitis (gastroenterology) is sent elsewhere.
+        // Ticked for gynaecology only: appendicitis (General Surgery) is sent elsewhere.
         h.Sim.SetTheatreAccess(theatre.Id, "gynaecology", true);
         var first = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
         h.RunUntil(() => first.Stage is PatientStage.AwaitingTransfer or PatientStage.AwaitingSurgery or PatientStage.Gone or PatientStage.OnWard, TimeSpan.FromHours(16), "appendicitis to be dealt with");
         if (first.WorkingDiagnosis?.ConditionId == "acute_appendicitis")
         {
             Assert.Equal(PatientStage.AwaitingTransfer, first.Stage);
-            Assert.Contains("no theatre here takes Gastroenterology patients", h.Journey(first));
+            Assert.Contains("no theatre here takes General Surgery patients", h.Journey(first));
         }
 
-        // Ticking gastroenterology lets the next one through.
-        h.Sim.SetTheatreAccess(theatre.Id, "gastroenterology", true);
+        // Ticking General Surgery lets the next one through.
+        h.Sim.SetTheatreAccess(theatre.Id, "general_surgery", true);
         var second = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
         h.RunUntil(() => second.Stage is PatientStage.AwaitingTransfer or PatientStage.Gone or PatientStage.OnWard, TimeSpan.FromHours(16), "appendicitis to be operated on");
         if (second.WorkingDiagnosis?.ConditionId == "acute_appendicitis")
@@ -187,15 +187,18 @@ public class DepartmentTests
     public void Untick_a_department_and_its_waiting_patients_are_transferred()
     {
         var h = Wing(seed: 7);
-        h.Sim.UnlockDepartment("gastroenterology");
+        h.Sim.UnlockDepartment("general_surgery");
         var theatre = BuildSouth(h, "operating_theatre", 0, 12, 12);
-        BuildSouth(h, "gastro_ward", 12, 16, 10);
-        h.Sim.SetTheatreAccess(theatre.Id, "gastroenterology", true);
+        BuildSouth(h, "surgical_ward", 12, 16, 10);
+        h.Sim.SetTheatreAccess(theatre.Id, "general_surgery", true);
         h.StaffToRecommended();
 
-        // Keep the surgeon busy so the patient waits on the list.
-        var surgeon = h.Sim.Staff.Single(s => s.Role == StaffRole.Surgeon);
-        h.Sim.Fire(surgeon.Id);
+        // With no surgeons (day or night) the patient waits on the list.
+        foreach (var surgeon in h.Sim.Staff.Where(s => s.Role == StaffRole.Surgeon).ToList())
+        {
+            h.Sim.Fire(surgeon.Id);
+        }
+
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
         h.RunUntil(() => patient.Stage is PatientStage.AwaitingTransfer or PatientStage.Gone, TimeSpan.FromHours(16), "appendicitis to be transferred");
         if (patient.WorkingDiagnosis?.ConditionId == "acute_appendicitis")

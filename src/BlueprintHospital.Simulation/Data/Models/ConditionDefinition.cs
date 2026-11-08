@@ -36,6 +36,12 @@ public sealed class OperationDefinition
 
     /// <summary>Where it is done: an operating theatre unless it says otherwise (cath_lab).</summary>
     public CareSpaceKind Room { get; init; } = CareSpaceKind.Theatre;
+
+    /// <summary>A big operation: the patient recovers on the high dependency unit first, if there is one.</summary>
+    public bool Major { get; init; }
+
+    /// <summary>A small operation: the patient comes round on a day surgery unit, if there is one, and goes home the same day.</summary>
+    public bool DayCase { get; init; }
 }
 
 public sealed class SymptomChance
@@ -199,6 +205,9 @@ public sealed class ConditionDefinition : IDataRecord
     /// </summary>
     public double[]? AmbulatoryHours { get; init; }
 
+    /// <summary>Patients who need intensive care when they are admitted, however they look (e.g. septic shock).</summary>
+    public bool NeedsIntensiveCare { get; init; }
+
     /// <summary>Ward patients who need physiotherapy to get home (after a broken hip or a stroke).</summary>
     public bool NeedsPhysio { get; init; }
 
@@ -271,6 +280,11 @@ public sealed class ConditionDefinition : IDataRecord
         }
 
         context.RequireText("disposition_note", DispositionNote);
+        if (NeedsIntensiveCare && Disposition != Disposition.Admit)
+        {
+            context.Error("needs_intensive_care", "only applies to admitted conditions.");
+        }
+
         if (Disposition == Disposition.Surgery)
         {
             if (Operation is null)
@@ -284,6 +298,11 @@ public sealed class ConditionDefinition : IDataRecord
                 if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab))
                 {
                     context.Error("operation.room", "must be theatre or cath_lab.");
+                }
+
+                if (Operation.Major && Operation.DayCase)
+                {
+                    context.Error("operation", "can't be both major and a day case.");
                 }
             }
         }

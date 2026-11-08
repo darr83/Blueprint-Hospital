@@ -164,6 +164,7 @@ public partial class HospitalScene : Node2D
         };
         _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
         _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
+        _hud.Rota.ShowOnMapRequested += m => SelectStaff(m, centre: true);
         _hud.Clinics.OutpatientClicked += o => SelectOutpatient(o, centre: true);
         _hud.StaffInfo.CloseRequested += ClearSelection;
         _hud.StaffInfo.FocusRequested += m => _camera.GlideTo(_world.FootPosition(m));
@@ -303,7 +304,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -320,7 +321,7 @@ public partial class HospitalScene : Node2D
                 _hud.ToggleRoster(staff: false);
                 break;
             case Key.T:
-                _hud.ToggleRoster(staff: true);
+                _hud.ToggleRota();
                 break;
             case Key.F:
                 _hud.ToggleFinances();

@@ -13,6 +13,12 @@ public sealed partial class HospitalSimulation
 
     private void CompleteTask(StaffMember member, ClinicalTask task, Patient patient)
     {
+        // Any doctor's work at the bedside of a red-monitor patient counts as their review.
+        if (task.Role == StaffRole.Doctor && task.Kind != TaskKind.RedReview && patient.MonitorIsRed && !patient.RedReviewed)
+        {
+            MarkRedReviewed(member, patient);
+        }
+
         switch (task.Kind)
         {
             case TaskKind.Register:
@@ -53,6 +59,12 @@ public sealed partial class HospitalSimulation
                 break;
             case TaskKind.Physio:
                 CompletePhysio(member, patient);
+                break;
+            case TaskKind.OutreachReview:
+                CompleteOutreachReview(member, patient);
+                break;
+            case TaskKind.RedReview:
+                CompleteRedReview(member, patient);
                 break;
             case TaskKind.Discharge:
                 CompleteDischarge(member, patient);
@@ -420,7 +432,8 @@ public sealed partial class HospitalSimulation
         patient.OutcomeNote = diagnosed.Id == patient.Condition.Id
             ? diagnosed.DispositionNote
             : $"{diagnosed.DispositionNote} (Working diagnosis was wrong: actually {patient.Condition.Name.ToLowerInvariant()}; the receiving team will reassess.)";
-        patient.Log(Now, $"Handed over to the transfer crew by {nurse.Name}. Left A&E at {Now:HH:mm}.");
+        var where = ambulance is { BaySlot: null } ? " in their cubicle (the ambulance bays were full)" : string.Empty;
+        patient.Log(Now, $"Handed over to the transfer crew by {nurse.Name}{where}. Left A&E at {Now:HH:mm}.");
         Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} transferred out.", patient.Id, null, patient.Triage);
         EndVisit(patient, PatientOutcome.Transferred);
         patient.Stage = PatientStage.Gone;

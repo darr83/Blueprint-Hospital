@@ -145,6 +145,16 @@ public partial class PatientRecordPanel : PanelContainer
         _now.Heading.Text = p.IsInDepartment ? "Right now" : "Left the department";
         _now.Text.Text = ClinicalText.Whereabouts(_sim, p);
         _now.Detail.Text = p.WorkingDiagnosis is { } dx ? $"Working diagnosis: {_sim.Database.Conditions[dx.ConditionId].Name}" : p.Triage is null ? string.Empty : "No diagnosis yet";
+        if (p.MonitorIsRed)
+        {
+            var sitter = _sim.CarerAtBedside(p);
+            var with = sitter is not null ? $"{sitter.Name} is sitting with them" : "nobody sitting with them yet";
+            var review = p.RedReviewed ? "doctor has reviewed" : "waiting for a doctor's review";
+            var trend = sitter is not null && p.RedReviewed ? "improving" : "getting worse";
+            var redLine = $"Red monitor (NEWS2 {p.LiveNews2}): {with}, {review}; {trend}";
+            _now.Detail.Text = _now.Detail.Text.Length > 0 ? $"{_now.Detail.Text}\n{redLine}" : redLine;
+        }
+
         _now.Detail.Visible = _now.Detail.Text.Length > 0;
 
         var time = p.TimeInDepartment(now);

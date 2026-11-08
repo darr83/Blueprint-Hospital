@@ -95,7 +95,7 @@ public partial class RecruitmentPanel : PanelContainer
     private void RefreshNeeds()
     {
         var needs = _sim.RecommendedStaffing();
-        var signature = string.Join("|", needs.Select(n => $"{n.Place}{n.Role}{n.Have}/{n.Recommended}"));
+        var signature = string.Join("|", needs.Select(n => $"{n.Place}{n.Role}{n.Shift}{n.Have}/{n.Recommended}"));
         if (signature == _needsSignature)
         {
             return;
@@ -109,8 +109,8 @@ public partial class RecruitmentPanel : PanelContainer
 
         var shortBy = needs.Sum(n => n.Short);
         _needsSummary.Text = shortBy == 0
-            ? "You have the recommended team everywhere. It's a guide: hire more or fewer as you like."
-            : $"{shortBy} short of the recommended team. It's a guide: hire more or fewer as you like.";
+            ? "You have the recommended day and night teams everywhere. It's a guide: hire more or fewer as you like."
+            : $"{shortBy} short of the recommended day and night teams. It's a guide: hire more or fewer as you like.";
 
         foreach (var place in needs.GroupBy(n => n.Place))
         {
@@ -125,12 +125,27 @@ public partial class RecruitmentPanel : PanelContainer
             var counts = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
             counts.AddThemeConstantOverride("h_separation", 6);
             counts.AddThemeConstantOverride("v_separation", 4);
-            foreach (var need in place)
+            foreach (var role in place.GroupBy(n => n.Role))
             {
                 var chip = HudWidgets.Chip();
-                var text = $"{need.Have}/{need.Recommended} {StaffGrades.RoleName(need.Role, plural: need.Recommended != 1)}";
-                HudWidgets.SetChip(chip, text, need.Short > 0 ? UiStyle.AmberTint : UiStyle.BlueTint);
-                if (need.Short > 0)
+                var day = role.FirstOrDefault(n => n.Shift == StaffShift.Day);
+                var night = role.FirstOrDefault(n => n.Shift == StaffShift.Night);
+                var recommended = Math.Max(day?.Recommended ?? 0, night?.Recommended ?? 0);
+                var parts = new List<string>();
+                if (day is not null)
+                {
+                    parts.Add($"days {day.Have}/{day.Recommended}");
+                }
+
+                if (night is not null)
+                {
+                    parts.Add($"nights {night.Have}/{night.Recommended}");
+                }
+
+                var text = $"{StaffGrades.RoleName(role.Key, plural: recommended != 1)}: {string.Join(" · ", parts)}";
+                var isShort = role.Any(n => n.Short > 0);
+                HudWidgets.SetChip(chip, text, isShort ? UiStyle.AmberTint : UiStyle.BlueTint);
+                if (isShort)
                 {
                     chip.Text.AddThemeColorOverride("font_color", UiStyle.AmberText);
                 }
@@ -161,7 +176,7 @@ public partial class RecruitmentPanel : PanelContainer
 
         _candidatesNote.Text = candidates.Count == 0
             ? "Everyone who applied today has been hired. More arrive tomorrow at 08:00."
-            : "Salaries are per post: shifts are covered around the clock.";
+            : "Each hire works one 12-hour shift: days 08:00 to 20:00 or nights 20:00 to 08:00.";
 
         var needs = _sim.RecommendedStaffing();
         foreach (var candidate in candidates.OrderBy(c => c.Role).ThenByDescending(c => c.Skill))
@@ -221,15 +236,30 @@ public partial class RecruitmentPanel : PanelContainer
         }
 
         // Suggest wherever is shortest of this kind of staff.
-        var best = postings.Select((p, i) => (Index: i, Short: needs.FirstOrDefault(n => n.RoomId == p.RoomId && n.Role == candidate.Role)?.Short ?? 0))
+        var best = postings.Select((p, i) => (Index: i, Short: needs.Where(n => n.RoomId == p.RoomId && n.Role == candidate.Role).Sum(n => n.Short)))
             .OrderByDescending(x => x.Short).ThenBy(x => x.Index).First().Index;
         where.Select(best);
         where.TooltipText = "Where they will work";
         action.AddChild(where);
+
+        // Day or night: suggest whichever shift is shorter where they'd work.
+        var shift = new OptionButton { FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(92, 40), ThemeTypeVariation = UiStyle.Secondary };
+        shift.AddItem("Days");
+        shift.AddItem("Nights");
+        shift.TooltipText = "Days 08:00 to 20:00, nights 20:00 to 08:00";
+        void SuggestShift()
+        {
+            var posting = postings[Math.Clamp(where.Selected, 0, postings.Count - 1)];
+            shift.Select(_sim.ShorterShift(candidate.Role, posting.RoomId) == StaffShift.Day ? 0 : 1);
+        }
+
+        SuggestShift();
+        where.ItemSelected += _ => SuggestShift();
+        action.AddChild(shift);
         var hire = UiStyle.Button("Hire", () =>
         {
             var posting = postings[Math.Clamp(where.Selected, 0, postings.Count - 1)];
-            _sim.Hire(candidate.Id, posting.RoomId);
+            _sim.Hire(candidate.Id, posting.RoomId, shift.Selected == 1 ? StaffShift.Night : StaffShift.Day);
             _needsSignature = _candidatesSignature = string.Empty;
             Refresh();
         }, 90);
@@ -253,7 +283,10 @@ public partial class RecruitmentPanel : PanelContainer
         StaffRole.Endoscopist => new Color("#2C4F7C"),
         StaffRole.PlasterTechnician => new Color("#5D6B78"),
         StaffRole.Physiotherapist => new Color("#1A5E8A"),
+        StaffRole.Anaesthetist => new Color("#2E4A9E"),
+        StaffRole.OutreachNurse => new Color("#B23A48"),
         StaffRole.Porter => new Color("#3C6E47"),
+        StaffRole.HealthcareAssistant => new Color("#6B7782"),
         _ => new Color("#6E5A8C"),
     };
 }

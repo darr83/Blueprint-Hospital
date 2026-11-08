@@ -30,6 +30,10 @@ public static class StaffGrades
         new Grade(StaffRole.Endoscopist, "Consultant endoscopist", 0.75, 0.95, 6, 25, 95_000, 0.8),
         new Grade(StaffRole.PlasterTechnician, "Plaster technician", 0.50, 0.80, 0, 20, 28_000, 1),
         new Grade(StaffRole.Physiotherapist, "Physiotherapist", 0.55, 0.85, 1, 15, 37_000, 1.2),
+        new Grade(StaffRole.Anaesthetist, "Anaesthetic registrar", 0.70, 0.85, 4, 9, 68_000, 1),
+        new Grade(StaffRole.Anaesthetist, "Consultant anaesthetist", 0.85, 0.97, 9, 25, 112_000, 0.6),
+        new Grade(StaffRole.OutreachNurse, "Outreach nurse", 0.65, 0.90, 5, 20, 49_000, 0.8),
+        new Grade(StaffRole.HealthcareAssistant, "Healthcare assistant (Band 3)", 0.35, 0.60, 0, 15, 25_000, 2.5),
         new Grade(StaffRole.Receptionist, "Receptionist", 0.40, 0.60, 0, 15, 24_000, 1.5),
     };
 
@@ -74,7 +78,13 @@ public static class StaffGrades
         (StaffRole.PlasterTechnician, false) => "plaster technician",
         (StaffRole.PlasterTechnician, true) => "plaster technicians",
         (StaffRole.Physiotherapist, false) => "physiotherapist",
-        _ => "physiotherapists",
+        (StaffRole.Physiotherapist, true) => "physiotherapists",
+        (StaffRole.Anaesthetist, false) => "anaesthetist",
+        (StaffRole.Anaesthetist, true) => "anaesthetists",
+        (StaffRole.OutreachNurse, false) => "outreach nurse",
+        (StaffRole.OutreachNurse, true) => "outreach nurses",
+        (StaffRole.HealthcareAssistant, false) => "healthcare assistant",
+        _ => "healthcare assistants",
     };
 }
 
@@ -97,6 +107,6 @@ public sealed class JobCandidate
 
     public required int Age { get; init; }
 
-    /// <summary>Annual salary in pounds for the post (covered around the clock, see the finances).</summary>
+    /// <summary>Annual salary in pounds. Each hire covers one 12-hour shift a day (see the finances).</summary>
     public required int Salary { get; init; }
 }

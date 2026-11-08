@@ -55,6 +55,11 @@ public sealed partial class HospitalSimulation
             return member.Role == StaffRole.Physiotherapist;
         }
 
+        if (task.Kind == TaskKind.OutreachReview)
+        {
+            return member.Role == StaffRole.OutreachNurse;
+        }
+
         if (ServiceRoomKind(task) is not { } kind)
         {
             return TeamFor(task) == member.BaseRoomId || CoveredByEmergencyTeam(task, member);
@@ -63,7 +68,8 @@ public sealed partial class HospitalSimulation
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
                && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
                && !_recovering.Values.Any(r => r.RoomId == room.Id)
-               && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept)));
+               && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre
+                   || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null));
     }
 
     /// <summary>The member of staff starts work in their room; for a scan or an operation the patient is taken there.</summary>
@@ -80,6 +86,11 @@ public sealed partial class HospitalSimulation
         {
             ReleaseSeat(patient);
             WalkTo(patient, room.PatientSpot);
+            if (task.Kind == TaskKind.Surgery && room.Kind == CareSpaceKind.Theatre)
+            {
+                JoinAnaesthetist(task, room, patient);
+            }
+
             patient.Log(Now, task.Kind == TaskKind.Surgery ? $"Taken to {room.Name} for {task.Label.ToLowerInvariant()}." : $"Taken to {room.Name} for {task.Label}.");
         }
     }
@@ -90,6 +101,10 @@ public sealed partial class HospitalSimulation
         if (patient.CareSpaceId is { } id && FindSpace(id) is { IsTreatmentSpace: true } cubicle)
         {
             WalkTo(patient, cubicle.PatientSpot);
+        }
+        else if (BedOf(patient) is { } bed)
+        {
+            WalkTo(patient, bed.PatientSpot);
         }
         else
         {
@@ -138,8 +153,25 @@ public sealed partial class HospitalSimulation
                 ? "there is no staffed cath lab on site"
                 : SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed)
                     ? $"no theatre here takes {DepartmentName(diagnosed.Department)} patients"
-                    : "there is no operating theatre on site";
+                    : SpacesOfKind(CareSpaceKind.Theatre).Any(t => _staff.Any(s => s.BaseRoomId == t.Id))
+                        ? "the theatre needs both a surgeon and an anaesthetist"
+                        : "there is no operating theatre on site";
             ArrangeTransfer(patient, diagnosed, $"Needs {LowerFirst(operation.Name)}, but {why}, so they are being transferred to a neighbouring hospital.");
+            return;
+        }
+
+        if (operation.Room == CareSpaceKind.Theatre && FreeAssessmentBed(diagnosed.Department) is { } unit)
+        {
+            // Waits for theatre on the assessment unit, freeing their A&E cubicle.
+            patient.PreOp = true;
+            patient.Stage = PatientStage.AwaitingBed;
+            patient.BedRequestedAt = Now;
+            unit.Ward.Beds[unit.Index].OccupantId = patient.Id;
+            patient.ReservedWardId = unit.Ward.Id;
+            patient.ReservedBedIndex = unit.Index;
+            patient.Log(Now, $"{diagnosed.DispositionNote} Booked for theatre; waits on {unit.Ward.Name}, bed {unit.Index + 1}.", important: true);
+            Notifications.Add(Now, NotificationLevel.Info, $"{patient.FullName} is going to {unit.Ward.Name} to wait for theatre ({LowerFirst(operation.Name)}).", patient.Id, patient.CareSpaceId, patient.Triage);
+            AddTask(TaskKind.EscortToWard, StaffRole.Nurse, patient, 5, $"Take to {unit.Ward.Name}");
             return;
         }
 
@@ -168,11 +200,19 @@ public sealed partial class HospitalSimulation
 
         patient.EffectiveTreatmentGiven = true;
         patient.HadSurgery = true;
+        patient.PreOp = false;
         patient.Severity = Math.Min(patient.Severity, 0.6) * 0.7;
         Stats.OperationsDone++;
         Book(MoneyCategory.Operations, OperationTariff);
         ReturnFromServiceRoom(patient);
-        RequestWardBed(patient, Database.Conditions[patient.WorkingDiagnosis.ConditionId], $"Back from {(inTheatre ? "theatre" : "the cath lab")}; needs a ward bed to recover.");
+
+        // Big operations recover on HDU; small ones go home the same day from day surgery.
+        var done = Database.Conditions[patient.WorkingDiagnosis.ConditionId];
+        var after = planned.Id == done.Id ? operation : done.Operation ?? operation;
+        patient.CareLevel = after.Major && HasHighDependencyBeds ? Math.Max(patient.CareLevel, 2) : 0;
+        patient.DayCase = after.DayCase && Wards.Any(w => UnitOf(w) == WardUnit.DaySurgery);
+        var needs = after.Major ? "high dependency care to recover" : patient.DayCase ? "a few hours on the day surgery unit" : "a ward bed to recover";
+        RequestWardBed(patient, done, $"Back from {(inTheatre ? "theatre" : "the cath lab")}; needs {needs}.");
     }
 
     // ---------------------------------------------------------------- pharmacy
@@ -220,7 +260,8 @@ public sealed partial class HospitalSimulation
                     patient.Log(Now, $"{task.Label} cancelled: there is no longer a room to do it in.");
                     RequestReviewIfResultsComplete(patient);
                     break;
-                case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery:
+                case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery || patient.PreOp:
+                    patient.PreOp = false;
                     ArrangeTransfer(patient, Database.Conditions[patient.WorkingDiagnosis!.ConditionId], "No operating theatre or cath lab here can take them any more, so they are being transferred to a neighbouring hospital.");
                     break;
                 case TaskKind.Procedure when int.TryParse(task.Detail, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index) && index < patient.TreatmentPlan.Count:
@@ -234,6 +275,20 @@ public sealed partial class HospitalSimulation
                     break;
             }
         }
+    }
+
+    /// <summary>A free bed on one of the department's assessment units (e.g. the surgical assessment unit).</summary>
+    private (CareSpace Ward, int Index)? FreeAssessmentBed(string departmentId)
+    {
+        foreach (var ward in WardsOf(departmentId).Where(w => UnitOf(w) == WardUnit.Assessment))
+        {
+            if (FreeBedIndex(ward) is var index and >= 0)
+            {
+                return (ward, index);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The room an operation is done in (theatre unless the condition says otherwise).</summary>

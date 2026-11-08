@@ -1,0 +1,903 @@
+[
+  {
+    "id": "acute_appendicitis",
+    "name": "Acute appendicitis",
+    "department": "general_surgery",
+    "description": "Inflammation of the appendix. Needs surgical review and usually an appendicectomy.",
+    "prevalence": 3,
+    "age_range": [
+      8,
+      60
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.2,
+    "crew_assessment": "abdominal pain, query appendicitis",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "right_iliac_fossa_pain",
+        "probability": 0.75
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.8
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.7
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.45
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        100,
+        11
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.9,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.08,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 1.2
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes",
+      "pregnancy_test"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.15,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: appendicitis needing an operation.",
+    "operation": {
+      "name": "Laparoscopic appendicectomy",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      24,
+      60
+    ]
+  },
+  {
+    "id": "biliary_colic",
+    "name": "Biliary colic",
+    "department": "general_surgery",
+    "description": "Pain from a gallstone briefly blocking the gallbladder, often after a fatty meal.",
+    "prevalence": 3,
+    "age_range": [
+      25,
+      75
+    ],
+    "female_fraction": 0.7,
+    "ambulance_probability": 0.1,
+    "crew_assessment": "upper abdominal pain, query gallstones",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "right_upper_quadrant_pain",
+        "probability": 0.9
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        10
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0.3
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "buscopan",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Low-fat diet advice",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Pain settled. Discharged with analgesia and a referral for an outpatient gallbladder ultrasound."
+  },
+  {
+    "id": "acute_cholecystitis",
+    "name": "Acute cholecystitis",
+    "department": "general_surgery",
+    "description": "An inflamed, infected gallbladder. Needs antibiotics and usually surgery.",
+    "prevalence": 2,
+    "age_range": [
+      30,
+      85
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0.3,
+    "crew_assessment": "abdominal pain with fever, query gallbladder",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "right_upper_quadrant_pain",
+        "probability": 0.95
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.7
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        10
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        38.3,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -2,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "admit",
+    "disposition_note": "Admitted for intravenous antibiotics, with surgical review for cholecystectomy.",
+    "length_of_stay_hours": [
+      48,
+      120
+    ]
+  },
+  {
+    "id": "acute_pancreatitis",
+    "name": "Acute pancreatitis",
+    "department": "general_surgery",
+    "description": "Inflammation of the pancreas, usually from gallstones or alcohol. Can become severe.",
+    "prevalence": 2,
+    "age_range": [
+      30,
+      85
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.5,
+    "crew_assessment": "severe abdominal pain, query pancreatitis",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "epigastric_pain_to_back",
+        "probability": 0.85
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.8
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.8
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        14
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        21,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1
+      ],
+      "temperature": [
+        37.8,
+        0.4
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.6
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -45,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -5,
+      "temperature": 0.4
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "lipase",
+      "liver_function_tests",
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "admit",
+    "disposition_note": "Admitted for intravenous fluids, pain relief and severity scoring.",
+    "length_of_stay_hours": [
+      72,
+      168
+    ]
+  },
+  {
+    "id": "small_bowel_obstruction",
+    "name": "Small bowel obstruction",
+    "department": "general_surgery",
+    "description": "The small bowel is blocked, usually by scar tissue from an old operation or a hernia. Treated with a drip and a tube to drain the stomach; some need an operation.",
+    "prevalence": 1.5,
+    "age_range": [
+      40,
+      92
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.5,
+    "crew_assessment": "abdominal pain and vomiting, query bowel obstruction",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.9
+      },
+      {
+        "symptom": "abdominal_distension",
+        "probability": 0.85
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.8
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        122,
+        14
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        37.2,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -35,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -3,
+      "temperature": 0.6
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_abdomen",
+      "urea_electrolytes",
+      "full_blood_count",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Nasogastric tube",
+        "performed_by": "nurse",
+        "minutes": 15,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "admit",
+    "disposition_note": "Admitted under General Surgery: drip and suck, with theatre if it doesn't settle.",
+    "length_of_stay_hours": [
+      72,
+      168
+    ]
+  },
+  {
+    "id": "perforated_peptic_ulcer",
+    "name": "Perforated peptic ulcer",
+    "department": "general_surgery",
+    "description": "A stomach or duodenal ulcer has burst a hole in the gut, spilling its contents into the abdomen. Needs an emergency operation and close monitoring afterwards.",
+    "prevalence": 0.6,
+    "age_range": [
+      30,
+      90
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.8,
+    "crew_assessment": "sudden severe abdominal pain, peritonitic",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "sudden_severe_abdominal_pain",
+        "probability": 0.9
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.6
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.3
+      },
+      {
+        "symptom": "shoulder_tip_pain",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        118,
+        12
+      ],
+      "systolic_bp": [
+        104,
+        14
+      ],
+      "diastolic_bp": [
+        64,
+        8
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        95,
+        2
+      ],
+      "temperature": [
+        37.6,
+        0.5
+      ],
+      "pain_score": [
+        8,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.5,
+      0.72
+    ],
+    "deterioration_per_hour": 0.09,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -5,
+      "temperature": 1.0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "chest_xray",
+      "ct_abdomen",
+      "venous_blood_gas",
+      "full_blood_count",
+      "lipase"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "omeprazole",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: perforation needing an emergency laparotomy.",
+    "operation": {
+      "name": "Laparotomy and ulcer repair",
+      "minutes": 120,
+      "major": true
+    },
+    "length_of_stay_hours": [
+      120,
+      240
+    ]
+  },
+  {
+    "id": "strangulated_inguinal_hernia",
+    "name": "Strangulated inguinal hernia",
+    "department": "general_surgery",
+    "description": "A loop of bowel stuck in a groin hernia with its blood supply cut off. Needs an operation within hours.",
+    "prevalence": 0.8,
+    "age_range": [
+      35,
+      92
+    ],
+    "female_fraction": 0.1,
+    "ambulance_probability": 0.35,
+    "crew_assessment": "painful groin lump and vomiting",
+    "presenting_complaint": "groin_lump",
+    "symptoms": [
+      {
+        "symptom": "groin_lump",
+        "probability": 1.0
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.6
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "abdominal_distension",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        100,
+        11
+      ],
+      "systolic_bp": [
+        130,
+        14
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.4,
+        0.4
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -2,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "full_blood_count",
+      "urea_electrolytes",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.1,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: strangulated hernia needing an emergency repair.",
+    "operation": {
+      "name": "Emergency hernia repair",
+      "minutes": 90
+    },
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
+  },
+  {
+    "id": "perianal_abscess",
+    "name": "Perianal abscess",
+    "department": "general_surgery",
+    "description": "A painful collection of pus beside the back passage. Drained under a short anaesthetic; most go home the same day.",
+    "prevalence": 1.5,
+    "age_range": [
+      18,
+      70
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.02,
+    "crew_assessment": "painful swelling, query abscess",
+    "presenting_complaint": "perianal_pain",
+    "symptoms": [
+      {
+        "symptom": "perianal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.8
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        10
+      ],
+      "systolic_bp": [
+        128,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.8,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.25
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -5,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0.5
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "capillary_glucose"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: abscess for incision and drainage as a day case.",
+    "operation": {
+      "name": "Incision and drainage of abscess",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      12,
+      24
+    ]
+  }
+]

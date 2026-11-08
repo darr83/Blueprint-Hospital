@@ -57,6 +57,15 @@ public enum CareSpaceKind
 
     /// <summary>Recovery bay where patients come round after sedation for endoscopy.</summary>
     EndoscopyRecovery,
+
+    /// <summary>Critical care outreach office: base for outreach nurses, who find ward patients getting worse and move them up to HDU or ICU.</summary>
+    OutreachOffice,
+
+    /// <summary>Cafe for patients and visitors: food counter, vending machines, water machine and tables.</summary>
+    Cafeteria,
+
+    /// <summary>A small alcove of vending machines and a water machine.</summary>
+    VendingPoint,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -145,6 +154,12 @@ public sealed class CareSpace
     /// <summary>The beds on a ward, in a stable order. Empty for every other kind of room.</summary>
     public IReadOnlyList<WardBed> Beds { get; init; } = Array.Empty<WardBed>();
 
+    /// <summary>In a cafeteria or vending point: the tile in front of each vending machine, where customers stand to buy.</summary>
+    public IReadOnlyList<GridCoord> VendingSpots { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>A cafeteria or vending point, where waiting patients can get something to eat and drink.</summary>
+    public bool IsRefreshments => Kind is CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint;
+
     public bool IsWard => Kind == CareSpaceKind.Ward;
 
     /// <summary>For an operating theatre: the departments whose patients may be operated on in it.</summary>
@@ -153,7 +168,7 @@ public sealed class CareSpace
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
         or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab
-        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym;
+        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice;
 
     /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
     public static bool IsTestRoom(CareSpaceKind kind) =>
