@@ -396,6 +396,9 @@ public partial class WorldLayer : Node2D
                     case FurnitureStyle.Chair:
                         Chair(item.Tile, colour);
                         break;
+                    case FurnitureStyle.Box when CafeArt.Draws(def.Id):
+                        CafeArt.Add(def.Id, space, item, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, (anchor, draw) => AddProp(anchor, draw));
+                        break;
                     default:
                         Block(item.ItemId, item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour);
                         break;

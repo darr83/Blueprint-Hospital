@@ -30,6 +30,9 @@ public enum MoneyCategory
 
     /// <summary>Payment for each outpatient seen in clinic.</summary>
     Clinics,
+
+    /// <summary>The hospital's share of what patients spend in its cafes and vending machines.</summary>
+    Catering,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

@@ -60,6 +60,8 @@ public partial class SmokeTest : Node
         ClinicChair,
         ClinicCalendar,
         Specialty,
+        Cafe,
+        Vending,
         CriticalCare,
         Rotate,
         Ambulance,
@@ -319,13 +321,32 @@ public partial class SmokeTest : Node
 
             case Stage.Specialty when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09f_specialty_rooms");
+                BuildRefreshments(hospital);
+                _frame = 0;
+                _stage = Stage.Cafe;
+                break;
+
+            case Stage.Cafe when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09g_cafeteria");
+
+                // Turned round, to see the vending machines' glass fronts and the food counter.
+                hospital.RotateView(2);
+                var vendingRoom = hospital.Session.Simulation.SpacesOfKind(Simulation.Hospital.CareSpaceKind.VendingPoint).First();
+                hospital.Camera.SnapTo(IsoDraw.ToScreen(vendingRoom.Rect.X - 4, vendingRoom.Rect.Y + 6) + new Vector2(-180, 0), 1.2f);
+                _frame = 0;
+                _stage = Stage.Vending;
+                break;
+
+            case Stage.Vending when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09h_vending_point");
+                hospital.RotateView(2);
                 BuildIntensiveCare(hospital);
                 _frame = 0;
                 _stage = Stage.CriticalCare;
                 break;
 
             case Stage.CriticalCare when scene is HospitalScene hospital && _frame >= 6:
-                Screenshot("09g_intensive_care");
+                Screenshot("09i_intensive_care");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -630,7 +651,66 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>
-    /// An intensive care unit south of the ward, reached by a new corridor: hires its anaesthetist and
+    /// A new wing south of the ward, reached by corridors beside and below it, with a cafeteria and a vending point. A crowd of
+    /// walk-in patients is brought in and the clock run until some of them are out getting food and drink.
+    /// </summary>
+    private static void BuildRefreshments(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.HideRightPanels();
+        sim.AdjustBalance(1_000_000);
+        Check(sim.IsUnlocked("facilities"), "Facilities should be open from the start.");
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 30, b.Y + 34, 26, 16));
+        Check(wing.CanBuild, "Facilities wing refused: " + string.Join("; ", wing.Problems));
+        foreach (var rect in new[] { new Simulation.World.GridRect(b.X - 4, b.Y + 17, 4, 17), new Simulation.World.GridRect(b.X - 30, b.Y + 32, 26, 4) })
+        {
+            var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", rect, Simulation.World.WallSide.South));
+            Check(corridor.CanBuild, "Facilities corridor refused: " + string.Join("; ", corridor.Problems));
+        }
+
+        foreach (var (template, rect) in new[]
+        {
+            ("cafeteria", new Simulation.World.GridRect(b.X - 30, b.Y + 36, 16, 14)),
+            ("vending_point", new Simulation.World.GridRect(b.X - 13, b.Y + 36, 8, 6)),
+        })
+        {
+            var built = sim.BuildRoom(sim.AutoPlan(template, rect));
+            Check(built.CanBuild, $"{template} refused: " + string.Join("; ", built.Problems));
+        }
+
+        var cafe = sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Cafeteria).Single();
+        var vending = sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.VendingPoint).Single();
+        Check(cafe.Furniture.Count(f => f.ItemId == "vending_machine") is >= 1 and <= 4, "The cafeteria has the wrong number of vending machines.");
+        Check(cafe.Furniture.Any(f => f.ItemId == "food_counter") && cafe.Furniture.Any(f => f.ItemId == "water_cooler"), "The cafeteria is missing its counter or water machine.");
+        Check(cafe.Seats.Count >= 8, $"The cafeteria only has {cafe.Seats.Count} chairs.");
+        Check(vending.VendingSpots.Count >= 2, "The vending point has fewer than two machines.");
+
+        for (var i = 0; i < 16; i++)
+        {
+            sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration");
+        }
+
+        // Run until someone is sitting down to eat in the cafe (or a long day has passed).
+        var clock = hospital.Session.Clock;
+        var limit = clock.Now.AddHours(10);
+        bool Eating(Simulation.Simulation.RefreshmentTrip t) => t.RoomId == cafe.Id && t.Stage == Simulation.Simulation.RefreshmentStage.Eating && !t.Person.IsMoving;
+        while (clock.Now < limit && !sim.RefreshmentTrips.Any(Eating))
+        {
+            clock.Step();
+        }
+
+        var takings = sim.Accounts.Take(2).Sum(d => d[Simulation.Simulation.MoneyCategory.Catering]);
+        GD.Print($"[smoke] Cafeteria: {cafe.Seats.Count} seats, {cafe.Furniture.Count(f => f.ItemId == "vending_machine")} vending machines; vending point: {vending.VendingSpots.Count} machines; {sim.RefreshmentTrips.Count} people out for food at {clock.Now:HH:mm}, £{takings} catering takings.");
+        Check(takings > 0, "Nobody bought anything from the cafe or vending point.");
+        clock.SetSpeed(SimulationSpeed.Paused);
+        hospital.SetMode(GameMode.Play);
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(cafe.Rect.X + (cafe.Rect.Width / 2.0), cafe.Rect.Y + (cafe.Rect.Length / 2.0)) + new Vector2(-200, 0), 1.2f);
+    }
+
+    /// <summary>
+    /// An intensive care unit in a wing north of A&E, reached by a corridor from the end of the A&E corridor: hires its anaesthetist and
     /// nurses, then sends in patients with septic shock and runs the clock until one is on ICU.
     /// </summary>
     private static void BuildIntensiveCare(HospitalScene hospital)
@@ -640,11 +720,13 @@ public partial class SmokeTest : Node
         hospital.Hud.HideRightPanels();
         sim.AdjustBalance(2_000_000);
         Check(sim.UnlockDepartment("critical_care").CanBuild, "Could not unlock critical care.");
-        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 30, b.Y + 34, 30, 10));
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X + 30, b.Y - 14, 30, 14));
         Check(wing.CanBuild, "Critical care wing refused: " + string.Join("; ", wing.Problems));
-        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 4, b.Y + 17, 4, 27), Simulation.World.WallSide.South));
+
+        // Up from the east end of the A&E corridor, past the resus bay.
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X + 56, b.Y - 14, 4, 23), Simulation.World.WallSide.South));
         Check(corridor.CanBuild, "Critical care corridor refused: " + string.Join("; ", corridor.Problems));
-        var built = sim.BuildRoom(sim.AutoPlan("intensive_care_unit", new Simulation.World.GridRect(b.X - 30, b.Y + 34, 26, 10)));
+        var built = sim.BuildRoom(sim.AutoPlan("intensive_care_unit", new Simulation.World.GridRect(b.X + 30, b.Y - 12, 26, 10)));
         Check(built.CanBuild, "ICU refused: " + string.Join("; ", built.Problems));
         var icu = sim.Wards.Single(w => w.TemplateId == "intensive_care_unit");
         Check(icu.Furniture.Count(f => f.ItemId == "ventilator") == icu.Beds.Count, "Every ICU bed should have a ventilator.");

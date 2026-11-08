@@ -236,7 +236,7 @@ public sealed partial class HospitalSimulation
                 case PatientStage.WaitingForSpace when patient.Triage == TriageCategory.Green
                                                        && Now - patient.QueuedSince > LeaveWithoutBeingSeenAfter
                                                        && patient.BusyWithTaskId is null
-                                                       && Random.Chance(1.0 / 3600):
+                                                       && Random.Chance(WalkOutFactor(patient) / 3600):
                     patient.Log(Now, "Left the department before being seen.", important: true);
                     Notifications.Add(Now, NotificationLevel.Warning, $"{patient.FullName} left without being seen after waiting {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", patient.Id, null, patient.Triage);
                     patient.OutcomeNote = "Left without being seen.";

@@ -143,6 +143,8 @@ public sealed class PatientState
 
     public DateTime? LastPhysioAt { get; init; }
 
+    public DateTime? LastRefreshmentAt { get; init; }
+
     public List<TimelineEntry> Timeline { get; init; } = new();
 
     public List<ObservationState> ObservationHistory { get; init; } = new();
@@ -518,6 +520,9 @@ public sealed partial class HospitalSimulation
         {
             _unlockedDepartments.Clear();
             _unlockedDepartments.UnionWith(unlocked.Where(Database.Departments.ContainsKey));
+
+            // Departments that are always open (such as Facilities, added after some games were saved).
+            UnlockStartingDepartments();
         }
 
         foreach (var theatre in SpacesOfKind(CareSpaceKind.Theatre))
@@ -639,6 +644,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
+        LastRefreshmentAt = p.LastRefreshmentAt,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -702,6 +708,7 @@ public sealed partial class HospitalSimulation
         p.HighDependencyHours = s.HighDependencyHours;
         p.PhysioSessions = s.PhysioSessions;
         p.LastPhysioAt = s.LastPhysioAt;
+        p.LastRefreshmentAt = s.LastRefreshmentAt;
         p.RestoreTimeline(s.Timeline);
         foreach (var o in s.ObservationHistory)
         {

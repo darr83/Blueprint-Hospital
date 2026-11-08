@@ -354,6 +354,23 @@ or intensive care (ICU).
   patient's decline (most on ICU), and each day on ICU (£1,800) or HDU (£900) is paid for on top of
   the admission.
 
+### Cafeteria and vending points
+
+Build these from **Build → Facilities**. They need no staff: catering is run by an outside
+contractor, and the hospital gets a share of the takings (**Cafe and vending** in Finances).
+
+| Room | Smallest | Furniture (placed automatically) |
+| --- | --- | --- |
+| Cafeteria | 5 × 5 m | A food counter with a till on the back wall, a water machine beside it, vending machines down the side walls (1 in a small cafe, then 2, 3 and 4 as it grows past about 40, 65 and 100 m²) and tables of four filling the floor |
+| Vending point | 2 × 2.5 m | Vending machines along the back wall (one for each 1.1 m or so, up to 4), a water machine, and a seat or two if it is deep enough |
+
+Walking patients waiting in A&E (Green or Amber, after 20 minutes) and checked-in clinic patients
+whose appointment is at least 25 minutes off now and then go to a cafe or vending point (the
+nearest, though people will walk further for a cafe), buy something (£2 to £3 from a machine, £4 to
+£6 at the counter), sit at a table to eat if it's a cafe, and go back to their seat. If they are
+called while they're away they go straight to the call. Having had something to eat or drink makes
+a patient half as likely to leave without being seen for the next 3 hours.
+
 ### Outpatient clinics
 
 Build these from **Build → Clinics**: an **Outpatients reception** (desk and seats) and one or more
