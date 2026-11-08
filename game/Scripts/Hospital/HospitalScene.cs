@@ -1,6 +1,9 @@
 using BlueprintHospital.Core;
 using BlueprintHospital.Simulation.Agents;
+using System.Linq;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Hospital;
+using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
@@ -23,6 +26,7 @@ public partial class HospitalScene : Node2D
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
     private TileCursor _cursor = null!;
+    private BuildTool _build = null!;
     private IsoCamera _camera = null!;
     private MainHUD _hud = null!;
 
@@ -71,6 +75,11 @@ public partial class HospitalScene : Node2D
         AddChild(_cursor);
         _cursor.Initialise(_session.Site, _projection);
 
+        _build = new BuildTool { Name = "BuildTool" };
+        AddChild(_build);
+        _build.Initialise(_session.Simulation, _projection);
+        _layoutSubscription = _session.Events.Subscribe<LayoutChanged>(_ => _layoutDirty = true);
+
         _camera = new IsoCamera
         {
             Name = "Camera",
@@ -93,7 +102,14 @@ public partial class HospitalScene : Node2D
 
         _hud = new MainHUD { Name = "HUD" };
         AddChild(_hud);
-        _hud.Initialise(_session);
+        _hud.Initialise(_session, _build);
+        _hud.RoomInfo.MoveRequested += room =>
+        {
+            var (w, d) = RoomLayoutEngine.LocalSize(room.Rect, room.DoorSide);
+            _hud.RoomInfo.Close();
+            _hud.Build.Visible = true;
+            _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], w, d, room.DoorSide, room.Id);
+        };
         _hud.GridToggled += ToggleGrid;
         _hud.MenuRequested += OpenPauseMenu;
         _cursor.HoveredTileChanged += (x, y, onSite) => _hud.ShowHoveredTile(x, y, onSite, _session.Site);
@@ -137,13 +153,32 @@ public partial class HospitalScene : Node2D
         _hud.Record.Visible = false;
     }
 
+    private System.IDisposable? _layoutSubscription;
+    private bool _layoutDirty;
+
+    public BuildTool BuildTool => _build;
+
+    public override void _ExitTree() => _layoutSubscription?.Dispose();
+
     public override void _Process(double delta)
     {
         _session.Clock.Advance(delta);
+        if (_layoutDirty)
+        {
+            _layoutDirty = false;
+            _site.Rebuild();
+            _department.QueueRedraw();
+        }
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (_build.HandleInput(@event))
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
         {
             switch (_world.HitTest(GetGlobalMousePosition()))
@@ -162,6 +197,20 @@ public partial class HospitalScene : Node2D
                     break;
                 default:
                     ClearSelection();
+                    var tile = _projection.ScreenToTile(GetGlobalMousePosition().X, GetGlobalMousePosition().Y);
+                    var room = _session.Simulation.Spaces
+                        .Where(s => s.Rect.Contains(tile))
+                        .OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0)
+                        .FirstOrDefault();
+                    if (room is not null)
+                    {
+                        _hud.ShowRoom(room);
+                    }
+                    else
+                    {
+                        _hud.RoomInfo.Close();
+                    }
+
                     break;
             }
 
@@ -176,9 +225,15 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible:
                 ClearSelection();
                 _hud.Roster.Visible = false;
+                _hud.Build.Visible = false;
+                _hud.RoomInfo.Close();
+                break;
+            case Key.B:
+                _build.Cancel();
+                _hud.ToggleBuild();
                 break;
             case Key.Escape:
                 OpenPauseMenu();

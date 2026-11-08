@@ -2,7 +2,7 @@
   {
     "id": "minors_cubicle",
     "name": "Minors cubicle",
-    "category": "Emergency",
+    "category": "A&E",
     "description": "A single-bed cubicle for Green patients with minor injuries and illnesses.",
     "kind": "minors",
     "department": "emergency",
@@ -21,7 +21,7 @@
   {
     "id": "majors_cubicle",
     "name": "Majors cubicle",
-    "category": "Emergency",
+    "category": "A&E",
     "description": "A single-bed cubicle for Amber patients who need closer monitoring.",
     "kind": "majors",
     "department": "emergency",
@@ -40,7 +40,7 @@
   {
     "id": "resus_bay",
     "name": "Resus bay",
-    "category": "Emergency",
+    "category": "A&E",
     "description": "A resuscitation bay for Red patients, with space around the bed for a full team.",
     "kind": "resus",
     "department": "emergency",
@@ -59,7 +59,7 @@
   {
     "id": "triage_room",
     "name": "Triage room",
-    "category": "Emergency",
+    "category": "A&E",
     "description": "Where a nurse takes observations and gives each new patient a Red, Amber or Green category.",
     "kind": "triage",
     "department": "emergency",
@@ -78,7 +78,7 @@
   {
     "id": "waiting_room",
     "name": "Waiting room",
-    "category": "Emergency",
+    "category": "A&E",
     "description": "Reception desk and seating. Walk-in patients register here and wait for triage and a cubicle.",
     "kind": "waiting",
     "department": "emergency",

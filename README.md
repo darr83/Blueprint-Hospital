@@ -13,8 +13,8 @@ triage, and follow real patients through investigation, diagnosis, treatment and
 |---|---|
 | 1. Project foundation (menu, camera, grid, data loading, save/load) | ✅ Done |
 | 2. A&E vertical slice (arrivals, triage, staff, first conditions) | ✅ Done |
-| 3. Building system (room templates, corridors) | Next |
-| 4. Departments, wards, pharmacy, surgery, finances | Planned |
+| 3. Building system (room templates, corridors, extensions, budget) | ✅ Done |
+| 4. Departments, wards, pharmacy, surgery, finances | Next |
 
 ## Repository layout
 
@@ -72,7 +72,11 @@ Then:
 | Toggle building grid | G |
 | Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
 | Patients list / Staff list | P / T (or the top-bar buttons) |
-| Close a record or list | Esc |
+| Build menu | B (or the Build button) |
+| Turn a room while placing it | R |
+| Build / stop building | Left click / right click or Esc |
+| Room details, rename, move or demolish | Left-click the room's floor |
+| Close a record, list or panel | Esc |
 | Menu (save, load, settings, quit) | Esc (when nothing is open) |
 
 ## How the A&E works
@@ -104,8 +108,37 @@ busiest from late morning to evening.
 The **A&E board** (left) shows patients by category, waits, ambulances, cubicle use and the
 4-hour figure. Click any notification to open that patient's record.
 
-> Saves currently store the hospital, date and camera. Patients and staff in the department are
+> Saves store the hospital, date, camera, rooms, building and money. Patients and staff in the department are
 > not saved yet; a loaded game starts with an empty department at the saved time.
+
+## Building the hospital
+
+Press **B** to open the build menu. Every room is built from a **template** in
+`game/Data/RoomTemplates`, with furniture from `game/Data/Furniture`, all at real sizes in metres.
+
+- **Rooms** (A&E: Minors and Majors cubicles, Resus bay, Triage room, Waiting room; Staff:
+  doctors' office, nurses' station, staff room) come in **Small, Standard and Large**, or any
+  custom size in half-metre steps within the template's limits. The menu shows the size, area,
+  capacity, cost, equipment, furniture and staffing before you build.
+- **Placing:** the room follows the cursor as a see-through preview with its furniture and door.
+  It is **green** with the price when it can be built and **red** with the reasons when it can't:
+  outside the building, overlapping another room, too small or too big, the door not opening onto a
+  corridor, cutting off another room or an entrance, or not enough money. **R** turns the room so
+  its door faces another way, and the furniture is laid out again for the new direction.
+- **Furniture adapts** to the room: beds, monitors and chairs keep their real size, and a bigger
+  waiting room or office simply gets more seats.
+- **Corridors** come in 2 m, 2.5 m, 3 m and 4 m (trolley) widths and are dragged out. Each must
+  join another corridor or an entrance, and every room's door must open onto a corridor (or the
+  waiting room).
+- **Extending the building:** drag out new floor on any side, onto grass or paving. Entrances, the
+  car park and the ambulance bay must be kept clear.
+- **Room panel:** click a room's floor to see its details and who is using it, rename it, move or
+  resize it (it keeps its name), or demolish it for a 50% refund. Rooms in use can't be moved or
+  demolished, and the department always keeps at least one waiting room and one triage room.
+- **Money:** a new hospital has £750,000 to build with, shown in the top bar.
+
+The simulation works with whatever you build: any number of cubicles, triage rooms, offices and
+staff rooms. Saves (format 2) keep the rooms, corridors, extensions and balance.
 
 ## Building an executable
 
@@ -304,7 +337,15 @@ withhold it if they match. Patient allergies come from `game/Data/PatientBackgro
 - `PatientBackgrounds/` lists past medical history, regular medications and allergies, with how
   likely each is at different ages.
 
-Room templates and furniture arrive with the building system.
+### Room templates and furniture
+
+- `Furniture/` lists each item with its real size (`width_m`, `depth_m`, `height_m`), how it is
+  drawn (`box`, `chair`, `bed` or `monitor`), colour, cost and whether it is medical equipment.
+- `RoomTemplates/` lists each room: `kind` (what the simulation uses it for), `layout` (how it is
+  furnished: `bed_space`, `triage`, `waiting`, `office`, `staff_room` or `none` for corridors),
+  preset `sizes`, minimum and maximum width and length in metres, door width, costs, staffing text
+  and the furniture it may use. Loading checks every furniture id exists and that each layout has
+  the items it needs.
 
 ### Adding a new content type (for developers)
 

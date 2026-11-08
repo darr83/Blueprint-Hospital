@@ -22,6 +22,8 @@ public partial class SmokeTest : Node
     private CameraState? _savedCamera;
     private CameraState? _overview;
     private string? _screenshotDirectory;
+    private int _savedRooms;
+    private long _savedBalance;
 
     private enum Stage
     {
@@ -30,6 +32,8 @@ public partial class SmokeTest : Node
         RunSimulation,
         CloseUp,
         PatientRecord,
+        BuildPreview,
+        RoomPanel,
         WaitForLoad,
         Done,
     }
@@ -124,13 +128,35 @@ public partial class SmokeTest : Node
                 break;
 
             case Stage.PatientRecord when scene is HospitalScene hospital && _frame >= 10:
-                var clock = hospital.Session.Clock;
-                Check(clock.TickCount > 0, "Simulation clock did not advance.");
+                Check(hospital.Session.Clock.TickCount > 0, "Simulation clock did not advance.");
                 Screenshot("04_patient_record");
+                StartBuilding(hospital);
+                _frame = 0;
+                _stage = Stage.BuildPreview;
+                break;
+
+            case Stage.BuildPreview when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("05_build_preview");
+                var built = hospital.Session.Simulation.Spaces.Count();
+                hospital.BuildTool.Confirm();
+                Check(hospital.Session.Simulation.Spaces.Count() == built + 1, "The previewed cubicle was not built.");
+                hospital.BuildTool.Cancel();
+                var newRoom = hospital.Session.Simulation.Spaces.Where(s => s.TemplateId == "majors_cubicle").OrderBy(s => s.Rect.X).First();
+                hospital.Hud.ShowRoom(newRoom);
+                GD.Print($"[smoke] Built {newRoom.Name}; balance £{hospital.Session.Simulation.Balance:N0}.");
+                _frame = 0;
+                _stage = Stage.RoomPanel;
+                break;
+
+            case Stage.RoomPanel when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("06_room_panel");
+                var clock = hospital.Session.Clock;
                 GD.Print($"[smoke] Clock advanced {clock.TickCount} ticks to {clock.Now:yyyy-MM-dd HH:mm:ss}.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
                 _savedTime = clock.Now;
                 _savedCamera = hospital.CaptureCamera();
+                _savedRooms = hospital.Session.Simulation.Spaces.Count();
+                _savedBalance = hospital.Session.Simulation.Balance;
                 manager.SaveGame(SlotName, _savedCamera);
                 GD.Print("[smoke] Game saved.");
                 manager.LoadGame(SlotName);
@@ -140,6 +166,8 @@ public partial class SmokeTest : Node
             case Stage.WaitForLoad when scene is HospitalScene hospital && hospital.IsNodeReady() && hospital.Session.Clock.Now == _savedTime:
                 Check(hospital.Session.HospitalName == "Smoke Test General", "Hospital name not restored.");
                 Check(hospital.CaptureCamera() == _savedCamera, "Camera not restored.");
+                Check(hospital.Session.Simulation.Spaces.Count() == _savedRooms, "Built rooms not restored.");
+                Check(hospital.Session.Simulation.Balance == _savedBalance, "Balance not restored.");
                 SaveManager.Delete(SlotName);
                 GD.Print("[smoke] Save reloaded and verified.");
                 GD.Print("[smoke] PASSED");
@@ -179,6 +207,27 @@ public partial class SmokeTest : Node
         Check(sim.Staff.Sum(s => s.TasksCompleted) > 5, "Staff did not complete any work.");
         GD.Print($"[smoke] {sim.Stats.ArrivalsTotal} arrivals, {sim.Stats.PatientsInDepartment} in department, {sim.Staff.Sum(s => s.TasksCompleted)} staff tasks done by {clock.Now:HH:mm}.");
 
+    }
+
+    /// <summary>Extends the building west, lays a corridor and previews a new Majors cubicle in the build tool.</summary>
+    private static void StartBuilding(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.Record.Visible = false;
+
+        var extension = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 10, b.Y, 10, 20));
+        Check(extension.CanBuild, "Extension refused: " + string.Join("; ", extension.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 10, b.Y + 9, 14, 8), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Corridor refused: " + string.Join("; ", corridor.Problems));
+
+        hospital.Hud.ToggleBuild();
+        var template = sim.Database.RoomTemplates["majors_cubicle"];
+        hospital.BuildTool.StartRoom(template, 8, 9);
+        hospital.BuildTool.PreviewAt(new Simulation.World.GridCoord(b.X - 6, b.Y + 4));
+        Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
+        GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
     }
 
     private static void OpenARecord(HospitalScene hospital)

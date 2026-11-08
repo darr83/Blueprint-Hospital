@@ -15,6 +15,7 @@ public partial class MainHUD : CanvasLayer
     private readonly Label _dateLabel = new();
     private readonly Label _timeLabel = new();
     private readonly Label _hoverLabel = new();
+    private readonly Label _balanceLabel = new();
     private readonly System.Collections.Generic.Dictionary<SimulationSpeed, Button> _speedButtons = new();
     private GameSession _session = null!;
     private System.IDisposable? _speedSubscription;
@@ -33,10 +34,34 @@ public partial class MainHUD : CanvasLayer
 
     public RosterPanel Roster { get; } = new() { Name = "Roster", Visible = false };
 
+    public BuildPanel Build { get; } = new() { Name = "Build", Visible = false };
+
+    public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
+
+    /// <summary>Opens the build menu, or closes it.</summary>
+    public void ToggleBuild()
+    {
+        Build.Visible = !Build.Visible;
+        if (Build.Visible)
+        {
+            Record.Visible = Roster.Visible = false;
+            RoomInfo.Close();
+        }
+    }
+
+    /// <summary>Shows one room's details, closing the other right-hand panels.</summary>
+    public void ShowRoom(BlueprintHospital.Simulation.Hospital.CareSpace room)
+    {
+        Record.Visible = Roster.Visible = Build.Visible = false;
+        RoomInfo.Show(room);
+    }
+
     /// <summary>Opens the patient or staff list, or closes it if that tab is already showing.</summary>
     public void ToggleRoster(bool staff)
     {
         Record.Visible = false;
+        Build.Visible = false;
+        RoomInfo.Close();
         Roster.Visible = !(Roster.Visible && _rosterShowsStaff == staff);
         _rosterShowsStaff = staff;
         Roster.ShowTab(staff);
@@ -44,7 +69,7 @@ public partial class MainHUD : CanvasLayer
 
     private bool _rosterShowsStaff;
 
-    public void Initialise(GameSession session)
+    public void Initialise(GameSession session, BlueprintHospital.Hospital.BuildTool tool)
     {
         _session = session;
         Layer = 10;
@@ -72,6 +97,12 @@ public partial class MainHUD : CanvasLayer
         Roster.Initialise(sim);
         DockRight(Roster, 352);
         root.AddChild(Roster);
+        Build.Initialise(sim, tool);
+        DockRight(Build, 452);
+        root.AddChild(Build);
+        RoomInfo.Initialise(sim);
+        DockRight(RoomInfo, 372);
+        root.AddChild(RoomInfo);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -125,6 +156,12 @@ public partial class MainHUD : CanvasLayer
         name.AddThemeFontSizeOverride("font_size", 20);
         name.AddThemeColorOverride("font_color", Colors.White);
         row.AddChild(name);
+        row.AddChild(new Control { CustomMinimumSize = new Vector2(16, 0) });
+        _balanceLabel.AddThemeColorOverride("font_color", new Color("#9BE7B5"));
+        _balanceLabel.AddThemeFontSizeOverride("font_size", 18);
+        _balanceLabel.TooltipText = "Money available to build with";
+        _balanceLabel.MouseFilter = Control.MouseFilterEnum.Stop;
+        row.AddChild(_balanceLabel);
         row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
         foreach (var label in new[] { _dateLabel, _timeLabel })
@@ -145,6 +182,9 @@ public partial class MainHUD : CanvasLayer
         row.AddChild(speeds);
 
         row.AddChild(new Control { CustomMinimumSize = new Vector2(12, 0) });
+        var build = UiStyle.Button("Build", ToggleBuild, 76);
+        build.TooltipText = "Build rooms and corridors, and extend the building (B)";
+        row.AddChild(build);
         var patients = UiStyle.Button("Patients", () => ToggleRoster(false), 96);
         patients.TooltipText = "Everyone in A&E, sickest first (P)";
         row.AddChild(patients);
@@ -188,7 +228,7 @@ public partial class MainHUD : CanvasLayer
             ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 6, ContentMarginBottom = 6,
         });
         _hoverLabel.AddThemeColorOverride("font_color", Colors.White);
-        _hoverLabel.Text = "Click a person to inspect · Middle mouse: move · Wheel: zoom · WASD: pan";
+        _hoverLabel.Text = "Click a person or room to inspect · B: build · Middle mouse: move · Wheel: zoom · WASD: pan";
         panel.AddChild(_hoverLabel);
         return panel;
     }
@@ -218,6 +258,7 @@ public partial class MainHUD : CanvasLayer
 
     private void RefreshClock()
     {
+        _balanceLabel.Text = $"£{_session.Simulation.Balance:N0}";
         var now = _session.Clock.Now;
         _dateLabel.Text = now.ToString("dddd d MMMM yyyy");
         _timeLabel.Text = now.ToString("HH:mm");
