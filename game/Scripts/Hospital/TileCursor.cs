@@ -29,7 +29,7 @@ public partial class TileCursor : Node2D
         }
 
         var mouse = GetGlobalMousePosition();
-        var tile = _projection.ScreenToTile(mouse.X, mouse.Y);
+        var tile = IsoDraw.ScreenToTile(mouse);
         GridCoord? next = _site.InBounds(tile) ? tile : null;
         if (next == _hovered)
         {
@@ -58,7 +58,6 @@ public partial class TileCursor : Node2D
 
     private Vector2 Point(double x, double y)
     {
-        var (sx, sy) = _projection.GridToScreen(x, y);
-        return new Vector2((float)sx, (float)sy);
+        return IsoDraw.ToScreen(x, y);
     }
 }

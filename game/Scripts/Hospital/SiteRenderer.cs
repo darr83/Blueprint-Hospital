@@ -55,8 +55,7 @@ public partial class SiteRenderer : Node2D
 
     public Vector2 ToScreen(double gridX, double gridY)
     {
-        var (x, y) = _projection.GridToScreen(gridX, gridY);
-        return new Vector2((float)x, (float)y);
+        return IsoDraw.ToScreen(gridX, gridY);
     }
 
     public override void _Draw()

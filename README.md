@@ -70,6 +70,8 @@ Then:
 | Pause / resume | Space |
 | Speed 1x / 2x / 4x | 1 / 2 / 3 |
 | Toggle building grid | G |
+| Show walking routes | R (or the Routes button) |
+| Rotate the view a quarter turn | Q / E |
 | Open a patient's record | Left-click the patient, a notification, or a row in the Patients list |
 | Patients list / Staff list | P / T (or the top-bar buttons) |
 | Finances | F (or click the balance in the top bar) |
@@ -131,9 +133,13 @@ Press **B** to open the build menu. Every room is built from a **template** in
   entrance also gets a street door.
 - **Furniture adapts** to the room: beds, monitors and chairs keep their real size, and a bigger
   waiting room or office simply gets more seats.
-- **Corridors** come in 2 m, 2.5 m, 3 m and 4 m (trolley) widths and are dragged out. Each must
-  join another corridor or an entrance, and every room's door must open onto a corridor (or the
-  waiting room).
+- **Corridors** are dragged out to any size, corner to corner (at least 2 m wide). Each must touch
+  or cross another corridor or an entrance; where corridors overlap they simply join up, and only
+  the new floor is paid for. Every room's door must open onto a corridor (or the waiting room).
+- **Routes (R):** shows a dotted line from everyone who is walking to where they are going,
+  patients in their triage colour and staff in their uniform colour. Whoever is selected always
+  shows their route.
+- **Rotate (Q / E):** turns the view a quarter turn, so the hospital can be seen from all four sides.
 - **Extending the building:** drag out new floor on any side, onto grass or paving. Entrances, the
   car park and the ambulance bay must be kept clear.
 - **Room panel:** click a room's floor to see its details and who is using it, rename it, move or

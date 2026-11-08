@@ -12,12 +12,11 @@ namespace BlueprintHospital.UI;
 
 /// <summary>
 /// The build menu. Pick a room type and a size (preset or custom, in metres) to see its area,
-/// capacity, cost, furniture and staffing, then place it. Corridors come in standard widths and
-/// are dragged out; the building can be extended in any direction.
+/// capacity, cost, furniture and staffing, then place it. Corridors are dragged out to any size
+/// and join any corridor they touch or cross; the building can be extended in any direction.
 /// </summary>
 public partial class BuildPanel : PanelContainer
 {
-    private static readonly double[] CorridorWidths = { 2.0, 2.5, 3.0, 4.0 };
 
     private readonly VBoxContainer _body = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly RichTextLabel _status = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false };
@@ -244,34 +243,17 @@ public partial class BuildPanel : PanelContainer
     {
         var corridor = _sim.Database.RoomTemplates.Values.First(t => t.IsCorridor);
         _body.AddChild(Text($"[b]Corridors[/b]\n[color=#B8C4CE]{corridor.Description}[/color]"));
-        _body.AddChild(Text($"Cost £{corridor.CostPerSquareMetre:N0} per m². Pick a width, then drag along the floor. A corridor must join another corridor or an entrance."));
-
-        var widths = new GridContainer { Columns = 2 };
-        widths.AddThemeConstantOverride("h_separation", 4);
-        widths.AddThemeConstantOverride("v_separation", 4);
-        foreach (var width in CorridorWidths)
+        _body.AddChild(Text($"Cost £{corridor.CostPerSquareMetre:N0} per m² of new floor. Drag out any size from corner to corner (at least {corridor.MinWidthM:0.#} m wide). A corridor must touch or cross another corridor or an entrance; where it crosses one they join up, and floor that is already corridor is free."));
+        var lay = new Button
         {
-            var label = width switch
-            {
-                2.0 => "Narrow",
-                2.5 => "Standard",
-                3.0 => "Wide",
-                _ => "Trolley",
-            };
-            var button = new Button
-            {
-                Text = $"{label}\n{width:0.0} m",
-                FocusMode = FocusModeEnum.None,
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 50),
-            };
-            var tiles = Units.MetresToTiles(width);
-            button.Pressed += () => _tool.StartCorridor(tiles);
-            widths.AddChild(button);
-        }
-
-        _body.AddChild(widths);
-        _body.AddChild(Hint("Trolley-width (4 m) corridors let beds pass each other; 2.5 m is the usual minimum in clinical areas."));
+            Text = "Lay a corridor",
+            FocusMode = FocusModeEnum.None,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 44),
+        };
+        lay.Pressed += () => _tool.StartCorridor();
+        _body.AddChild(lay);
+        _body.AddChild(Hint("2.5 m is the usual minimum in clinical areas; 4 m lets two trolleys pass."));
     }
 
     private void ShowBuilding()

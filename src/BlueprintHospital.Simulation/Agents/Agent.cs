@@ -26,6 +26,9 @@ public abstract class Agent
 
     public bool IsMoving => _path.Count > 0;
 
+    /// <summary>The tiles still to walk through, in order, ending at <see cref="Destination"/>.</summary>
+    public IEnumerable<GridCoord> RemainingPath => _path;
+
     public GridCoord Tile => new((int)Math.Floor(X), (int)Math.Floor(Y));
 
     /// <summary>Where the agent is heading, if moving.</summary>

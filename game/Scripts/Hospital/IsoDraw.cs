@@ -1,4 +1,5 @@
 using System;
+using BlueprintHospital.Simulation.World;
 using Godot;
 
 namespace BlueprintHospital.Hospital;
@@ -12,7 +13,65 @@ public static class IsoDraw
     /// <summary>Screen pixels per metre of height, matching the 3 m outer walls.</summary>
     public const float PixelsPerMetre = 28f;
 
-    public static Vector2 ToScreen(double x, double y) => new((float)((x - y) * 32), (float)((x + y) * 16));
+    private static double _centreX;
+    private static double _centreY;
+
+    /// <summary>How many quarter turns the view is rotated (0 to 3). Q and E turn it.</summary>
+    public static int Rotation { get; private set; }
+
+    /// <summary>The view turns about the middle of the site.</summary>
+    public static void SetSite(int width, int length)
+    {
+        _centreX = width / 2.0;
+        _centreY = length / 2.0;
+    }
+
+    public static void SetRotation(int quarterTurns) => Rotation = ((quarterTurns % 4) + 4) % 4;
+
+    /// <summary>A grid point turned to the current view.</summary>
+    public static (double X, double Y) Rotate(double x, double y)
+    {
+        var (dx, dy) = (x - _centreX, y - _centreY);
+        return Rotation switch
+        {
+            1 => (_centreX - dy, _centreY + dx),
+            2 => (_centreX - dx, _centreY - dy),
+            3 => (_centreX + dy, _centreY - dx),
+            _ => (x, y),
+        };
+    }
+
+    private static (double X, double Y) Unrotate(double x, double y)
+    {
+        var (dx, dy) = (x - _centreX, y - _centreY);
+        return Rotation switch
+        {
+            1 => (_centreX + dy, _centreY - dx),
+            2 => (_centreX - dx, _centreY - dy),
+            3 => (_centreX - dy, _centreY + dx),
+            _ => (x, y),
+        };
+    }
+
+    /// <summary>Screen position of a grid point in the current view.</summary>
+    public static Vector2 ToScreen(double x, double y)
+    {
+        var (rx, ry) = Rotate(x, y);
+        return new((float)((rx - ry) * 32), (float)((rx + ry) * 16));
+    }
+
+    /// <summary>The grid point under a screen position in the current view.</summary>
+    public static (double X, double Y) ScreenToGrid(Vector2 screen)
+    {
+        var (a, b) = (screen.X / 32.0, screen.Y / 16.0);
+        return Unrotate((a + b) / 2, (b - a) / 2);
+    }
+
+    public static GridCoord ScreenToTile(Vector2 screen)
+    {
+        var (x, y) = ScreenToGrid(screen);
+        return new GridCoord((int)Math.Floor(x), (int)Math.Floor(y));
+    }
 
     public static void FloorQuad(CanvasItem canvas, double x, double y, double w, double l, Color colour) =>
         canvas.DrawColoredPolygon(new[] { ToScreen(x, y), ToScreen(x + w, y), ToScreen(x + w, y + l), ToScreen(x, y + l) }, colour);

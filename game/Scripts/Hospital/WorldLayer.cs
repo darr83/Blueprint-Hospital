@@ -277,11 +277,11 @@ public partial class WorldLayer : Node2D
             // Each one-tile piece sorts on its own, anchored at its front face.
             if (horizontal)
             {
-                AddProp(IsoDraw.ToScreen(x + 0.5, y + h), c => IsoDraw.Box(c, x, y - h, 1, WallThickness, WallHeight, WallTop, sideColour: WallFace));
+                AddProp(FrontFace(x, y - h, 1, WallThickness), c => IsoDraw.Box(c, x, y - h, 1, WallThickness, WallHeight, WallTop, sideColour: WallFace));
             }
             else
             {
-                AddProp(IsoDraw.ToScreen(x + h, y + 0.5), c => IsoDraw.Box(c, x - h, y, WallThickness, 1, WallHeight, WallTop, sideColour: WallFace));
+                AddProp(FrontFace(x - h, y, WallThickness, 1), c => IsoDraw.Box(c, x - h, y, WallThickness, 1, WallHeight, WallTop, sideColour: WallFace));
             }
         }
 
@@ -301,10 +301,21 @@ public partial class WorldLayer : Node2D
         }
     }
 
+    /// <summary>The middle of whichever side of a footprint is nearest the viewer, so thin pieces sort right from every angle.</summary>
+    private static Vector2 FrontFace(double x, double y, double w, double l)
+    {
+        var sides = new[]
+        {
+            IsoDraw.ToScreen(x + (w / 2), y), IsoDraw.ToScreen(x + (w / 2), y + l),
+            IsoDraw.ToScreen(x, y + (l / 2)), IsoDraw.ToScreen(x + w, y + (l / 2)),
+        };
+        return sides.MaxBy(p => p.Y);
+    }
+
     private void AddDoorPost(int x, int y)
     {
         const double s = 0.22;
-        AddProp(IsoDraw.ToScreen(x, y + s), c => IsoDraw.Box(c, x - s, y - s, s * 2, s * 2, WallHeight + 5, new Color("#B8C4CE"), sideColour: new Color("#9AA8B4")));
+        AddProp(FrontFace(x - s, y - s, s * 2, s * 2), c => IsoDraw.Box(c, x - s, y - s, s * 2, s * 2, WallHeight + 5, new Color("#B8C4CE"), sideColour: new Color("#9AA8B4")));
     }
 
     // ------------------------------------------------------------------ furniture

@@ -244,4 +244,32 @@ public class DragToBuildTests
         Assert.Equal(built.Doors, loaded.Doors);
         Assert.Equal(built.Seats, loaded.Seats);
     }
+
+    [Fact]
+    public void Corridors_can_overlap_and_join_and_only_new_floor_is_paid_for()
+    {
+        var h = new SimulationHarness();
+        Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 20, B.Y, 20, 20)).CanBuild);
+        var first = h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 20, B.Y + 9, 24, 5), WallSide.South));
+        Assert.True(first.CanBuild, string.Join("; ", first.Problems));
+
+        // An L-shaped branch dragged across the first corridor: only its new tiles are charged.
+        var branch = new GridRect(B.X - 12, B.Y + 2, 5, 15);
+        var check = h.Sim.CheckRoom(new RoomPlan("corridor", branch, WallSide.South));
+        Assert.True(check.CanBuild, string.Join("; ", check.Problems));
+        var template = h.Database.RoomTemplates["corridor"];
+        var newTiles = (5 * 15) - (5 * 5);
+        Assert.Equal((int)Math.Round(template.CostPerSquareMetre * newTiles * 0.25), check.Cost);
+        Assert.True(h.Sim.BuildRoom(new RoomPlan("corridor", branch, WallSide.South)).CanBuild);
+
+        // Dragging over floor that is already corridor is refused, and a room still can't overlap one.
+        var again = h.Sim.CheckRoom(new RoomPlan("corridor", new GridRect(B.X - 12, B.Y + 9, 5, 5), WallSide.South));
+        Assert.Contains(again.Problems, p => p.Contains("already"));
+        var room = h.Sim.CheckRoom(new RoomPlan("minors_cubicle", new GridRect(B.X - 14, B.Y + 2, 8, 9), WallSide.South));
+        Assert.Contains(room.Problems, p => p.Contains("Overlaps"));
+
+        // People can walk from the branch to the department.
+        var path = h.Sim.Nav.FindPath(new GridCoord(B.X - 10, B.Y + 3), new GridCoord(B.X + 2, B.Y + 11));
+        Assert.NotEmpty(path);
+    }
 }

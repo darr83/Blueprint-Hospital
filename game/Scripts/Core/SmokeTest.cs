@@ -38,6 +38,7 @@ public partial class SmokeTest : Node
         RoomPanel,
         Ward,
         Imaging,
+        Rotate,
         Finances,
         WaitForLoad,
         Done,
@@ -171,6 +172,49 @@ public partial class SmokeTest : Node
             case Stage.Imaging when scene is HospitalScene hospital && _frame >= 20:
                 Screenshot("09_imaging");
                 hospital.Hud.Record.Visible = false;
+                hospital.ClearSelectionForTest();
+                hospital.ToggleRoutes();
+                Check(hospital.RoutesShown, "Routes did not turn on.");
+                for (var i = 0; i < 3; i++)
+                {
+                    hospital.Session.Simulation.SpawnPatient(ArrivalMethod.WalkIn);
+                }
+
+                // Pause with people mid-walk so their routes show in the screenshots.
+                for (var i = 0; i < 4; i++)
+                {
+                    hospital.Session.Clock.Step();
+                }
+
+                hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
+
+                _frame = 0;
+                _stage = Stage.Rotate;
+                break;
+
+            case Stage.Rotate when scene is HospitalScene hospital && _frame == 2:
+                // Look at the busiest walking: whoever has the longest way to go.
+                var walker = hospital.Session.Simulation.Patients.Cast<Simulation.Agents.Agent>().Concat(hospital.Session.Simulation.Staff)
+                    .Where(a => a.IsMoving).OrderByDescending(a => a.RemainingPath.Count()).FirstOrDefault();
+                GD.Print($"[smoke] Route shots centred on: {walker?.GetType().Name ?? "none"} with {walker?.RemainingPath.Count() ?? 0} tiles to go.");
+                if (walker is not null)
+                {
+                    hospital.Camera.SnapTo(hospital.World.FootPosition(walker), 0.8f);
+                }
+
+                break;
+
+            case Stage.Rotate when scene is HospitalScene hospital && _frame >= 8:
+                Screenshot($"10_view_{IsoDraw.Rotation}");
+                hospital.RotateView(1);
+                _frame = 0;
+                if (IsoDraw.Rotation != 0)
+                {
+                    break;
+                }
+
+                hospital.ToggleRoutes();
+                GD.Print("[smoke] Rotated the view through all four angles with routes shown.");
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
                 Check(hospital.Session.Simulation.Today[Simulation.Simulation.MoneyCategory.Construction] < 0, "Building work was not booked.");

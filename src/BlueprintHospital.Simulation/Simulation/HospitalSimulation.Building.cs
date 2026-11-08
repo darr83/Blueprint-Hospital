@@ -165,7 +165,7 @@ public sealed partial class HospitalSimulation
 
         var room = Furnish(plan);
         var replacing = replacingId is null ? null : FindSpace(replacingId);
-        var cost = replacing is null ? room.BuildCost : MoveCost(replacing, room);
+        var cost = template.IsCorridor ? CorridorCost(template, plan.Rect, replacing) : replacing is null ? room.BuildCost : MoveCost(replacing, room);
 
         CheckSize(template, plan, problems);
         if (!plan.Rect.Tiles().All(t => MainBuilding.Contains(t)))
@@ -173,12 +173,15 @@ public sealed partial class HospitalSimulation
             problems.Add("Must be inside the building. Extend the building first.");
         }
 
-        if (_spaces.Values.Where(s => s != replacing).FirstOrDefault(s => s.Rect.Intersects(plan.Rect)) is { } overlap)
+        // Corridors may overlap other corridors (they simply join up); nothing else may overlap.
+        if (_spaces.Values.Where(s => s != replacing && !(template.IsCorridor && s.Kind == CareSpaceKind.Corridor))
+                .FirstOrDefault(s => s.Rect.Intersects(plan.Rect)) is { } overlap)
         {
             problems.Add($"Overlaps {overlap.Name}.");
         }
 
-        if (AgentsOn(plan.Rect, replacing).Any())
+        // A corridor is open floor, so people can carry on walking across it while it is laid.
+        if (!template.IsCorridor && AgentsOn(plan.Rect, replacing).Any())
         {
             problems.Add("Someone is standing there.");
         }
@@ -188,6 +191,10 @@ public sealed partial class HospitalSimulation
             if (!JoinsCirculation(plan.Rect, replacing))
             {
                 problems.Add("Must join an existing corridor or an entrance.");
+            }
+            else if (NewCorridorTiles(plan.Rect, replacing) == 0)
+            {
+                problems.Add("That is all corridor already.");
             }
         }
         else
@@ -385,6 +392,17 @@ public sealed partial class HospitalSimulation
         }
     }
 
+    /// <summary>Tiles of <paramref name="rect"/> not already covered by another corridor.</summary>
+    private int NewCorridorTiles(GridRect rect, CareSpace? except)
+    {
+        var others = _spaces.Values.Where(s => s != except && s.Kind == CareSpaceKind.Corridor && s.Rect.Intersects(rect)).ToList();
+        return rect.Tiles().Count(t => !others.Any(o => o.Rect.Contains(t)));
+    }
+
+    /// <summary>A corridor costs only the floor it adds: tiles already corridor are free.</summary>
+    private int CorridorCost(RoomTemplate template, GridRect rect, CareSpace? except) =>
+        (int)Math.Round(template.CostPerSquareMetre * NewCorridorTiles(rect, except) * Units.MetresPerTile * Units.MetresPerTile);
+
     private static int MoveCost(CareSpace old, CareSpace moved) =>
         Math.Max(0, moved.BuildCost - old.BuildCost) + (int)Math.Round(moved.BuildCost * MoveFee);
 
@@ -407,7 +425,10 @@ public sealed partial class HospitalSimulation
             problems.AddRange(CheckReachable(_spaces.Values.Where(s => s != space).ToList()));
         }
 
-        return new BuildCheck(-(int)Math.Round(space.BuildCost * DemolitionRefund), problems);
+        var value = space.Kind == CareSpaceKind.Corridor && Database.RoomTemplates.TryGetValue(space.TemplateId, out var corridor)
+            ? CorridorCost(corridor, space.Rect, space)
+            : space.BuildCost;
+        return new BuildCheck(-(int)Math.Round(value * DemolitionRefund), problems);
     }
 
     /// <summary>Checks whether the building can be extended over <paramref name="area"/>.</summary>

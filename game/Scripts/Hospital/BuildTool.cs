@@ -41,7 +41,6 @@ public partial class BuildTool : Node2D
     /// <summary>The room being moved, if this is a move rather than a new room.</summary>
     public string? MovingId { get; private set; }
 
-    public int CorridorWidth { get; private set; } = 5;
 
     /// <summary>The latest check of what is under the cursor.</summary>
     public BuildCheck? Check { get; private set; }
@@ -88,11 +87,10 @@ public partial class BuildTool : Node2D
         Restart();
     }
 
-    public void StartCorridor(int widthTiles)
+    public void StartCorridor()
     {
         Mode = BuildMode.Corridor;
         Template = _sim.Database.RoomTemplates.Values.First(t => t.IsCorridor);
-        CorridorWidth = widthTiles;
         MovingId = null;
         Restart();
     }
@@ -220,7 +218,7 @@ public partial class BuildTool : Node2D
         }
 
         var mouse = GetGlobalMousePosition();
-        var tile = _projection.ScreenToTile(mouse.X, mouse.Y);
+        var tile = IsoDraw.ScreenToTile(mouse);
         if (tile != _hover)
         {
             _hover = tile;
@@ -236,7 +234,7 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        _rect = Mode == BuildMode.Corridor ? CorridorRect() : DragRect();
+        _rect = DragRect();
 
         var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}";
         if (!force && key == _planKey)
@@ -249,7 +247,7 @@ public partial class BuildTool : Node2D
         {
             BuildMode.Room when _dragStart is null => new BuildCheck(0, new[] { $"Drag out the {Template!.Name.ToLowerInvariant()} from corner to corner." }),
             BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId),
-            BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag along the floor to lay the corridor." }),
+            BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
             _ => _sim.CheckExtension(_rect),
@@ -257,22 +255,6 @@ public partial class BuildTool : Node2D
 
         QueueRedraw();
         CheckChanged?.Invoke();
-    }
-
-    private GridRect CorridorRect()
-    {
-        var w = CorridorWidth;
-        var start = _dragStart ?? _hover;
-        var dx = _hover.X - start.X;
-        var dy = _hover.Y - start.Y;
-        if (Math.Abs(dx) >= Math.Abs(dy))
-        {
-            var x = Math.Min(start.X, _hover.X);
-            return new GridRect(x, start.Y - (w / 2), Math.Max(w, Math.Abs(dx) + 1), w);
-        }
-
-        var y = Math.Min(start.Y, _hover.Y);
-        return new GridRect(start.X - (w / 2), y, w, Math.Max(w, Math.Abs(dy) + 1));
     }
 
     private GridRect DragRect()
@@ -342,8 +324,7 @@ public partial class BuildTool : Node2D
 
     private Vector2 P(double x, double y)
     {
-        var (sx, sy) = _projection.GridToScreen(x, y);
-        return new Vector2((float)sx, (float)sy);
+        return IsoDraw.ToScreen(x, y);
     }
 
     private (Vector2, Vector2) DoorEnds(GridRect r, Doorway door) => door.Side switch

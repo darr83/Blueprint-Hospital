@@ -23,6 +23,10 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised when the player clicks the grid toggle.</summary>
     public event System.Action? GridToggled;
 
+    public event System.Action? RoutesToggled;
+
+    private Button _routesButton = null!;
+
     /// <summary>Raised when the player opens the menu from the top bar.</summary>
     public event System.Action? MenuRequested;
 
@@ -41,6 +45,9 @@ public partial class MainHUD : CanvasLayer
     public FinancePanel Finances { get; } = new() { Name = "Finances", Visible = false };
 
     /// <summary>Opens the finances, or closes them.</summary>
+    /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
+    public void SetRoutesShown(bool shown) => _routesButton.Modulate = shown ? new Color("#FFE082") : Colors.White;
+
     public void ToggleFinances()
     {
         var show = !Finances.Visible;
@@ -213,6 +220,9 @@ public partial class MainHUD : CanvasLayer
         var grid = UiStyle.Button("Grid", () => GridToggled?.Invoke(), 70);
         grid.TooltipText = "Show or hide the building grid (G)";
         row.AddChild(grid);
+        _routesButton = UiStyle.Button("Routes", () => RoutesToggled?.Invoke(), 84);
+        _routesButton.TooltipText = "Show where patients and staff are walking (R)";
+        row.AddChild(_routesButton);
         var menu = UiStyle.Button("Menu", () => MenuRequested?.Invoke(), 80);
         menu.TooltipText = "Save, load, settings and quit (Esc)";
         row.AddChild(menu);

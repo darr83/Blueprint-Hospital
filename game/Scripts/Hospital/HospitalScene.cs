@@ -25,6 +25,7 @@ public partial class HospitalScene : Node2D
     private DepartmentRenderer _department = null!;
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
+    private RouteLayer _routes = null!;
     private TileCursor _cursor = null!;
     private BuildTool _build = null!;
     private IsoCamera _camera = null!;
@@ -53,6 +54,9 @@ public partial class HospitalScene : Node2D
         _session = manager.Session!;
         var settings = manager.Settings;
 
+        IsoDraw.SetSite(_session.Site.Width, _session.Site.Length);
+        IsoDraw.SetRotation(0);
+
         _site = new SiteRenderer { Name = "Site" };
         AddChild(_site);
         _site.Initialise(_session.Site, _projection);
@@ -66,6 +70,10 @@ public partial class HospitalScene : Node2D
         _world = new WorldLayer { Name = "World" };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
+
+        _routes = new RouteLayer { Name = "Routes" };
+        AddChild(_routes);
+        _routes.Initialise(_world);
 
         _overlay = new OverlayLayer { Name = "Labels" };
         AddChild(_overlay);
@@ -110,6 +118,7 @@ public partial class HospitalScene : Node2D
             _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
         _hud.GridToggled += ToggleGrid;
+        _hud.RoutesToggled += ToggleRoutes;
         _hud.MenuRequested += OpenPauseMenu;
         _cursor.HoveredTileChanged += (x, y, onSite) => _hud.ShowHoveredTile(x, y, onSite, _session.Site);
         _hud.Record.CloseRequested += ClearSelection;
@@ -146,6 +155,9 @@ public partial class HospitalScene : Node2D
             _camera.GlideTo(_world.FootPosition(member));
         }
     }
+
+    /// <summary>For the smoke test: deselects whoever is selected.</summary>
+    public void ClearSelectionForTest() => ClearSelection();
 
     private void ClearSelection()
     {
@@ -197,7 +209,7 @@ public partial class HospitalScene : Node2D
                     break;
                 default:
                     ClearSelection();
-                    var tile = _projection.ScreenToTile(GetGlobalMousePosition().X, GetGlobalMousePosition().Y);
+                    var tile = IsoDraw.ScreenToTile(GetGlobalMousePosition());
                     var room = _session.Simulation.Spaces
                         .Where(s => s.Rect.Contains(tile))
                         .OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0)
@@ -263,6 +275,15 @@ public partial class HospitalScene : Node2D
             case Key.G:
                 ToggleGrid();
                 break;
+            case Key.R:
+                ToggleRoutes();
+                break;
+            case Key.Q:
+                RotateView(-1);
+                break;
+            case Key.E:
+                RotateView(1);
+                break;
             default:
                 return;
         }
@@ -270,9 +291,42 @@ public partial class HospitalScene : Node2D
         GetViewport().SetInputAsHandled();
     }
 
-    public CameraState CaptureCamera() => _camera.CaptureState();
+    /// <summary>The camera, saved as if the view were not rotated (saves always load facing the default way).</summary>
+    public CameraState CaptureCamera()
+    {
+        var state = _camera.CaptureState();
+        if (IsoDraw.Rotation == 0)
+        {
+            return state;
+        }
+
+        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
+        return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16 };
+    }
+
+    /// <summary>Turns the view a quarter turn (Q anticlockwise, E clockwise), keeping the same spot in the middle of the screen.</summary>
+    public void RotateView(int quarterTurns)
+    {
+        var state = _camera.CaptureState();
+        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
+        IsoDraw.SetRotation(IsoDraw.Rotation + quarterTurns);
+        _site.Rebuild();
+        _department.QueueRedraw();
+        _world.RebuildStatic();
+        _camera.Bounds = SiteBounds();
+        _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
+    }
 
     private void ToggleGrid() => _site.ShowGrid = !_site.ShowGrid;
+
+    /// <summary>Shows or hides everyone's walking route (the selected person's always shows).</summary>
+    public void ToggleRoutes()
+    {
+        _routes.ShowAll = !_routes.ShowAll;
+        _hud.SetRoutesShown(_routes.ShowAll);
+    }
+
+    public bool RoutesShown => _routes.ShowAll;
 
     private void OpenPauseMenu()
     {
