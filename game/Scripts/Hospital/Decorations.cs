@@ -111,7 +111,7 @@ public static class Decorations
     public static List<(Vector2 Anchor, Action<CanvasItem> Draw)> Plan(HospitalSimulation sim)
     {
         var props = new List<(Vector2, Action<CanvasItem>)>();
-        foreach (var space in sim.Spaces.Where(s => s.HasWalls))
+        foreach (var space in sim.Spaces.Where(s => s.HasWalls && IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             if (RecipeFor(space) is not { } recipe)
             {
@@ -145,7 +145,11 @@ public static class Decorations
             }
         }
 
-        PlaceCorridorBits(sim, props);
+        // The extinguishers and plants follow the ground floor's outer walls, so only show them there.
+        if (IsoDraw.ViewFloor == 0)
+        {
+            PlaceCorridorBits(sim, props);
+        }
         return props;
     }
 
@@ -419,7 +423,7 @@ public static class Decorations
     /// <summary>Fire extinguishers on the building's walls and plants in its open spaces, outside the rooms.</summary>
     private static void PlaceCorridorBits(HospitalSimulation sim, List<(Vector2, Action<CanvasItem>)> props)
     {
-        var rooms = sim.Spaces.Where(s => s.HasWalls).Select(s => s.Rect).ToList();
+        var rooms = sim.Spaces.Where(s => s.HasWalls && IsoDraw.OnViewFloor(s.Rect.Y)).Select(s => s.Rect).ToList();
         var chairs = sim.CorridorChairs.Select(c => c.Tile).ToHashSet();
         foreach (var building in sim.Site.Buildings)
         {
