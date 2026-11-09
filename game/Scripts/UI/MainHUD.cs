@@ -38,14 +38,6 @@ public partial class MainHUD : CanvasLayer
     private bool _routesShown;
     private bool _gridShown;
     private bool _rosterShowsStaff;
-    private double _statsRefresh;
-
-    private (PanelContainer Card, Label Value) _inDept;
-    private (PanelContainer Card, Label Value) _waiting;
-    private (PanelContainer Card, Label Value) _longest;
-    private (PanelContainer Card, Label Value) _fourHour;
-    private (PanelContainer Card, Label Value) _beds;
-    private (PanelContainer Card, Label Value) _staffOn;
 
     /// <summary>Raised when the player clicks the grid toggle.</summary>
     public event Action? GridToggled;
@@ -100,6 +92,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The staff rota: day and night teams, breaks and moving staff between departments.</summary>
     public StaffRotaPanel Rota { get; } = new() { Name = "Rota", Visible = false };
 
+    /// <summary>The Stats screen: every figure for the last 24 hours, 7 days, 28 days and all time.</summary>
+    public StatsPanel StatsScreen { get; } = new() { Name = "Stats", Visible = false };
+
     /// <summary>The build bar along the bottom, shown in Build mode.</summary>
     public BuildBar Build { get; } = new() { Name = "BuildBar", Visible = false };
 
@@ -150,7 +145,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = false;
         RoomInfo.Close();
         ItemInfo.Close();
     }
@@ -222,6 +217,14 @@ public partial class MainHUD : CanvasLayer
         }
     }
 
+    /// <summary>Opens the Stats screen, or closes it.</summary>
+    public void ToggleStats()
+    {
+        var show = !StatsScreen.Visible;
+        HideRightPanels();
+        StatsScreen.Visible = show;
+    }
+
     /// <summary>Shows or hides the A&amp;E board.</summary>
     public void ToggleBoard() => _left.Visible = !_left.Visible;
 
@@ -239,13 +242,12 @@ public partial class MainHUD : CanvasLayer
         root.AddChild(BuildTag());
         root.AddChild(BuildTopBar());
         root.AddChild(BuildNav());
-        root.AddChild(BuildStatCards());
         root.AddChild(BuildHoverPanel());
         root.AddChild(BuildMapControls());
 
         var sim = session.Simulation;
         _left.OffsetLeft = NavWidth + Gap;
-        _left.OffsetTop = TopBarHeight + Gap + 82;
+        _left.OffsetTop = TopBarHeight + Gap;
         _left.AnchorBottom = 1;
         _left.OffsetBottom = -Gap;
         _left.AddThemeConstantOverride("separation", 10);
@@ -290,6 +292,15 @@ public partial class MainHUD : CanvasLayer
         Rota.OffsetBottom = -Gap;
         root.AddChild(Rota);
 
+        // The Stats screen is as big as the rota.
+        StatsScreen.Initialise(sim);
+        StatsScreen.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        StatsScreen.OffsetLeft = NavWidth + Gap;
+        StatsScreen.OffsetTop = TopBarHeight + Gap;
+        StatsScreen.OffsetRight = -Gap;
+        StatsScreen.OffsetBottom = -Gap;
+        root.AddChild(StatsScreen);
+
         // The build bar and its pop-ups sit above the panels.
         Build.Initialise(sim, tool, BuildMenu.Load(new BlueprintHospital.Core.GodotDataSource(), sim.Database));
         root.AddChild(Build);
@@ -308,7 +319,6 @@ public partial class MainHUD : CanvasLayer
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
         RefreshClock();
-        RefreshStats();
     }
 
     public override void _ExitTree() => _speedSubscription?.Dispose();
@@ -322,7 +332,7 @@ public partial class MainHUD : CanvasLayer
         // In Build mode everything docked to the bottom of the screen moves up above the build bar.
         var reserve = Build.Visible ? BuildBar.Reserve : 0;
         _left.OffsetBottom = -Gap - reserve;
-        foreach (var panel in RightPanels.Append(Rota).Where(p => p != ItemInfo))
+        foreach (var panel in RightPanels.Append(Rota).Append(StatsScreen).Where(p => p != ItemInfo))
         {
             panel.OffsetBottom = -Gap - reserve;
         }
@@ -337,13 +347,6 @@ public partial class MainHUD : CanvasLayer
         var open = RightPanels.FirstOrDefault(p => p.Visible);
         _mapControls.OffsetRight = open is null ? -Gap : open.OffsetLeft - Gap;
         _mapControls.OffsetLeft = _mapControls.OffsetRight - 44;
-
-        _statsRefresh -= delta;
-        if (_statsRefresh <= 0)
-        {
-            _statsRefresh = 0.5;
-            RefreshStats();
-        }
     }
 
     public void ShowHoveredTile(int x, int y, bool onSite, SiteMap site)
@@ -557,6 +560,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
+        column.AddChild(NavButton("Stats", NavIcon.Kind.Stats, ToggleStats, "Hospital stats: the last 24 hours, 7 days, 28 days and all time (I)"));
         column.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
         column.AddChild(NavButton("Routes", NavIcon.Kind.Routes, () => RoutesToggled?.Invoke(), "Show where patients and staff are walking (R)"));
         column.AddChild(NavButton("Grid", NavIcon.Kind.Grid, () => GridToggled?.Invoke(), "Show or hide the building grid (G)"));
@@ -622,86 +626,9 @@ public partial class MainHUD : CanvasLayer
         Set("Clinics", Clinics.Visible);
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);
+        Set("Stats", StatsScreen.Visible);
         Set("Routes", _routesShown);
         Set("Grid", _gridShown);
-    }
-
-    // ---------------------------------------------------------------- headline figures
-
-    private Control BuildStatCards()
-    {
-        var row = new HBoxContainer { Position = new Vector2(NavWidth + Gap, TopBarHeight + Gap), MouseFilter = Control.MouseFilterEnum.Ignore };
-        row.AddThemeConstantOverride("separation", 10);
-        _inDept = StatCard(row, "In department", "Patients in A&E now");
-        _waiting = StatCard(row, "Waiting", "Waiting to be triaged or for a cubicle");
-        _longest = StatCard(row, "Longest wait", "The longest anyone has been waiting for a cubicle");
-        _fourHour = StatCard(row, "Seen in 4 hours", "Patients who left A&E within four hours (the standard is 95%)");
-        _beds = StatCard(row, "Ward beds free", "Empty beds on your wards");
-        _staffOn = StatCard(row, "Staff on shift", "Everyone working now");
-        return row;
-    }
-
-    private static (PanelContainer, Label) StatCard(HBoxContainer row, string caption, string tooltip)
-    {
-        var card = new PanelContainer { CustomMinimumSize = new Vector2(112, 0), TooltipText = tooltip, MouseFilter = Control.MouseFilterEnum.Stop };
-        var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        column.AddThemeConstantOverride("separation", 0);
-        var label = UiStyle.Caption(caption, 12);
-        label.MouseFilter = Control.MouseFilterEnum.Ignore;
-        column.AddChild(label);
-        var value = new Label { MouseFilter = Control.MouseFilterEnum.Ignore };
-        value.AddThemeFontSizeOverride("font_size", 22);
-        column.AddChild(value);
-        card.AddChild(column);
-        row.AddChild(card);
-        SetCardTone((card, value), Tone.Normal);
-        return (card, value);
-    }
-
-    private enum Tone
-    {
-        Normal,
-        Warning,
-        Danger,
-    }
-
-    private static void SetCardTone((PanelContainer Card, Label Value) card, Tone tone)
-    {
-        var (background, border, text) = tone switch
-        {
-            Tone.Warning => (UiStyle.AmberTint, UiStyle.AmberBorder, UiStyle.AmberText),
-            Tone.Danger => (new Color("#FDECEC"), new Color("#EBA5A8"), UiStyle.Red),
-            _ => (UiStyle.Surface, UiStyle.Border, UiStyle.TextDark),
-        };
-        var box = UiStyle.Box(background, 12, border);
-        box.ContentMarginLeft = box.ContentMarginRight = 14;
-        box.ContentMarginTop = box.ContentMarginBottom = 8;
-        card.Card.AddThemeStyleboxOverride("panel", box);
-        card.Value.AddThemeColorOverride("font_color", text);
-        var caption = card.Card.GetChild(0).GetChild<Label>(0);
-        caption.AddThemeColorOverride("font_color", tone == Tone.Normal ? UiStyle.TextMuted : text);
-    }
-
-    private void RefreshStats()
-    {
-        var sim = _session.Simulation;
-        var s = sim.Stats;
-        _inDept.Value.Text = s.PatientsInDepartment.ToString();
-        _waiting.Value.Text = (s.AwaitingTriage + s.WaitingForSpace.Values.Sum()).ToString();
-
-        var longest = s.LongestWaitMinutes.Values.DefaultIfEmpty(0).Max();
-        _longest.Value.Text = longest < 1 ? "None" : ClinicalText.Duration(TimeSpan.FromMinutes(longest));
-        SetCardTone(_longest, longest >= 240 ? Tone.Danger : longest >= 120 ? Tone.Warning : Tone.Normal);
-
-        var four = s.FourHourPerformance;
-        _fourHour.Value.Text = $"{four:P0}";
-        SetCardTone(_fourHour, four >= 0.95 ? Tone.Normal : four >= 0.76 ? Tone.Warning : Tone.Danger);
-
-        var (used, total) = s.WardBeds;
-        _beds.Value.Text = total == 0 ? "No wards" : $"{total - used} of {total}";
-        SetCardTone(_beds, total > 0 && used >= total ? Tone.Warning : Tone.Normal);
-
-        _staffOn.Value.Text = sim.OnDutyStaff.Count().ToString();
     }
 
     // ---------------------------------------------------------------- map furniture

@@ -14,6 +14,7 @@ public partial class NavIcon : Control
         Hire,
         Clinics,
         Finances,
+        Stats,
         Routes,
         Grid,
     }
@@ -85,6 +86,12 @@ public partial class NavIcon : Control
                 L(10, 20, 10, 4);
                 L(16, 20, 16, 13);
                 L(2, 20, 22, 20);
+                break;
+            case Kind.Stats:
+                // A line chart in a frame.
+                DrawPolyline(new[] { new Vector2(3, 3), new Vector2(3, 21), new Vector2(21, 21) }, c, w, true);
+                DrawPolyline(new[] { new Vector2(6, 16), new Vector2(10, 11), new Vector2(14, 14), new Vector2(20, 6) }, c, w, true);
+                DrawArc(new Vector2(20, 6), 1.5f, 0, Mathf.Tau, 12, c, w, true);
                 break;
             case Kind.Routes:
                 for (var i = 0; i < 5; i++)

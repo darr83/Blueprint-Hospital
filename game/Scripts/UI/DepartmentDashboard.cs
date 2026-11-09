@@ -8,7 +8,7 @@ namespace BlueprintHospital.UI;
 
 /// <summary>
 /// The A&amp;E board: red, amber and green tiles for who is in the department, then cubicle and
-/// ward capacity bars, ambulances, the headline performance figures and totals since opening.
+/// free ward beds, ambulances and the headline performance figures. Totals over time are on the Stats screen.
 /// </summary>
 public partial class DepartmentDashboard : PanelContainer
 {
@@ -29,8 +29,8 @@ public partial class DepartmentDashboard : PanelContainer
     private RichTextLabel _ambulances = null!;
     private RichTextLabel _handover = null!;
     private RichTextLabel _bedWait = null!;
-    private RichTextLabel _footer = null!;
-    private Control _wardRow = null!;
+    private RichTextLabel _bedsFree = null!;
+    private CapacityBar _bedsBar = null!;
     private HospitalSimulation _sim = null!;
     private double _refresh;
 
@@ -80,12 +80,26 @@ public partial class DepartmentDashboard : PanelContainer
         rows.AddChild(CapacityRow("Resus", RedTile));
         rows.AddChild(CapacityRow("Majors", AmberTile));
         rows.AddChild(CapacityRow("Minors", GreenTile));
-        _wardRow = CapacityRow("Ward", UiStyle.Blue);
-        rows.AddChild(_wardRow);
-        _bedWait = Text(string.Empty, 12, UiStyle.AmberText, wrap: true);
-        rows.AddChild(_bedWait);
         cubicles.AddChild(rows);
         column.AddChild(cubicles);
+
+        // Free beds on the wards: where admitted patients go next.
+        var wards = SectionBox();
+        var wardRows = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        wardRows.AddThemeConstantOverride("separation", 6);
+        var wardLine = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        wardLine.AddChild(Text("Ward beds free", 14, expand: true));
+        _bedsFree = Text(string.Empty, 14, align: HorizontalAlignment.Right);
+        wardLine.AddChild(_bedsFree);
+        wardRows.AddChild(wardLine);
+        _bedsBar = new CapacityBar(UiStyle.Blue, EmptySlot) { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        wardRows.AddChild(_bedsBar);
+        _bedWait = Text(string.Empty, 12, UiStyle.AmberText, wrap: true);
+        wardRows.AddChild(_bedWait);
+        wards.AddChild(wardRows);
+        wards.MouseFilter = MouseFilterEnum.Pass;
+        wards.TooltipText = "Empty beds on your wards (the bar fills as beds are taken)";
+        column.AddChild(wards);
 
         var ambulance = SectionBox();
         var line = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
@@ -103,10 +117,6 @@ public partial class DepartmentDashboard : PanelContainer
         stats.AddChild(StatBox("doctor", "To doctor", "average"));
         stats.AddChild(StatBox("accuracy", "Diagnosis", "accurate"));
         column.AddChild(stats);
-
-        column.AddChild(new HSeparator { MouseFilter = MouseFilterEnum.Ignore });
-        _footer = Text(string.Empty, 12, UiStyle.TextMuted, wrap: true);
-        column.AddChild(_footer);
         Refresh();
     }
 
@@ -148,8 +158,13 @@ public partial class DepartmentDashboard : PanelContainer
         SetCapacity("Resus", s.Resus);
         SetCapacity("Majors", s.Majors);
         SetCapacity("Minors", s.Minors);
-        _wardRow.Visible = s.WardBeds.Total > 0;
-        SetCapacity("Ward", s.WardBeds);
+        var (used, total) = s.WardBeds;
+        var free = total - used;
+        Set(_bedsFree, total == 0
+            ? "[color=#5B6B79]No wards yet[/color]"
+            : free == 0 ? $"[b][color={ClinicalText.AmberTextHex}]0 of {total}[/color][/b]" : $"[b]{free} of {total}[/b]");
+        _bedsBar.Visible = total > 0;
+        _bedsBar.Set(used, total);
         _bedWait.Visible = s.AwaitingBed > 0;
         Set(_bedWait, $"{s.AwaitingBed} waiting in A&E for a ward bed");
 
@@ -162,24 +177,6 @@ public partial class DepartmentDashboard : PanelContainer
         Set(_stats["four"], $"[b][color={fourHex}]{four * 100:0}%[/color][/b]");
         Set(_stats["doctor"], $"[b]{s.AverageTimeToDoctorMinutes:0} min[/b]");
         Set(_stats["accuracy"], $"[b]{s.DiagnosticAccuracy * 100:0}%[/b]");
-
-        var footer = $"[b][color=#17232E]Since opening[/color][/b] · {s.ArrivalsTotal} arrivals ({s.AmbulanceArrivalsTotal} by ambulance)\n" +
-                     $"{s.Discharged} home · {s.Admitted} admitted · {s.Transferred} transferred · {s.LeftWithoutBeingSeen} left unseen · {s.Deaths} died";
-        if (s.Admitted > 0)
-        {
-            footer += $"\nWards: {s.WardDischarges} home · {s.WardDeaths} died";
-        }
-
-        if (_sim.IsUnlocked(HospitalSimulation.MaternityDepartmentId))
-        {
-            var m = _sim.MaternityStats;
-            var shut = _sim.MaternityClosedReasons;
-            footer += shut.Count > 0
-                ? $"\n[b][color=#17232E]Maternity[/color][/b] · closed, needs {string.Join(", ", shut)}"
-                : $"\n[b][color=#17232E]Maternity[/color][/b] · {m.Births} babies born · {m.Caesareans} caesareans · {m.NeonatalAdmissions} to the neonatal unit · {m.NeonatalTransfers + m.Diverted} sent elsewhere";
-        }
-
-        Set(_footer, footer);
     }
 
     private void SetCapacity(string name, (int Used, int Total) usage)
