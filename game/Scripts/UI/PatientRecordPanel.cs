@@ -165,11 +165,12 @@ public partial class PatientRecordPanel : PanelContainer
 
         _now.Detail.Visible = _now.Detail.Text.Length > 0;
 
-        var time = p.Maternity ? now - p.ArrivedAt : p.TimeInDepartment(now);
-        var counting = p.IsInDepartment && !p.Maternity;
-        ((Label)_timeTile.Value.GetParent().GetChild(1)).Text = p.Maternity ? "In hospital" : "In A&E";
+        // Once admitted the A&E clock stops: the tile shows their length of stay instead.
+        var time = p.Maternity ? now - p.ArrivedAt : p.LengthOfStay(now) ?? p.TimeInEmergency(now);
+        var counting = p.EmergencyClockRunning;
+        ((Label)_timeTile.Value.GetParent().GetChild(1)).Text = p.Maternity ? "In hospital" : p.AdmissionType is { } type ? $"{type} stay" : "In A&E";
         _timeTile.Value.Text = ClinicalText.Duration(time);
-        _timeTile.Value.AddThemeColorOverride("font_color", time > TimeSpan.FromHours(4) && counting ? UiStyle.Red : time > TimeSpan.FromHours(2) && counting ? UiStyle.AmberText : UiStyle.TextDark);
+        _timeTile.Value.AddThemeColorOverride("font_color", time > Patient.FourHours && counting ? UiStyle.Red : time > TimeSpan.FromHours(2) && counting ? UiStyle.AmberText : UiStyle.TextDark);
         if (p.LatestObservations is { } latest)
         {
             _painTile.Value.Text = $"{latest.Obs.PainScore}/10";
@@ -248,15 +249,26 @@ public partial class PatientRecordPanel : PanelContainer
         }
         else
         {
-            sb.Append($"Arrived {p.ArrivedAt:HH:mm} ({how}) · [b]{ClinicalText.Duration(p.TimeInDepartment(now))}[/b] in A&E");
+            sb.Append($"Arrived {p.ArrivedAt:HH:mm} ({how}) · [b]{ClinicalText.Duration(p.TimeInEmergency(now))}[/b] in A&E");
         }
 
-        if (!p.Maternity && p.TimeInDepartment(now) > TimeSpan.FromHours(4) && p.IsInDepartment)
+        if (p.OverFourHours(now))
         {
             sb.Append($" [color={ClinicalText.RedHex}][b]· over 4 hours[/b][/color]");
         }
 
         sb.Append('\n');
+        if (p.AdmissionType is { } admission && p.AdmittedAt is { } admittedAt)
+        {
+            var stay = ClinicalText.Duration(p.LengthOfStay(now)!.Value);
+            sb.Append($"[b]{admission}[/b] · admitted {admittedAt:HH:mm} · length of stay [b]{stay}[/b]");
+            if (!p.Maternity)
+            {
+                sb.Append(p.TimeInEmergency(now) <= Patient.FourHours ? " · left A&E within 4 hours" : $" [color={ClinicalText.RedHex}]· left A&E after 4 hours[/color]");
+            }
+
+            sb.Append('\n');
+        }
 
         if (p.Triage is not null)
         {
