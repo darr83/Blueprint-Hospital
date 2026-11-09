@@ -38,6 +38,10 @@ public partial class BuildBar : Control
     private HospitalSimulation _sim = null!;
     private BuildTool _tool = null!;
     private Button? _openButton;
+
+    /// <summary>Colour swatches and turning for waiting chairs, shown while placing them.</summary>
+    private HBoxContainer? _chairRow;
+    private readonly List<(string Hex, Button Swatch)> _swatches = new();
     private Control? _hoverAnchor;
     private string? _selectedItem;
     private string? _flash;
@@ -257,6 +261,8 @@ public partial class BuildBar : Control
 
         _tiles.Clear();
         _openButton = null;
+        _chairRow = null;
+        _swatches.Clear();
         _hover.Visible = false;
         _hoverAnchor = null;
         if (OpenIcon is null)
@@ -321,8 +327,11 @@ public partial class BuildBar : Control
             _popupBody.AddChild(banner);
         }
 
-        var tiles = new HBoxContainer();
-        tiles.AddThemeConstantOverride("separation", 8);
+        // A long row wraps onto a second line so the pop-up stays on screen.
+        const int perRow = 12;
+        var tiles = new HFlowContainer { CustomMinimumSize = new Vector2(Math.Min(icon.Items.Count, perRow) * (TileWidth + 8), 0) };
+        tiles.AddThemeConstantOverride("h_separation", 8);
+        tiles.AddThemeConstantOverride("v_separation", 8);
         foreach (var item in icon.Items)
         {
             var tile = Tile(icon, item);
@@ -331,10 +340,54 @@ public partial class BuildBar : Control
         }
 
         _popupBody.AddChild(tiles);
+        if (icon.Items.Contains(BuildMenu.WaitingChairs))
+        {
+            _chairRow = ChairOptions();
+            _popupBody.AddChild(_chairRow);
+        }
+
         _popupBody.AddChild(_status);
         RefreshTiles();
         RefreshStatus();
         _popup.Size = Vector2.Zero;
+    }
+
+    /// <summary>The row under the tiles while placing chairs: upholstery colour, and which way they face.</summary>
+    private HBoxContainer ChairOptions()
+    {
+        var row = new HBoxContainer { Visible = false };
+        row.AddThemeConstantOverride("separation", 6);
+        var label = new Label { Text = "Chair colour", SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        label.AddThemeFontSizeOverride("font_size", 13);
+        label.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        row.AddChild(label);
+        foreach (var (name, hex) in ChairColours.All)
+        {
+            var swatch = new Button { FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(30, 30), TooltipText = name, ToggleMode = true };
+            foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+            {
+                var box = UiStyle.Box(new Color(hex), 6, state is "pressed" or "hover_pressed" ? UiStyle.TextDark : state == "hover" ? Colors.White : new Color(hex).Darkened(0.2f));
+                box.BorderWidthBottom = box.BorderWidthTop = box.BorderWidthLeft = box.BorderWidthRight = state is "pressed" or "hover_pressed" ? 3 : 1;
+                swatch.AddThemeStyleboxOverride(state, box);
+            }
+
+            swatch.Pressed += () =>
+            {
+                _tool.ChairColour = hex;
+                RefreshStatus();
+            };
+            _swatches.Add((hex, swatch));
+            row.AddChild(swatch);
+        }
+
+        row.AddChild(new Control { CustomMinimumSize = new Vector2(10, 0) });
+        var turn = new Button { Text = "Turn (Z)", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 30), TooltipText = "Turn the chairs a quarter" };
+        turn.Pressed += _tool.Turn;
+        row.AddChild(turn);
+        var auto = new Button { Text = "Back to wall", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 30), TooltipText = "Each chair faces away from the nearest wall, or lines up with the chair beside it" };
+        auto.Pressed += _tool.AutoFacing;
+        row.AddChild(auto);
+        return row;
     }
 
     private Button Tile(BuildMenuIcon icon, string item)
@@ -443,6 +496,9 @@ public partial class BuildBar : Control
     private bool Available(string item) =>
         !_sim.Database.RoomTemplates.TryGetValue(item, out var template) || template.IsCorridor || _sim.IsUnlocked(template.Department);
 
+    /// <summary>Picks a tile in the open pop-up as if clicked (for the smoke test).</summary>
+    public void Choose(string item) => Pick(item);
+
     private void Pick(string item)
     {
         _flash = null;
@@ -465,6 +521,12 @@ public partial class BuildBar : Control
                 break;
             case BuildMenu.WaitingChairs:
                 _tool.StartChairs();
+                break;
+            case BuildMenu.WaitingDesk:
+                _tool.StartDesk();
+                break;
+            case BuildMenu.WaitingDoors:
+                _tool.StartDoors();
                 break;
             case BuildMenu.AddFloor:
                 _tool.Cancel();
@@ -519,13 +581,35 @@ public partial class BuildBar : Control
 
     private void RefreshStatus()
     {
+        if (_chairRow is not null)
+        {
+            _chairRow.Visible = _tool.Mode == BuildMode.Chair;
+            foreach (var (hex, swatch) in _swatches)
+            {
+                swatch.SetPressedNoSignal(string.Equals(hex, _tool.ChairColour, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
         if (_tool.Check is { } check && _tool.Active)
         {
             _flash = null;
             if (check.CanBuild)
             {
-                var verb = _tool.Mode == BuildMode.Chair ? "Click to place a chair" : _tool.MovingId is null ? "Release to build" : "Release to rebuild here";
-                _status.Text = $"[color=#2E8B57]✓ {verb}: £{check.Cost:N0}[/color]";
+                var verb = _tool.Mode switch
+                {
+                    BuildMode.Chair => $"Click to place a chair, drag for a row · facing {_tool.FacingFor(_tool.Hover).ToString().ToLowerInvariant()} · Z turns",
+                    BuildMode.Desk => $"Click to place the reception desk · Z turns",
+                    BuildMode.Door when _tool.RemovingDoor => "Click to take this door out",
+                    BuildMode.Door => "Click to put a door here",
+                    _ => _tool.MovingId is null ? "Release to build" : "Release to rebuild here",
+                };
+                var price = check.Cost switch
+                {
+                    > 0 => $": £{check.Cost:N0}",
+                    < 0 => $": refund £{-check.Cost:N0}",
+                    _ => ": free",
+                };
+                _status.Text = $"[color=#2E8B57]✓ {verb}{price}[/color]";
             }
             else
             {
@@ -547,7 +631,13 @@ public partial class BuildBar : Control
         }
 
         _status.Text = _tool.Active
-            ? "Drag on the floor from corner to corner · Right click or Esc stops"
+            ? _tool.Mode switch
+            {
+                BuildMode.Chair => "Click a waiting room or corridor tile for a chair, drag for a row · Z turns · Right click or Esc stops",
+                BuildMode.Desk => "Click inside a waiting room to place its reception desk · Z turns · Right click or Esc stops",
+                BuildMode.Door => "Click a waiting room wall: on the front path for the entrance, on a corridor for the way through · Right click or Esc stops",
+                _ => "Drag on the floor from corner to corner · Right click or Esc stops",
+            }
             : "Hover over a room for details · Click it, then drag on the floor";
     }
 
@@ -600,6 +690,8 @@ public partial class BuildBar : Control
         BuildMenu.ExtendBuilding => "Extend building",
         BuildMenu.AddFloor => "Add a floor",
         BuildMenu.WaitingChairs => "Waiting chairs",
+        BuildMenu.WaitingDesk => "Reception desk",
+        BuildMenu.WaitingDoors => "Waiting room doors",
         _ => _sim.Database.RoomTemplates.TryGetValue(item, out var t) ? t.Name : item,
     };
 
@@ -633,10 +725,34 @@ public partial class BuildBar : Control
             }
 
             case BuildMenu.WaitingChairs:
-                lines.Add("Clinic patients wait on chairs in Outpatients reception and on chairs along the corridors. Click a corridor tile to place one; keep doorways clear. In Build mode, click a chair to remove it.");
-                lines.Add($"{muted}Cost[/color]  £{_sim.CorridorChairCost:N0} each");
-                lines.Add($"{muted}Placed[/color]  {_sim.CorridorChairs.Count}");
+            {
+                var inRooms = _sim.Chairs.Count(c => _sim.Spaces.Any(r => r.Kind == CareSpaceKind.Waiting && r.Rect.Contains(c.Tile)));
+                lines.Add("Place chairs in a waiting room or anywhere along a corridor. Patients waiting for triage sit in the waiting room; everyone else sits on the free chair nearest where they are going, or stands if there isn't one. Drag for a row, Z turns them, and pick a colour below.");
+                lines.Add($"{muted}Cost[/color]  £{_sim.ChairCost:N0} each; turning or recolouring a placed chair is free");
+                lines.Add($"{muted}Placed[/color]  {_sim.Chairs.Count} ({inRooms} in waiting rooms, {_sim.Chairs.Count - inRooms} in corridors)");
                 break;
+            }
+
+            case BuildMenu.WaitingDesk:
+            {
+                lines.Add("Every waiting room needs a reception desk. The receptionist sits behind it and patients queue in front. Z turns it; placing it again moves it for free.");
+                lines.Add($"{muted}Cost[/color]  £{_sim.ReceptionDeskCost:N0}");
+                lines.Add($"{muted}Size[/color]  2.5 m long, with a queue of up to {WaitingRoomLayout.MaxQueue} in front");
+                break;
+            }
+
+            case BuildMenu.WaitingDoors:
+            {
+                lines.Add("A waiting room needs an entrance door on the front path (the blue mat outside the main entrance) and a door onto a corridor so patients can go through to be seen. Click a door again to take it out.");
+                lines.Add($"{muted}Cost[/color]  £{HospitalSimulation.EntranceDoorCost:N0} for the entrance, £{HospitalSimulation.InnerDoorCost:N0} for an inner door; 2 m wide, up to {HospitalSimulation.MaxWaitingDoors} per room");
+                if (_sim.MainWaitingRoom is { } room)
+                {
+                    var problems = _sim.WaitingRoomProblems(room);
+                    lines.Add(problems.Count == 0 ? $"[color=#2E8B57]{room.Name} is ready.[/color]" : $"[color=#8A5300]{room.Name}: {string.Join(" ", problems)}[/color]");
+                }
+
+                break;
+            }
 
             default:
                 if (!_sim.Database.RoomTemplates.TryGetValue(item, out var t))

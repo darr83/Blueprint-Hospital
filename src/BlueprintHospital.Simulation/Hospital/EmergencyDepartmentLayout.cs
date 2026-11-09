@@ -4,7 +4,8 @@ using BlueprintHospital.Simulation.World;
 namespace BlueprintHospital.Simulation.Hospital;
 
 /// <summary>
-/// The A&amp;E every new game starts with, built from the same room templates the player uses.
+/// The A&amp;E every new game starts with, built from the same room templates the player uses. There is no waiting
+/// room: the player builds and fits that out (see <c>HospitalSimulation.BuildStarterWaitingRoom</c> for the old one).
 /// Coordinates are relative to the building's corner; one tile is 0.5 m.
 /// </summary>
 public static class EmergencyDepartmentLayout
@@ -27,7 +28,6 @@ public static class EmergencyDepartmentLayout
         new("doctors_office", "doctors_office", "Doctors' office", 4, 17, 10, 9, WallSide.North),
         new("triage_room", "triage_1", "Triage", 30, 17, 9, 8, WallSide.West),
         new("nurses_station", "nurses_station", "Nurses' station", 38, 17, 10, 9, WallSide.North),
-        new("waiting_room", "waiting_room", "Waiting room", 15, 26, 22, 14, WallSide.North),
     };
 
     public static List<CareSpace> Create(Building building, GameDatabase database)

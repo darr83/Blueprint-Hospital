@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Hospital;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Hospital;
+using BlueprintHospital.Simulation.World;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Staff;
 using Godot;
@@ -25,7 +27,7 @@ public partial class ArtGallery : Node2D
     private int _shot;
     private Patient[] _patients = Array.Empty<Patient>();
 
-    private static readonly string[] Pages = { "people", "beds_and_transport", "equipment", "maternity" };
+    private static readonly string[] Pages = { "people", "beds_and_transport", "equipment", "maternity", "chairs" };
 
     public static bool Begin()
     {
@@ -158,6 +160,10 @@ public partial class ArtGallery : Node2D
 
         switch (page)
         {
+            case "chairs":
+                ChairsPage((y, spacing, items, scale) => Row(y, spacing, items, scale), P);
+                break;
+
             case "maternity":
                 MaternityPage((y, spacing, items, scale) => Row(y, spacing, items, scale), Furniture, foot, time);
                 break;
@@ -391,6 +397,47 @@ public partial class ArtGallery : Node2D
             ("Changing unit", item("baby_changing_unit")),
             ("Breast pump", item("breast_pump")),
         }, 1.5f);
+    }
+
+    /// <summary>The chairs sheet: the old chair, the new one at each facing, with and without a sitter, and every colour.</summary>
+    private static void ChairsPage(Action<float, float, IEnumerable<(string, Action<CanvasItem>)>, float> row, Func<int, PersonLook> person)
+    {
+        var tile = new GridCoord(0, 0);
+        var blue = new Color(ChairColours.Default);
+        var sides = new[] { WallSide.South, WallSide.East, WallSide.North, WallSide.West };
+        string Name(WallSide s) => s switch { WallSide.South => "south", WallSide.East => "east", WallSide.North => "north", _ => "west" };
+
+        void Sitting(CanvasItem c, WallSide facing, Color colour, PersonLook look)
+        {
+            var foot = IsoDraw.ToScreen(0.5, 0.5);
+            ChairArt.Back(c, tile, facing, colour);
+            if (!ChairArt.FacesAway(facing))
+            {
+                ChairArt.Seat(c, tile, facing, colour);
+                Figures.Seated(c, foot, look, lean: ChairArt.Lean(facing));
+            }
+            else
+            {
+                ChairArt.Seat(c, tile, facing, colour);
+                Figures.Seated(c, foot, look, away: true);
+                ChairArt.Back(c, tile, facing, colour);
+            }
+        }
+
+        var list = new List<(string, Action<CanvasItem>)>
+        {
+            ("Old chair", c =>
+            {
+                IsoDraw.Box(c, 0.2, 0.15, 0.6, 0.12, 24, blue.Darkened(0.1f));
+                IsoDraw.Box(c, 0.15, 0.15, 0.7, 0.7, 11, blue);
+            }),
+        };
+        list.AddRange(sides.Select(s => ($"Facing {Name(s)}", (Action<CanvasItem>)(c => ChairArt.Whole(c, tile, s, blue)))));
+        row(190, 230, list, 3.2f);
+
+        row(470, 230, sides.Select((s, i) => ($"Sitting, {Name(s)}", (Action<CanvasItem>)(c => Sitting(c, s, blue, person(i + 2))))), 3.2f);
+
+        row(760, 175, ChairColours.All.Select((col, i) => (col.Name, (Action<CanvasItem>)(c => ChairArt.Whole(c, tile, WallSide.South, new Color(col.Hex))))), 2.6f);
     }
 
     /// <summary>The ambulance crew's stretcher, as drawn while the patient waits in the ambulance queue.</summary>

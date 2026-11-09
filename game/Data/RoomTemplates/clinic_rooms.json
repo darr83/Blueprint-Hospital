@@ -3,34 +3,33 @@
     "id": "outpatient_reception",
     "name": "Outpatients reception",
     "category": "Clinics",
-    "description": "Where clinic patients check in at the desk, then wait on the seats (or on chairs placed in the corridors) until they are called.",
+    "description": "A check-in desk for clinic patients. Once checked in they wait on the free corridor chair nearest their clinic, or stand outside it if every chair is taken.",
     "kind": "outpatient_reception",
     "department": "outpatients",
     "layout": "waiting",
     "sizes": [
       {
         "name": "Small",
-        "width_m": 7,
-        "length_m": 5
+        "width_m": 3.5,
+        "length_m": 3
       },
       {
         "name": "Standard",
-        "width_m": 10,
-        "length_m": 6
+        "width_m": 5,
+        "length_m": 4
       }
     ],
-    "min_width_m": 5,
-    "min_length_m": 4,
-    "max_width_m": 20,
-    "max_length_m": 14,
+    "min_width_m": 3,
+    "min_length_m": 2.5,
+    "max_width_m": 10,
+    "max_length_m": 8,
     "door_width_m": 2.0,
-    "base_cost": 10000,
+    "base_cost": 8000,
     "cost_per_square_metre": 700,
     "staffing": "Hire a receptionist posted to Outpatients reception.",
     "furniture": [
       "reception_desk",
-      "staff_chair",
-      "waiting_seat"
+      "staff_chair"
     ]
   },
   {

@@ -39,7 +39,7 @@ public enum StartingHospital
     /// <summary>A small, staffed A&amp;E: cubicles, resus, triage, offices and a starting team.</summary>
     SmallEmergency,
 
-    /// <summary>The hospital building, roads and a waiting room with reception; everything else is built and hired by the player.</summary>
+    /// <summary>The hospital building and roads; everything else is built and hired by the player.</summary>
     EmptyBuilding,
 }
 
@@ -164,9 +164,6 @@ public sealed partial class HospitalSimulation
 
     public StaffMember? FindStaff(int id) => _staff.FirstOrDefault(s => s.Id == id);
 
-    /// <summary>The waiting room with reception. The building rules keep at least one.</summary>
-    public CareSpace Waiting => SpacesOfKind(CareSpaceKind.Waiting).First();
-
     /// <summary>Advances the hospital by one tick. Called by the clock.</summary>
     public void Tick()
     {
@@ -206,6 +203,7 @@ public sealed partial class HospitalSimulation
         UpdateEmergencyCalls();
         UpdateGeneralAnnouncements();
         UpdatePatientFlow();
+        ReseatStandingPatients();
         UpdateWards();
         UpdateClinics(dt);
         UpdateRefreshments(dt);
@@ -335,38 +333,30 @@ public sealed partial class HospitalSimulation
 
     private GridCoord QueueTile(int index)
     {
-        var tiles = Waiting.QueueTiles;
-        return tiles.Count == 0 ? Waiting.PatientSpot : tiles[Math.Min(index, tiles.Count - 1)];
+        if (MainWaitingRoom is not { } waiting)
+        {
+            return EntranceTile;
+        }
+
+        var tiles = waiting.QueueTiles;
+        return tiles.Count == 0 ? waiting.PatientSpot : tiles[Math.Min(index, tiles.Count - 1)];
+    }
+
+    /// <summary>Just inside the main entrance: where people go when there is nowhere better.</summary>
+    internal GridCoord EntranceTile
+    {
+        get
+        {
+            var e = MainBuilding.Entrances.First(e => !e.IsAmbulanceEntrance);
+            var (dx, dy) = WaitingRoomLayout.Step(WaitingRoomLayout.Opposite(e.Side));
+            var middle = e.Side is WallSide.North or WallSide.South ? new GridCoord(e.Tile.X + (e.WidthTiles / 2), e.Tile.Y) : new GridCoord(e.Tile.X, e.Tile.Y + (e.WidthTiles / 2));
+            return new GridCoord(middle.X + (2 * dx), middle.Y + (2 * dy));
+        }
     }
 
     internal string Describe(Patient p) => $"{p.FullName} ({p.Age}{(p.Sex == Sex.Female ? "F" : "M")})";
 
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
-
-    private GridCoord? FreeSeat()
-    {
-        var taken = _patients.Values.Where(p => p.Seat.HasValue).Select(p => p.Seat!.Value).ToHashSet();
-        foreach (var seat in SpacesOfKind(CareSpaceKind.Waiting).SelectMany(w => w.Seats))
-        {
-            if (!taken.Contains(seat))
-            {
-                return seat;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>Sends a patient to a waiting-room seat (or to stand in the room if all seats are taken).</summary>
-    internal void SendToWaitingRoom(Patient patient)
-    {
-        ReleaseSpace(patient);
-        var seat = FreeSeat();
-        patient.Seat = seat;
-        var room = Waiting.Rect;
-        var destination = seat ?? new GridCoord(room.X + (room.Width / 2) + Random.Range(-3, 3), room.Y + (room.Length / 2));
-        WalkTo(patient, destination);
-    }
 
     internal void ReleaseSpace(Patient patient)
     {
@@ -449,7 +439,7 @@ public sealed partial class HospitalSimulation
         switch (member.Role)
         {
             case StaffRole.Receptionist:
-                return Waiting.StaffSpot;
+                return MainWaitingRoom?.StaffSpot ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault()?.StaffSpot ?? WaitingPlace(_staff.IndexOf(member));
             case StaffRole.Doctor:
                 return BaseSeat(member, CareSpaceKind.DoctorsOffice);
             case StaffRole.Porter:
@@ -481,7 +471,12 @@ public sealed partial class HospitalSimulation
     /// <summary>Somewhere in a corridor to stand, spread out by <paramref name="index"/>.</summary>
     internal GridCoord WaitingPlace(int index)
     {
-        var corridor = SpacesOfKind(CareSpaceKind.Corridor).OrderByDescending(c => c.Rect.Area).FirstOrDefault() ?? Waiting;
+        var corridor = SpacesOfKind(CareSpaceKind.Corridor).OrderByDescending(c => c.Rect.Area).FirstOrDefault() ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault();
+        if (corridor is null)
+        {
+            return EntranceTile;
+        }
+
         var r = corridor.Rect;
         return new GridCoord(r.X + 1 + ((index * 3) % Math.Max(1, r.Width - 2)), r.Y + 1);
     }

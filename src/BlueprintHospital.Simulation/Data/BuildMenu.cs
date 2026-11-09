@@ -20,10 +20,16 @@ public sealed class BuildMenu
     /// <summary>Builds another floor straight away.</summary>
     public const string AddFloor = "add_floor";
 
-    /// <summary>Places waiting chairs along corridors.</summary>
+    /// <summary>Places waiting chairs in waiting rooms and along corridors.</summary>
     public const string WaitingChairs = "waiting_chairs";
 
-    public static readonly IReadOnlySet<string> SpecialItems = new HashSet<string> { ExtendBuilding, AddFloor, WaitingChairs };
+    /// <summary>Places (or moves) a waiting room's reception desk.</summary>
+    public const string WaitingDesk = "waiting_desk";
+
+    /// <summary>Puts doors in a waiting room's walls: the entrance on the front path, and doors through to corridors.</summary>
+    public const string WaitingDoors = "waiting_doors";
+
+    public static readonly IReadOnlySet<string> SpecialItems = new HashSet<string> { ExtendBuilding, AddFloor, WaitingChairs, WaitingDesk, WaitingDoors };
 
     private static readonly JsonSerializerOptions Options = new()
     {

@@ -147,10 +147,10 @@ public partial class ClinicsPanel : PanelContainer
             }
         }
 
-        sb.Append($"{Muted}{queueing} checking in · {waiting} waiting · {chairs} chairs ({_sim.CorridorChairs.Count} in corridors)[/color]\n");
+        sb.Append($"{Muted}{queueing} checking in · {waiting} waiting · {chairs} corridor chairs[/color]\n");
         if (waiting > chairs)
         {
-            sb.Append($"[color={ClinicalText.AmberTextHex}]Not enough chairs: place more in the corridors from Build mode.[/color]\n");
+            sb.Append($"[color={ClinicalText.AmberTextHex}]Not enough chairs: some patients are standing. Place chairs along the corridors near the clinics from Build mode.[/color]\n");
         }
 
         var date = _sim.Now.Date.AddDays(_dayOffset);

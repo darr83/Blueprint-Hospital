@@ -204,7 +204,7 @@ public static class Decorations
         }
 
         // People walk to the other rooms' corridor chairs too.
-        foreach (var chair in sim.CorridorChairs)
+        foreach (var chair in sim.Chairs)
         {
             blocked.Add(chair.Tile);
         }
@@ -428,7 +428,7 @@ public static class Decorations
     private static void PlaceCorridorBits(HospitalSimulation sim, List<(Vector2, Action<CanvasItem>)> props)
     {
         var rooms = sim.Spaces.Where(s => s.HasWalls && IsoDraw.OnViewFloor(s.Rect.Y)).Select(s => s.Rect).ToList();
-        var chairs = sim.CorridorChairs.Select(c => c.Tile).ToHashSet();
+        var chairs = sim.Chairs.Select(c => c.Tile).ToHashSet();
         foreach (var building in sim.Site.Buildings)
         {
             var count = 0;

@@ -107,11 +107,11 @@ public class BuildingTests
     }
 
     [Fact]
-    public void Cannot_demolish_the_last_waiting_room_or_an_occupied_room()
+    public void The_waiting_room_can_be_demolished_but_not_an_occupied_room()
     {
         var h = new SimulationHarness();
         var waiting = h.Sim.SpacesOfKind(CareSpaceKind.Waiting).Single();
-        Assert.Contains(h.Sim.CheckDemolish(waiting.Id).Problems, p => p.Contains("at least one"));
+        Assert.True(h.Sim.CheckDemolish(waiting.Id).CanBuild, string.Join("; ", h.Sim.CheckDemolish(waiting.Id).Problems));
 
         // The last triage room can go: A&E then closes to new patients until there is another.
         var triage = h.Sim.SpacesOfKind(CareSpaceKind.Triage).Single();
@@ -229,8 +229,8 @@ public class DragToBuildTests
     public void Bigger_rooms_get_more_furniture()
     {
         var h = WithWestWing();
-        var small = h.Sim.CheckRoomAt("waiting_room", new GridRect(B.X - 16, B.Y + 17, 10, 8));
-        var large = h.Sim.CheckRoomAt("waiting_room", new GridRect(B.X - 16, B.Y + 17, 16, 9));
+        var small = h.Sim.CheckRoomAt("staff_room", new GridRect(B.X - 16, B.Y + 17, 10, 8));
+        var large = h.Sim.CheckRoomAt("staff_room", new GridRect(B.X - 16, B.Y + 17, 16, 9));
         Assert.True(small.CanBuild, string.Join("; ", small.Problems));
         Assert.True(large.CanBuild, string.Join("; ", large.Problems));
         Assert.True(large.Preview!.Seats.Count > small.Preview!.Seats.Count);
