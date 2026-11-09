@@ -520,6 +520,17 @@ General rules for every data folder:
   (e.g. `chest_pain`). Other data refers to records by this id.
 - Field names are `snake_case`. Misspelt or unknown fields are rejected rather than ignored.
 
+### Medical data editor
+
+`tools/MedicalEditor/MedicalEditor.html` edits every illness, symptom, test and medicine in one place.
+Open it in Chrome or Edge, press **Open game data**, pick the Blueprint Hospital folder (or `game/Data`)
+and allow editing. Each illness page shows its symptoms, observations, severity, key tests, how each
+test reports it, treatment and outcome; tests, symptoms and medicines link back to the illnesses that
+use them. Problems the game would reject are flagged as you type with the same rules as the loader.
+**Save changes** writes straight back into the JSON files (only the files you changed), so the JSON stays
+the single source of truth. Renaming an id updates every reference. Browsers that can't write to
+folders download the changed files instead.
+
 ### How to add a symptom
 
 Add an entry to any file in `game/Data/Symptoms/`:
