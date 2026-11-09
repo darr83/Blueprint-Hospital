@@ -36,6 +36,9 @@ public enum MoneyCategory
 
     /// <summary>Money added from the cheat console.</summary>
     Cheats,
+
+    /// <summary>Payment for each birth (more for a caesarean section) and each day a baby spends on the neonatal unit.</summary>
+    Maternity,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

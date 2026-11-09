@@ -634,6 +634,7 @@ public sealed partial class HospitalSimulation
             CareSpaceKind.Ward when template.Department == "general_medicine" => "Ward",
             CareSpaceKind.Ward when template.Department == EmergencyDepartmentId => "A&E ward",
             CareSpaceKind.Ward => template.Name,
+            CareSpaceKind.Theatre when template.TheatreDepartments.Count > 0 => template.Name,
             CareSpaceKind.Theatre => "Theatre",
             CareSpaceKind.Pharmacy => "Pharmacy",
             _ => template.Name,

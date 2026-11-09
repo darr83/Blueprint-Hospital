@@ -41,6 +41,9 @@ public partial class WorldLayer : Node2D
 
     /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
     private readonly HashSet<GridCoord> _bedSpots = new();
+
+    /// <summary>Mother and baby ward beds that have a cot beside them, by the bed's patient spot.</summary>
+    private readonly HashSet<GridCoord> _cotBeds = new();
     private readonly List<Node> _staticNodes = new();
     private IDisposable? _layoutSubscription;
     private HospitalSimulation _sim = null!;
@@ -80,6 +83,7 @@ public partial class WorldLayer : Node2D
         _staticNodes.Clear();
         _monitors.Clear();
         _bedSpots.Clear();
+        _cotBeds.Clear();
         _seatTiles.Clear();
 
         foreach (var space in _sim.Spaces)
@@ -405,15 +409,25 @@ public partial class WorldLayer : Node2D
                 }
 
                 var colour = new Color(def.Colour);
+                var height = (float)(def.HeightM * IsoDraw.PixelsPerMetre);
                 switch (def.Style)
                 {
+                    case FurnitureStyle.Box when def.Id == "cot":
+                        AddCot(space, item, height);
+                        break;
+                    case FurnitureStyle.Bed when def.Id == "incubator":
+                        AddIncubator(space, item, height, colour);
+                        break;
+                    case FurnitureStyle.Bed when def.Id == "birthing_bed":
+                        AddBed(space.PatientSpot, false, () => space.OccupantId, blanket: Looks.MaternityBlanket);
+                        break;
                     case FurnitureStyle.Bed when space.IsServiceRoom:
                         AddTable(space, colour);
                         break;
                     case FurnitureStyle.Bed when space.IsWard:
                         if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
                         {
-                            AddBed(wardBed.PatientSpot, wardBed.HeadSouth, () => wardBed.OccupantId, onWard: true);
+                            AddBed(wardBed.PatientSpot, wardBed.HeadSouth, () => wardBed.OccupantId, onWard: true, blanket: _sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : null);
                         }
 
                         break;
@@ -445,7 +459,7 @@ public partial class WorldLayer : Node2D
         }
     }
 
-    private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false)
+    private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false, Color? blanket = null)
     {
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
         _bedSpots.Add(spot);
@@ -471,7 +485,9 @@ public partial class WorldLayer : Node2D
             {
                 if (lying)
                 {
-                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), onWard ? Looks.WardBlanket : Looks.EdBlanket, lift, headSouth, onWard ? null : Looks.Wristband(occupant!.Triage));
+                    var cover = blanket ?? (onWard ? Looks.WardBlanket : Looks.EdBlanket);
+                    var band = onWard || occupant!.Maternity ? null : Looks.Wristband(occupant!.Triage);
+                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), cover, lift, headSouth, band, OnChest(occupant!));
                 }
             });
         }, animated: true);
@@ -495,8 +511,78 @@ public partial class WorldLayer : Node2D
             var lift = Figures.Table(c, cx, cy, colour);
             if (patient is not null)
             {
-                Figures.Lying(c, cx, cy, Looks.Patient(patient), cover, lift, false);
+                Figures.Lying(c, cx, cy, Looks.Patient(patient), cover, lift, false, onChest: OnChest(patient));
             }
+        }, animated: true);
+    }
+
+    // ------------------------------------------------------------------ babies
+
+    /// <summary>A mother's babies who are with her (not on the neonatal unit or being carried).</summary>
+    public BabyLook[] BabiesWith(Patient mother)
+    {
+        if (!mother.Maternity || !mother.Delivered)
+        {
+            return Array.Empty<BabyLook>();
+        }
+
+        return _sim.Babies.Where(b => b.MotherId == mother.Id && b.Place == BabyPlace.WithMother).Select(b => Looks.Baby(b, mother)).ToArray();
+    }
+
+    /// <summary>True when mum is in a mother and baby ward bed with a cot beside it, so her baby sleeps in the cot.</summary>
+    private bool BabyInCot(Patient mother) =>
+        !mother.IsMoving && _sim.BedOf(mother) is { } bed && mother.Tile == bed.PatientSpot && _cotBeds.Contains(bed.PatientSpot) && InBed(mother);
+
+    /// <summary>Babies lying on mum's chest: skin to skin after the birth, or anywhere she is lying without a cot beside her.</summary>
+    private BabyLook[]? OnChest(Patient mother) => BabyInCot(mother) ? null : BabiesWith(mother);
+
+    /// <summary>The baby mum carries in her arms when she is up and about.</summary>
+    private BabyLook? InArms(Patient mother) => BabiesWith(mother) is { Length: > 0 } babies ? babies[0] : null;
+
+    /// <summary>The baby a nurse is carrying to or from the neonatal unit.</summary>
+    private BabyLook? CarriedBy(StaffMember member)
+    {
+        var baby = _sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.Carried && b.CarriedByStaffId == member.Id);
+        return baby is null ? null : Looks.Baby(baby, _sim.FindPatient(baby.MotherId));
+    }
+
+    /// <summary>A cot: on a mother and baby ward it belongs to the nearest bed, and that mum's baby sleeps in it while she is in bed.</summary>
+    private void AddCot(CareSpace space, PlacedFurniture item, float height)
+    {
+        var whole = (item.X, item.Y, item.Width, item.Length);
+        var (gx, gy) = (item.X + (item.Width / 2), item.Y + (item.Length / 2));
+        var bed = _sim.IsMotherAndBabyWard(space) && space.Beds.Count > 0
+            ? space.Beds.MinBy(b => Math.Pow(b.PatientSpot.X + 0.5 - gx, 2) + Math.Pow(b.PatientSpot.Y + 0.5 - gy, 2))
+            : null;
+        if (bed is not null)
+        {
+            _cotBeds.Add(bed.PatientSpot);
+        }
+
+        AddProp(IsoDraw.ToScreen(gx, gy), c =>
+        {
+            var babies = Array.Empty<BabyLook>();
+            if (bed?.OccupantId is { } id && _sim.FindPatient(id) is { } mother && BabyInCot(mother))
+            {
+                babies = BabiesWith(mother);
+            }
+
+            MaternityArt.Cot(c, whole, height, babies);
+        }, animated: bed is not null);
+    }
+
+    /// <summary>An incubator on the neonatal unit, with its baby.</summary>
+    private void AddIncubator(CareSpace space, PlacedFurniture item, float height, Color colour)
+    {
+        var whole = (item.X, item.Y, item.Width, item.Length);
+        var (gx, gy) = (item.X + (item.Width / 2), item.Y + (item.Length / 2));
+        var index = space.Beds.Count == 0 ? -1 : Enumerable.Range(0, space.Beds.Count).MinBy(i => Math.Pow(space.Beds[i].PatientSpot.X - gx, 2) + Math.Pow(space.Beds[i].PatientSpot.Y - gy, 2));
+        var headSouth = index >= 0 && space.Beds[index].HeadSouth;
+        AddProp(IsoDraw.ToScreen(gx, gy), c =>
+        {
+            var baby = _sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.NeonatalUnit && b.UnitId == space.Id && b.CotIndex == index);
+            var look = baby is null ? null : Looks.Baby(baby, _sim.FindPatient(baby.MotherId));
+            MaternityArt.Incubator(c, whole, height, colour, look, headSouth, Time);
         }, animated: true);
     }
 
@@ -654,7 +740,7 @@ public partial class WorldLayer : Node2D
                     else
                     {
                         var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
-                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing));
+                        Figures.Standing(this, foot, look, world.Time, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member));
                     }
 
                     break;
@@ -706,24 +792,26 @@ public partial class WorldLayer : Node2D
                 }
 
                 var lift = Figures.Trolley(this, gx, gy, patient.Facing);
-                Figures.LyingAlong(this, gx, gy, patient.Facing, look, patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket, lift, Looks.Wristband(patient.Triage));
+                var blanket = patient.Maternity ? Looks.MaternityBlanket : patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket;
+                Figures.LyingAlong(this, gx, gy, patient.Facing, look, blanket, lift, patient.Maternity ? null : Looks.Wristband(patient.Triage), world.BabiesWith(patient));
                 return;
             }
 
             DrawRing(foot, selected ? new Color("#FFEB3B") : Looks.TriageRing(patient.Triage));
+            var baby = world.InArms(patient);
             if (world.InWheelchair(patient))
             {
                 Figures.WheelchairBack(this, foot);
-                Figures.Seated(this, foot, look, alpha);
+                Figures.Seated(this, foot, look, alpha, baby);
                 Figures.WheelchairFront(this, foot);
             }
             else if (world.IsSeated(patient))
             {
-                Figures.Seated(this, foot, look, alpha);
+                Figures.Seated(this, foot, look, alpha, baby);
             }
             else
             {
-                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving));
+                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving), baby);
             }
         }
 

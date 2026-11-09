@@ -58,13 +58,21 @@ public sealed partial class HospitalSimulation
 
     public ClinicDefinition? ClinicOf(CareSpace clinic) => Database.Clinics.GetValueOrDefault(clinic.TemplateId);
 
+    /// <summary>Who sees a clinic's patients: a doctor, or the clinic's own kind of clinician (a midwife, a sonographer).</summary>
+    public StaffRole ClinicianFor(CareSpace clinic) => ClinicOf(clinic)?.Clinician ?? StaffRole.Doctor;
+
+    /// <summary>The clinic rooms whose patients are seen by someone in this role.</summary>
+    public IEnumerable<CareSpace> ClinicsRunBy(StaffRole role) =>
+        ClinicRooms.Where(c => ClinicianFor(c) == role).OrderBy(c => c.Id, StringComparer.Ordinal);
+
     /// <summary>What a clinic still needs before it can run (empty when it can).</summary>
     public IReadOnlyList<string> ClinicProblems(CareSpace clinic)
     {
         var problems = new List<string>();
-        if (!_staff.Any(s => s.BaseRoomId == clinic.Id && s.Role == StaffRole.Doctor))
+        var clinician = ClinicianFor(clinic);
+        if (!_staff.Any(s => s.BaseRoomId == clinic.Id && s.Role == clinician))
         {
-            problems.Add("a doctor posted to it");
+            problems.Add($"a {StaffGrades.RoleName(clinician)} posted to it");
         }
 
         var receptions = SpacesOfKind(CareSpaceKind.OutpatientReception).ToList();
@@ -161,7 +169,7 @@ public sealed partial class HospitalSimulation
                     Minutes = definition.AppointmentMinutes,
                     FirstName = Random.Pick(sex == Sex.Female ? names.FemaleFirstNames : names.MaleFirstNames),
                     Surname = Random.Pick(names.Surnames),
-                    Age = definition.FemaleOnly ? Random.Range(18, 80) : Random.Range(18, 92),
+                    Age = definition.AgeRange is { } ages ? Random.Range(ages[0], ages[1]) : definition.FemaleOnly ? Random.Range(18, 80) : Random.Range(18, 92),
                     Sex = sex,
                     Reason = Random.Pick(definition.Reasons),
                     WillAttend = !Random.Chance(DidNotAttendChance),
@@ -395,7 +403,8 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            var doctor = _staff.FirstOrDefault(s => s.BaseRoomId == clinic.Id && s.Role == StaffRole.Doctor && s.Activity == StaffActivity.Idle);
+            var clinician = ClinicianFor(clinic);
+            var doctor = _staff.FirstOrDefault(s => s.BaseRoomId == clinic.Id && s.Role == clinician && s.Activity == StaffActivity.Idle);
             if (doctor is null)
             {
                 continue;

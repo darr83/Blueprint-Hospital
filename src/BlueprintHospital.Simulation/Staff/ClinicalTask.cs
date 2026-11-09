@@ -43,6 +43,12 @@ public enum TaskKind
 
     /// <summary>A doctor reviews a patient whose monitor has gone red, at the bedside.</summary>
     RedReview,
+
+    /// <summary>
+    /// A neonatal nurse carries a newborn between mum and the neonatal unit. The task's patient is the
+    /// mother; <see cref="ClinicalTask.Detail"/> is the baby's id (with ":mother" when going back to her).
+    /// </summary>
+    CarryBaby,
 }
 
 /// <summary>

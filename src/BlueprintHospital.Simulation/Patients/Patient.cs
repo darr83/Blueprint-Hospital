@@ -335,6 +335,15 @@ public sealed class Patient : Agent
     /// <summary>Hours spent on a high dependency unit this stay.</summary>
     public double HighDependencyHours { get; set; }
 
+    /// <summary>Came straight to the maternity unit (in labour or with a pregnancy emergency) rather than through A&amp;E.</summary>
+    public bool Maternity { get; set; }
+
+    /// <summary>Weeks pregnant when she arrived (maternity patients only).</summary>
+    public int GestationWeeks { get; set; }
+
+    /// <summary>Has had her baby (or babies) here.</summary>
+    public bool Delivered { get; set; }
+
     /// <summary>Physiotherapy sessions on the ward this stay.</summary>
     public int PhysioSessions { get; set; }
 

@@ -25,7 +25,7 @@ public partial class ArtGallery : Node2D
     private int _shot;
     private Patient[] _patients = Array.Empty<Patient>();
 
-    private static readonly string[] Pages = { "people", "beds_and_transport", "equipment" };
+    private static readonly string[] Pages = { "people", "beds_and_transport", "equipment", "maternity" };
 
     public static bool Begin()
     {
@@ -145,8 +145,23 @@ public partial class ArtGallery : Node2D
             }
         }
 
+        Action<CanvasItem> Furniture(string id) => c =>
+        {
+            if (!sim.Database.Furniture.TryGetValue(id, out var def))
+            {
+                return;
+            }
+
+            var (w, l) = (def.WidthM / 0.5, def.DepthM / 0.5);
+            FurnitureArt.Slice(c, id, -w / 2, -l / 2, w, l, (-w / 2, -l / 2, w, l), (float)(def.HeightM * IsoDraw.PixelsPerMetre), new Color(def.Colour), Sides.None);
+        };
+
         switch (page)
         {
+            case "maternity":
+                MaternityPage((y, spacing, items, scale) => Row(y, spacing, items, scale), Furniture, foot, time);
+                break;
+
             case "people":
             {
                 var staff = new (string Label, StaffRole Role, string Grade)[]
@@ -316,6 +331,66 @@ public partial class ArtGallery : Node2D
                 break;
             }
         }
+    }
+
+    /// <summary>The maternity sheet: midwives, mums, babies, cots, incubators and the delivery room kit.</summary>
+    private void MaternityPage(Action<float, float, IEnumerable<(string, Action<CanvasItem>)>, float> row, Func<string, Action<CanvasItem>> item, Vector2 foot, double time)
+    {
+        var mum = _patients.FirstOrDefault(p => p.Sex == Sex.Female) ?? _patients[0];
+        var other = _patients.Where(p => p.Sex == Sex.Female).Skip(1).FirstOrDefault() ?? _patients[^1];
+        var young = new Color("#4A3020");
+        var pregnant = Looks.Patient(mum) with { Bump = true, Jacket = null, Hair = young, Glasses = false, Stick = false, Beard = false, Style = HairStyle.Ponytail, LongHair = true };
+        var pregnant2 = Looks.Patient(other) with { Bump = true, Jacket = null, Hair = new Color("#2B1E16"), Stick = false, Beard = false, Style = HairStyle.Curly };
+        var delivered = pregnant with { Bump = false };
+        BabyLook Baby(int id) => Looks.Baby(new Baby { Id = id, FirstName = "Baby", Surname = "Gallery", Sex = id % 2 == 0 ? Sex.Female : Sex.Male, WeightKg = 3.4, GestationWeeks = 40, BornAt = DateTime.Today, MotherId = mum.Id, Delivery = "Normal vaginal birth" }, mum);
+        PersonLook Staff(int id, StaffRole role, string grade) => Looks.Staff(new StaffMember { Id = id, Name = grade, Role = role, Grade = grade, DepartmentId = "maternity" });
+        var midwife = Staff(3, StaffRole.Midwife, "Band 6 midwife");
+        var senior = Staff(8, StaffRole.Midwife, "Band 7 midwife");
+        var nurse = Staff(7, StaffRole.Nurse, "Band 5 nurse");
+
+        row(175, 150, new (string, Action<CanvasItem>)[]
+        {
+            ("Midwife", c => Figures.Standing(c, foot, midwife, time, false, 21)),
+            ("Senior midwife", c => Figures.Standing(c, foot, senior, time, false, 56)),
+            ("Midwife + baby", c => Figures.Standing(c, foot, Staff(10, StaffRole.Midwife, "Band 5 midwife"), time, true, 70, holding: Baby(1))),
+            ("Nurse + baby, away", c => Figures.Standing(c, foot, nurse, time, true, 49, away: true, holding: Baby(2))),
+            ("In labour", c => Figures.Standing(c, foot, pregnant, time, true, 13)),
+            ("Antenatal visit", c => Figures.Standing(c, foot, pregnant2 with { Jacket = new Color("#5B4636") }, time, false, 26)),
+            ("Mum + baby", c => Figures.Standing(c, foot, delivered, time, true, 39, holding: Baby(3))),
+            ("Mum seated", c => Figures.Seated(c, foot, delivered, holding: Baby(4))),
+        }, 1.7f);
+
+        void BedAndCot(CanvasItem c, BabyLook[] inCot)
+        {
+            var cot = (X: 1.1, Y: -2.0, W: 1.2, L: 1.6);
+            var cotFirst = IsoDraw.ToScreen(cot.X + 0.6, cot.Y + 0.8).Y < IsoDraw.ToScreen(0, 0).Y;
+            if (cotFirst) MaternityArt.Cot(c, cot, 25.2f, inCot);
+            Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, delivered, Looks.MaternityBlanket, lift, false));
+            if (!cotFirst) MaternityArt.Cot(c, cot, 25.2f, inCot);
+        }
+
+        row(470, 380, new (string, Action<CanvasItem>)[]
+        {
+            ("Labour, CTG on", c =>
+            {
+                Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, pregnant, Looks.MaternityBlanket, lift, false));
+            }),
+            ("Skin to skin", c => Figures.Bed(c, 0, 0, false, false, lift => Figures.Lying(c, 0, 0, delivered with { Style = HairStyle.Long }, Looks.MaternityBlanket, lift, false, onChest: new[] { Baby(5) }))),
+            ("Bed + cot", c => BedAndCot(c, new[] { Baby(6) })),
+            ("Twins", c => BedAndCot(c, new[] { Baby(7), Baby(8) })),
+        }, 1.9f);
+
+        row(790, 190, new (string, Action<CanvasItem>)[]
+        {
+            ("Incubator", c => MaternityArt.Incubator(c, (-0.7, -1.2, 1.4, 2.4), 36.4f, new Color("#5C8FB8"), Baby(9), false, time)),
+            ("Empty incubator", c => MaternityArt.Incubator(c, (-0.7, -1.2, 1.4, 2.4), 36.4f, new Color("#5C8FB8"), null, true, time)),
+            ("Empty cot", c => MaternityArt.Cot(c, (-0.6, -0.8, 1.2, 1.6), 25.2f, Array.Empty<BabyLook>())),
+            ("CTG monitor", item("ctg_monitor")),
+            ("Resuscitaire", item("resuscitaire")),
+            ("Birthing ball", item("birthing_ball")),
+            ("Changing unit", item("baby_changing_unit")),
+            ("Breast pump", item("breast_pump")),
+        }, 1.5f);
     }
 
     /// <summary>The ambulance crew's stretcher, as drawn while the patient waits in the ambulance queue.</summary>

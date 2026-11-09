@@ -151,6 +151,12 @@ public sealed class PatientState
 
     public DateTime? LastRefreshmentAt { get; init; }
 
+    public bool Maternity { get; init; }
+
+    public int GestationWeeks { get; init; }
+
+    public bool Delivered { get; init; }
+
     public List<TimelineEntry> Timeline { get; init; } = new();
 
     public List<ObservationState> ObservationHistory { get; init; } = new();
@@ -362,8 +368,15 @@ public sealed class PeopleState
 
     public int NextOutpatientId { get; init; }
 
-    /// <summary>Patients coming round after endoscopy.</summary>
+    /// <summary>Patients coming round after endoscopy, and mothers having skin-to-skin after a birth.</summary>
     public List<RecoveryState> Recovering { get; init; } = new();
+
+    /// <summary>Babies born here (absent in older saves).</summary>
+    public List<BabyState> Babies { get; init; } = new();
+
+    public int NextBabyId { get; init; }
+
+    public MaternityStats? Maternity { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -416,6 +429,9 @@ public sealed partial class HospitalSimulation
         NextAppointmentId = _nextAppointmentId,
         NextOutpatientId = _nextOutpatientId,
         Recovering = _recovering.Values.OrderBy(r => r.PatientId).ToList(),
+        Babies = CaptureBabies(),
+        NextBabyId = NextBabyId,
+        Maternity = MaternityStats,
     };
 
     /// <summary>
@@ -537,7 +553,11 @@ public sealed partial class HospitalSimulation
         foreach (var theatre in SpacesOfKind(CareSpaceKind.Theatre))
         {
             theatre.AllowedDepartments.Clear();
-            if (state.TheatreAccess is null)
+            if (FixedTheatreDepartments(theatre) is { Count: > 0 } fixedFor)
+            {
+                theatre.AllowedDepartments.UnionWith(fixedFor);
+            }
+            else if (state.TheatreAccess is null)
             {
                 theatre.AllowedDepartments.UnionWith(SurgicalDepartments.Select(d => d.Id));
             }
@@ -629,6 +649,8 @@ public sealed partial class HospitalSimulation
         {
             _recovering[recovery.PatientId] = recovery;
         }
+
+        RestoreBabies(state.Babies, state.NextBabyId, state.Maternity);
     }
 
     // ------------------------------------------------------------------ patients
@@ -653,7 +675,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt,
+        LastRefreshmentAt = p.LastRefreshmentAt, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -721,6 +743,9 @@ public sealed partial class HospitalSimulation
         p.PhysioSessions = s.PhysioSessions;
         p.LastPhysioAt = s.LastPhysioAt;
         p.LastRefreshmentAt = s.LastRefreshmentAt;
+        p.Maternity = s.Maternity;
+        p.GestationWeeks = s.GestationWeeks;
+        p.Delivered = s.Delivered;
         p.RestoreTimeline(s.Timeline);
         foreach (var o in s.ObservationHistory)
         {

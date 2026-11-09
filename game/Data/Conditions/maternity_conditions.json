@@ -1,0 +1,625 @@
+[
+  {
+    "id": "established_labour",
+    "name": "Labour",
+    "department": "maternity",
+    "description": "Labour at full term: regular, strong contractions opening the cervix. Most women have their baby in the delivery room with a midwife; some labours stop progressing and need an emergency caesarean section.",
+    "prevalence": 78,
+    "age_range": [
+      17,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "woman in established labour",
+    "presenting_complaint": "contractions",
+    "symptoms": [
+      {
+        "symptom": "contractions",
+        "probability": 1
+      },
+      {
+        "symptom": "waters_broken",
+        "probability": 0.5
+      },
+      {
+        "symptom": "back_pain",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        10
+      ],
+      "systolic_bp": [
+        118,
+        10
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -10,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.08,
+    "disposition": "surgery",
+    "disposition_note": "Midwife assessment: in established labour.",
+    "operation": {
+      "name": "Normal vaginal birth",
+      "minutes": 300,
+      "room": "delivery_room"
+    },
+    "length_of_stay_hours": [
+      6,
+      36
+    ],
+    "maternity": {
+      "gestation_weeks": [
+        37,
+        42
+      ],
+      "neonatal_chance": 0.05,
+      "emergency_caesarean_chance": 0.12,
+      "emergency_caesarean": "failure_to_progress",
+      "twins_chance": 0.015,
+      "neonatal_reasons": [
+        "Grunting and breathing fast after the birth",
+        "Low blood sugar",
+        "Needs antibiotics for a possible infection",
+        "Jaundice needing phototherapy"
+      ],
+      "neonatal_stay_hours": [
+        24,
+        96
+      ]
+    }
+  },
+  {
+    "id": "preterm_labour",
+    "name": "Preterm labour",
+    "department": "maternity",
+    "description": "Labour before 37 weeks. The baby is born early and needs the neonatal unit for warmth, help with breathing and feeding, so women are only admitted where there is one.",
+    "prevalence": 8,
+    "age_range": [
+      17,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "woman in preterm labour",
+    "presenting_complaint": "contractions",
+    "symptoms": [
+      {
+        "symptom": "contractions",
+        "probability": 1
+      },
+      {
+        "symptom": "waters_broken",
+        "probability": 0.6
+      },
+      {
+        "symptom": "back_pain",
+        "probability": 0.3
+      },
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        10
+      ],
+      "systolic_bp": [
+        116,
+        10
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        37.0,
+        0.4
+      ],
+      "pain_score": [
+        4,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.35
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -10,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.08,
+    "disposition": "surgery",
+    "disposition_note": "Midwife assessment: preterm labour. Steroids given for the baby's lungs and the neonatal team told.",
+    "operation": {
+      "name": "Preterm vaginal birth",
+      "minutes": 240,
+      "room": "delivery_room"
+    },
+    "length_of_stay_hours": [
+      24,
+      48
+    ],
+    "maternity": {
+      "gestation_weeks": [
+        26,
+        36
+      ],
+      "neonatal_chance": 1.0,
+      "twins_chance": 0.04,
+      "neonatal_reasons": [
+        "Born early: needs an incubator for warmth",
+        "Born early: needs help with breathing",
+        "Born early: tube feeding until able to feed"
+      ],
+      "neonatal_stay_hours": [
+        96,
+        480
+      ]
+    }
+  },
+  {
+    "id": "breech_presentation",
+    "name": "Breech baby in labour",
+    "department": "maternity",
+    "description": "Labour with the baby bottom or feet first. Most are delivered by caesarean section.",
+    "prevalence": 5,
+    "age_range": [
+      18,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "woman in labour, breech baby",
+    "presenting_complaint": "contractions",
+    "symptoms": [
+      {
+        "symptom": "contractions",
+        "probability": 1
+      },
+      {
+        "symptom": "waters_broken",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        90,
+        10
+      ],
+      "systolic_bp": [
+        120,
+        10
+      ],
+      "diastolic_bp": [
+        75,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        4,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.25
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": -10,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.06,
+    "disposition": "surgery",
+    "disposition_note": "Midwife and obstetrician agree: breech baby, for caesarean section.",
+    "operation": {
+      "name": "Caesarean section",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      36,
+      72
+    ],
+    "maternity": {
+      "gestation_weeks": [
+        37,
+        41
+      ],
+      "neonatal_chance": 0.08,
+      "twins_chance": 0.02,
+      "neonatal_reasons": [
+        "Breathing fast after the caesarean",
+        "Low blood sugar"
+      ],
+      "neonatal_stay_hours": [
+        24,
+        72
+      ]
+    }
+  },
+  {
+    "id": "severe_pre_eclampsia",
+    "name": "Severe pre-eclampsia",
+    "department": "maternity",
+    "description": "Dangerously high blood pressure in late pregnancy, with headache, swelling and blurred vision. It can cause fits and strokes; the cure is delivering the baby, usually by caesarean section.",
+    "prevalence": 4,
+    "age_range": [
+      18,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "pregnant woman with very high blood pressure and headache",
+    "presenting_complaint": "headache",
+    "symptoms": [
+      {
+        "symptom": "headache",
+        "probability": 1
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.5
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.8
+      },
+      {
+        "symptom": "epigastric_pain_to_back",
+        "probability": 0.3
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        10
+      ],
+      "systolic_bp": [
+        168,
+        12
+      ],
+      "diastolic_bp": [
+        108,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.55
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": 30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.06,
+    "disposition": "surgery",
+    "disposition_note": "Obstetrician's review: severe pre-eclampsia. Blood pressure controlled; the baby needs delivering by caesarean section.",
+    "operation": {
+      "name": "Caesarean section for pre-eclampsia",
+      "minutes": 70
+    },
+    "length_of_stay_hours": [
+      48,
+      96
+    ],
+    "maternity": {
+      "gestation_weeks": [
+        30,
+        40
+      ],
+      "neonatal_chance": 0.45,
+      "twins_chance": 0.02,
+      "neonatal_reasons": [
+        "Small for dates: needs warmth and feeding support",
+        "Born early: needs help with breathing",
+        "Low blood sugar"
+      ],
+      "neonatal_stay_hours": [
+        48,
+        240
+      ]
+    }
+  },
+  {
+    "id": "placental_abruption",
+    "name": "Placental abruption",
+    "department": "maternity",
+    "description": "The placenta comes away from the womb before the baby is born: constant pain, a hard bump and bleeding. Mother and baby are both in danger and need an emergency caesarean section.",
+    "prevalence": 2,
+    "age_range": [
+      18,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "pregnant woman with heavy bleeding and abdominal pain",
+    "presenting_complaint": "constant_uterine_pain",
+    "symptoms": [
+      {
+        "symptom": "constant_uterine_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 0.8
+      },
+      {
+        "symptom": "reduced_fetal_movements",
+        "probability": 0.6
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        102,
+        12
+      ],
+      "diastolic_bp": [
+        64,
+        8
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.45,
+      0.65
+    ],
+    "deterioration_per_hour": 0.12,
+    "deterioration_effects": {
+      "heart_rate": 35,
+      "systolic_bp": -50,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.08,
+    "disposition": "surgery",
+    "disposition_note": "Obstetric emergency: placental abruption. Category 1 caesarean section.",
+    "operation": {
+      "name": "Emergency caesarean section",
+      "minutes": 45
+    },
+    "length_of_stay_hours": [
+      48,
+      96
+    ],
+    "maternity": {
+      "gestation_weeks": [
+        30,
+        41
+      ],
+      "neonatal_chance": 0.6,
+      "twins_chance": 0.0,
+      "neonatal_reasons": [
+        "Short of oxygen before the birth: needs close monitoring",
+        "Born early: needs help with breathing"
+      ],
+      "neonatal_stay_hours": [
+        48,
+        240
+      ]
+    }
+  },
+  {
+    "id": "failure_to_progress",
+    "name": "Labour not progressing",
+    "department": "maternity",
+    "description": "Labour that has stopped progressing, or a baby whose heart rate drops on the CTG. Delivered by emergency caesarean section. This only happens to women already in labour here.",
+    "prevalence": 0.001,
+    "age_range": [
+      17,
+      44
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "woman in labour",
+    "presenting_complaint": "contractions",
+    "symptoms": [
+      {
+        "symptom": "contractions",
+        "probability": 1
+      },
+      {
+        "symptom": "waters_broken",
+        "probability": 0.8
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        10
+      ],
+      "systolic_bp": [
+        120,
+        10
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        37.2,
+        0.4
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.3
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.06,
+    "disposition": "surgery",
+    "disposition_note": "Labour not progressing: for emergency caesarean section.",
+    "operation": {
+      "name": "Emergency caesarean section",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      36,
+      72
+    ],
+    "maternity": {
+      "arrives": false,
+      "gestation_weeks": [
+        37,
+        42
+      ],
+      "neonatal_chance": 0.12,
+      "twins_chance": 0.0,
+      "neonatal_reasons": [
+        "Breathing fast after the caesarean",
+        "Needs antibiotics for a possible infection"
+      ],
+      "neonatal_stay_hours": [
+        24,
+        96
+      ]
+    }
+  }
+]

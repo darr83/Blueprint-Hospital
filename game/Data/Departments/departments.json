@@ -120,6 +120,16 @@
     "opening_cost": 300000
   },
   {
+    "id": "maternity",
+    "name": "Maternity",
+    "short_name": "MAT",
+    "description": "Midwives deliver babies on the labour ward, mothers and babies recover together on the mother and baby ward, poorly newborns go to the neonatal unit, and pregnant women come for antenatal appointments and scans. Women in labour come straight here, not to A&E.",
+    "colour": "#D46A9F",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 250000
+  },
+  {
     "id": "outpatients",
     "name": "Outpatients",
     "short_name": "OPD",

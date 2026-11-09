@@ -39,11 +39,15 @@ public sealed record PersonLook(
     bool Skirt = false,
     Color? Jacket = null,
     Color? ShoeColour = null,
-    bool Stick = false)
+    bool Stick = false,
+    bool Bump = false)
 {
     /// <summary>The hair style, falling back to long or short hair.</summary>
     public HairStyle Hairdo => Style ?? (LongHair ? HairStyle.Long : HairStyle.Short);
 }
+
+/// <summary>A newborn's blanket, its edging, hat and skin.</summary>
+public sealed record BabyLook(Color Wrap, Color Trim, Color Hat, Color Skin);
 
 /// <summary>
 /// Flat-shaded people and clinical equipment in the game's isometric style. People are drawn
@@ -59,7 +63,7 @@ public static class Figures
     /// A standing (or walking) person whose feet are at <paramref name="foot"/>. With
     /// <paramref name="away"/> they are seen from behind, walking away from the viewer.
     /// </summary>
-    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f, bool away = false)
+    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f, bool away = false, BabyLook? holding = null)
     {
         c.DrawColoredPolygon(IsoDraw.FloorEllipse(foot, 10), new Color(0, 0, 0, 0.2f * alpha));
         var phase = (time * 9) + seed;
@@ -85,9 +89,9 @@ public static class Figures
             c.DrawLine(foot + new Vector2(2, -20 + bob), foot + new Vector2(3, -10 + bob), A(look.Trousers.Darkened(0.15f), alpha), 1f);
         }
 
-        Body(c, foot, look, -swing, alpha, drop: bob, away);
+        Body(c, foot, look, -swing, alpha, drop: bob, away, holding);
 
-        if (look.Stick && !away)
+        if (look.Stick && !away && holding is null)
         {
             // A walking stick in the right hand, planted a little ahead.
             var hand = foot + new Vector2(10.5f - (swing * 0.6f), -22 + bob);
@@ -97,7 +101,7 @@ public static class Figures
     }
 
     /// <summary>A person sitting on a chair whose seat centre is at <paramref name="foot"/>.</summary>
-    public static void Seated(CanvasItem c, Vector2 foot, PersonLook look, float alpha = 1f)
+    public static void Seated(CanvasItem c, Vector2 foot, PersonLook look, float alpha = 1f, BabyLook? holding = null)
     {
         var trousers = A(look.Trousers, alpha);
         var shins = look.Skirt ? A(look.Skin.Darkened(0.15f), alpha) : trousers;
@@ -116,15 +120,21 @@ public static class Figures
         c.DrawColoredPolygon(Ellipse(foot + new Vector2(-4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
         c.DrawColoredPolygon(Ellipse(foot + new Vector2(4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
 
-        Body(c, foot, look, 0, alpha, drop: 7, away: false);
+        Body(c, foot, look, 0, alpha, drop: 7, away: false, holding);
     }
 
-    private static void Body(CanvasItem c, Vector2 foot, PersonLook look, float armSwing, float alpha, float drop, bool away)
+    private static void Body(CanvasItem c, Vector2 foot, PersonLook look, float armSwing, float alpha, float drop, bool away, BabyLook? holding = null)
     {
         Vector2 P(float x, float y) => foot + new Vector2(x, y + drop);
         var outer = look.Jacket ?? look.Top;
         var top = A(outer, alpha);
         var skin = A(look.Skin, alpha);
+
+        if (holding is { } heldBehind && away)
+        {
+            // Seen from behind, only the end of the baby's blanket shows past the shoulder.
+            Baby(c, P(6, -33), heldBehind, alpha, 0.8f);
+        }
 
         // Torso; a tunic or a coat comes down over the hips.
         var hem = look.Tunic || look.Jacket is not null ? -16f : -19f;
@@ -132,6 +142,27 @@ public static class Figures
         c.DrawColoredPolygon(torso, top);
         c.DrawColoredPolygon(new[] { P(1, -41), P(6.5f, -41), P(9, -37), P(8.5f, hem), P(3, hem) }, A(outer.Darkened(0.12f), alpha));
         c.DrawPolyline(torso.Append(torso[0]).ToArray(), A(outer.Darkened(0.35f), alpha), 1f, true);
+
+        if (look.Bump)
+        {
+            // Heavily pregnant: a round bump under the top, catching the light on the left.
+            // Only the lower half rounds out past the torso, so it reads as a belly, not a disc.
+            var bump = new Vector2[13];
+            for (var i = 0; i < bump.Length; i++)
+            {
+                var a = -0.35f + (i * (Mathf.Pi + 0.7f) / (bump.Length - 1));
+                bump[i] = P(0.6f + (Mathf.Cos(a) * 9.6f), -27 + (Mathf.Sin(a) * 7.5f));
+            }
+
+            c.DrawColoredPolygon(bump, A(look.Top, alpha));
+            if (!away)
+            {
+                c.DrawArc(P(3.2f, -26.5f), 5.5f, -0.2f, Mathf.Pi * 0.55f, 8, A(look.Top.Darkened(0.14f), alpha), 2.4f, true);
+                c.DrawArc(P(-1.5f, -27.5f), 5f, Mathf.Pi * 0.75f, Mathf.Pi * 1.05f, 6, A(look.Top.Lightened(0.22f), alpha), 1.3f, true);
+            }
+
+            c.DrawPolyline(bump, A(look.Top.Darkened(0.35f), alpha), 1f, true);
+        }
 
         if (look.Jacket is not null && !away)
         {
@@ -193,11 +224,18 @@ public static class Figures
 
         // Arms: short sleeves and bare forearms (bare below the elbows), unless in long sleeves or a coat.
         var longSleeves = look.LongSleeves || look.Jacket is not null;
+        var cradling = holding is not null && !away;
+        if (holding is { } held && !away)
+        {
+            // Holding a baby in front of the chest, its head in the crook of the left arm.
+            Baby(c, P(0.5f, -31), held, alpha);
+        }
+
         foreach (var side in new[] { -1f, 1f })
         {
             var shoulder = P(side * 9, -38);
-            var elbow = P(side * 10.5f, -30 + (armSwing * side * 0.3f));
-            var hand = P(side * 10.5f + (armSwing * side * 0.6f), -22);
+            var elbow = cradling ? P(side * 10.5f, -29) : P(side * 10.5f, -30 + (armSwing * side * 0.3f));
+            var hand = cradling ? P(side * -3.5f, -27.5f) : P(side * 10.5f + (armSwing * side * 0.6f), -22);
             var sleeve = side > 0 ? A(outer.Darkened(0.1f), alpha) : top;
             c.DrawLine(shoulder, elbow, sleeve, 5f);
             if (!longSleeves)
@@ -251,9 +289,12 @@ public static class Figures
             }
             else
             {
-                c.DrawPolyline(new[] { P(-2, -41), P(1.5f, -30), P(2.5f, -41) }, A(new Color("#005EB8"), alpha), 1f);
-                c.DrawRect(new Rect2(P(0, -30), new Vector2(4, 5)), A(Colors.White, alpha));
-                c.DrawRect(new Rect2(P(0.6f, -29.3f), new Vector2(1.4f, 1.6f)), A(new Color("#9AB4CC"), alpha));
+                c.DrawPolyline(new[] { P(-2, -41), P(1.5f, cradling ? -36 : -30), P(2.5f, -41) }, A(new Color("#005EB8"), alpha), 1f);
+                if (!cradling)
+                {
+                    c.DrawRect(new Rect2(P(0, -30), new Vector2(4, 5)), A(Colors.White, alpha));
+                    c.DrawRect(new Rect2(P(0.6f, -29.3f), new Vector2(1.4f, 1.6f)), A(new Color("#9AB4CC"), alpha));
+                }
             }
         }
     }
@@ -455,23 +496,23 @@ public static class Figures
     /// A patient lying on their back under a blanket, head at the north end. (gx, gy) is the
     /// centre of the mattress in grid tiles; <paramref name="lift"/> is the mattress height in pixels.
     /// </summary>
-    public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift, bool headSouth = false, Color? band = null)
+    public static void Lying(CanvasItem c, double gx, double gy, PersonLook look, Color blanket, float lift, bool headSouth = false, Color? band = null, BabyLook[]? onChest = null)
     {
         var up = new Vector2(0, -lift - 1);
-        LyingFigure(c, (along, across) => IsoDraw.ToScreen(gx + across, headSouth ? gy - along : gy + along) + up, look, blanket, band);
+        LyingFigure(c, (along, across) => IsoDraw.ToScreen(gx + across, headSouth ? gy - along : gy + along) + up, look, blanket, band, onChest);
     }
 
     /// <summary>
     /// A patient lying under a blanket on a trolley that points along <paramref name="dir"/> (the way it is
     /// being pushed). Patients go feet first, so the head is at the back, by the porter.
     /// </summary>
-    public static void LyingAlong(CanvasItem c, double gx, double gy, (double X, double Y) dir, PersonLook look, Color blanket, float lift, Color? band = null)
+    public static void LyingAlong(CanvasItem c, double gx, double gy, (double X, double Y) dir, PersonLook look, Color blanket, float lift, Color? band = null, BabyLook[]? onChest = null)
     {
         var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
         var (fx, fy) = len < 1e-6 ? (0.0, 1.0) : (dir.X / len, dir.Y / len);
         var (nx, ny) = (-fy, fx);
         var up = new Vector2(0, -lift - 1);
-        LyingFigure(c, (along, across) => IsoDraw.ToScreen(gx + (fx * along) + (nx * across), gy + (fy * along) + (ny * across)) + up, look, blanket, band);
+        LyingFigure(c, (along, across) => IsoDraw.ToScreen(gx + (fx * along) + (nx * across), gy + (fy * along) + (ny * across)) + up, look, blanket, band, onChest);
     }
 
     /// <summary>Hospital gown: pale blue with a small print.</summary>
@@ -484,7 +525,7 @@ public static class Figures
     /// and their head on the pillow. <paramref name="at"/> maps (along, across) to the screen: along
     /// runs from the head (negative) to the feet (positive).
     /// </summary>
-    private static void LyingFigure(CanvasItem c, Func<double, double, Vector2> at, PersonLook look, Color blanket, Color? band)
+    private static void LyingFigure(CanvasItem c, Func<double, double, Vector2> at, PersonLook look, Color blanket, Color? band, BabyLook[]? onChest = null)
     {
         Vector2 Up(double along, double across, float h) => at(along, across) + new Vector2(0, -h);
 
@@ -516,6 +557,15 @@ public static class Figures
         c.DrawColoredPolygon(Array.ConvertAll(body, p => p + new Vector2(0.8f, 1.6f)), new Color(blanket.Darkened(0.2f), 0.6f));
         c.DrawColoredPolygon(body, blanket.Lightened(0.1f));
         c.DrawPolyline(new[] { Up(0.55, 0, Rise(0.55) - 0.6f), Up(1.0, 0, Rise(1.0) - 1), Up(1.5, 0, Rise(1.5) - 1) }, blanket.Darkened(0.2f), 1.2f, true);
+        if (look.Bump)
+        {
+            // The pregnant bump lifting the blanket over the tummy.
+            var dome = at(0.05, 0) + new Vector2(0, -7);
+            c.DrawColoredPolygon(Ellipse(dome + new Vector2(1, 3), 12, 8.5f), new Color(blanket.Darkened(0.25f), 0.5f));
+            c.DrawColoredPolygon(Ellipse(dome, 12, 8.5f), blanket.Lightened(0.12f));
+            c.DrawArc(dome + new Vector2(-3, -2.5f), 6, Mathf.Pi * 1.05f, Mathf.Pi * 1.6f, 8, blanket.Lightened(0.35f), 1.4f, true);
+            c.DrawArc(dome, 12, 0.15f, Mathf.Pi - 0.15f, 14, blanket.Darkened(0.2f), 1f, true);
+        }
         foreach (var side in new[] { -1.0, 1.0 })
         {
             // The two feet tenting the blanket.
@@ -600,6 +650,66 @@ public static class Figures
             c.DrawArc(face + new Vector2(-2.7f, 1.2f), 2f, 0, Mathf.Tau, 10, new Color("#2B2F33"), 0.7f, true);
             c.DrawArc(face + new Vector2(2.7f, 1.2f), 2f, 0, Mathf.Tau, 10, new Color("#2B2F33"), 0.7f, true);
         }
+
+        if (onChest is { Length: > 0 })
+        {
+            // Skin to skin: the newborn (or twins) lying on mum's chest, her hand round them.
+            for (var i = 0; i < onChest.Length; i++)
+            {
+                var spot = Up(-0.78 + (i * 0.32), (i * 0.18) - (0.09 * (onChest.Length - 1)), 7.5f);
+                Baby(c, spot, onChest[i]);
+            }
+
+            var hold = Up(-0.6, 0.28, 8.5f);
+            c.DrawLine(hold + new Vector2(5, 1), hold, skin, 4.2f);
+            c.DrawCircle(hold, 2.6f, skin);
+        }
+    }
+
+    /// <summary>
+    /// A newborn swaddled in a cellular blanket with a little knitted hat, lying across the screen
+    /// with the head to the left. <paramref name="at"/> is the middle of the bundle; it is about 0.5 m long.
+    /// </summary>
+    public static void Baby(CanvasItem c, Vector2 at, BabyLook look, float alpha = 1f, float scale = 1f)
+    {
+        // A touch larger than life, so babies read at normal zoom.
+        scale *= 1.3f;
+        Vector2 P(float x, float y) => at + (new Vector2(x, y) * scale);
+        var wrap = A(look.Wrap, alpha);
+        c.DrawColoredPolygon(Ellipse(P(1.5f, 2.2f), 8.2f * scale, 3.6f * scale), new Color(0, 0, 0, 0.12f * alpha));
+
+        // The bundle: rounded, a shade darker underneath, with the blanket's folds and its coloured edge.
+        var bundle = Ellipse(P(1.8f, 0), 7.4f * scale, 4.3f * scale, 18);
+        c.DrawColoredPolygon(bundle, wrap);
+        c.DrawColoredPolygon(Ellipse(P(2.2f, 1.6f), 6.4f * scale, 2.6f * scale, 14), A(look.Wrap.Darkened(0.1f), alpha));
+        c.DrawPolyline(bundle.Append(bundle[0]).ToArray(), A(look.Wrap.Darkened(0.32f), alpha), 0.8f, true);
+        c.DrawPolyline(new[] { P(-2.4f, -3.2f), P(1.5f, 0.2f), P(-1.8f, 3.6f) }, A(look.Trim, alpha), 1.3f * scale, true);
+        c.DrawLine(P(3.5f, -3.4f), P(6.5f, 2.2f), A(look.Wrap.Darkened(0.18f), alpha), 0.7f, true);
+        for (var i = 0; i < 3; i++)
+        {
+            c.DrawCircle(P(4 + (i * 1.6f), -1.2f + (i * 0.9f)), 0.45f * scale, A(look.Wrap.Darkened(0.2f), alpha));
+        }
+
+        // A round face peeping out, eyes closed, and a knitted hat with a turned-up brim.
+        var head = P(-4.6f, -0.6f);
+        var r = 3.5f * scale;
+        c.DrawCircle(head, r, A(look.Skin, alpha));
+        c.DrawCircle(head + new Vector2(0.9f, 0.9f) * scale, r * 0.75f, A(look.Skin.Darkened(0.05f), 0.6f * alpha));
+        c.DrawArc(head, r, 0, Mathf.Tau, 16, A(look.Skin.Darkened(0.28f), alpha), 0.7f, true);
+        var lid = A(look.Skin.Darkened(0.45f), alpha);
+        c.DrawArc(head + new Vector2(-1.3f, 0.5f) * scale, 0.7f * scale, 0.3f, Mathf.Pi - 0.3f, 5, lid, 0.6f, true);
+        c.DrawArc(head + new Vector2(0.9f, 0.5f) * scale, 0.7f * scale, 0.3f, Mathf.Pi - 0.3f, 5, lid, 0.6f, true);
+        c.DrawCircle(head + new Vector2(-1.9f, 1.6f) * scale, 0.7f * scale, A(new Color("#F2A5A0"), 0.45f * alpha));
+        var hat = new Vector2[12];
+        for (var i = 0; i < hat.Length; i++)
+        {
+            var a = Mathf.Pi + (i * Mathf.Pi / (hat.Length - 1));
+            hat[i] = head + (new Vector2(Mathf.Cos(a) * (r + 0.5f), (Mathf.Sin(a) * (r + 0.6f)) - 0.4f));
+        }
+
+        c.DrawColoredPolygon(hat, A(look.Hat, alpha));
+        c.DrawLine(head + new Vector2(-r - 0.4f, -0.4f), head + new Vector2(r + 0.4f, -0.4f), A(look.Hat.Darkened(0.15f), alpha), 1.6f * scale, true);
+        c.DrawCircle(head + new Vector2(0, -r - 0.9f), 1.1f * scale, A(look.Hat.Lightened(0.15f), alpha));
     }
 
     /// <summary>A rectangle with rounded corners in the (along, across) frame of a bed or trolley.</summary>

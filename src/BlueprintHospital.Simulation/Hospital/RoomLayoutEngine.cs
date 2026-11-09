@@ -20,7 +20,8 @@ public static class RoomLayoutEngine
     public static IReadOnlyList<string> RequiredFurniture(RoomLayoutKind layout) => layout switch
     {
         RoomLayoutKind.BedSpace => new[] { "hospital_bed", "obs_monitor" },
-        RoomLayoutKind.Ward => new[] { "hospital_bed" },
+        // Wards need beds; a neonatal unit has incubators instead.
+        RoomLayoutKind.Ward => Array.Empty<string>(),
         RoomLayoutKind.Triage => new[] { "staff_chair", "visitor_chair", "obs_monitor" },
         RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair", "waiting_seat" },
         RoomLayoutKind.Cafeteria => new[] { "food_counter", "cafe_table", "cafe_chair" },
@@ -112,7 +113,7 @@ public static class RoomLayoutEngine
             doors.Add(frame.Door(doorOffset, doorWidth, back: true));
         }
 
-        return new CareSpace
+        var space = new CareSpace
         {
             Id = id,
             Name = name,
@@ -132,6 +133,10 @@ public static class RoomLayoutEngine
             Furniture = plan.Items,
             BuildCost = Cost(template, database, rect, plan.Items),
         };
+
+        // A theatre kept for one department (the C-section theatre) takes only that department, for good.
+        space.AllowedDepartments.UnionWith(template.TheatreDepartments);
+        return space;
     }
 
     // ------------------------------------------------------------------ layouts
@@ -170,7 +175,7 @@ public static class RoomLayoutEngine
         // Obs monitor (or anaesthetic machine, or X-ray tube) at the head of the bed, on the side away from where staff stand.
         var side = plan.StaffSpot.X < spot.X ? 1 : -1;
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
-        var headItem = template.Furniture.FirstOrDefault(i => i is "obs_monitor" or "anaesthetic_machine" or "xray_tube");
+        var headItem = template.Furniture.FirstOrDefault(i => i is "obs_monitor" or "anaesthetic_machine" or "xray_tube" or "ctg_monitor");
         if (headItem is not null)
         {
             plan.AddWorld(headItem, cx + (side * 1.4) - 0.3, cy - 1.6 - 0.3, 0.6, 0.6);
@@ -190,12 +195,20 @@ public static class RoomLayoutEngine
     /// </summary>
     private static void Ward(Plan plan, RoomTemplate template)
     {
+        if (template.Furniture.Contains("incubator"))
+        {
+            NeonatalUnit(plan, template);
+            return;
+        }
+
         var r = plan.Frame.Rect;
 
         // Critical care beds stand further apart, with a ventilator and a monitor beside each one.
         var ventilated = template.Furniture.Contains("ventilator");
         var monitored = template.Furniture.Contains("obs_monitor");
-        var pitch = ventilated ? BedTilesX + 4 : BedTilesX + 2;
+        // A mother and baby ward has a cot beside every bed.
+        var cot = template.Furniture.Contains("cot");
+        var pitch = ventilated ? BedTilesX + 4 : cot ? BedTilesX + 3 : BedTilesX + 2;
         var north = (r.Y + 1, false);
         var south = (r.Bottom - 1 - BedTilesY, true);
         var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
@@ -208,7 +221,7 @@ public static class RoomLayoutEngine
         var locker = template.Furniture.Contains("bedside_locker");
         foreach (var (rowY, headSouth) in rows)
         {
-            for (var x = r.X + 1; x + BedTilesX <= r.Right - 1; x += pitch)
+            for (var x = r.X + 1; x + BedTilesX + (cot ? 2 : 0) <= r.Right - 1; x += pitch)
             {
                 if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
                 {
@@ -228,6 +241,10 @@ public static class RoomLayoutEngine
                     plan.AddWorld("ventilator", x + BedTilesX + 0.2, headY, 0.8, 0.8);
                     plan.AddWorld("obs_monitor", x + BedTilesX + 1.4, headY, 0.6, 0.6);
                 }
+                else if (cot && x + BedTilesX + 2 <= r.Right - 1)
+                {
+                    plan.AddWorld("cot", x + BedTilesX + 0.4, headSouth ? rowY + BedTilesY - 2.4 : rowY + 0.8, 1.2, 1.6);
+                }
                 else if (monitored && !locker && x + BedTilesX + 1 <= r.Right - 1)
                 {
                     plan.AddWorld("obs_monitor", x + BedTilesX + 0.2, headY, 0.6, 0.6);
@@ -243,7 +260,59 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor"))
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot"))
+        {
+            plan.TryPlaceAgainstWalls(item);
+        }
+    }
+
+    /// <summary>Incubators are 1 m by 1.5 m (2 x 3 tiles) including room to reach in.</summary>
+    private const int IncubatorTilesX = 2;
+    private const int IncubatorTilesY = 3;
+
+    /// <summary>
+    /// A neonatal unit: incubators in a row along the back wall (and a second row from 5.5 m deep), 2.5 m
+    /// apart with a monitor beside each one. Nurses work from the aisle in front of them.
+    /// </summary>
+    private static void NeonatalUnit(Plan plan, RoomTemplate template)
+    {
+        var r = plan.Frame.Rect;
+        var monitored = template.Furniture.Contains("obs_monitor");
+        const int pitch = IncubatorTilesX + 3;
+        var north = (r.Y + 1, false);
+        var south = (r.Bottom - 1 - IncubatorTilesY, true);
+        var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
+        if (r.Length >= 11)
+        {
+            rows.Add(plan.Frame.Side == WallSide.North ? north : south);
+        }
+
+        var door = plan.DoorApproach(4);
+        foreach (var (rowY, headSouth) in rows)
+        {
+            for (var x = r.X + 1; x + IncubatorTilesX <= r.Right - 1; x += pitch)
+            {
+                if (door.X < x + IncubatorTilesX && x < door.X + door.W && door.Y < rowY + IncubatorTilesY && rowY < door.Y + door.L)
+                {
+                    continue;
+                }
+
+                var spot = new GridCoord(x + 1, rowY + 1);
+                var staff = new GridCoord(x + 1, headSouth ? rowY - 1 : rowY + IncubatorTilesY);
+                plan.AddWorld("incubator", x + 0.3, rowY + 0.3, IncubatorTilesX - 0.6, IncubatorTilesY - 0.6);
+                plan.Beds.Add(new WardBed { PatientSpot = spot, StaffSpot = staff, HeadSouth = headSouth });
+                plan.Reserve(spot);
+                plan.Reserve(staff);
+                if (monitored && x + IncubatorTilesX + 1 <= r.Right - 1)
+                {
+                    plan.AddWorld("obs_monitor", x + IncubatorTilesX + 0.2, headSouth ? rowY + IncubatorTilesY - 0.8 : rowY + 0.2, 0.6, 0.6);
+                }
+            }
+        }
+
+        plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
+        plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
+        foreach (var item in template.Furniture.Where(i => i is not "incubator" and not "obs_monitor"))
         {
             plan.TryPlaceAgainstWalls(item);
         }

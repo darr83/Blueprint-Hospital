@@ -260,6 +260,7 @@ public partial class BuildPanel : PanelContainer
         CareSpaceKind.Pharmacy => "Dispenses for every ward",
         CareSpaceKind.Clinic => "1 booked patient at a time",
         CareSpaceKind.CathLab => "1 procedure at a time",
+        CareSpaceKind.DeliveryRoom => "1 woman in labour at a time",
         CareSpaceKind.PlasterRoom => "1 patient at a time",
         CareSpaceKind.PhysioGym => "Physios visit patients on every ward",
         CareSpaceKind.OutreachOffice => "Outreach nurses check every ward",

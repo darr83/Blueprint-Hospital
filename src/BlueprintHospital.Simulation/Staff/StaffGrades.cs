@@ -35,6 +35,10 @@ public static class StaffGrades
         new Grade(StaffRole.OutreachNurse, "Outreach nurse", 0.65, 0.90, 5, 20, 49_000, 0.8),
         new Grade(StaffRole.HealthcareAssistant, "Healthcare assistant (Band 3)", 0.35, 0.60, 0, 15, 25_000, 2.5),
         new Grade(StaffRole.Receptionist, "Receptionist", 0.40, 0.60, 0, 15, 24_000, 1.5),
+        new Grade(StaffRole.Midwife, "Band 5 midwife", 0.45, 0.60, 0, 3, 31_000, 3),
+        new Grade(StaffRole.Midwife, "Band 6 midwife", 0.60, 0.72, 2, 8, 39_000, 3),
+        new Grade(StaffRole.Midwife, "Band 7 midwife", 0.72, 0.85, 6, 15, 48_000, 1.5),
+        new Grade(StaffRole.Midwife, "Band 8 consultant midwife", 0.85, 0.97, 12, 30, 62_000, 0.5),
     };
 
     public static IEnumerable<Grade> For(StaffRole role) => All.Where(g => g.Role == role);
@@ -84,6 +88,8 @@ public static class StaffGrades
         (StaffRole.OutreachNurse, false) => "outreach nurse",
         (StaffRole.OutreachNurse, true) => "outreach nurses",
         (StaffRole.HealthcareAssistant, false) => "healthcare assistant",
+        (StaffRole.Midwife, false) => "midwife",
+        (StaffRole.Midwife, true) => "midwives",
         _ => "healthcare assistants",
     };
 }

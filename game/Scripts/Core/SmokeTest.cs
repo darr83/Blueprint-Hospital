@@ -30,6 +30,8 @@ public partial class SmokeTest : Node
     private int _savedRooms;
     private long _savedBalance;
     private int _savedPatients;
+    private int _savedBabies;
+    private Simulation.Patients.Patient? _mother;
     private int _savedOnWard;
     private int _savedAppointments;
     private int _savedChairs;
@@ -68,6 +70,8 @@ public partial class SmokeTest : Node
         CriticalCare,
         UpperFloor,
         UpperFloorWalk,
+        Maternity,
+        MaternityRecord,
         Rotate,
         Ambulance,
         Finances,
@@ -388,6 +392,26 @@ public partial class SmokeTest : Node
                 GD.Print($"[smoke] Viewed the first floor; {floorSim.Staff.Count(m => m.IsInBuilding && floorSim.FloorOf(m) == 1)} staff up there.");
                 hospital.ShowFloor(0);
                 Check(IsoDraw.ViewFloor == 0, "Page Down did not go back to the ground floor.");
+                _mother = BuildMaternity(hospital);
+                _frame = 0;
+                _stage = Stage.Maternity;
+                break;
+
+            case Stage.Maternity when scene is HospitalScene hospital && _frame >= 8:
+                Screenshot("09l_maternity");
+                CheckStaffPanelsFit(hospital);
+                hospital.Hud.HideRightPanels();
+                if (_mother is not null)
+                {
+                    hospital.SelectPatient(_mother, centre: false);
+                }
+
+                _frame = 0;
+                _stage = Stage.MaternityRecord;
+                break;
+
+            case Stage.MaternityRecord when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("09m_mother_and_baby_record");
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -472,6 +496,7 @@ public partial class SmokeTest : Node
                 _savedRooms = hospital.Session.Simulation.Spaces.Count();
                 _savedBalance = hospital.Session.Simulation.Balance;
                 _savedPatients = hospital.Session.Simulation.Patients.Count();
+                _savedBabies = hospital.Session.Simulation.Babies.Count;
                 _savedOnWard = hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
                 _savedAppointments = hospital.Session.Simulation.Appointments.Count;
                 _savedChairs = hospital.Session.Simulation.CorridorChairs.Count;
@@ -490,6 +515,7 @@ public partial class SmokeTest : Node
                 Check(hospital.Session.Simulation.Accounts.Take(2).Sum(d => d[Simulation.Simulation.MoneyCategory.Cheats]) == CheatMoney, "The cheat money line was not restored.");
                 Check(hospital.Session.Simulation.Patients.Count() == _savedPatients, $"Patients not restored ({hospital.Session.Simulation.Patients.Count()} of {_savedPatients}).");
                 Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
+                Check(hospital.Session.Simulation.Babies.Count == _savedBabies && _savedBabies > 0, $"Babies not restored ({hospital.Session.Simulation.Babies.Count} of {_savedBabies}).");
                 Check(hospital.Session.Simulation.Appointments.Count == _savedAppointments, "Clinic appointments not restored.");
                 Check(hospital.Session.Simulation.CorridorChairs.Count == _savedChairs, "Corridor chairs not restored.");
                 Check(hospital.Session.Simulation.FloorCount == _savedFloors && _savedFloors > 1, $"Floors not restored ({hospital.Session.Simulation.FloorCount} of {_savedFloors}).");
@@ -846,6 +872,76 @@ public partial class SmokeTest : Node
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(icu.Rect.X + (icu.Rect.Width / 2.0), icu.Rect.Y + (icu.Rect.Length / 2.0)), 1.1f);
         GD.Print($"[smoke] Built {icu.Name} with {icu.Beds.Count} ventilated beds; {onIcu} on ICU at {clock.Now:HH:mm}.");
+    }
+
+    /// <summary>
+    /// A maternity wing north of A&amp;E, off the end of the ICU corridor: a delivery room, a neonatal unit, a mother and baby
+    /// ward with cots and the C-section theatre, all staffed. Women in labour are brought in and the clock run until a
+    /// baby is born and back on the ward with mum. Returns a mother to open the record of.
+    /// </summary>
+    private static Simulation.Patients.Patient? BuildMaternity(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        hospital.Hud.HideRightPanels();
+        sim.AdjustBalance(3_000_000);
+        Check(sim.UnlockDepartment(Simulation.Simulation.HospitalSimulation.MaternityDepartmentId).CanBuild, "Could not unlock maternity.");
+        foreach (var rect in new[] { new Simulation.World.GridRect(b.X, b.Y - 28, 60, 14), new Simulation.World.GridRect(b.X, b.Y - 14, 30, 14) })
+        {
+            var wing = sim.ExtendBuilding(rect);
+            Check(wing.CanBuild, "Maternity wing refused: " + string.Join("; ", wing.Problems));
+        }
+
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X, b.Y - 18, 60, 4), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Maternity corridor refused: " + string.Join("; ", corridor.Problems));
+        foreach (var (template, rect) in new[]
+        {
+            ("delivery_room", new Simulation.World.GridRect(b.X, b.Y - 28, 10, 10)),
+            ("neonatal_unit", new Simulation.World.GridRect(b.X + 11, b.Y - 28, 18, 10)),
+            ("mother_baby_ward", new Simulation.World.GridRect(b.X, b.Y - 14, 18, 13)),
+            ("caesarean_theatre", new Simulation.World.GridRect(b.X + 18, b.Y - 14, 12, 12)),
+        })
+        {
+            var built = sim.BuildRoom(sim.AutoPlan(template, rect));
+            Check(built.CanBuild, $"{template} refused: " + string.Join("; ", built.Problems));
+        }
+
+        var theatre = sim.Spaces.Single(s => s.TemplateId == "caesarean_theatre");
+        Check(theatre.AllowedDepartments.SetEquals(new[] { "maternity" }), "The C-section theatre should be for maternity only.");
+        var ward = sim.MotherAndBabyWards.Single();
+        Check(ward.Furniture.Count(f => f.ItemId == "cot") >= ward.Beds.Count && ward.Beds.Count >= 2, $"The mother and baby ward has {ward.Beds.Count} beds and {ward.Furniture.Count(f => f.ItemId == "cot")} cots.");
+        foreach (var need in sim.RecommendedStaffing().Where(n => n.RoomId is not null && sim.FindSpace(n.RoomId)?.DepartmentId == "maternity").ToList())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                sim.HireStaff(need.Role, need.RoomId, 0.8, need.Shift);
+            }
+        }
+
+        Check(sim.IsMaternityOpen, "Maternity did not open: needs " + string.Join(", ", sim.MaternityClosedReasons));
+        var women = new[] { "established_labour", "preterm_labour" }.Select(c => sim.SpawnMaternityPatient(c)).ToList();
+        Check(women.All(w => w is not null), "A woman in labour was turned away from an open maternity unit: " + sim.Notifications.Recent.LastOrDefault()?.Text);
+
+        // Run until a mum is back in her ward bed with her baby in the cot beside her (or two days pass).
+        var clock = hospital.Session.Clock;
+        var limit = clock.Now.AddHours(48);
+        bool BackOnWard(Simulation.Patients.Patient p) => p.Delivered && p.CareSpaceId == ward.Id && sim.BedOf(p) is { } bed && p.Tile == bed.PatientSpot && !p.IsMoving
+            && sim.BabiesOf(p).Any(baby => baby.Place == Simulation.Patients.BabyPlace.WithMother);
+        while (clock.Now < limit && !women.Any(w => BackOnWard(w!)))
+        {
+            clock.Step();
+        }
+
+        var mother = women.FirstOrDefault(w => BackOnWard(w!)) ?? women.FirstOrDefault(w => w!.Delivered);
+        GD.Print($"[smoke] Maternity at {clock.Now:HH:mm}: {sim.MaternityStats.Births} born, {sim.MaternityStats.Caesareans} caesareans, {sim.MaternityStats.NeonatalAdmissions} to the neonatal unit; "
+                 + string.Join(", ", sim.Babies.Select(baby => $"{baby.FullName} {baby.WeightKg:0.0} kg {baby.Place}")));
+        Check(sim.MaternityStats.Births >= 1 && mother is not null, "No baby was born: " + string.Join(" | ", women.Select(w => w!.Timeline.LastOrDefault()?.Text)));
+        clock.SetSpeed(SimulationSpeed.Paused);
+        hospital.SetMode(GameMode.Play);
+        hospital.ClearSelectionForTest();
+        var focus = mother is not null ? (mother.X, mother.Y) : (b.X + 9.0, b.Y - 8.0);
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(focus.Item1, focus.Item2) + new Vector2(0, -30), 1.4f);
+        return mother;
     }
 
     /// <summary>

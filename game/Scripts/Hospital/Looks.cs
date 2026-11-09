@@ -78,6 +78,13 @@ public static class Looks
             StaffRole.Nurse => new PersonLook(
                 Top: new Color("#3B7DD8"), Trousers: new Color("#1B2C4A"), Skin: skin, Hair: hair,
                 Piping: Colors.White, Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
+            // Midwives wear plum tunics with lilac piping; senior and consultant midwives a deep aubergine.
+            StaffRole.Midwife when member.Grade.Contains("Band 7", StringComparison.OrdinalIgnoreCase) || member.Grade.Contains("Band 8", StringComparison.OrdinalIgnoreCase) => new PersonLook(
+                Top: new Color("#4A1F55"), Trousers: new Color("#24182B"), Skin: skin, Hair: hair,
+                Piping: new Color("#E7C6E0"), Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
+            StaffRole.Midwife => new PersonLook(
+                Top: new Color("#8A2D6E"), Trousers: new Color("#2A1E33"), Skin: skin, Hair: hair,
+                Piping: new Color("#E7C6E0"), Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
             StaffRole.Radiographer => new PersonLook(
                 Top: new Color("#E9EEF2"), Trousers: new Color("#2B3440"), Skin: skin, Hair: hair,
                 Piping: new Color("#8E2448"), Tunic: true, Lanyard: true, Pocket: true),
@@ -146,8 +153,9 @@ public static class Looks
         Beard: patient.Sex == Sex.Male && patient.Age >= 25 && patient.Id % 4 == 1,
         Glasses: patient.Age >= 50 && patient.Id % 3 != 1,
         Skirt: patient.Sex == Sex.Female && patient.Id % 3 == 0,
-        Jacket: patient.Id % 3 == 2 ? CoatColours[patient.Id % CoatColours.Length] : null,
-        Stick: patient.Age >= 78);
+        Jacket: patient.Id % 3 == 2 && !patient.Maternity ? CoatColours[patient.Id % CoatColours.Length] : null,
+        Stick: patient.Age >= 78,
+        Bump: patient.Maternity && !patient.Delivered);
 
     /// <summary>A clinic patient in their own clothes, with a coat on (they have come from home).</summary>
     public static PersonLook Outpatient(Outpatient outpatient, Appointment? appointment)
@@ -167,8 +175,25 @@ public static class Looks
             Glasses: age >= 50 && seed % 3 != 1,
             Skirt: sex == Sex.Female && seed % 3 == 0,
             Jacket: CoatColours[seed % CoatColours.Length],
-            Stick: age >= 78);
+            Stick: age >= 78,
+            Bump: sex == Sex.Female && outpatient.ClinicId.StartsWith("antenatal", StringComparison.Ordinal) && seed % 3 != 0);
     }
+
+    private static readonly Color[] BabyHats =
+    {
+        new("#F4C2D7"), new("#BFDDF5"), new("#F7E3A1"), new("#C8E6C9"), new("#E1D3F2"), new("#F6D1B8"),
+    };
+
+    /// <summary>A newborn: a white cellular blanket edged in the colour of their hat, and mum's skin tone.</summary>
+    public static BabyLook Baby(Baby baby, Patient? mother)
+    {
+        var hat = BabyHats[(baby.Id * 5) % BabyHats.Length];
+        var skin = mother is not null ? Patient(mother).Skin : SkinTones[(baby.Id * 3) % SkinTones.Length];
+        return new BabyLook(hat.Lerp(new Color("#FAFAF7"), 0.7f), hat.Darkened(0.12f), hat, skin.Lightened(0.06f));
+    }
+
+    /// <summary>The blanket on a mother and baby ward bed: a soft lilac, to set the maternity unit apart.</summary>
+    public static readonly Color MaternityBlanket = new("#B79CCB");
 
     /// <summary>Clinic patients have a soft lilac ring, so they stand apart from A&amp;E patients.</summary>
     public static readonly Color OutpatientRing = new("#9C8AD0", 0.85f);

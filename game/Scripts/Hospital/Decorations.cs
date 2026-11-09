@@ -63,6 +63,8 @@ public static class Decorations
             "gastro_clinic" => new(new[] { Wall.GutPoster }, new[] { Floor.GutModel }, ClinicDesk()),
             "gynaecology_clinic" or "gynae_exam_room" => new(new[] { Wall.PastelPrint }, new[] { Floor.PelvisModel, Floor.PrivacyScreen }, ClinicDesk()),
             "medical_clinic" => new(new[] { Wall.BpCuff, Wall.DiabetesPoster }, NoFloors, ClinicDesk()),
+            "antenatal_clinic" => new(new[] { Wall.PastelPrint, Wall.BpCuff }, new[] { Floor.Scales, Floor.Plant }, ClinicDesk()),
+            "antenatal_scan_room" => new(new[] { Wall.PastelPrint }, new[] { Floor.FloorLamp }, new[] { ("ultrasound_machine", new[] { OnTop.GelWarmer }) }),
             _ => new(new[] { Wall.HandWashPoster }, NoFloors, ClinicDesk()),
         },
         CareSpaceKind.OutpatientReception => new(new[] { Wall.ClinicSign, Wall.HandWashPoster }, new[] { Floor.Kiosk, Floor.Plant },
@@ -76,6 +78,7 @@ public static class Decorations
         CareSpaceKind.Endoscopy => new(new[] { Wall.GutPoster }, new[] { Floor.ScopeCabinet }),
         CareSpaceKind.EndoscopyRecovery => new(new[] { Wall.Clock }, new[] { Floor.BlanketStack }),
         CareSpaceKind.Theatre => new(new[] { Wall.Clock }, new[] { Floor.ScrubSink }),
+        CareSpaceKind.DeliveryRoom => new(new[] { Wall.Clock, Wall.PastelPrint, Wall.GelDispenser, Wall.OxygenPanel }, new[] { Floor.BlanketStack, Floor.Plant }),
         CareSpaceKind.PlasterRoom => new(new[] { Wall.BonePoster }, new[] { Floor.PlasterShelf, Floor.Bucket }),
         CareSpaceKind.PhysioGym => new(new[] { Wall.Mirror, Wall.Mirror }, new[] { Floor.GymBall, Floor.Dumbbells, Floor.GymBall }),
         CareSpaceKind.Pharmacy => new(new[] { Wall.PharmacySign }, NoFloors, new[] { ("pharmacy_counter", new[] { OnTop.PillTray, OnTop.Computer }) }),
@@ -91,7 +94,7 @@ public static class Decorations
         "cardiology" => Wall.HeartPoster,
         "neurology" => Wall.BrainPoster,
         "gastroenterology" => Wall.GutPoster,
-        "gynaecology" => Wall.PastelPrint,
+        "gynaecology" or "maternity" => Wall.PastelPrint,
         "trauma_orthopaedics" => Wall.BonePoster,
         _ => Wall.HandWashPoster,
     };
@@ -102,6 +105,7 @@ public static class Decorations
         "neurology" => Floor.BrainModel,
         "trauma_orthopaedics" => Floor.Skeleton,
         "general_medicine" or "emergency" => Floor.OxygenSpare,
+        "maternity" => Floor.BlanketStack,
         _ => Floor.Plant,
     };
 
