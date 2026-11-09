@@ -130,6 +130,7 @@ public partial class BuildTool : Node2D
         Template = null;
         MovingId = null;
         ChairColour = colour ?? ChairColour;
+        ChairFacing = null;
         Restart();
     }
 
