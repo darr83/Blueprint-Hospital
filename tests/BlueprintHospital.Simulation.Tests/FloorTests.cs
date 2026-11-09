@@ -239,9 +239,23 @@ public class FloorTests
     [Fact]
     public void A_porter_takes_a_poorly_patient_up_in_the_lift_to_xray()
     {
-        // Seed 1: a pneumonia whose doctor wants a chest X-ray. With some seeds the history and exam
-        // alone make the doctor sure enough, no X-ray is ordered and there is no lift trip to test.
-        var h = Rich(seed: 1);
+        // Whether the doctor orders a chest X-ray depends on the dice: with some seeds the history and
+        // exam alone make them sure enough. Tiny maths differences between Windows and Linux can change
+        // which seeds those are, so try seeds in turn until one orders the X-ray, then check the trip.
+        for (var seed = 1; seed <= 20; seed++)
+        {
+            if (TryLiftTripToXray(seed))
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("No seed from 1 to 20 had the doctor order a chest X-ray.");
+    }
+
+    private static bool TryLiftTripToXray(int seed)
+    {
+        var h = Rich(seed);
         h.Sim.AddFloor();
         Build(h, "lift", LiftRect);
         Build(h, "stairs", StairsRect);
@@ -267,8 +281,16 @@ public class FloorTests
                 maxGap = Math.Max(maxGap, Math.Sqrt(Math.Pow(porter.X - patient.X, 2) + Math.Pow(porter.Y - patient.Y, 2)));
             }
 
-            return patient.Investigations.Any(o => o.InvestigationId == "chest_xray" && o.Status != InvestigationStatus.Requested) || patient.Stage == PatientStage.Gone;
+            var xrayOrdered = patient.Investigations.Any(o => o.InvestigationId == "chest_xray");
+            return (xrayOrdered && patient.Investigations.Any(o => o.InvestigationId == "chest_xray" && o.Status != InvestigationStatus.Requested))
+                || (!xrayOrdered && patient.WorkingDiagnosis is not null)
+                || patient.Stage == PatientStage.Gone;
         }, TimeSpan.FromHours(8), "the chest X-ray upstairs");
+
+        if (!patient.Investigations.Any(o => o.InvestigationId == "chest_xray"))
+        {
+            return false;
+        }
 
         var journey = h.Journey(patient);
         Assert.Contains("Chest X-ray done by", journey);
@@ -276,6 +298,7 @@ public class FloorTests
         Assert.False(usedStairs, journey);
         Assert.True(pushedUpstairs, journey);
         Assert.InRange(maxGap, 0.0, 3.5);
+        return true;
     }
 
     private sealed class TestWalker : Agent;
