@@ -5,8 +5,9 @@ namespace BlueprintHospital.Simulation.Simulation;
 
 /// <summary>
 /// Starting a game and opening A&amp;E. A new game starts either with a small staffed A&amp;E, or with an
-/// empty building (just a waiting room with reception) and the value of the starter rooms in the bank.
-/// Patients only come once A&amp;E can see them: a triage room, a cubicle or resus bay, a nurse and a doctor.
+/// empty building and the value of the starter rooms in the bank. Neither has a waiting room: the player builds one.
+/// Patients only come once A&amp;E can see them: a fitted-out waiting room, a triage room, a cubicle or resus bay,
+/// a nurse and a doctor.
 /// </summary>
 public sealed partial class HospitalSimulation
 {
@@ -20,7 +21,7 @@ public sealed partial class HospitalSimulation
     {
         get
         {
-            var missing = new List<string>();
+            var missing = WaitingRoomReasons().ToList();
             if (!SpacesOfKind(CareSpaceKind.Triage).Any())
             {
                 missing.Add("a triage room");
@@ -45,11 +46,11 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    /// <summary>Takes out every starter room but the waiting room, and puts their value in the bank.</summary>
+    /// <summary>Takes out every starter room, and puts their value in the bank.</summary>
     private void ClearToEmptyBuilding()
     {
         var value = 0L;
-        foreach (var space in _spaces.Values.Where(s => s.Kind != CareSpaceKind.Waiting).ToList())
+        foreach (var space in _spaces.Values.ToList())
         {
             value += space.BuildCost;
             _spaces.Remove(space.Id);

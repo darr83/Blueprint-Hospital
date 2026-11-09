@@ -79,7 +79,7 @@
     "id": "waiting_room",
     "name": "Waiting room",
     "category": "A&E",
-    "description": "Reception desk and seating. Walk-in patients register here and wait for triage and a cubicle.",
+    "description": "Built empty against the front of the building, over the footpath. Then place the reception desk, the entrance doors on the front path, a door through to a corridor, and chairs. Walk-in patients register here and wait to be triaged.",
     "kind": "waiting",
     "department": "emergency",
     "layout": "waiting",
@@ -93,6 +93,6 @@
     "door_both_ends": true,
     "base_cost": 12000, "cost_per_square_metre": 700,
     "staffing": "One receptionist.",
-    "furniture": ["reception_desk", "staff_chair", "waiting_seat"]
+    "furniture": ["reception_desk", "staff_chair"]
   }
 ]

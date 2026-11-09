@@ -83,7 +83,7 @@ public partial class FinancePanel : PanelContainer
                 continue;
             }
 
-            Cell(sb, Name(category));
+            Cell(sb, CategoryName(category));
             Cell(sb, Money(today?[category] ?? 0), right: true);
             Cell(sb, Money(yesterday?[category] ?? 0), right: true);
             Cell(sb, Money(weekTotal), right: true);
@@ -116,7 +116,7 @@ public partial class FinancePanel : PanelContainer
         _ => "[color=#5B6B79]–[/color]",
     };
 
-    private static string Name(MoneyCategory category) => category switch
+    internal static string CategoryName(MoneyCategory category) => category switch
     {
         MoneyCategory.Attendances => "A&E patients",
         MoneyCategory.Admissions => "Ward patients",

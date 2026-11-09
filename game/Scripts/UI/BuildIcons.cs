@@ -66,7 +66,7 @@ public static class BuildIcons
     /// <summary>Drawings for particular rooms; anything else is picked by the room's kind and layout.</summary>
     private static readonly Dictionary<string, string> RoomGlyphs = new()
     {
-        ["extend_building"] = "extend", ["add_floor"] = "floor", ["waiting_chairs"] = "seat", ["corridor"] = "corridor",
+        ["extend_building"] = "extend", ["add_floor"] = "floor", ["waiting_chairs"] = "seat", ["waiting_desk"] = "reception", ["waiting_doors"] = "door", ["corridor"] = "corridor",
         ["lift"] = "lift", ["stairs"] = "stairs",
         ["waiting_room"] = "chairs", ["triage_room"] = "triage", ["resus_bay"] = "resus",
         ["nurses_station"] = "station", ["doctors_office"] = "office", ["staff_room"] = "people", ["outreach_office"] = "office",

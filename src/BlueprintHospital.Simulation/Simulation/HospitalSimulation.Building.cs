@@ -28,7 +28,16 @@ public sealed record BuildCheck(int Cost, IReadOnlyList<string> Problems, CareSp
 }
 
 /// <summary>A room as stored in a save file.</summary>
-public sealed record RoomState(string Id, string Name, string Template, int X, int Y, int Width, int Length, WallSide DoorSide, int? DoorStart = null, int? DoorRun = null);
+/// <remarks>
+/// A waiting room also stores what the player has fitted: <see cref="Desk"/> and <see cref="Doors"/>. Saves made before
+/// waiting rooms were fitted out by hand have neither, and are laid out the old way and converted when loaded.
+/// </remarks>
+public sealed record RoomState(string Id, string Name, string Template, int X, int Y, int Width, int Length, WallSide DoorSide, int? DoorStart = null, int? DoorRun = null)
+{
+    public ReceptionDesk? Desk { get; init; }
+
+    public IReadOnlyList<Doorway>? Doors { get; init; }
+}
 
 /// <summary>An area of ground as stored in a save file.</summary>
 public sealed record AreaState(int X, int Y, int Width, int Length);
@@ -45,15 +54,21 @@ public sealed class LayoutState
 
     public IReadOnlyList<RoomState> Rooms { get; init; } = Array.Empty<RoomState>();
 
-    /// <summary>Chairs placed in corridors for clinic patients.</summary>
+    /// <summary>Chairs placed in corridors by older saves (tiles only); newer saves use <see cref="Chairs"/>.</summary>
     public IReadOnlyList<GridCoord> CorridorChairs { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>Waiting chairs in waiting rooms and corridors, with the way they face and their colour.</summary>
+    public IReadOnlyList<PlacedChair> Chairs { get; init; } = Array.Empty<PlacedChair>();
 }
 
 /// <summary>Building: placing, moving and demolishing rooms and corridors, extending the building, and paying for it.</summary>
 public sealed partial class HospitalSimulation
 {
-    /// <summary>Money a new hospital starts with, in pounds.</summary>
-    public const long StartingBalance = 750_000;
+    /// <summary>
+    /// Money a new hospital starts with, in pounds. It includes about £75,000 for the waiting room, which
+    /// the player now builds and fits out themselves (it used to come free with the hospital).
+    /// </summary>
+    public const long StartingBalance = 825_000;
 
     /// <summary>Cost of extending the building, per square metre of new floor.</summary>
     public const int ExtensionCostPerSquareMetre = 1_400;
@@ -67,8 +82,8 @@ public sealed partial class HospitalSimulation
     /// <summary>Tiles in front of an entrance that must stay clear for people and ambulances.</summary>
     private const int EntranceApproach = 4;
 
-    /// <summary>Rooms the hospital cannot run without; the last one can't be demolished.</summary>
-    private static readonly CareSpaceKind[] RequiredKinds = { CareSpaceKind.Waiting };
+    /// <summary>Rooms the hospital cannot run without; the last one can't be demolished. (None: even the waiting room can go.)</summary>
+    private static readonly CareSpaceKind[] RequiredKinds = Array.Empty<CareSpaceKind>();
 
     private int _nextRoomNumber = 1;
 
@@ -81,6 +96,13 @@ public sealed partial class HospitalSimulation
     public CareSpace Furnish(RoomPlan plan, string? id = null, string? name = null)
     {
         var template = Database.RoomTemplates[plan.TemplateId];
+        if (template.Kind == CareSpaceKind.Waiting)
+        {
+            // Built empty: the player places the desk, doors and chairs.
+            var fittings = id is not null && _fittings.TryGetValue(id, out var placed) ? placed : WaitingFittings.Empty;
+            return RoomLayoutEngine.Build(template, Database, id ?? "preview", name ?? template.Name, plan.Rect, plan.DoorSide, fittings: fittings);
+        }
+
         var extra = template.DoorBothEnds ? StreetDoors(plan.Rect) : null;
         return RoomLayoutEngine.Build(template, Database, id ?? "preview", name ?? template.Name, plan.Rect, plan.DoorSide, plan.DoorStart, plan.DoorRun, extra);
     }
@@ -290,7 +312,7 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    /// <summary>A corridor must touch another corridor or the waiting room, or take in an entrance.</summary>
+    /// <summary>A corridor must touch another corridor or a waiting room, or take in an entrance.</summary>
     private bool JoinsCirculation(GridRect rect, CareSpace? replacing)
     {
         if (MainBuilding.Entrances.Any(e => rect.Contains(e.Tile)))
@@ -305,7 +327,7 @@ public sealed partial class HospitalSimulation
         }
 
         var grown = new GridRect(rect.X - 1, rect.Y - 1, rect.Width + 2, rect.Length + 2);
-        return _spaces.Values.Any(s => s != replacing && s.Kind == CareSpaceKind.Corridor
+        return _spaces.Values.Any(s => s != replacing && s.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting
                                        && s.Rect.Tiles().Any(t => grown.Contains(t) && !IsCorner(grown, t)));
     }
 
@@ -351,7 +373,8 @@ public sealed partial class HospitalSimulation
         var reached = nav.Reachable(WalkInSpawn);
         var stepFree = Site.FloorCount > 1 ? nav.Reachable(WalkInSpawn, stepFreeOnly: true) : reached;
 
-        foreach (var entrance in MainBuilding.Entrances.Where(e => !reached.Contains(e.Tile)))
+        // A waiting room built over the main entrance is reached through the entrance doors the player puts in it.
+        foreach (var entrance in MainBuilding.Entrances.Where(e => !reached.Contains(e.Tile) && !spaces.Any(s => s.Kind == CareSpaceKind.Waiting && s.Rect.Contains(e.Tile))))
         {
             yield return $"Would block the {entrance.Name.ToLowerInvariant()}.";
         }
@@ -361,7 +384,8 @@ public sealed partial class HospitalSimulation
             yield return "Would block the ambulance bay.";
         }
 
-        foreach (var space in spaces.Where(s => s.Kind != CareSpaceKind.Corridor))
+        // A waiting room with no doors yet is still being fitted out.
+        foreach (var space in spaces.Where(s => s.Kind != CareSpaceKind.Corridor && !(s.Kind == CareSpaceKind.Waiting && s.Doors.Count == 0)))
         {
             var spots = new[] { space.StaffSpot, space.PatientSpot }.Concat(space.Seats).Concat(space.QueueTiles)
                 .Concat(space.Beds.SelectMany(b => new[] { b.PatientSpot, b.StaffSpot }));
@@ -550,6 +574,11 @@ public sealed partial class HospitalSimulation
         }
 
         var old = _spaces[id];
+        if (old.Kind == CareSpaceKind.Waiting)
+        {
+            MoveFittings(old, plan.Rect);
+        }
+
         var moved = Furnish(plan, id, old.Name);
         moved.AllowedDepartments.UnionWith(old.AllowedDepartments);
         _spaces[id] = moved;
@@ -571,6 +600,7 @@ public sealed partial class HospitalSimulation
         foreach (var part in ShaftOf(space))
         {
             _spaces.Remove(part.Id);
+            _fittings.Remove(part.Id);
         }
 
         Book(MoneyCategory.Construction, -check.Cost);
@@ -653,7 +683,7 @@ public sealed partial class HospitalSimulation
     {
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
         SyncRoomStaff();
-        PruneCorridorChairs();
+        PruneChairs();
 
         foreach (var agent in _patients.Values.Cast<Agent>().Concat(_staff).Concat(_outpatients))
         {
@@ -701,13 +731,20 @@ public sealed partial class HospitalSimulation
         Rooms = _spaces.Values.OrderBy(s => s.Id, StringComparer.Ordinal).Select(s =>
         {
             var (w, d) = RoomLayoutEngine.LocalSize(s.Rect, s.DoorSide);
+            if (s.Kind == CareSpaceKind.Waiting)
+            {
+                var fitted = FittingsOf(s);
+                return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide) { Desk = fitted.Desk, Doors = fitted.Doors.ToList() };
+            }
+
             var door = s.Doors.FirstOrDefault();
             return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide, door?.Offset, door?.Width);
         }).ToList(),
-        CorridorChairs = _corridorChairs.Select(c => c.Tile).ToList(),
+        Chairs = _chairs.ToList(),
     };
 
     /// <summary>Replaces the starter layout with a saved one. Call before the game starts running.</summary>
+    /// <remarks>Corridor chairs from older saves (tiles only) face away from the nearest wall, in the default colour.</remarks>
     public void RestoreLayout(LayoutState state)
     {
         foreach (var e in state.BuildingExtensions)
@@ -717,29 +754,38 @@ public sealed partial class HospitalSimulation
 
         Site.SetFloorCount(state.Floors);
 
-        if (state.Rooms.Count > 0)
+        _spaces.Clear();
+        _fittings.Clear();
+        _chairs.Clear();
+        var upgraded = new List<PlacedChair>();
+        foreach (var r in state.Rooms.Where(r => Database.RoomTemplates.ContainsKey(r.Template)))
         {
-            var rooms = state.Rooms
-                .Where(r => Database.RoomTemplates.ContainsKey(r.Template))
-                .Select(r => Furnish(
-                    new RoomPlan(r.Template, RoomLayoutEngine.RectFor(new GridCoord(r.X, r.Y), r.Width, r.Length, r.DoorSide), r.DoorSide, r.DoorStart, r.DoorRun),
-                    r.Id,
-                    r.Name))
-                .ToList();
-
-            if (RequiredKinds.All(k => rooms.Any(r => r.Kind == k)))
+            var plan = new RoomPlan(r.Template, RoomLayoutEngine.RectFor(new GridCoord(r.X, r.Y), r.Width, r.Length, r.DoorSide), r.DoorSide, r.DoorStart, r.DoorRun);
+            if (Database.RoomTemplates[r.Template].Kind == CareSpaceKind.Waiting && r.Doors is null)
             {
-                _spaces.Clear();
-                foreach (var room in rooms)
-                {
-                    _spaces[room.Id] = room;
-                }
+                // Saved before waiting rooms were fitted out by hand: keep its desk, doors and seats.
+                var (room, chairs) = UpgradeOldWaitingRoom(plan, r.Id, r.Name);
+                _spaces[room.Id] = room;
+                upgraded.AddRange(chairs);
+                continue;
             }
+
+            if (Database.RoomTemplates[r.Template].Kind == CareSpaceKind.Waiting)
+            {
+                _fittings[r.Id] = new WaitingFittings(r.Desk, r.Doors!.ToList());
+            }
+
+            _spaces[r.Id] = Furnish(plan, r.Id, r.Name);
         }
 
-        _corridorChairs.Clear();
-        _corridorChairs.AddRange(state.CorridorChairs.Distinct().Select(ChairAt));
-        PruneCorridorChairs();
+        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        _chairs.AddRange(state.Chairs.Concat(upgraded).GroupBy(c => c.Tile).Select(g => g.First() with { Colour = ChairColours.Normalise(g.First().Colour) }));
+        foreach (var tile in state.CorridorChairs.Distinct().Where(t => ChairAt(t) is null))
+        {
+            _chairs.Add(new PlacedChair(tile, SuggestChairFacing(tile), ChairColours.Default));
+        }
+
+        PruneChairs();
         Balance = state.Balance;
         Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
         SyncRoomStaff();

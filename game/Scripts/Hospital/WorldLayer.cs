@@ -36,7 +36,8 @@ public partial class WorldLayer : Node2D
     private static readonly Color WallFace = new("#D9DFE5");
 
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
-    private readonly HashSet<GridCoord> _seatTiles = new();
+    /// <summary>Every seat, and the way someone sitting on it looks.</summary>
+    private readonly Dictionary<GridCoord, WallSide> _seatTiles = new();
     private readonly List<ObsMonitorInfo> _monitors = new();
 
     /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
@@ -90,21 +91,21 @@ public partial class WorldLayer : Node2D
         {
             foreach (var seat in space.Seats)
             {
-                _seatTiles.Add(seat);
+                _seatTiles[seat] = WallSide.South;
             }
 
             foreach (var item in space.Furniture)
             {
                 if (_sim.Database.Furniture.TryGetValue(item.ItemId, out var def) && def.Style == FurnitureStyle.Chair)
                 {
-                    _seatTiles.Add(item.Tile);
+                    _seatTiles[item.Tile] = RoomChairFacing(space, item);
                 }
             }
         }
 
-        foreach (var chair in _sim.CorridorChairs)
+        foreach (var chair in _sim.Chairs)
         {
-            _seatTiles.Add(chair.Tile);
+            _seatTiles[chair.Tile] = chair.Facing;
         }
 
         BuildWalls();
@@ -239,7 +240,10 @@ public partial class WorldLayer : Node2D
         return space.IsTreatmentSpace ? patient.Tile == space.PatientSpot : _sim.BedOf(patient) is { } bed && patient.Tile == bed.PatientSpot;
     }
 
-    public bool IsSeated(Agent agent) => !agent.IsMoving && _seatTiles.Contains(agent.Tile);
+    public bool IsSeated(Agent agent) => !agent.IsMoving && _seatTiles.ContainsKey(agent.Tile);
+
+    /// <summary>The way someone sitting where <paramref name="agent"/> is looks.</summary>
+    public WallSide SeatFacing(Agent agent) => _seatTiles.GetValueOrDefault(agent.Tile, WallSide.South);
 
     /// <summary>Patients still on an incoming ambulance are not on the map yet.</summary>
     public bool IsOnMap(Patient patient) =>
@@ -326,7 +330,10 @@ public partial class WorldLayer : Node2D
                     WallSide.West => (inside.X, inside.Y + up, false),
                     _ => (inside.X + 1, inside.Y + up, false),
                 };
-                (up == 0 && building.IsOpening(inside, side) ? doors : walls).Add(edge);
+                // A room built over an entrance (a waiting room by the front path) closes it unless it has a door there.
+                var open = up == 0 && building.IsOpening(inside, side)
+                    && _sim.Spaces.Where(s => s.HasWalls && s.Rect.Contains(inside)).All(s => s.IsDoor(inside, side));
+                (open ? doors : walls).Add(edge);
             }
         }
 
@@ -468,7 +475,7 @@ public partial class WorldLayer : Node2D
                         AddObsMonitor(space, item.CentreX, item.CentreY);
                         break;
                     case FurnitureStyle.Chair:
-                        Chair(item.Tile, colour);
+                        Chair(item.Tile, RoomChairFacing(space, item), colour);
                         break;
                     case FurnitureStyle.Box when ToiletArt.Draws(def.Id):
                         ToiletArt.Add(def.Id, space, item, colour, _sim, (anchor, draw, animated) => AddProp(anchor, draw, animated));
@@ -483,12 +490,9 @@ public partial class WorldLayer : Node2D
             }
         }
 
-        if (_sim.Database.Furniture.TryGetValue(HospitalSimulation.CorridorChairItem, out var chairDef))
+        foreach (var chair in _sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
         {
-            foreach (var chair in _sim.CorridorChairs.Where(c => IsoDraw.OnViewFloor(c.Y)))
-            {
-                Chair(chair.Tile, new Color(chairDef.Colour));
-            }
+            Chair(chair.Tile, chair.Facing, new Color(chair.Colour));
         }
     }
 
@@ -650,14 +654,42 @@ public partial class WorldLayer : Node2D
         return patient is not null && !patient.IsMoving && patient.Tile == space.PatientSpot ? patient : null;
     }
 
-    private void Chair(GridCoord tile, Color colour)
+    /// <summary>A chair in two parts, so whoever sits on it sorts between the seat and the back.</summary>
+    private void Chair(GridCoord tile, WallSide facing, Color colour)
     {
-        var (x, y) = (tile.X + 0.15, tile.Y + 0.15);
-        AddProp(IsoDraw.ToScreen(tile.X + 0.5, tile.Y + 0.4), c =>
+        AddProp(ChairArt.SeatAnchor(tile), c => ChairArt.Seat(c, tile, facing, colour));
+        AddProp(ChairArt.BackAnchor(tile, facing), c => ChairArt.Back(c, tile, facing, colour));
+    }
+
+    /// <summary>A chair in a room faces the desk or table beside it, otherwise south.</summary>
+    private WallSide RoomChairFacing(CareSpace space, PlacedFurniture chair)
+    {
+        var (cx, cy) = (chair.Tile.X + 0.5, chair.Tile.Y + 0.5);
+        PlacedFurniture? best = null;
+        var bestGap = 0.75;
+        foreach (var item in space.Furniture)
         {
-            IsoDraw.Box(c, x + 0.05, y, 0.6, 0.12, 24, colour.Darkened(0.1f));
-            IsoDraw.Box(c, x, y, 0.7, 0.7, 11, colour);
-        });
+            if (ReferenceEquals(item, chair) || !_sim.Database.Furniture.TryGetValue(item.ItemId, out var def) || def.Style == FurnitureStyle.Chair)
+            {
+                continue;
+            }
+
+            var gx = Math.Max(0, Math.Max(item.X - cx, cx - (item.X + item.Width)));
+            var gy = Math.Max(0, Math.Max(item.Y - cy, cy - (item.Y + item.Length)));
+            var gap = Math.Max(gx, gy);
+            if (gap < bestGap)
+            {
+                (best, bestGap) = (item, gap);
+            }
+        }
+
+        if (best is null)
+        {
+            return WallSide.South;
+        }
+
+        var (dx, dy) = (best.CentreX - cx, best.CentreY - cy);
+        return Math.Abs(dx) > Math.Abs(dy) ? (dx > 0 ? WallSide.East : WallSide.West) : (dy > 0 ? WallSide.South : WallSide.North);
     }
 
     /// <summary>A piece of furniture, split into one-tile slices along its length so each slice sorts correctly.</summary>
@@ -753,7 +785,8 @@ public partial class WorldLayer : Node2D
                     var clinicLook = Looks.Outpatient(outpatient, world.Simulation.FindAppointment(outpatient.AppointmentId));
                     if (world.IsSeated(outpatient))
                     {
-                        Figures.Seated(this, foot, clinicLook);
+                        var facing = world.SeatFacing(outpatient);
+                        Figures.Seated(this, foot, clinicLook, away: ChairArt.FacesAway(facing), lean: ChairArt.Lean(facing));
                     }
                     else
                     {
@@ -768,7 +801,8 @@ public partial class WorldLayer : Node2D
                     var look = Looks.Staff(member);
                     if (world.IsSeated(member))
                     {
-                        Figures.Seated(this, foot, look);
+                        var facing = world.SeatFacing(member);
+                        Figures.Seated(this, foot, look, away: ChairArt.FacesAway(facing), lean: ChairArt.Lean(facing));
                     }
                     else
                     {
@@ -840,7 +874,8 @@ public partial class WorldLayer : Node2D
             }
             else if (world.IsSeated(patient))
             {
-                Figures.Seated(this, foot, look, alpha, baby);
+                var facing = world.SeatFacing(patient);
+                Figures.Seated(this, foot, look, alpha, baby, ChairArt.FacesAway(facing), ChairArt.Lean(facing));
             }
             else
             {

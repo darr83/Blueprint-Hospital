@@ -38,6 +38,19 @@ public sealed class EmergencyStats
 
     public int DepartedWithinFourHours { get; internal set; }
 
+    /// <summary>Minutes spent in A&amp;E by everyone who has left it (home, to a ward, transferred, died or walked out).</summary>
+    public long MinutesInDepartmentTotal { get; internal set; }
+
+    /// <summary>Patients seen by a doctor, and the minutes they waited from arrival in total.</summary>
+    public int SeenByDoctorTotal { get; internal set; }
+
+    public long MinutesToDoctorTotal { get; internal set; }
+
+    /// <summary>Ambulance handovers, and the minutes they took in total.</summary>
+    public int HandoversTotal { get; internal set; }
+
+    public long HandoverMinutesTotal { get; internal set; }
+
     public int Discharged { get; internal set; }
 
     public int Transferred { get; internal set; }
@@ -138,9 +151,19 @@ public sealed class EmergencyStats
         }
     }
 
-    internal void RecordTimeToDoctor(TimeSpan time) => Push(_recentTimeToDoctor, time.TotalMinutes);
+    internal void RecordTimeToDoctor(TimeSpan time)
+    {
+        Push(_recentTimeToDoctor, time.TotalMinutes);
+        SeenByDoctorTotal++;
+        MinutesToDoctorTotal += (long)Math.Round(time.TotalMinutes);
+    }
 
-    internal void RecordHandoverTime(TimeSpan time) => Push(_recentHandoverMinutes, time.TotalMinutes);
+    internal void RecordHandoverTime(TimeSpan time)
+    {
+        Push(_recentHandoverMinutes, time.TotalMinutes);
+        HandoversTotal++;
+        HandoverMinutesTotal += (long)Math.Round(time.TotalMinutes);
+    }
 
     internal void RecordCorridorTime(TimeSpan time)
     {
@@ -153,6 +176,7 @@ public sealed class EmergencyStats
     {
         DepartedTotal++;
         Admitted++;
+        MinutesInDepartmentTotal += (long)Math.Round((now - patient.ArrivedAt).TotalMinutes);
         if (now - patient.ArrivedAt <= TimeSpan.FromHours(4))
         {
             DepartedWithinFourHours++;
@@ -177,6 +201,7 @@ public sealed class EmergencyStats
         }
 
         DepartedTotal++;
+        MinutesInDepartmentTotal += (long)Math.Round((now - patient.ArrivedAt).TotalMinutes);
         if (now - patient.ArrivedAt <= TimeSpan.FromHours(4))
         {
             DepartedWithinFourHours++;

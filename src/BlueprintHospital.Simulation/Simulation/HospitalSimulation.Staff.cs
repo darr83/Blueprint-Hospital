@@ -393,7 +393,7 @@ public sealed partial class HospitalSimulation
         switch (task.Kind)
         {
             case TaskKind.Register:
-                return Waiting.StaffSpot;
+                return MainWaitingRoom?.StaffSpot ?? EntranceTile;
             case TaskKind.Triage when task.SpaceId is { } triageId && FindSpace(triageId) is { } triage:
                 return triage.StaffSpot;
             case TaskKind.Imaging or TaskKind.Surgery or TaskKind.DispenseMedicines or TaskKind.Procedure when task.SpaceId is { } roomId && FindSpace(roomId) is { IsServiceRoom: true } room:

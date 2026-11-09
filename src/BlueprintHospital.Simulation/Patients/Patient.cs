@@ -380,7 +380,32 @@ public sealed class Patient : Agent
     public (Observations Obs, News2Score News2)? LatestObservations =>
         _observationHistory.Count == 0 ? null : (_observationHistory[^1].Obs, _observationHistory[^1].News2);
 
-    public TimeSpan TimeInDepartment(DateTime now) => (LeftAt ?? now) - ArrivedAt;
+    /// <summary>
+    /// Time on the A&amp;E 4-hour clock. It stops when the patient leaves A&amp;E for a ward (admission),
+    /// or when they leave the hospital straight from A&amp;E.
+    /// </summary>
+    public TimeSpan TimeInEmergency(DateTime now) => (LeftEmergencyAt ?? LeftAt ?? now) - ArrivedAt;
+
+    /// <summary>Same as <see cref="TimeInEmergency"/>: the A&amp;E clock, frozen once they are admitted.</summary>
+    public TimeSpan TimeInDepartment(DateTime now) => TimeInEmergency(now);
+
+    /// <summary>The A&amp;E clock is still running (in A&amp;E and not yet admitted).</summary>
+    public bool EmergencyClockRunning => IsInEmergency && !Maternity;
+
+    /// <summary>Over the A&amp;E 4-hour standard while still in A&amp;E.</summary>
+    public bool OverFourHours(DateTime now) => EmergencyClockRunning && TimeInEmergency(now) > FourHours;
+
+    /// <summary>The A&amp;E standard: admitted, transferred or discharged within four hours of arrival.</summary>
+    public static readonly TimeSpan FourHours = TimeSpan.FromHours(4);
+
+    /// <summary>Has been admitted to a ward bed this stay (an inpatient or day case).</summary>
+    public bool IsAdmitted => AdmittedAt is not null;
+
+    /// <summary>"Day case" for same-day surgery or ambulatory care, otherwise "Inpatient". Null until admitted.</summary>
+    public string? AdmissionType => !IsAdmitted ? null : DayCase || SameDay ? "Day case" : "Inpatient";
+
+    /// <summary>Time since admission to a ward (to discharge, once they have gone). Null until admitted.</summary>
+    public TimeSpan? LengthOfStay(DateTime now) => AdmittedAt is { } admitted ? (LeftAt ?? now) - admitted : null;
 
     public void Log(DateTime time, string text, bool important = false) => _timeline.Add(new TimelineEntry(time, text, important));
 

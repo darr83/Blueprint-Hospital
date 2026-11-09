@@ -23,7 +23,7 @@ public static class RoomLayoutEngine
         // Wards need beds; a neonatal unit has incubators instead.
         RoomLayoutKind.Ward => Array.Empty<string>(),
         RoomLayoutKind.Triage => new[] { "staff_chair", "visitor_chair", "obs_monitor" },
-        RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair", "waiting_seat" },
+        RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair" },
         RoomLayoutKind.Cafeteria => new[] { "food_counter", "cafe_table", "cafe_chair" },
         RoomLayoutKind.Vending => new[] { "vending_machine" },
         RoomLayoutKind.Toilets => new[] { "wash_basin" },
@@ -52,10 +52,12 @@ public static class RoomLayoutEngine
     /// stretch of wall (in tiles from the room's corner) that opens onto a corridor; it is then centred on that stretch.
     /// <paramref name="extraDoors"/> are further doorways (a waiting room's street door); when null, a template with
     /// <see cref="RoomTemplate.DoorBothEnds"/> gets one opposite the main door.
+    /// A waiting room is fitted out by the player: <paramref name="fittings"/> gives its reception desk and doors
+    /// (null lays it out the way waiting rooms used to be built, to bring old saves up to date).
     /// </summary>
     public static CareSpace Build(
         RoomTemplate template, GameDatabase database, string id, string name, GridRect rect, WallSide doorSide,
-        int? doorStart = null, int? doorRun = null, IReadOnlyList<Doorway>? extraDoors = null)
+        int? doorStart = null, int? doorRun = null, IReadOnlyList<Doorway>? extraDoors = null, WaitingFittings? fittings = null)
     {
         var frame = new Frame(rect, doorSide);
         var run = Math.Clamp(doorRun ?? frame.W, 1, frame.W);
@@ -83,6 +85,12 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.Triage:
                 Triage(plan, template);
                 break;
+            case RoomLayoutKind.Waiting when template.Kind == CareSpaceKind.OutpatientReception:
+                CheckIn(plan);
+                break;
+            case RoomLayoutKind.Waiting when fittings is not null:
+                Fitted(plan, fittings);
+                break;
             case RoomLayoutKind.Waiting:
                 Waiting(plan, template);
                 break;
@@ -107,14 +115,23 @@ public static class RoomLayoutEngine
                 break;
         }
 
-        var doors = new List<Doorway> { frame.Door(doorOffset, doorWidth, back: false) };
-        if (extraDoors is not null)
+        var doors = new List<Doorway>();
+        if (fittings is not null && template.Kind == CareSpaceKind.Waiting)
         {
-            doors.AddRange(extraDoors);
+            // The player places a waiting room's doors.
+            doors.AddRange(fittings.Doors);
         }
-        else if (template.DoorBothEnds)
+        else
         {
-            doors.Add(frame.Door(doorOffset, doorWidth, back: true));
+            doors.Add(frame.Door(doorOffset, doorWidth, back: false));
+            if (extraDoors is not null)
+            {
+                doors.AddRange(extraDoors);
+            }
+            else if (template.DoorBothEnds)
+            {
+                doors.Add(frame.Door(doorOffset, doorWidth, back: true));
+            }
         }
 
         var space = new CareSpace
@@ -391,6 +408,47 @@ public static class RoomLayoutEngine
                 }
             }
         }
+    }
+
+    /// <summary>A waiting room as the player has fitted it out: just the reception desk (chairs are placed separately).</summary>
+    private static void Fitted(Plan plan, WaitingFittings fittings)
+    {
+        var r = plan.Frame.Rect;
+        var middle = new GridCoord(r.X + (r.Width / 2), r.Y + (r.Length / 2));
+        plan.StaffSpot = plan.PatientSpot = middle;
+        if (fittings.Desk is not { } desk)
+        {
+            return;
+        }
+
+        var layout = WaitingRoomLayout.Desk(r, desk, WaitingRoomLayout.DoorTiles(r, fittings.Doors));
+        plan.Items.Add(layout.Furniture);
+        plan.AddChair("staff_chair", layout.StaffSpot);
+        plan.StaffSpot = layout.StaffSpot;
+        plan.PatientSpot = layout.PatientSpot;
+        plan.Queue = layout.Queue.ToList();
+    }
+
+    /// <summary>Outpatients reception: a check-in desk facing the door, with the queue running back towards the door.</summary>
+    private static void CheckIn(Plan plan)
+    {
+        var f = plan.Frame;
+        var doorMiddle = plan.DoorOffset + (plan.DoorWidth / 2);
+        var u = Math.Clamp(f.W / 2, 2, Math.Max(2, f.W - 3));
+        if (Math.Abs(u - doorMiddle) <= 1 && f.W >= 9)
+        {
+            // Off to one side of the doorway, so people coming through don't walk into the queue.
+            u = doorMiddle > f.W / 2 ? Math.Max(2, doorMiddle - 4) : Math.Min(f.W - 3, doorMiddle + 4);
+        }
+
+        var desk = new ReceptionDesk(f.Tile(u, Math.Min(1, f.D - 3)), f.Side);
+        var doorTiles = Enumerable.Range(plan.DoorOffset, plan.DoorWidth).Select(i => f.Tile(i, f.D - 1)).ToHashSet();
+        var layout = WaitingRoomLayout.Desk(f.Rect, desk, doorTiles);
+        plan.Items.Add(layout.Furniture);
+        plan.AddChair("staff_chair", layout.StaffSpot);
+        plan.StaffSpot = layout.StaffSpot;
+        plan.PatientSpot = layout.PatientSpot;
+        plan.Queue = layout.Queue.ToList();
     }
 
     /// <summary>Desks (or a table) down the middle with chairs either side. Used by offices, nurses' stations and staff rooms.</summary>

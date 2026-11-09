@@ -314,7 +314,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -344,6 +344,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.H:
                 _hud.ToggleRecruitment();
+                break;
+            case Key.I:
+                _hud.ToggleStats();
                 break;
             case Key.Space:
                 _session.Clock.SetSpeed(_session.Clock.IsPaused ? SimulationSpeed.Normal : SimulationSpeed.Paused);
@@ -486,18 +489,20 @@ public partial class HospitalScene : Node2D
             }
         }
 
-        // Waiting chairs placed in the corridors.
+        // Waiting chairs the player has placed, in waiting rooms and along corridors.
         if (!bedsOnly)
         {
-            foreach (var chair in _session.Simulation.CorridorChairs.Where(c => IsoDraw.OnViewFloor(c.Y)))
+            var sim = _session.Simulation;
+            foreach (var placed in sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
             {
-                var corridor = _session.Simulation.Spaces.FirstOrDefault(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(chair.Tile));
-                if (corridor is null)
+                var home = sim.Spaces.Where(s => s.Rect.Contains(placed.Tile)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0).FirstOrDefault();
+                if (home is null)
                 {
                     continue;
                 }
 
                 const double pad = 0.1;
+                var chair = new PlacedFurniture(HospitalSimulation.ChairItem, placed.Tile.X + 0.08, placed.Tile.Y + 0.08, 0.84, 0.84);
                 var lift = new Vector2(0, -0.9f * IsoDraw.PixelsPerMetre);
                 var floor = new[]
                 {
@@ -508,7 +513,7 @@ public partial class HospitalScene : Node2D
                 var depth = IsoDraw.ToScreen(chair.CentreX, chair.CentreY).Y;
                 if (Geometry2D.IsPointInPolygon(world, hull) && depth > bestDepth)
                 {
-                    best = (corridor, chair);
+                    best = (home, chair);
                     bestDepth = depth;
                 }
             }

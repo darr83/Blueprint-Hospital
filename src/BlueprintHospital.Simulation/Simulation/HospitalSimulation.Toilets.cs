@@ -259,6 +259,7 @@ public sealed partial class HospitalSimulation
         }
 
         _accidents.Add(new FloorAccident(patient.Tile, Now + AccidentCleanedAfter));
+        Tally(StatKeys.ToiletAccidents);
         patient.Log(Now, "Couldn't get to a toilet in time and had an accident.", important: true);
         var why = HasPublicToilets ? "the toilets were too busy" : "the hospital has no toilets";
         Notifications.Add(Now, NotificationLevel.Warning, $"{patient.FullName} had an accident on the floor because {why}.", patient.Id, null, patient.Triage);
