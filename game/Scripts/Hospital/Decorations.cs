@@ -341,6 +341,25 @@ public static class Decorations
                 }
             }
 
+            // Not over waiting chairs standing against this wall: the picture would sort in front of their backs.
+            foreach (var chair in sim.Chairs.Where(c => r.Contains(c.Tile)))
+            {
+                var (against, at) = side switch
+                {
+                    WallSide.North => (chair.Tile.Y == r.Y, chair.Tile.X - r.X),
+                    WallSide.South => (chair.Tile.Y == r.Bottom - 1, chair.Tile.X - r.X),
+                    WallSide.West => (chair.Tile.X == r.X, chair.Tile.Y - r.Y),
+                    _ => (chair.Tile.X == r.Right - 1, chair.Tile.Y - r.Y),
+                };
+                for (var t = at - 1; against && t <= at + 1; t++)
+                {
+                    if (t >= 0 && t < length)
+                    {
+                        free[t] = false;
+                    }
+                }
+            }
+
             // Up to two pieces per wall, each about 1.5 tiles wide, in the longest free stretches.
             var runs = new List<(int Start, int Length)>();
             for (var t = 0; t < length;)
