@@ -40,9 +40,9 @@ public partial class OverlayLayer : Node2D
         foreach (var monitor in _world.Monitors)
         {
             var patient = _world.ConnectedPatient(monitor);
-            // The border goes red while a doctor is needed at the bedside, and amber once a Red patient is stabilised.
+            // The border follows the NEWS2 the screen shows (green 0-4, amber 5-6 or any single 3, red 7+), not the triage category.
             var outline = patient is null ? (Color?)null : patient.MonitorColour is not { } colour ? new Color("#F2F4F6") : Looks.TriageRing(colour);
-            Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LatestObservations?.News2.Total ?? 0);
+            Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LiveNews2 ?? 0);
         }
 
         foreach (var patient in sim.Patients.Where(p => _world.IsOnMap(p) && !_world.IsLying(p) && _world.OnViewFloor(p)))

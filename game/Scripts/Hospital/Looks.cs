@@ -207,7 +207,7 @@ public static class Looks
         _ => new Color("#DCE3E9"),
     };
 
-    /// <summary>The A&amp;E's blue cellular blanket. The triage colour shows on the wristband, the floor ring and the monitor.</summary>
+    /// <summary>The A&amp;E's blue cellular blanket. The triage colour shows on the wristband and the floor ring; the monitor shows the NEWS2 colour.</summary>
     public static readonly Color EdBlanket = new("#8DB3D9");
 
     /// <summary>The triage colour for a patient's wristband, or null (a plain white band) before triage.</summary>

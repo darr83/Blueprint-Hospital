@@ -87,7 +87,6 @@ public sealed class PatientState
 
     public bool EffectiveTreatmentGiven { get; init; }
 
-    public bool RedStabilised { get; init; }
 
     public bool MonitorRed { get; init; }
 
@@ -678,7 +677,7 @@ public sealed partial class HospitalSimulation
         AmbulanceHandover = p.AmbulanceHandover, Stage = p.Stage, Outcome = p.Outcome, OutcomeNote = p.OutcomeNote, LeftAt = p.LeftAt,
         Triage = p.Triage, TriageReason = p.TriageReason, TriagedAt = p.TriagedAt, KnownSymptoms = p.KnownSymptoms.ToList(),
         HistoryTaken = p.HistoryTaken, FirstSeenByDoctorAt = p.FirstSeenByDoctorAt, Investigations = p.Investigations.ToList(),
-        WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, RedStabilised = p.RedStabilised, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
+        WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, CorridorSpot = p.CorridorSpot, CorridorSince = p.CorridorSince, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
@@ -724,7 +723,6 @@ public sealed partial class HospitalSimulation
         p.WorkingDiagnosis = s.WorkingDiagnosis is { } d && Database.Conditions.ContainsKey(d.ConditionId) ? d : null;
         p.TreatmentPlan.AddRange(s.TreatmentPlan);
         p.EffectiveTreatmentGiven = s.EffectiveTreatmentGiven;
-        p.RedStabilised = s.RedStabilised;
         p.MonitorRed = s.MonitorRed;
         p.RedReviewed = s.RedReviewed;
         p.Analgesia = s.Analgesia;
