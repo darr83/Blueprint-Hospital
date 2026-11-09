@@ -8,9 +8,20 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// Uniforms and appearances. Staff follow common UK hospital practice: doctors in scrubs,
-/// registered nurses in mid-blue tunics with white piping, senior nurses in navy with red piping,
-/// everyone clinical bare below the elbows; porters in green polo shirts; reception staff in their own uniform with a lanyard.
+/// Uniforms and appearances. Every person is drawn the same way by <see cref="Figures"/> from a
+/// <see cref="PersonLook"/>; this class decides what each one looks like.
+/// <para>
+/// Staff follow common UK hospital practice, and every job has its own clear uniform: a colour, a
+/// trim and one or two pieces of kit. Nurses wear tunics that darken with seniority (sky blue,
+/// royal blue, navy with red piping, then charcoal with red epaulettes); doctors wear teal scrubs
+/// that darken from junior doctor to registrar, and consultants a shirt and tie; theatre staff
+/// wear caps and masks. Everyone clinical is bare below the elbows. When a new staff role is
+/// added, give it a look here in the same way: its own colour and trim that no other role uses.
+/// </para>
+/// <para>
+/// Patients and visitors are made from their id, sex and age, so each keeps one face, hair style
+/// and outfit, children are child-sized and the elderly look their age.
+/// </para>
 /// </summary>
 public static class Looks
 {
@@ -20,23 +31,32 @@ public static class Looks
 
     private static readonly Color[] SkinTones =
     {
-        new("#F1C7A5"), new("#E0AC86"), new("#C68C5F"), new("#9C6B43"), new("#6E4A2E"), new("#F5D3BC"),
+        new("#F5D3BC"), new("#F1C7A5"), new("#E0AC86"), new("#C68C5F"), new("#9C6B43"), new("#6E4A2E"),
     };
 
-    private static readonly Color[] HairColours =
-    {
-        new("#2B1E16"), new("#4A3020"), new("#8A5A33"), new("#C9A15A"), new("#1A1A1A"), new("#9A9A9A"), new("#6B3A22"),
-    };
+    private static readonly Color HairBlack = new("#1E1A18");
+    private static readonly Color HairDark = new("#2B1E16");
+    private static readonly Color HairBrown = new("#4A3020");
+    private static readonly Color HairChestnut = new("#6B3A22");
+    private static readonly Color HairLight = new("#8A5A33");
+    private static readonly Color HairBlonde = new("#C9A15A");
+    private static readonly Color HairGinger = new("#B5562A");
+    private static readonly Color HairGrey = new("#9A9A9A");
+    private static readonly Color HairSilver = new("#B8B8B8");
+    private static readonly Color HairWhite = new("#D9D9D6");
 
-    private static readonly Color[] ClothesColours =
+    private static readonly Color[] TopColours =
     {
-        new("#6B4E3D"), new("#3E5C76"), new("#7A3B47"), new("#4D6B3C"), new("#8A6E2F"), new("#55476E"), new("#2F4F4F"), new("#9C5B2E"), new("#B5525C"),
+        new("#3E5C76"), new("#7A3B47"), new("#4D6B3C"), new("#8A6E2F"), new("#55476E"), new("#2F4F4F"), new("#C2571A"), new("#B5525C"),
+        new("#7FB6A4"), new("#D9A441"), new("#4A4A52"), new("#3F6F8F"), new("#9C8AD0"), new("#E88AB0"), new("#6E2F3A"), new("#F2F4F7"),
     };
 
     private static readonly Color[] TrouserColours =
     {
-        new("#2F3E57"), new("#3B3B3B"), new("#5B5048"), new("#24324A"), new("#6B6B6B"),
+        new("#2F3E57"), new("#3B3B3B"), new("#5B5048"), new("#24324A"), new("#6B6B6B"), new("#22262B"), new("#8A7F72"),
     };
+
+    private static readonly Color[] JeansColours = { new("#2F3E57"), new("#6C8CB5"), new("#3F5F8A"), new("#24324A") };
 
     private static readonly Color[] ShirtColours =
     {
@@ -48,135 +68,315 @@ public static class Looks
         new("#1D3A6E"), new("#7A2E4A"), new("#2F7D6B"), new("#5A3D7A"), new("#C2571A"), new("#3B7DD8"),
     };
 
-    /// <summary>A staff member's own hair style: long-haired staff tie it back (bare below the elbows, hair off the collar).</summary>
-    private static HairStyle StaffHair(StaffMember member, bool longHair) => longHair
-        ? (member.Id % 3) switch { 0 => HairStyle.Bun, 1 => HairStyle.Ponytail, _ => HairStyle.Long }
-        : member.Age >= 55 && member.Id % 4 == 0 ? HairStyle.Bald : (member.Id % 5) switch { 0 => HairStyle.Curly, 1 => HairStyle.Crop, _ => HairStyle.Short };
-
-    public static PersonLook Staff(StaffMember member)
-    {
-        var skin = SkinTones[((member.Id * 5) + 2) % SkinTones.Length];
-        var hair = member.Age >= 58 ? new Color("#A8A8A8") : HairColours[(member.Id * 3) % HairColours.Length];
-        var longHair = member.Id % 3 == 1;
-        var style = StaffHair(member, longHair);
-        var beard = !longHair && member.Id % 7 == 2;
-        var glasses = member.Id % 6 == 4;
-        var cap = CapColours[(member.Id * 5) % CapColours.Length];
-
-        var look = member.Role switch
-        {
-            // Consultants wear their own shirt and trousers, sleeves rolled up; other doctors wear scrubs.
-            StaffRole.Doctor when member.Grade.Contains("Consultant", StringComparison.OrdinalIgnoreCase) => new PersonLook(
-                Top: ShirtColours[member.Id % ShirtColours.Length], Trousers: new Color("#2E3440"), Skin: skin, Hair: hair,
-                Stethoscope: true, Lanyard: true, Collar: true, Pocket: true),
-            StaffRole.Doctor => new PersonLook(
-                Top: new Color("#1F8A8A"), Trousers: new Color("#1A7676"), Skin: skin, Hair: hair,
-                Stethoscope: true, Lanyard: true, Pocket: true),
-            StaffRole.Nurse when StaffGrades.IsSeniorNurse(member) || member.Grade.Contains("Senior", StringComparison.OrdinalIgnoreCase) || member.Grade.Contains("Sister", StringComparison.OrdinalIgnoreCase) => new PersonLook(
-                Top: new Color("#1D3A6E"), Trousers: new Color("#18233A"), Skin: skin, Hair: hair,
-                Piping: new Color("#E04848"), Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
-            StaffRole.Nurse => new PersonLook(
-                Top: new Color("#3B7DD8"), Trousers: new Color("#1B2C4A"), Skin: skin, Hair: hair,
-                Piping: Colors.White, Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
-            // Midwives wear plum tunics with lilac piping; senior and consultant midwives a deep aubergine.
-            StaffRole.Midwife when member.Grade.Contains("Band 7", StringComparison.OrdinalIgnoreCase) || member.Grade.Contains("Band 8", StringComparison.OrdinalIgnoreCase) => new PersonLook(
-                Top: new Color("#4A1F55"), Trousers: new Color("#24182B"), Skin: skin, Hair: hair,
-                Piping: new Color("#E7C6E0"), Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
-            StaffRole.Midwife => new PersonLook(
-                Top: new Color("#8A2D6E"), Trousers: new Color("#2A1E33"), Skin: skin, Hair: hair,
-                Piping: new Color("#E7C6E0"), Tunic: true, Lanyard: true, Pocket: true, FobWatch: true),
-            StaffRole.Radiographer => new PersonLook(
-                Top: new Color("#E9EEF2"), Trousers: new Color("#2B3440"), Skin: skin, Hair: hair,
-                Piping: new Color("#8E2448"), Tunic: true, Lanyard: true, Pocket: true),
-            StaffRole.Surgeon => new PersonLook(
-                Top: new Color("#4E9C8F"), Trousers: new Color("#438A7E"), Skin: skin, Hair: hair,
-                Cap: cap, Mask: true, ShoeColour: new Color("#E8ECEF")),
-            StaffRole.Pharmacist => new PersonLook(
-                Top: new Color("#F3F5F7"), Trousers: new Color("#3A3F4A"), Skin: skin, Hair: hair,
-                Lanyard: true, LongSleeves: true, Collar: true, Pocket: true),
-            StaffRole.CardiacPhysiologist => new PersonLook(
-                Top: new Color("#7A2E4A"), Trousers: new Color("#2B2F3A"), Skin: skin, Hair: hair,
-                Piping: Colors.White, Tunic: true, Lanyard: true),
-            StaffRole.Neurophysiologist => new PersonLook(
-                Top: new Color("#5A3D7A"), Trousers: new Color("#2B2F3A"), Skin: skin, Hair: hair,
-                Piping: Colors.White, Tunic: true, Lanyard: true),
-            StaffRole.Sonographer => new PersonLook(
-                Top: new Color("#2F5D73"), Trousers: new Color("#1E2E3A"), Skin: skin, Hair: hair,
-                Piping: new Color("#9ED0E6"), Tunic: true, Lanyard: true),
-            StaffRole.Endoscopist => new PersonLook(
-                Top: new Color("#2C4F7C"), Trousers: new Color("#26446C"), Skin: skin, Hair: hair,
-                Lanyard: true, Cap: cap),
-            StaffRole.PlasterTechnician => new PersonLook(
-                Top: new Color("#5D6B78"), Trousers: new Color("#2B3440"), Skin: skin, Hair: hair,
-                Piping: Colors.White, Tunic: true, Lanyard: true, Pocket: true),
-            StaffRole.Physiotherapist => new PersonLook(
-                Top: Colors.White, Trousers: new Color("#1A3A5C"), Skin: skin, Hair: hair,
-                Piping: new Color("#1A5E8A"), Tunic: true, Lanyard: true, Collar: true),
-            StaffRole.Anaesthetist => new PersonLook(
-                Top: new Color("#3F5FA8"), Trousers: new Color("#36549A"), Skin: skin, Hair: hair,
-                Lanyard: true, Cap: cap, Mask: true, Stethoscope: true, ShoeColour: new Color("#2F6FD0")),
-            StaffRole.OutreachNurse => new PersonLook(
-                Top: new Color("#1D3A6E"), Trousers: new Color("#18233A"), Skin: skin, Hair: hair,
-                Piping: new Color("#F2B134"), Tunic: true, Lanyard: true, Stethoscope: true, FobWatch: true),
-            StaffRole.HealthcareAssistant => new PersonLook(
-                Top: new Color("#8C98A4"), Trousers: new Color("#2B3440"), Skin: skin, Hair: hair,
-                Piping: Colors.White, Tunic: true, Lanyard: true, FobWatch: true),
-            StaffRole.Porter => new PersonLook(
-                Top: new Color("#3C6E47"), Trousers: new Color("#22262B"), Skin: skin, Hair: hair,
-                Lanyard: true, Collar: true),
-            _ => new PersonLook(
-                Top: new Color("#E9E4F2"), Trousers: new Color("#2E2E38"), Skin: skin, Hair: hair,
-                Lanyard: true, LongSleeves: true, Jacket: new Color("#7C6AA8")),
-        };
-
-        return look with { LongHair = longHair, Style = style, Beard = beard, Glasses = glasses };
-    }
-
     private static readonly Color[] CoatColours =
     {
         new("#2F3E57"), new("#5B4636"), new("#3F5240"), new("#6E2F3A"), new("#4A4A52"), new("#8A6E4B"),
     };
 
-    /// <summary>A patient's hair style, from their sex and age.</summary>
-    private static HairStyle PatientHair(int seed, Sex sex, int age) => sex == Sex.Female
-        ? (seed % 5) switch { 0 => HairStyle.Short, 1 => HairStyle.Bun, 2 => HairStyle.Ponytail, 3 when age < 60 => HairStyle.Curly, _ => HairStyle.Long }
-        : age >= 50 && seed % 3 == 0 ? HairStyle.Bald : (seed % 4) switch { 0 => HairStyle.Crop, 1 => HairStyle.Curly, _ => HairStyle.Short };
+    private static readonly Color[] ScarfColours = { new("#2F7D6B"), new("#1D3A6E"), new("#7A2E4A"), new("#55476E"), new("#B5525C"), new("#3B3B3B") };
 
-    public static PersonLook Patient(Patient patient) => new(
-        Top: ClothesColours[patient.Id % ClothesColours.Length],
-        Trousers: TrouserColours[(patient.Id * 7) % TrouserColours.Length],
-        Skin: SkinTones[(patient.Id * 7) % SkinTones.Length],
-        Hair: patient.Age >= 65 ? new Color("#B8B8B8") : HairColours[(patient.Id * 5) % HairColours.Length],
-        LongSleeves: true,
-        LongHair: patient.Sex == Sex.Female && patient.Id % 4 != 0,
-        Style: PatientHair(patient.Id, patient.Sex, patient.Age),
-        Beard: patient.Sex == Sex.Male && patient.Age >= 25 && patient.Id % 4 == 1,
-        Glasses: patient.Age >= 50 && patient.Id % 3 != 1,
-        Skirt: patient.Sex == Sex.Female && patient.Id % 3 == 0,
-        Jacket: patient.Id % 3 == 2 && !patient.Maternity ? CoatColours[patient.Id % CoatColours.Length] : null,
-        Stick: patient.Age >= 78,
-        Bump: patient.Maternity && !patient.Delivered);
+    private static readonly Color[] FrameColours = { new("#2B2F33"), new("#7A2E4A"), new("#8A6A45"), new("#1D3A6E") };
 
-    /// <summary>A clinic patient in their own clothes, with a coat on (they have come from home).</summary>
+    private static readonly Color[] BrightColours = { new("#F2C230"), new("#E0559A"), new("#3B7DD8"), new("#D03A3A"), new("#43A047") };
+
+    private static readonly Color[] ShoeColours = { new("#2B2F33"), new("#3A2A1E"), new("#E8ECEF"), new("#5A3B22"), new("#3B7DD8"), new("#B5525C") };
+
+    /// <summary>A repeatable roll for one person: the same id and question always give the same answer.</summary>
+    private static int Roll(int seed, int question, int sides)
+    {
+        unchecked
+        {
+            var h = (uint)((seed * 73856093) ^ (question * 19349663) ^ 0x5bd1e995);
+            h ^= h >> 15;
+            h *= 2246822519u;
+            h ^= h >> 13;
+            h *= 3266489917u;
+            h ^= h >> 16;
+            return (int)(h % (uint)sides);
+        }
+    }
+
+    private static T Pick<T>(int seed, int question, params T[] options) => options[Roll(seed, question, options.Length)];
+
+    /// <summary>Hair colour: it follows skin tone loosely, and greys then whitens with age.</summary>
+    private static Color HairColour(int seed, int skin, int age)
+    {
+        if (age >= 75)
+        {
+            return Pick(seed, 20, HairWhite, HairSilver, HairWhite, HairGrey);
+        }
+
+        if (age >= 58 && Roll(seed, 21, 4) != 0)
+        {
+            return Pick(seed, 20, HairGrey, HairSilver, HairGrey);
+        }
+
+        return skin >= 3
+            ? Pick(seed, 22, HairBlack, HairDark, HairBlack, HairBrown)
+            : Pick(seed, 22, HairDark, HairBrown, HairChestnut, HairLight, HairBlonde, HairGinger, HairBlack, HairBrown);
+    }
+
+    private static StaffLook Person(int seed, bool female, int age)
+    {
+        var skin = Roll(seed, 1, SkinTones.Length);
+        return new StaffLook(seed, female, age, skin, SkinTones[skin], HairColour(seed, skin, age));
+    }
+
+    private readonly record struct StaffLook(int Seed, bool Female, int Age, int SkinIndex, Color Skin, Color Hair);
+
+    /// <summary>The face everyone is born with: glasses, facial hair, freckles and laughter lines, by age and sex.</summary>
+    private static PersonLook WithFace(PersonLook look, int seed, bool female, int age, int skin, bool neat)
+    {
+        var glasses = age >= 70 ? Roll(seed, 30, 3) != 0 : age >= 50 ? Roll(seed, 30, 2) == 0 : age >= 18 ? Roll(seed, 30, 5) == 0 : Roll(seed, 30, 9) == 0;
+        var man = !female && age >= 20;
+        var hair = man ? Roll(seed, 31, 10) : -1;
+        var turban = look.Style == HairStyle.Turban;
+        return look with
+        {
+            Female = female,
+            Glasses = glasses,
+            GlassesFrame = FrameColours[Roll(seed, 32, FrameColours.Length)],
+            Beard = turban || hair is 0 or 1,
+            Stubble = !turban && hair is 2 or 3 && !neat,
+            Moustache = !turban && hair == 4 && age >= 38,
+            Freckles = skin <= 1 && age < 32 && Roll(seed, 33, 4) == 0,
+            Blush = age < 12,
+            Wrinkles = age >= 62,
+            Lips = female && age >= 17 && Roll(seed, 34, 2) == 0 ? Pick(seed, 35, new Color("#B5525C"), new Color("#A8455A"), new Color("#C2574A")) : null,
+            Mouth = age < 12 ? Pick(seed, 36, Mouth.Grin, Mouth.Smile, Mouth.Flat) : Pick(seed, 36, Mouth.Smile, Mouth.Smile, Mouth.Flat, Mouth.Smile),
+        };
+    }
+
+    /// <summary>A staff member's hair: long hair is tied back or covered (hair off the collar).</summary>
+    private static HairStyle StaffHair(int seed, bool female, int age) => female
+        ? Roll(seed, 10, 14) == 0 ? HairStyle.Hijab
+            : age >= 55 ? Pick(seed, 11, HairStyle.Bob, HairStyle.Bun, HairStyle.Short, HairStyle.Perm)
+            : Pick(seed, 11, HairStyle.Bun, HairStyle.Ponytail, HairStyle.Bob, HairStyle.Braids, HairStyle.Short, HairStyle.SidePart, HairStyle.Ponytail, HairStyle.Curly)
+        : Roll(seed, 10, 18) == 0 ? HairStyle.Turban
+            : age >= 52 ? Pick(seed, 11, HairStyle.Balding, HairStyle.Receding, HairStyle.Bald, HairStyle.Short, HairStyle.SidePart)
+            : Pick(seed, 11, HairStyle.Short, HairStyle.Crop, HairStyle.SidePart, HairStyle.Quiff, HairStyle.Curly, HairStyle.Short, HairStyle.Receding);
+
+    public static PersonLook Staff(StaffMember member)
+    {
+        var seed = member.Id;
+        var age = member.Age > 0 ? member.Age : 25 + Roll(seed, 2, 35);
+
+        // Nursing and midwifery are mostly women; the other roles are an even mix.
+        var female = member.Role switch
+        {
+            StaffRole.Midwife => Roll(seed, 3, 10) != 0,
+            StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.Receptionist => Roll(seed, 3, 10) < 7,
+            StaffRole.Porter => Roll(seed, 3, 10) < 3,
+            _ => Roll(seed, 3, 2) == 0,
+        };
+        var who = Person(seed, female, age);
+        var style = StaffHair(seed, female, age);
+        var hair = style is HairStyle.Hijab or HairStyle.Turban ? ScarfColours[Roll(seed, 12, ScarfColours.Length)] : who.Hair;
+        var cap = CapColours[Roll(seed, 13, CapColours.Length)];
+        var grade = member.Grade;
+        bool Is(string text) => grade.Contains(text, StringComparison.OrdinalIgnoreCase);
+
+        PersonLook Tunic(string colour, string piping, string trousers) =>
+            new(new Color(colour), new Color(trousers), who.Skin, hair) { Kind = TopKind.Tunic, Trim = new Color(piping), Lanyard = true };
+        PersonLook Scrubs(string colour) =>
+            new(new Color(colour), new Color(colour).Darkened(0.1f), who.Skin, hair) { Kind = TopKind.Scrubs, Lanyard = true };
+
+        var look = member.Role switch
+        {
+            // Doctors: teal scrubs that darken with seniority; consultants wear a shirt and tie.
+            StaffRole.Doctor when Is("Consultant") => new PersonLook(ShirtColours[Roll(seed, 14, ShirtColours.Length)], new Color("#2E3440"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, Tie = Pick(seed, 15, new Color("#8E2448"), new Color("#1D3A6E"), new Color("#2F7D6B")), Stethoscope = true, Lanyard = true, ShoeColour = new Color("#3A2A1E"),
+            },
+            StaffRole.Doctor when Is("Registrar") => Scrubs("#1C5568") with { Stethoscope = true, Pocket = true },
+            StaffRole.Doctor when Is("Junior") => Scrubs("#63C2B4") with { Stethoscope = true, Pocket = true },
+            StaffRole.Doctor => Scrubs("#1F8A8A") with { Stethoscope = true, Pocket = true },
+
+            // Nurses: the tunic darkens with the band.
+            StaffRole.Nurse when Is("Band 8") || Is("Band 9") || Is("Matron") => Tunic("#2A2E36", "#E04848", "#1C1F26") with { FobWatch = true, Epaulettes = new Color("#E04848") },
+            StaffRole.Nurse when Is("Band 7") || Is("Senior") || Is("Sister") => Tunic("#1D3A6E", "#E04848", "#18233A") with { FobWatch = true, Pocket = true },
+            StaffRole.Nurse when Is("Band 6") => Tunic("#2F6FD0", "#FFFFFF", "#1B2C4A") with { FobWatch = true, Pocket = true },
+            StaffRole.Nurse => Tunic("#6FB1E8", "#FFFFFF", "#1B2C4A") with { FobWatch = true, Pocket = true },
+            StaffRole.OutreachNurse => Tunic("#1D3A6E", "#F2B134", "#18233A") with { FobWatch = true, Stethoscope = true, Epaulettes = new Color("#F2B134") },
+            StaffRole.HealthcareAssistant => Tunic("#A9C7B8", "#FFFFFF", "#2B3440") with { FobWatch = true, Gloves = new Color("#8FC3E6") },
+
+            // Midwives wear plum; senior and consultant midwives a deep aubergine with epaulettes.
+            StaffRole.Midwife when Is("Band 7") || Is("Band 8") => Tunic("#4A1F55", "#E7C6E0", "#24182B") with { FobWatch = true, Epaulettes = new Color("#E7C6E0") },
+            StaffRole.Midwife => Tunic("#A23B86", "#F2D5EC", "#2A1E33") with { FobWatch = true, Pocket = true },
+
+            // Theatre and procedure staff: scrubs, a cap and a mask.
+            StaffRole.Surgeon => Scrubs("#4E9C6F") with { Cap = new Color("#3E7F5A"), Mask = true, Lanyard = false, ShoeColour = new Color("#E8ECEF") },
+            StaffRole.Anaesthetist => Scrubs("#3F5FA8") with { Cap = cap, Mask = true, Stethoscope = true, ShoeColour = new Color("#2F6FD0") },
+            StaffRole.Endoscopist => Scrubs("#5A4E9C") with { Cap = new Color("#5A4E9C"), Apron = new Color("#DDEBF2") },
+
+            // Diagnostics and therapy.
+            StaffRole.Radiographer => Tunic("#F2F5F7", "#8E2448", "#8E2448") with { Badge = new Color("#F2C230") },
+            StaffRole.Sonographer => Tunic("#2F5D73", "#9ED0E6", "#1E2E3A"),
+            StaffRole.CardiacPhysiologist => Tunic("#C8453F", "#FFFFFF", "#2B2F3A"),
+            StaffRole.Neurophysiologist => Tunic("#7A5AA8", "#FFFFFF", "#2B2F3A"),
+            StaffRole.Pharmacist => Tunic("#2E7D4F", "#FFFFFF", "#2B3440") with { Pocket = true },
+            StaffRole.PlasterTechnician => Tunic("#5D6B78", "#FFFFFF", "#2B3440") with { Apron = new Color("#E9E4D6") },
+            StaffRole.Physiotherapist => new PersonLook(Colors.White, new Color("#1A3A5C"), who.Skin, hair)
+            {
+                Kind = TopKind.Polo, Epaulettes = new Color("#1A3A5C"), Lanyard = true, ShoeColour = new Color("#F2F4F7"),
+            },
+
+            // Porters: a yellow polo with reflective bands and a radio on the belt.
+            StaffRole.Porter => new PersonLook(new Color("#E0B020"), new Color("#22262B"), who.Skin, hair)
+            {
+                Kind = TopKind.Polo, HiVis = true, Radio = true, Lanyard = true, ShoeColour = new Color("#1C1F22"),
+            },
+
+            // Reception: a lilac blazer over a blouse.
+            _ => new PersonLook(new Color("#F3F0FA"), new Color("#2E2E38"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, Jacket = new Color("#7C6AA8"), Lanyard = true,
+            },
+        };
+
+        look = look with { Style = style, Bobble = new Color("#F2C230"), Build = 0.92f + (Roll(seed, 4, 5) * 0.06f) };
+        return WithFace(look, seed, female, age, who.SkinIndex, neat: true);
+    }
+
+    /// <summary>The colour that stands for a staff member's uniform in lists and on route lines.</summary>
+    public static Color UniformColour(StaffMember member) => Staff(member).Jacket ?? Staff(member).Top;
+
+    /// <summary>A member of the public in their own clothes, from who they are.</summary>
+    private static PersonLook Civilian(int seed, Sex sex, int age, bool coat, bool bump)
+    {
+        var female = sex == Sex.Female;
+        var who = Person(seed, female, age);
+        var toddler = age < 5;
+        var child = age < 12;
+        var teen = age is >= 12 and < 18;
+        var old = age >= 70;
+        var top = TopColours[Roll(seed, 5, TopColours.Length)];
+        var bright = BrightColours[Roll(seed, 6, BrightColours.Length)];
+
+        HairStyle style;
+        if (child)
+        {
+            style = female
+                ? Pick(seed, 10, HairStyle.Pigtails, HairStyle.Ponytail, HairStyle.Bob, HairStyle.Braids, HairStyle.Curly, HairStyle.Long)
+                : Pick(seed, 10, HairStyle.Short, HairStyle.Crop, HairStyle.Curly, HairStyle.SidePart, HairStyle.Short);
+        }
+        else if (old)
+        {
+            style = female
+                ? Pick(seed, 10, HairStyle.Perm, HairStyle.Bun, HairStyle.Bob, HairStyle.Short, HairStyle.Perm)
+                : Pick(seed, 10, HairStyle.Balding, HairStyle.Bald, HairStyle.Receding, HairStyle.Short, HairStyle.Balding);
+        }
+        else if (female)
+        {
+            style = !teen && Roll(seed, 9, 12) == 0
+                ? HairStyle.Hijab
+                : Pick(seed, 10, HairStyle.Long, HairStyle.Wavy, HairStyle.Bob, HairStyle.Ponytail, HairStyle.Bun, HairStyle.Braids, HairStyle.Curly, HairStyle.Short, HairStyle.SidePart, who.SkinIndex >= 3 ? HairStyle.Afro : HairStyle.Long);
+        }
+        else
+        {
+            style = age >= 25 && Roll(seed, 9, 20) == 0 ? HairStyle.Turban
+                : age >= 48 ? Pick(seed, 10, HairStyle.Receding, HairStyle.Balding, HairStyle.Bald, HairStyle.Short, HairStyle.SidePart, HairStyle.Crop)
+                : Pick(seed, 10, HairStyle.Short, HairStyle.Crop, HairStyle.SidePart, HairStyle.Quiff, HairStyle.Curly, HairStyle.Short, age >= 32 ? HairStyle.Receding : HairStyle.Quiff, who.SkinIndex >= 3 ? HairStyle.Afro : HairStyle.Short);
+        }
+
+        // Clothes suit their age: dungarees and bright T-shirts on small children, hoodies on
+        // teenagers, cardigans on the elderly.
+        TopKind kind;
+        if (toddler)
+        {
+            kind = Pick(seed, 40, TopKind.Dungarees, TopKind.Stripes, TopKind.Tee, TopKind.Dungarees);
+        }
+        else if (child)
+        {
+            kind = female ? Pick(seed, 40, TopKind.Tee, TopKind.Dress, TopKind.Stripes, TopKind.Hoodie, TopKind.Jumper) : Pick(seed, 40, TopKind.Tee, TopKind.Stripes, TopKind.Hoodie, TopKind.Jumper, TopKind.Stripes);
+        }
+        else if (teen)
+        {
+            kind = Pick(seed, 40, TopKind.Hoodie, TopKind.Tee, TopKind.Jumper, TopKind.Stripes, TopKind.Hoodie);
+        }
+        else if (old)
+        {
+            kind = female ? Pick(seed, 40, TopKind.Cardigan, TopKind.Dress, TopKind.Jumper, TopKind.Cardigan) : Pick(seed, 40, TopKind.Cardigan, TopKind.Jumper, TopKind.Shirt, TopKind.Cardigan);
+        }
+        else if (female)
+        {
+            kind = style == HairStyle.Hijab ? Pick(seed, 40, TopKind.Jumper, TopKind.Cardigan, TopKind.Shirt)
+                : Pick(seed, 40, TopKind.Tee, TopKind.Dress, TopKind.Jumper, TopKind.Cardigan, TopKind.Shirt, TopKind.Stripes, TopKind.Hoodie, TopKind.Dress);
+        }
+        else
+        {
+            kind = Pick(seed, 40, TopKind.Tee, TopKind.Shirt, TopKind.Polo, TopKind.Jumper, TopKind.Hoodie, TopKind.Stripes, TopKind.Tee, TopKind.Shirt);
+        }
+
+        if (bump && kind is TopKind.Hoodie or TopKind.Cardigan or TopKind.Shirt)
+        {
+            kind = TopKind.Jumper;
+        }
+
+        if (kind is TopKind.Shirt)
+        {
+            top = ShirtColours[Roll(seed, 41, ShirtColours.Length)];
+        }
+
+        var legs = kind == TopKind.Dress ? LegKind.Skirt
+            : female && style != HairStyle.Hijab && Roll(seed, 42, 4) == 0 ? LegKind.Skirt
+            : (child || (!female && age < 40)) && Roll(seed, 43, 4) == 0 ? LegKind.Shorts
+            : !old && Roll(seed, 44, 2) == 0 ? LegKind.Jeans : LegKind.Trousers;
+        var trousers = legs == LegKind.Jeans ? JeansColours[Roll(seed, 45, JeansColours.Length)]
+            : toddler ? Pick(seed, 45, new Color("#4D7FB8"), new Color("#B5525C"), new Color("#4D6B3C"))
+            : TrouserColours[Roll(seed, 45, TrouserColours.Length)];
+        var light = top.Luminance > 0.6f;
+        var build = child ? 1f : 0.9f + (Roll(seed, 46, 8) * 0.05f);
+
+        var look = new PersonLook(top, trousers, who.Skin, style is HairStyle.Hijab or HairStyle.Turban ? ScarfColours[Roll(seed, 12, ScarfColours.Length)] : who.Hair)
+        {
+            Kind = kind,
+            Trim = kind switch
+            {
+                TopKind.Stripes => light ? bright : new Color("#F2F4F7"),
+                TopKind.Dress => Roll(seed, 47, 3) == 0 ? null : top.Lightened(0.6f),
+                TopKind.Cardigan => ShirtColours[Roll(seed, 41, ShirtColours.Length)],
+                _ => null,
+            },
+            Motif = kind == TopKind.Tee && (child || Roll(seed, 48, 4) == 0) ? (light ? bright : new Color("#FBE3A0")) : null,
+            Legs = legs,
+            Tights = legs == LegKind.Skirt && (old || Roll(seed, 49, 2) == 0) ? (child ? new Color("#F2F4F7") : old ? who.Skin.Darkened(0.18f) : new Color("#3B3B3B")) : null,
+            ShoeColour = child ? BrightColours[Roll(seed, 50, BrightColours.Length)] : ShoeColours[Roll(seed, 50, old ? 2 : ShoeColours.Length)],
+            LongSleeves = style == HairStyle.Hijab || (kind is TopKind.Shirt && Roll(seed, 51, 2) == 0),
+            Style = style,
+            Bobble = bright,
+            Scale = toddler ? 0.5f : child ? Mathf.Lerp(0.6f, 0.78f, (age - 5) / 6f) : teen ? Mathf.Lerp(0.84f, 0.97f, (age - 12) / 5f) : old ? 0.95f : female ? 0.97f : 1f,
+            HeadScale = toddler ? 0.8f : child ? 0.88f : teen ? 0.97f : 1f,
+            Build = build,
+            Belly = !female && age >= 40 && build >= 1.15f,
+            Stoop = age >= 72,
+            Jacket = coat && !bump && !child && kind is not (TopKind.Hoodie or TopKind.Cardigan or TopKind.Dress) ? CoatColours[Roll(seed, 52, CoatColours.Length)] : null,
+            Stick = age >= 78 && age < 86,
+            Frame = age >= 86,
+            Bump = bump,
+            Teddy = toddler || (age < 8 && Roll(seed, 53, 3) == 0),
+        };
+
+        return WithFace(look, seed, female, age, who.SkinIndex, neat: false);
+    }
+
+    /// <summary>A member of the public of a given age and sex, for the art review sheets.</summary>
+    public static PersonLook Preview(int seed, Sex sex, int age, bool coat = false) => Civilian(seed, sex, age, coat, bump: false);
+
+    public static PersonLook Patient(Patient patient) => Civilian(
+        patient.Id,
+        patient.Sex,
+        patient.Age,
+        coat: Roll(patient.Id, 54, 3) == 0,
+        bump: patient.Maternity && !patient.Delivered);
+
+    /// <summary>A clinic patient in their own clothes, usually with a coat on (they have come from home).</summary>
     public static PersonLook Outpatient(Outpatient outpatient, Appointment? appointment)
     {
-        var seed = outpatient.AppointmentId + 3;
+        var seed = outpatient.AppointmentId + 100_003;
         var sex = appointment?.Sex ?? Sex.Male;
-        var age = appointment?.Age ?? 40;
-        return new PersonLook(
-            Top: ClothesColours[(seed * 5) % ClothesColours.Length],
-            Trousers: TrouserColours[(seed * 3) % TrouserColours.Length],
-            Skin: SkinTones[(seed * 11) % SkinTones.Length],
-            Hair: age >= 65 ? new Color("#B8B8B8") : HairColours[(seed * 7) % HairColours.Length],
-            LongSleeves: true,
-            LongHair: sex == Sex.Female && seed % 4 != 0,
-            Style: PatientHair(seed, sex, age),
-            Beard: sex == Sex.Male && seed % 4 == 1,
-            Glasses: age >= 50 && seed % 3 != 1,
-            Skirt: sex == Sex.Female && seed % 3 == 0,
-            Jacket: CoatColours[seed % CoatColours.Length],
-            Stick: age >= 78,
-            Bump: sex == Sex.Female && outpatient.ClinicId.StartsWith("antenatal", StringComparison.Ordinal) && seed % 3 != 0);
+        var bump = sex == Sex.Female && outpatient.ClinicId.StartsWith("antenatal", StringComparison.Ordinal) && Roll(seed, 55, 3) != 0;
+        return Civilian(seed, sex, appointment?.Age ?? 40, coat: Roll(seed, 54, 3) != 0, bump);
     }
 
     private static readonly Color[] BabyHats =

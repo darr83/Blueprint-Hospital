@@ -27,7 +27,7 @@ public partial class ArtGallery : Node2D
     private int _shot;
     private Patient[] _patients = Array.Empty<Patient>();
 
-    private static readonly string[] Pages = { "people", "beds_and_transport", "equipment", "maternity", "chairs" };
+    private static readonly string[] Pages = { "people", "people2", "beds_and_transport", "equipment", "maternity", "chairs" };
 
     public static bool Begin()
     {
@@ -169,60 +169,84 @@ public partial class ArtGallery : Node2D
                 break;
 
             case "people":
+            case "people2":
             {
                 var staff = new (string Label, StaffRole Role, string Grade)[]
                 {
-                    ("Band 5 nurse", StaffRole.Nurse, "Band 5 nurse"),
-                    ("Band 7 sister", StaffRole.Nurse, "Band 7 nurse"),
-                    ("Outreach", StaffRole.OutreachNurse, "Band 7 nurse"),
+                    ("Nurse B5", StaffRole.Nurse, "Band 5 nurse"),
+                    ("Nurse B6", StaffRole.Nurse, "Band 6 nurse"),
+                    ("Sister B7", StaffRole.Nurse, "Band 7 nurse"),
+                    ("Matron B8-9", StaffRole.Nurse, "Band 8 nurse"),
                     ("HCA", StaffRole.HealthcareAssistant, "Healthcare assistant"),
+                    ("Outreach", StaffRole.OutreachNurse, "Band 7 nurse"),
+                    ("Midwife", StaffRole.Midwife, "Band 6 midwife"),
+                    ("Senior midwife", StaffRole.Midwife, "Band 7 midwife"),
+                    ("Junior doctor", StaffRole.Doctor, "Junior Doctor"),
                     ("Doctor", StaffRole.Doctor, "Doctor"),
+                    ("Registrar", StaffRole.Doctor, "Registrar"),
                     ("Consultant", StaffRole.Doctor, "Consultant"),
                     ("Surgeon", StaffRole.Surgeon, "Consultant"),
                     ("Anaesthetist", StaffRole.Anaesthetist, "Consultant"),
+                    ("Endoscopist", StaffRole.Endoscopist, "Endoscopist"),
+                    ("Radiographer", StaffRole.Radiographer, "Radiographer"),
+                    ("Sonographer", StaffRole.Sonographer, "Sonographer"),
+                    ("Cardiac phys.", StaffRole.CardiacPhysiologist, "Cardiac physiologist"),
+                    ("Neurophys.", StaffRole.Neurophysiologist, "Neurophysiologist"),
+                    ("Pharmacist", StaffRole.Pharmacist, "Pharmacist"),
+                    ("Physio", StaffRole.Physiotherapist, "Physiotherapist"),
+                    ("Plaster tech", StaffRole.PlasterTechnician, "Plaster technician"),
                     ("Porter", StaffRole.Porter, "Porter"),
                     ("Reception", StaffRole.Receptionist, "Receptionist"),
                 };
-                var staff2 = new (string Label, StaffRole Role, string Grade)[]
-                {
-                    ("Radiographer", StaffRole.Radiographer, "Radiographer"),
-                    ("Pharmacist", StaffRole.Pharmacist, "Pharmacist"),
-                    ("Physio", StaffRole.Physiotherapist, "Physiotherapist"),
-                    ("Cardiac phys.", StaffRole.CardiacPhysiologist, "Cardiac physiologist"),
-                    ("Neurophys.", StaffRole.Neurophysiologist, "Neurophysiologist"),
-                    ("Sonographer", StaffRole.Sonographer, "Sonographer"),
-                    ("Endoscopist", StaffRole.Endoscopist, "Endoscopist"),
-                    ("Plaster tech", StaffRole.PlasterTechnician, "Plaster technician"),
-                    ("Nurse (walk)", StaffRole.Nurse, "Band 6 nurse"),
-                    ("Doctor (sits)", StaffRole.Doctor, "Registrar"),
-                };
 
-                Action<CanvasItem> Person((string Label, StaffRole Role, string Grade) s, int id)
+                Action<CanvasItem> Person((string Label, StaffRole Role, string Grade) s, int id, int pose)
                 {
-                    var member = new StaffMember { Id = id, Name = s.Label, Role = s.Role, Grade = s.Grade, DepartmentId = "ed" };
+                    var member = new StaffMember { Id = id, Name = s.Label, Role = s.Role, Grade = s.Grade, DepartmentId = "ed", Age = 24 + ((id * 7) % 38) };
                     var look = Looks.Staff(member);
-                    return s.Label.Contains("sits")
-                        ? c => Figures.Seated(c, foot, look)
-                        : c => Figures.Standing(c, foot, look, time, s.Label.Contains("walk"), id * 7);
+                    return pose switch
+                    {
+                        1 => c => Figures.Standing(c, foot, look, time, true, id * 7, away: true),
+                        2 => c => Figures.Seated(c, foot, look),
+                        _ => c => Figures.Standing(c, foot, look, time, false, id * 7),
+                    };
                 }
 
-                Row(165, 150, staff.Select((s, i) => (s.Label, Person(s, i + 1))));
-                Row(420, 150, staff2.Select((s, i) => (s.Label, Person(s, i + 20))));
-                var nurse = Looks.Staff(new StaffMember { Id = 7, Name = "Nurse", Role = StaffRole.Nurse, Grade = "Band 5 nurse", DepartmentId = "ed" });
-                string Who(int i) => $"Patient {_patients[i % _patients.Length].Age}{(_patients[i % _patients.Length].Sex == Sex.Female ? "F" : "M")}";
-                Row(680, 150, new (string, Action<CanvasItem>)[]
+                if (page == "people")
                 {
-                    ("Patient walking", c => Figures.Standing(c, foot, P(0), time, true, 0)),
-                    ("Walking away", c => Figures.Standing(c, foot, P(1), time, true, 13, away: true)),
-                    (Who(2), c => Figures.Standing(c, foot, P(2), time, false, 26)),
-                    (Who(3), c => Figures.Standing(c, foot, P(3), time, false, 39)),
-                    (Who(4), c => Figures.Standing(c, foot, P(4), time, false, 52)),
-                    (Who(6), c => Figures.Standing(c, foot, P(6), time, false, 78)),
-                    ("Patient seated", c => Figures.Seated(c, foot, P(5))),
-                    ("Nurse, away", c => Figures.Standing(c, foot, nurse, time, true, 49, away: true)),
-                    ("Porter, away", c => Figures.Standing(c, foot, Looks.Staff(new StaffMember { Id = 9, Name = "P", Role = StaffRole.Porter, Grade = "Porter", DepartmentId = "ed" }), time, true, 63, away: true)),
-                    ("Surgeon, away", c => Figures.Standing(c, foot, Looks.Staff(new StaffMember { Id = 11, Name = "S", Role = StaffRole.Surgeon, Grade = "Consultant", DepartmentId = "ed" }), time, true, 77, away: true)),
-                });
+                    for (var r = 0; r < 3; r++)
+                    {
+                        Row(150 + (r * 190), 170, staff.Skip(r * 8).Take(8).Select((s, i) => (s.Label, Person(s, 3 + (r * 8) + i, 0))), 2.2f);
+                    }
+
+                    var ages = new[] { (3, Sex.Male), (6, Sex.Female), (9, Sex.Male), (14, Sex.Female), (16, Sex.Male), (27, Sex.Female), (34, Sex.Male), (45, Sex.Female), (52, Sex.Male), (66, Sex.Female), (74, Sex.Male), (81, Sex.Female), (88, Sex.Male) };
+                    Row(735, 115, ages.Select((a, i) => ($"{(a.Item2 == Sex.Female ? "F" : "M")} {a.Item1}", (Action<CanvasItem>)(c => Figures.Standing(c, foot, Looks.Preview(40 + (i * 13), a.Item2, a.Item1), time, false, i)))), 2.2f);
+                }
+                else
+                {
+                    // A crowd: many patients of every age, then people from behind and sitting down.
+                    for (var r = 0; r < 3; r++)
+                    {
+                        Row(140 + (r * 175), 96, Enumerable.Range(0, 16).Select(i =>
+                        {
+                            var n = (r * 16) + i;
+                            var age = new[] { 4, 7, 10, 13, 17, 22, 28, 33, 39, 44, 51, 58, 64, 71, 79, 87 }[(i + (r * 5)) % 16];
+                            var sex = (n + r) % 2 == 0 ? Sex.Female : Sex.Male;
+                            return ($"{(sex == Sex.Female ? "F" : "M")} {age}", (Action<CanvasItem>)(c => Figures.Standing(c, foot, Looks.Preview(200 + (n * 31), sex, age, n % 3 == 0), time, false, n)));
+                        }), 2f);
+                    }
+
+                    Row(700, 96, Enumerable.Range(0, 16).Select(i =>
+                    {
+                        var age = new[] { 4, 9, 15, 26, 38, 55, 70, 86 }[i % 8];
+                        var sex = i % 2 == 0 ? Sex.Female : Sex.Male;
+                        var look = Looks.Preview(900 + (i * 17), sex, age);
+                        return i < 6 ? ("away", (Action<CanvasItem>)(c => Figures.Standing(c, foot, look, time, true, i, away: true)))
+                            : i < 11 ? ("seated", c => Figures.Seated(c, foot, look))
+                            : i < 14 ? ("staff away", Person(staff[(i * 5) % staff.Length], 60 + i, 1))
+                            : ("staff seated", Person(staff[(i * 3) % staff.Length], 70 + i, 2));
+                    }), 2f);
+                }
+
                 break;
             }
 
@@ -345,7 +369,7 @@ public partial class ArtGallery : Node2D
         var mum = _patients.FirstOrDefault(p => p.Sex == Sex.Female) ?? _patients[0];
         var other = _patients.Where(p => p.Sex == Sex.Female).Skip(1).FirstOrDefault() ?? _patients[^1];
         var young = new Color("#4A3020");
-        var pregnant = Looks.Patient(mum) with { Bump = true, Jacket = null, Hair = young, Glasses = false, Stick = false, Beard = false, Style = HairStyle.Ponytail, LongHair = true };
+        var pregnant = Looks.Patient(mum) with { Bump = true, Jacket = null, Hair = young, Glasses = false, Stick = false, Beard = false, Style = HairStyle.Ponytail };
         var pregnant2 = Looks.Patient(other) with { Bump = true, Jacket = null, Hair = new Color("#2B1E16"), Stick = false, Beard = false, Style = HairStyle.Curly };
         var delivered = pregnant with { Bump = false };
         BabyLook Baby(int id) => Looks.Baby(new Baby { Id = id, FirstName = "Baby", Surname = "Gallery", Sex = id % 2 == 0 ? Sex.Female : Sex.Male, WeightKg = 3.4, GestationWeeks = 40, BornAt = DateTime.Today, MotherId = mum.Id, Delivery = "Normal vaginal birth" }, mum);
