@@ -189,6 +189,7 @@ public sealed partial class HospitalSimulation
     {
         patient.Outcome = outcome;
         patient.LeftAt = Now;
+        LeaveCorridor(patient);
         ReleaseSpace(patient);
         ReleaseReservedBed(patient);
         ReleaseSeat(patient);
@@ -261,6 +262,7 @@ public sealed partial class HospitalSimulation
                     break;
 
                 case PatientStage.WaitingForSpace when patient.Triage == TriageCategory.Green
+                                                       && patient.CorridorSpot is null
                                                        && Now - patient.QueuedSince > LeaveWithoutBeingSeenAfter
                                                        && patient.BusyWithTaskId is null
                                                        && Random.Chance(WalkOutFactor(patient) / 3600):
@@ -511,6 +513,7 @@ public sealed partial class HospitalSimulation
     {
         var from = patient.Stage;
         var previous = patient.CareSpaceId;
+        LeaveCorridor(patient);
         ReleaseSpace(patient);
         ReleaseSeat(patient);
         space.OccupantId = patient.Id;

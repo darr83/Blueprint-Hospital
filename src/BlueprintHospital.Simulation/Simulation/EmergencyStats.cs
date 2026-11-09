@@ -15,6 +15,21 @@ public sealed class EmergencyStats
 
     internal Queue<double> RecentHandoverMinutes => _recentHandoverMinutes;
 
+    private readonly Queue<double> _recentCorridorMinutes = new();
+
+    internal Queue<double> RecentCorridorMinutes => _recentCorridorMinutes;
+
+    /// <summary>Ambulance patients who have spent time in corridor care (no cubicle free after handover).</summary>
+    public int CorridorCareTotal { get; internal set; }
+
+    /// <summary>Patients on trolleys in the corridor right now.</summary>
+    public int InCorridor { get; internal set; }
+
+    /// <summary>Corridor spaces in the A&amp;E corridors, taken or not.</summary>
+    public int CorridorSpaces { get; internal set; }
+
+    public double AverageCorridorMinutes => _recentCorridorMinutes.Count == 0 ? 0 : _recentCorridorMinutes.Average();
+
     public int ArrivalsTotal { get; internal set; }
 
     public int AmbulanceArrivalsTotal { get; internal set; }
@@ -127,6 +142,12 @@ public sealed class EmergencyStats
 
     internal void RecordHandoverTime(TimeSpan time) => Push(_recentHandoverMinutes, time.TotalMinutes);
 
+    internal void RecordCorridorTime(TimeSpan time)
+    {
+        CorridorCareTotal++;
+        Push(_recentCorridorMinutes, time.TotalMinutes);
+    }
+
     /// <summary>Leaving A&amp;E for a ward stops the 4-hour clock.</summary>
     internal void RecordAdmission(Patient patient, DateTime now)
     {
@@ -198,6 +219,8 @@ public sealed class EmergencyStats
             LongestWaitMinutes[category] = waiting.Count == 0 ? 0 : waiting.Max(p => (sim.Now - p.ArrivedAt).TotalMinutes);
         }
 
+        InCorridor = present.Count(p => p.CorridorSpot.HasValue);
+        CorridorSpaces = sim.CorridorCareSpots().Count;
         AmbulancesWaiting = sim.Ambulances.Count(a => a.Purpose == AmbulancePurpose.Arrival && a.State is AmbulanceState.AtBay or AmbulanceState.WaitingForBay);
 
         (int, int) Usage(CareSpaceKind kind)

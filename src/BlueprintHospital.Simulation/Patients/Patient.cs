@@ -231,6 +231,12 @@ public sealed class Patient : Agent
 
     public DateTime? TransferAmbulanceDueAt { get; set; }
 
+    /// <summary>The corridor space their trolley is parked in (or being wheeled to) while no cubicle is free.</summary>
+    public GridCoord? CorridorSpot { get; set; }
+
+    /// <summary>When they went into corridor care this visit.</summary>
+    public DateTime? CorridorSince { get; set; }
+
     public bool IsAlive => Outcome != PatientOutcome.Died;
 
     public bool IsInDepartment => Stage is not (PatientStage.Gone or PatientStage.Leaving) && IsAlive;

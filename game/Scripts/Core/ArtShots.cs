@@ -66,6 +66,24 @@ public partial class ArtShots : Node
                     clock.Step();
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-corridor") >= 0)
+                {
+                    // Busy night: more ambulances than cubicles, so the overflow goes into corridor care.
+                    _corridor = true;
+                    var sim = h.Session.Simulation;
+                    for (var i = 0; i < 12; i++)
+                    {
+                        sim.SpawnPatient(ArrivalMethod.Ambulance);
+                    }
+
+                    for (var i = 0; i < 20000 && sim.CorridorPatients.Count(p => p.Triage.HasValue && p.CorridorSpot == p.Tile) < 5; i++)
+                    {
+                        clock.Step();
+                    }
+
+                    GD.Print($"[art] Corridor patients: {sim.CorridorPatients.Count()}, spots: {string.Join(" ", sim.CorridorCareSpots())}");
+                }
+
                 _frame = 0;
             }
 
@@ -79,7 +97,15 @@ public partial class ArtShots : Node
             return;
         }
 
-        var shots = _wing
+        var shots = _corridor
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("corridor", CorridorView),
+                ("corridor_close", h => CorridorCloseUp(h, 0)),
+                ("corridor_close_b", h => CorridorCloseUp(h, 2)),
+                ("corridor_close_c", h => CorridorCloseUp(h, 4)),
+            }
+            : _wing
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {
                 ("wing", _ => (IsoDraw.ToScreen(70, 16), 0.62f)),
@@ -128,6 +154,22 @@ public partial class ArtShots : Node
     }
 
     private bool _wing;
+
+    private bool _corridor;
+
+    private static (Vector2, float) CorridorView(HospitalScene h)
+    {
+        var spots = h.Session.Simulation.CorridorPatients.Select(p => p.CorridorSpot!.Value).ToList();
+        var (x, y) = (spots.Average(s => s.X), spots.Average(s => s.Y));
+        return (IsoDraw.ToScreen(x, y), 0.9f);
+    }
+
+    private static (Vector2, float) CorridorCloseUp(HospitalScene h, int index)
+    {
+        var spots = h.Session.Simulation.CorridorPatients.Select(p => p.CorridorSpot!.Value).OrderBy(s => s.X).ThenBy(s => s.Y).ToList();
+        var spot = spots[Math.Min(index, spots.Count - 1)];
+        return (IsoDraw.ToScreen(spot.X + 0.5, spot.Y + 0.5) + new Vector2(0, -20), 2.4f);
+    }
 
     /// <summary>Builds a wing of clinics and specialty rooms north of the A&amp;E, to review their decorations.</summary>
     private void BuildShowroom(HospitalScene h)

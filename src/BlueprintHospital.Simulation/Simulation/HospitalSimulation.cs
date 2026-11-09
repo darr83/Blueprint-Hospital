@@ -219,6 +219,7 @@ public sealed partial class HospitalSimulation
         ScheduleObservations();
         UpdateRedMonitors();
         AllocateSpaces();
+        UpdateCorridorCare();
         UpdateTaskPriorities();
         UpdateStaff(dt);
         ChargeRunningCosts(dt);

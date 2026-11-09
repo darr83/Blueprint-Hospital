@@ -28,7 +28,10 @@ public sealed partial class HospitalSimulation
                 CompleteTriage(member, patient, handover: false);
                 break;
             case TaskKind.AmbulanceHandover:
-                CompleteTriage(member, patient, handover: true);
+                if (!TryHandOverToCorridor(member, patient))
+                {
+                    CompleteTriage(member, patient, handover: true);
+                }
                 break;
             case TaskKind.Observations:
                 TakeObservations(patient);
@@ -153,7 +156,13 @@ public sealed partial class HospitalSimulation
             patient.Log(Now, $"Triage protocol: {string.Join(", ", protocol.Select(i => Database.Investigations[i].Name))} requested by {nurse.Name}.");
         }
 
-        if (!handover)
+        if (!handover && patient.CorridorSpot is not null)
+        {
+            // Corridor care: rated on their trolley where they are, then they wait there for a cubicle.
+            patient.Stage = PatientStage.WaitingForSpace;
+            patient.Log(Now, $"Observations done in the corridor by {nurse.Name}. Waiting on the trolley for a cubicle.");
+        }
+        else if (!handover)
         {
             patient.Stage = PatientStage.WaitingForSpace;
             SendToWaitingRoom(patient);
