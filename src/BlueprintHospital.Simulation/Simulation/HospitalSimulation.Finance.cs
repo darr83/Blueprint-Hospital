@@ -147,6 +147,7 @@ public sealed partial class HospitalSimulation
 
         Balance += amount;
         Day(Now.Date).Add(category, amount);
+        Tally(StatKeys.Money(category), amount);
 
         if (Balance < 0 && !_overdrawnWarned && !UnlimitedMoney)
         {

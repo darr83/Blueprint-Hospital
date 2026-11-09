@@ -377,6 +377,9 @@ public sealed class PeopleState
     public int NextBabyId { get; init; }
 
     public MaternityStats? Maternity { get; init; }
+
+    /// <summary>The Stats screen's figures (absent in older saves).</summary>
+    public StatsHistoryState? History { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -432,6 +435,7 @@ public sealed partial class HospitalSimulation
         Babies = CaptureBabies(),
         NextBabyId = NextBabyId,
         Maternity = MaternityStats,
+        History = HistoryStore.Capture(),
     };
 
     /// <summary>
@@ -651,6 +655,7 @@ public sealed partial class HospitalSimulation
         }
 
         RestoreBabies(state.Babies, state.NextBabyId, state.Maternity);
+        RestoreHistory(state.History);
     }
 
     // ------------------------------------------------------------------ patients
@@ -853,6 +858,8 @@ public sealed partial class HospitalSimulation
                 ["diagnoses"] = s.DiagnosesMade, ["diagnoses_correct"] = s.DiagnosesCorrect, ["missed"] = s.MissedDiagnoses,
                 ["reputation_penalties"] = s.ReputationPenalties, ["investigation_cost"] = s.InvestigationCost, ["medication_cost"] = s.MedicationCost,
                 ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone,
+                ["minutes_in_department"] = s.MinutesInDepartmentTotal, ["seen_by_doctor"] = s.SeenByDoctorTotal,
+                ["minutes_to_doctor"] = s.MinutesToDoctorTotal, ["handovers"] = s.HandoversTotal, ["handover_minutes"] = s.HandoverMinutesTotal,
             },
             TriagedTotal = new Dictionary<TriageCategory, int>(s.TriagedTotal),
             RecentTimeToDoctor = s.RecentTimeToDoctor.ToList(),
@@ -884,6 +891,11 @@ public sealed partial class HospitalSimulation
         s.ReputationPenalties = I("reputation_penalties");
         s.InvestigationCost = state.Counters.GetValueOrDefault("investigation_cost");
         s.MedicationCost = state.Counters.GetValueOrDefault("medication_cost");
+        s.MinutesInDepartmentTotal = state.Counters.GetValueOrDefault("minutes_in_department");
+        s.SeenByDoctorTotal = I("seen_by_doctor");
+        s.MinutesToDoctorTotal = state.Counters.GetValueOrDefault("minutes_to_doctor");
+        s.HandoversTotal = I("handovers");
+        s.HandoverMinutesTotal = state.Counters.GetValueOrDefault("handover_minutes");
         foreach (var (category, count) in state.TriagedTotal)
         {
             s.TriagedTotal[category] = count;

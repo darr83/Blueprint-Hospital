@@ -321,6 +321,7 @@ public sealed partial class HospitalSimulation
             Shift = shift ?? ShorterShift(candidate.Role, roomId),
         };
         Join(member);
+        Tally(StatKeys.Hired);
         var place = roomId is { } id && FindSpace(id) is { } room ? room.Name : PostingsFor(member.Role)[0].Name;
         var starts = member.Shift == CurrentShift ? "starting now" : $"starting at {NextStart(member.Shift):HH:mm}";
         Notifications.Add(Now, NotificationLevel.Info, $"{member.Name} ({member.Grade}) has joined the {ShiftName(member.Shift)} team: {place}, {starts}.");
@@ -392,6 +393,7 @@ public sealed partial class HospitalSimulation
         }
 
         _staff.Remove(member);
+        Tally(StatKeys.Left);
         Notifications.Add(Now, NotificationLevel.Info, $"{member.Name} ({member.Grade}) has left the hospital.");
         CancelUnavailableWork();
         return true;

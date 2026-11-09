@@ -224,6 +224,7 @@ public sealed partial class HospitalSimulation
         ChargeRunningCosts(dt);
         RemoveDepartedPatients();
         Stats.Update(this);
+        UpdateHistory();
     }
 
     // ---------------------------------------------------------------- arrivals

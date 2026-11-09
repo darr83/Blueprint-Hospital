@@ -201,6 +201,7 @@ public sealed partial class HospitalSimulation
                 if (Now >= appointment.Time.AddMinutes(20))
                 {
                     appointment.Status = AppointmentStatus.DidNotAttend;
+                    Tally(StatKeys.ClinicDidNotAttend);
                 }
 
                 continue;
@@ -460,6 +461,7 @@ public sealed partial class HospitalSimulation
         if (o.Stage == OutpatientStage.BeingSeen && Now >= o.BusyUntil)
         {
             appointment.Status = AppointmentStatus.Seen;
+            Tally(StatKeys.ClinicSeen);
             appointment.SeenAt = Now;
             appointment.SeenByStaffId = doctor.Id;
             if (ClinicOf(clinic) is { } definition)

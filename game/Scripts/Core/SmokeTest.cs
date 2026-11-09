@@ -57,6 +57,8 @@ public partial class SmokeTest : Node
         Recruitment,
         Rota,
         RotaBreaks,
+        Stats,
+        StatsWeek,
         Ward,
         WardBed,
         Transport,
@@ -327,6 +329,32 @@ public partial class SmokeTest : Node
                 Screenshot("06e_rota_breaks");
                 hospital.Hud.ToggleRota();
                 Check(!hospital.Hud.Rota.Visible, "The rota did not close.");
+                hospital.Hud.ToggleStats();
+                Check(hospital.Hud.StatsScreen.Visible, "The Stats screen did not open.");
+                hospital.Hud.StatsScreen.ShowPeriod(BlueprintHospital.Simulation.Simulation.StatsPeriod.Last24Hours);
+                _frame = 0;
+                _stage = Stage.Stats;
+                break;
+
+            case Stage.Stats when scene is HospitalScene hospital && _frame >= 10:
+            {
+                Screenshot("06f_stats");
+                var stats = hospital.Hud.StatsScreen;
+                Check(stats.GetCombinedMinimumSize().X <= stats.Size.X + 1, $"The Stats screen is wider than the screen ({stats.GetCombinedMinimumSize().X:0} > {stats.Size.X:0}).");
+                var statsSim = hospital.Session.Simulation;
+                var arrivals = statsSim.History.Total(BlueprintHospital.Simulation.Simulation.StatsPeriod.AllTime, statsSim.Now, BlueprintHospital.Simulation.Simulation.StatKeys.Arrivals);
+                Check(arrivals == statsSim.Stats.ArrivalsTotal, $"Stats all-time arrivals {arrivals} don't match A&E's {statsSim.Stats.ArrivalsTotal}.");
+                GD.Print($"[smoke] Stats: {arrivals} arrivals all time.");
+                stats.ShowPeriod(BlueprintHospital.Simulation.Simulation.StatsPeriod.Last7Days);
+                _frame = 0;
+                _stage = Stage.StatsWeek;
+                break;
+            }
+
+            case Stage.StatsWeek when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06g_stats_week");
+                hospital.Hud.ToggleStats();
+                Check(!hospital.Hud.StatsScreen.Visible, "The Stats screen did not close.");
                 _frame = 0;
                 _stage = Stage.Ward;
                 break;
