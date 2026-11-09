@@ -182,15 +182,23 @@ public partial class WorldLayer : Node2D
         return best;
     }
 
-    /// <summary>On a trolley away from a bed: being pushed, or waiting for a porter.</summary>
+    /// <summary>On a trolley away from a bed: being pushed, waiting for a porter, or parked in corridor care.</summary>
     public bool OnTrolley(Patient patient) =>
         patient.Mobility == Mobility.Trolley && patient.IsAlive && !InBed(patient) && !IsSeated(patient)
-        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null);
+        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null || InCorridorCare(patient));
 
-    /// <summary>Sitting in a wheelchair: being pushed, or waiting for a porter.</summary>
+    /// <summary>Sitting in a wheelchair: being pushed, waiting for a porter, or parked in corridor care.</summary>
     public bool InWheelchair(Patient patient) =>
         patient.Mobility == Mobility.Wheelchair && !IsSeated(patient)
-        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null);
+        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null || InCorridorCare(patient));
+
+    /// <summary>Still on the ambulance crew's stretcher at the bay, waiting for handover (or to be wheeled off it).</summary>
+    public bool OnAmbulanceStretcher(Patient patient) =>
+        patient.Stage == PatientStage.InAmbulanceQueue && !patient.IsMoving
+        && (patient.CorridorSpot is null || _sim.AmbulanceBayPatientTiles.Contains(patient.Tile));
+
+    /// <summary>Parked on a trolley (or in a wheelchair) in a corridor space, waiting for a cubicle.</summary>
+    public static bool InCorridorCare(Patient patient) => patient.CorridorSpot is { } spot && patient.Tile == spot && !patient.IsMoving;
 
     /// <summary>Lying on a bed in a treatment space, or on an ambulance trolley.</summary>
     public bool IsLying(Patient patient)
@@ -200,7 +208,7 @@ public partial class WorldLayer : Node2D
             return OnTrolley(patient);
         }
 
-        return patient.Stage == PatientStage.InAmbulanceQueue || InBed(patient) || OnTrolley(patient);
+        return OnAmbulanceStretcher(patient) || InBed(patient) || OnTrolley(patient);
     }
 
     /// <summary>Lying on the bed of a treatment space or a ward.</summary>
@@ -826,7 +834,7 @@ public partial class WorldLayer : Node2D
             var alpha = patient.IsAlive ? 1f : 0.5f;
             var selected = ReferenceEquals(world.Selected, patient);
 
-            if (patient.Stage == PatientStage.InAmbulanceQueue && !patient.IsMoving)
+            if (world.OnAmbulanceStretcher(patient))
             {
                 // On the ambulance crew's trolley.
                 var (gx, gy) = world.Interpolated(patient);

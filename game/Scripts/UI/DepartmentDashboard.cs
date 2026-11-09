@@ -170,7 +170,14 @@ public partial class DepartmentDashboard : PanelContainer
 
         var ambulanceHex = s.AmbulancesWaiting >= 3 ? ClinicalText.RedHex : "#17232E";
         Set(_ambulances, $"[color={ambulanceHex}]Ambulances waiting [b]{s.AmbulancesWaiting}[/b][/color]");
-        Set(_handover, s.AverageHandoverMinutes > 0 ? $"handover {s.AverageHandoverMinutes:0} min" : string.Empty);
+        var handover = s.AverageHandoverMinutes > 0 ? $"handover {s.AverageHandoverMinutes:0} min" : string.Empty;
+        if (s.InCorridor > 0)
+        {
+            var corridor = $"[color={ClinicalText.AmberTextHex}][b]{s.InCorridor}[/b] in corridor care[/color]";
+            handover = handover.Length == 0 ? corridor : $"{handover} · {corridor}";
+        }
+
+        Set(_handover, handover);
 
         var four = s.FourHourPerformance;
         var fourHex = four >= 0.95 ? "#2E7D32" : four >= 0.76 ? ClinicalText.AmberTextHex : ClinicalText.RedHex;

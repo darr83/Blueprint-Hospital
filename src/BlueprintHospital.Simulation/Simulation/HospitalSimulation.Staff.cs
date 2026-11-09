@@ -292,7 +292,7 @@ public sealed partial class HospitalSimulation
 
         patient.BusyWithTaskId = best.Id;
 
-        if (best.Kind == TaskKind.Triage && FreeTriageRoom() is { } triage)
+        if (best.Kind == TaskKind.Triage && patient.CorridorSpot is null && FreeTriageRoom() is { } triage)
         {
             triage.ReservedByStaffId = member.Id;
             best.SpaceId = triage.Id;
@@ -416,6 +416,11 @@ public sealed partial class HospitalSimulation
                 }
 
                 return BesideTile(patient.Tile);
+        }
+
+        if (patient.CorridorSpot is { } parked && patient.Tile == parked && !patient.IsMoving)
+        {
+            return CorridorStaffSpot(parked);
         }
 
         if (BedOf(patient) is { } bed)

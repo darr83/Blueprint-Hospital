@@ -111,6 +111,10 @@ public sealed class PatientState
 
     public DateTime? TransferAmbulanceDueAt { get; init; }
 
+    public GridCoord? CorridorSpot { get; init; }
+
+    public DateTime? CorridorSince { get; init; }
+
     public int? BedIndex { get; init; }
 
     public string? ReservedWardId { get; init; }
@@ -274,6 +278,10 @@ public sealed class StatsState
     public List<double> RecentTimeToDoctor { get; init; } = new();
 
     public List<double> RecentHandoverMinutes { get; init; } = new();
+
+    public List<double> RecentCorridorMinutes { get; init; } = new();
+
+    public int CorridorCareTotal { get; init; }
 }
 
 /// <summary>A clinic patient walking around the hospital.</summary>
@@ -673,7 +681,7 @@ public sealed partial class HospitalSimulation
         WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, RedStabilised = p.RedStabilised, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
-        TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
+        TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, CorridorSpot = p.CorridorSpot, CorridorSince = p.CorridorSince, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
         ForObservation = p.ForObservation, HadSurgery = p.HadSurgery,
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
@@ -728,6 +736,8 @@ public sealed partial class HospitalSimulation
         p.PushedByStaffId = s.PushedByStaffId;
         p.QueuedSince = s.QueuedSince;
         p.TransferAmbulanceDueAt = s.TransferAmbulanceDueAt;
+        p.CorridorSpot = s.CorridorSpot;
+        p.CorridorSince = s.CorridorSince;
         p.BedIndex = s.BedIndex;
         p.ReservedWardId = s.ReservedWardId;
         p.ForObservation = s.ForObservation;
@@ -864,6 +874,8 @@ public sealed partial class HospitalSimulation
             TriagedTotal = new Dictionary<TriageCategory, int>(s.TriagedTotal),
             RecentTimeToDoctor = s.RecentTimeToDoctor.ToList(),
             RecentHandoverMinutes = s.RecentHandoverMinutes.ToList(),
+            RecentCorridorMinutes = s.RecentCorridorMinutes.ToList(),
+            CorridorCareTotal = s.CorridorCareTotal,
         };
     }
 
@@ -912,5 +924,13 @@ public sealed partial class HospitalSimulation
         {
             s.RecentHandoverMinutes.Enqueue(v);
         }
+
+        s.RecentCorridorMinutes.Clear();
+        foreach (var v in state.RecentCorridorMinutes)
+        {
+            s.RecentCorridorMinutes.Enqueue(v);
+        }
+
+        s.CorridorCareTotal = state.CorridorCareTotal;
     }
 }

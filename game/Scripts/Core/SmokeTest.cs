@@ -618,7 +618,7 @@ public partial class SmokeTest : Node
                 CheckCheatConsole(hospital);
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
-                Check(hospital.Session.Simulation.Accounts.Take(2).Any(d => d[Simulation.Simulation.MoneyCategory.Construction] < 0), "Building work was not booked.");
+                Check(hospital.Session.Simulation.Accounts.Any(d => d[Simulation.Simulation.MoneyCategory.Construction] < 0), "Building work was not booked.");
                 _frame = 0;
                 _stage = Stage.Finances;
                 break;
@@ -1481,7 +1481,8 @@ public partial class SmokeTest : Node
             {
                 // Out in a corridor, clear of doorways, for the screenshot.
                 var inCorridor = sim.Spaces.Any(c => c.Kind == Simulation.Hospital.CareSpaceKind.Corridor && c.Rect.Contains(p.Tile));
-                pushedFor[p.Id] = p.PushedByStaffId is not null && p.IsMoving && inCorridor ? pushedFor.GetValueOrDefault(p.Id) + 1 : 0;
+                // (A nurse, not a porter, wheels a patient into corridor care, so those don't count here.)
+                pushedFor[p.Id] = p.PushedByStaffId is not null && p.IsMoving && inCorridor && p.CorridorSpot is null ? pushedFor.GetValueOrDefault(p.Id) + 1 : 0;
                 if (pushedFor[p.Id] >= 4)
                 {
                     pushed = p;

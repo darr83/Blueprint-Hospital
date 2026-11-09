@@ -98,7 +98,13 @@ Time runs at **15 game seconds per real second** at 1x (a game hour takes 4 real
 busiest from late morning to evening.
 
 - **Walk-ins** queue at reception, are registered, then wait to be called to triage.
-  **Ambulance** patients wait on the crew's trolley in the bay until a nurse takes handover.
+  **Ambulance** patients wait on the crew's trolley in the bay until a nurse takes handover,
+  however long that takes.
+- **Corridor care**: if there is no free cubicle once handover is done, a nurse wheels the trolley to
+  a space along an A&E corridor (clear of doors and junctions) and does observations there, which
+  give the Red / Amber / Green rating. The ambulance crew are then free to go. Corridor patients get
+  repeat observations but no treatment, and wait for a cubicle in triage order like everyone else.
+  The A&E board shows how many are in corridor care.
 - **Triage** uses observations and **NEWS2** to give a **Red / Amber / Green** category. Some
   complaints trigger protocol tests at triage (an ECG for chest pain); an abnormal ECG upgrades the
   patient to Red.
