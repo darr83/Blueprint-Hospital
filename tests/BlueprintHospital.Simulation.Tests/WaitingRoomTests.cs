@@ -154,6 +154,11 @@ public class WaitingRoomTests
         // In a corner it follows the chairs beside it, as long as that keeps its back to a wall.
         Assert.True(h.Sim.PlaceChair(new GridCoord(Spot.X + 1, Spot.Y), WallSide.South, colour).CanBuild);
         Assert.Equal(WallSide.South, h.Sim.SuggestChairFacing(new GridCoord(Spot.X, Spot.Y)));
+
+        // Chairs stand clear of the walls beside them; out in the open they stand in the middle of their tile.
+        Assert.Equal((HospitalSimulation.ChairWallGap, 0.0), h.Sim.ChairShift(new GridCoord(Spot.X, Spot.Y + 9)));
+        Assert.Equal((HospitalSimulation.ChairWallGap, HospitalSimulation.ChairWallGap), h.Sim.ChairShift(new GridCoord(Spot.X, Spot.Y)));
+        Assert.Equal((0.0, 0.0), h.Sim.ChairShift(new GridCoord(Spot.X + 2, Spot.Y + 4)));
     }
 
     [Fact]
