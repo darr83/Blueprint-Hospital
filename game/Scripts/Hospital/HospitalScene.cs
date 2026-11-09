@@ -149,7 +149,6 @@ public partial class HospitalScene : Node2D
         {
             _hud.RoomInfo.Close();
             SetMode(GameMode.Build);
-            _hud.Build.Visible = true;
             _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
         _hud.ModeRequested += SetMode;
@@ -181,8 +180,7 @@ public partial class HospitalScene : Node2D
         {
             SetMode(GameMode.Build);
             _hud.HideRightPanels();
-            _hud.Build.Visible = true;
-            _hud.Build.ShowTab("Building");
+            _hud.Build.Open("building");
         };
         _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
         _hud.SetGridShown(_site.ShowGrid);
@@ -204,12 +202,6 @@ public partial class HospitalScene : Node2D
     {
         if (mode == Mode)
         {
-            if (mode == GameMode.Build && !_hud.Build.Visible && !_build.Active)
-            {
-                _hud.HideRightPanels();
-                _hud.Build.Visible = true;
-            }
-
             return;
         }
 
@@ -218,10 +210,6 @@ public partial class HospitalScene : Node2D
         _build.Cancel();
         ClearSelection();
         _hud.HideRightPanels();
-        if (mode == GameMode.Build)
-        {
-            _hud.Build.Visible = true;
-        }
     }
 
     /// <summary>Selects a patient and opens their record (switching to play mode).</summary>
@@ -326,9 +314,12 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.Build.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
+                break;
+            case Key.Escape when _hud.Build.PopupOpen:
+                _hud.Build.ClosePopup();
                 break;
             case Key.Escape when Mode == GameMode.Build:
                 SetMode(GameMode.Play);
@@ -444,9 +435,7 @@ public partial class HospitalScene : Node2D
         }
         else
         {
-            // Back to the build menu.
             _hud.HideRightPanels();
-            _hud.Build.Visible = true;
         }
     }
 

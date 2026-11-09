@@ -121,7 +121,7 @@ public partial class RoomPanel : PanelContainer
         }
 
         var template = _sim.Database.RoomTemplates.GetValueOrDefault(room.TemplateId);
-        var text = template is null ? string.Empty : BuildPanel.Describe(template, room, _sim);
+        var text = template is null ? string.Empty : BuildBar.Describe(template, room, _sim);
         text = text.Replace($"[color=#5B6B79]Cost[/color]  £{room.BuildCost:N0}", $"[color=#5B6B79]Value[/color]  £{room.BuildCost:N0}");
         var header = $"[color=#5B6B79]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
         _info.Text = $"{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}";

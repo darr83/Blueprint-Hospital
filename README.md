@@ -142,11 +142,22 @@ The selected room or item is outlined in blue.
 Press **B** to go into build mode and open the build menu. Every room is built from a **template** in
 `game/Data/RoomTemplates`, with furniture from `game/Data/Furniture`, all at real sizes in metres.
 
+- **Build bar:** in build mode a bar of icons runs along the bottom of the screen. **Building**
+  holds extensions, new floors, corridors, waiting chairs, lifts and stairs; then there is one
+  icon per department (A&E, Medicine, Surgery, ICU/HDU, Cardiology, ...) and per shared service
+  (Clinics, Imaging, Theatres, Pharmacy, Facilities), each with its colour across the top like a
+  hospital sign. Clicking an icon pops up a row of its rooms; rooms used by several departments
+  (theatre, X-ray, nurses' station...) appear in each and are tagged *Shared*. Hover a room for
+  its description, sizes, cost, staffing and how it grows; click it, then drag on the floor. A
+  locked department shows a padlock, and its pop-up has the button to open it. Esc closes the
+  pop-up. The icons and their rooms are listed in `game/Data/BuildMenu/build_menu.json`; a room
+  template that isn't listed there is added to its own department's icon automatically.
+
 - **Rooms** (A&E: Minors and Majors cubicles, Resus bay, Triage room, Waiting room; Staff:
   doctors' office, nurses' station, staff room) are **dragged out from corner to corner at any
-  size**, in half-metre steps, above each type's minimum (shown on its button) and below its
-  maximum. Either side can be the long one. The menu shows what the room holds at a few example
-  sizes before you build.
+  size**, in half-metre steps, above each type's minimum and below its maximum (both on its
+  hover card). Either side can be the long one. The hover card shows what the room holds at a
+  few example sizes before you build.
 - **Placing:** while you drag, a see-through preview shows the furniture and door. It is
   **green** with the price when it can be built and **red** with the reasons when it can't:
   outside the building, overlapping another room, too small or too big, not touching a corridor,
@@ -396,8 +407,8 @@ Midwives (Band 5 to Band 8 consultant midwife) are a new staff type in Recruitme
 
 ### Upper floors, lifts and stairs
 
-- **Adding a floor:** Build → Building → *Build the first floor* (or the **+▲** button bottom right,
-  which opens that tab). A new floor has the same outline as the ground floor and costs £500 per m²
+- **Adding a floor:** Build bar → Building → *Add a floor* (or the **+▲** button on the right,
+  which opens the Building pop-up). A new floor has the same outline as the ground floor and costs £500 per m²
   of outline for the first floor up, £100 per m² more for each floor higher, plus every lift and
   staircase carried up to it. The building can be up to five floors (ground + 4). Extending the
   building later grows every floor, and the extension is paid for on each floor.

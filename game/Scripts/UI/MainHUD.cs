@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Core;
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Data;
 using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
 using Godot;
@@ -98,7 +99,8 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The staff rota: day and night teams, breaks and moving staff between departments.</summary>
     public StaffRotaPanel Rota { get; } = new() { Name = "Rota", Visible = false };
 
-    public BuildPanel Build { get; } = new() { Name = "Build", Visible = false };
+    /// <summary>The build bar along the bottom, shown in Build mode.</summary>
+    public BuildBar Build { get; } = new() { Name = "BuildBar", Visible = false };
 
     public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
 
@@ -119,12 +121,24 @@ public partial class MainHUD : CanvasLayer
     public event Action<BlueprintHospital.Hospital.GameMode>? ModeRequested;
 
     /// <summary>The mode the scene is in, shown on the Play / Build switch.</summary>
-    public BlueprintHospital.Hospital.GameMode Mode { get; set; }
+    public BlueprintHospital.Hospital.GameMode Mode
+    {
+        get => _mode;
+        set
+        {
+            _mode = value;
+            Build.Visible = value == BlueprintHospital.Hospital.GameMode.Build;
+        }
+    }
+
+    private BlueprintHospital.Hospital.GameMode _mode;
+
+    private PanelContainer? _hoverPanel;
 
     /// <summary>True while the A&amp;E board and notifications column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, Build, RoomInfo, ItemInfo, Finances, Recruitment, Clinics };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, ItemInfo, Finances, Recruitment, Clinics };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -135,7 +149,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Build.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = false;
         RoomInfo.Close();
         ItemInfo.Close();
     }
@@ -169,14 +183,6 @@ public partial class MainHUD : CanvasLayer
         {
             Recruitment.Refresh();
         }
-    }
-
-    /// <summary>Opens the build menu, or closes it.</summary>
-    public void ToggleBuild()
-    {
-        var show = !Build.Visible;
-        HideRightPanels();
-        Build.Visible = show;
     }
 
     /// <summary>Shows one room's details, closing the other right-hand panels.</summary>
@@ -259,9 +265,6 @@ public partial class MainHUD : CanvasLayer
         Roster.Initialise(sim);
         DockRight(Roster, 360);
         root.AddChild(Roster);
-        Build.Initialise(sim, tool);
-        DockRight(Build, 452);
-        root.AddChild(Build);
         RoomInfo.Initialise(sim);
         DockRight(RoomInfo, 380);
         root.AddChild(RoomInfo);
@@ -289,6 +292,10 @@ public partial class MainHUD : CanvasLayer
         Rota.OffsetBottom = -Gap;
         root.AddChild(Rota);
 
+        // The build bar and its pop-ups sit above the panels.
+        Build.Initialise(sim, tool, BuildMenu.Load(new BlueprintHospital.Core.GodotDataSource(), sim.Database));
+        root.AddChild(Build);
+
         // The cheat console sits on top of everything, centred under the top bar.
         Cheats.Initialise(sim);
         Cheats.AnchorLeft = Cheats.AnchorRight = 0.5f;
@@ -310,6 +317,20 @@ public partial class MainHUD : CanvasLayer
         RefreshClock();
         RefreshNav();
         RefreshTag();
+
+        // In Build mode everything docked to the bottom of the screen moves up above the build bar.
+        var reserve = Build.Visible ? BuildBar.Reserve : 0;
+        _left.OffsetBottom = -Gap - reserve;
+        foreach (var panel in RightPanels.Append(Rota).Where(p => p != ItemInfo))
+        {
+            panel.OffsetBottom = -Gap - reserve;
+        }
+
+        _mapControls.OffsetBottom = _mapControls.OffsetTop = -Gap - reserve;
+        if (_hoverPanel is not null)
+        {
+            _hoverPanel.OffsetBottom = _hoverPanel.OffsetTop = -Gap - reserve;
+        }
 
         // Keep the zoom buttons clear of whichever card is docked on the right.
         var open = RightPanels.FirstOrDefault(p => p.Visible);
@@ -691,7 +712,7 @@ public partial class MainHUD : CanvasLayer
         _mapControls.OffsetTop = -Gap;
         _mapControls.AddThemeConstantOverride("separation", 6);
         // Floor switcher: up, the floor in view, down, and a button to build another floor.
-        var addFloor = MapButton("+▲", "Build another floor (in the build menu's Building tab)", () => AddFloorRequested?.Invoke());
+        var addFloor = MapButton("+▲", "Build another floor (opens the Building icon in the build bar)", () => AddFloorRequested?.Invoke());
         addFloor.AddThemeFontSizeOverride("font_size", 15);
         _mapControls.AddChild(addFloor);
         _floorUp = MapButton("▲", "Up a floor (Page Up)", () => FloorStepRequested?.Invoke(1));
@@ -773,6 +794,7 @@ public partial class MainHUD : CanvasLayer
     private Control BuildHoverPanel()
     {
         var panel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _hoverPanel = panel;
         panel.SetAnchorsPreset(Control.LayoutPreset.CenterBottom);
         panel.GrowVertical = Control.GrowDirection.Begin;
         panel.GrowHorizontal = Control.GrowDirection.Both;
