@@ -107,29 +107,36 @@ public class RedMonitorTests
     }
 
     [Fact]
-    public void Only_patients_on_a_monitor_show_red_and_a_stabilised_red_shows_amber()
+    public void Only_patients_on_a_monitor_show_red_and_the_triage_category_does_not_turn_it_red()
     {
         var h = new SimulationHarness(seed: 2);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration");
         Assert.False(patient.UpdateMonitorRed()); // not triaged yet: nobody knows
+        Assert.Null(patient.MonitorColour);
 
         // In the waiting room there is no monitor, so nothing shows red.
         patient.Triage = TriageCategory.Red;
         Assert.False(patient.UpdateMonitorRed());
 
+        // A Red triage with a low NEWS2 on a monitor is not a red monitor: the monitor follows NEWS2.
         patient.CareSpaceId = h.Sim.Spaces.First(s => s.Kind == Hospital.CareSpaceKind.Resus).Id;
-        patient.Triage = TriageCategory.Green;
+        Assert.True(patient.LiveNews2 <= 4, $"NEWS2 {patient.LiveNews2}");
         Assert.False(patient.UpdateMonitorRed());
         Assert.Equal(TriageCategory.Green, patient.MonitorColour);
+    }
 
-        // A Red triage is red until stabilised; then the border shows amber.
-        patient.Triage = TriageCategory.Red;
-        Assert.True(patient.UpdateMonitorRed());
-        Assert.False(patient.RedReviewed);
-        Assert.Equal(TriageCategory.Red, patient.MonitorColour);
-        patient.RedStabilised = true;
-        Assert.False(patient.UpdateMonitorRed());
-        Assert.Equal(TriageCategory.Amber, patient.MonitorColour);
+    [Theory]
+    [InlineData(80, 120, 16, 97, 37.0, Consciousness.Alert, TriageCategory.Green)] // 0
+    [InlineData(100, 120, 16, 97, 37.0, Consciousness.Alert, TriageCategory.Green)] // 1
+    [InlineData(115, 105, 16, 95, 37.0, Consciousness.Alert, TriageCategory.Green)] // 2+1+1 = 4
+    [InlineData(115, 105, 22, 97, 37.0, Consciousness.Alert, TriageCategory.Amber)] // 2+1+2 = 5
+    [InlineData(80, 120, 16, 97, 37.0, Consciousness.Voice, TriageCategory.Amber)] // single 3
+    [InlineData(115, 105, 22, 94, 37.0, Consciousness.Alert, TriageCategory.Amber)] // 2+1+2+1 = 6
+    [InlineData(135, 95, 26, 93, 39.5, Consciousness.Alert, TriageCategory.Red)] // 3+2+3+2+2 = 12
+    public void The_monitor_colour_follows_the_NEWS2_bands(int hr, int sbp, int rr, int spo2, double temp, Consciousness avpu, TriageCategory expected)
+    {
+        var score = News2.Calculate(new Observations(hr, sbp, 70, rr, spo2, temp, avpu, 0));
+        Assert.Equal(expected, Patient.MonitorColourFor(score));
     }
 
     [Fact]

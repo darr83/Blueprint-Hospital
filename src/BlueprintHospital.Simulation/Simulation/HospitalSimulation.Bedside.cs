@@ -6,7 +6,7 @@ using BlueprintHospital.Simulation.World;
 namespace BlueprintHospital.Simulation.Simulation;
 
 /// <summary>
-/// Red monitors: when a patient's monitor goes red (NEWS2 7 or more, or a Red triage nobody has stabilised yet)
+/// Red monitors: when a patient's monitor goes red (NEWS2 7 or more; the triage category doesn't matter)
 /// a healthcare assistant comes to sit with them one-to-one until it isn't red (NEWS2 back to 5 or less), and a
 /// doctor comes to review them and then moves on. Only with both do they get better; until then they keep
 /// getting worse, even if they've had the right medicine. With no healthcare assistants, a nurse sits with them.
@@ -88,19 +88,7 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            // A reviewed Red patient whose obs have settled is stabilised: the monitor stops showing red.
             var news = patient.LiveNews2;
-            if (patient.RedReviewed && patient.Triage == TriageCategory.Red && !patient.RedStabilised
-                && (news <= Patient.MonitorClearNews2 || (news < Patient.RedMonitorNews2 && patient.SettledBelowRed)))
-            {
-                patient.RedStabilised = true;
-                patient.Log(Now, $"Stabilised (NEWS2 {news}).", important: true);
-                if (!patient.UpdateMonitorRed())
-                {
-                    continue;
-                }
-            }
-
             var called = false;
             if (BedsideCarerFor(patient) is null && calls.All(t => t.Kind != TaskKind.StayWithPatient))
             {

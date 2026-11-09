@@ -197,12 +197,6 @@ public sealed class Patient : Agent
     /// <summary>True when every essential step for the true condition has been given.</summary>
     public bool EffectiveTreatmentGiven { get; set; }
 
-    /// <summary>
-    /// A Red-triaged patient a doctor has seen at the bedside with NEWS2 back under 7. Their monitor
-    /// stops showing red (until their NEWS2 climbs to 7 again).
-    /// </summary>
-    public bool RedStabilised { get; set; }
-
     /// <summary>Fraction of pain relieved by analgesia (0..0.7).</summary>
     public double Analgesia { get; set; }
 
@@ -245,7 +239,7 @@ public sealed class Patient : Agent
     public int LiveNews2 => News2.Calculate(CurrentObservations()).Total;
 
     /// <summary>
-    /// The monitor shows red (patients in a bed, cubicle or bay only): it turns red at NEWS2 7 (or on a Red triage a doctor hasn't yet stabilised) and
+    /// The monitor shows red (patients in a bed, cubicle or bay only): it turns red at NEWS2 7 and
     /// stays red until NEWS2 is back to 5 or less. While it is red they only get better with someone sitting with them
     /// (a healthcare assistant) and once a doctor has reviewed them. Set by the simulation each tick.
     /// </summary>
@@ -264,7 +258,7 @@ public sealed class Patient : Agent
     /// </summary>
     public bool UpdateMonitorRed()
     {
-        if (Triage is not { } triage || !IsInDepartment || CareSpaceId is null)
+        if (Triage is null || !IsInDepartment || CareSpaceId is null)
         {
             return MonitorRed = false;
         }
@@ -272,7 +266,6 @@ public sealed class Patient : Agent
         var news = LiveNews2;
         var was = MonitorRed;
         MonitorRed = news >= RedMonitorNews2
-            || (triage == TriageCategory.Red && !RedStabilised)
             || (MonitorRed && news > MonitorClearNews2 && !SettledBelowRed);
         if (MonitorRed && !was)
         {
@@ -282,11 +275,22 @@ public sealed class Patient : Agent
         return MonitorRed;
     }
 
-    /// <summary>The colour the monitor's border shows: red while <see cref="MonitorIsRed"/>, amber for a stabilised Red patient.</summary>
+    /// <summary>
+    /// The colour the monitor's border shows, from the live NEWS2 (not the triage category): red while
+    /// <see cref="MonitorIsRed"/> (NEWS2 7 or more, until it settles), amber for medium risk (5 or 6, or a 3 in any
+    /// single parameter), green for low risk (0 to 4). Null before triage, when nobody has looked at them yet.
+    /// </summary>
     public TriageCategory? MonitorColour => Triage is null ? null
         : MonitorIsRed ? TriageCategory.Red
-        : Triage == TriageCategory.Red ? TriageCategory.Amber
-        : Triage;
+        : MonitorColourFor(News2.Calculate(CurrentObservations()));
+
+    /// <summary>The NHS NEWS2 colour band for a score: green 0-4, amber 5-6 or any single 3, red 7+.</summary>
+    public static TriageCategory MonitorColourFor(News2Score score) => score.Risk switch
+    {
+        News2Risk.High => TriageCategory.Red,
+        News2Risk.Medium or News2Risk.LowMedium => TriageCategory.Amber,
+        _ => TriageCategory.Green,
+    };
 
     /// <summary>The NEWS2 at which the monitor turns red and a doctor must come to the bedside.</summary>
     public const int RedMonitorNews2 = 7;
