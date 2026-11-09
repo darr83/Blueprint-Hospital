@@ -38,6 +38,9 @@ public partial class WorldLayer : Node2D
     private readonly Dictionary<Agent, AgentNode> _agentNodes = new();
     /// <summary>Every seat, and the way someone sitting on it looks.</summary>
     private readonly Dictionary<GridCoord, WallSide> _seatTiles = new();
+
+    /// <summary>How far each placed chair stands off the middle of its tile, away from the walls beside it.</summary>
+    private readonly Dictionary<GridCoord, (double X, double Y)> _chairShifts = new();
     private readonly List<ObsMonitorInfo> _monitors = new();
 
     /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
@@ -86,6 +89,7 @@ public partial class WorldLayer : Node2D
         _bedSpots.Clear();
         _cotBeds.Clear();
         _seatTiles.Clear();
+        _chairShifts.Clear();
 
         foreach (var space in _sim.Spaces)
         {
@@ -106,6 +110,7 @@ public partial class WorldLayer : Node2D
         foreach (var chair in _sim.Chairs)
         {
             _seatTiles[chair.Tile] = chair.Facing;
+            _chairShifts[chair.Tile] = _sim.ChairShift(chair.Tile);
         }
 
         BuildWalls();
@@ -138,8 +143,8 @@ public partial class WorldLayer : Node2D
         if (IsSeated(agent))
         {
             // Sitting on a chair, which stands a little forward of the middle of its tile.
-            var (fx, fy) = ChairArt.Direction(SeatFacing(agent));
-            (x, y) = (x + (fx * ChairArt.Inset), y + (fy * ChairArt.Inset));
+            var (cx, cy) = ChairArt.Centre(agent.Tile, SeatFacing(agent), _chairShifts.TryGetValue(agent.Tile, out var shift) ? shift : null);
+            (x, y) = (x + (cx - (agent.Tile.X + 0.5)), y + (cy - (agent.Tile.Y + 0.5)));
         }
 
         return IsoDraw.ToScreen(x, y);
@@ -499,7 +504,7 @@ public partial class WorldLayer : Node2D
 
         foreach (var chair in _sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
         {
-            Chair(chair.Tile, chair.Facing, new Color(chair.Colour));
+            Chair(chair.Tile, chair.Facing, new Color(chair.Colour), _chairShifts.GetValueOrDefault(chair.Tile));
         }
     }
 
@@ -662,10 +667,10 @@ public partial class WorldLayer : Node2D
     }
 
     /// <summary>A chair in two parts, so whoever sits on it sorts between the seat and the back.</summary>
-    private void Chair(GridCoord tile, WallSide facing, Color colour)
+    private void Chair(GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null)
     {
-        AddProp(ChairArt.SeatAnchor(tile, facing), c => ChairArt.Seat(c, tile, facing, colour));
-        AddProp(ChairArt.BackAnchor(tile, facing), c => ChairArt.Back(c, tile, facing, colour));
+        AddProp(ChairArt.SeatAnchor(tile, facing, shift), c => ChairArt.Seat(c, tile, facing, colour, shift));
+        AddProp(ChairArt.BackAnchor(tile, facing, shift), c => ChairArt.Back(c, tile, facing, colour, shift));
     }
 
     /// <summary>A chair in a room faces the desk or table beside it, otherwise south.</summary>

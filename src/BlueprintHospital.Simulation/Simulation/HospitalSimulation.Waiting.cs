@@ -498,13 +498,41 @@ public sealed partial class HospitalSimulation
     /// The way a new chair here would face: the same way as a chair beside it (so rows line up), otherwise
     /// with its back to the nearest wall.
     /// </summary>
+    /// <summary>How far a chair stands from a wall beside it, in tiles; the wall itself takes up part of the tile.</summary>
+    public const double ChairWallGap = 0.15;
+
+    /// <summary>
+    /// Where a chair at <paramref name="tile"/> stands, as a shift from the middle of its tile: away from every wall
+    /// beside it (behind or to either side), so it stands clear of the wall instead of sinking into it.
+    /// </summary>
+    public (double X, double Y) ChairShift(GridCoord tile)
+    {
+        var (x, y) = (0.0, 0.0);
+        foreach (var side in new[] { WallSide.North, WallSide.West, WallSide.East, WallSide.South })
+        {
+            var (dx, dy) = WaitingRoomLayout.Step(side);
+            if (!ChairFloorOpen(tile, new GridCoord(tile.X + dx, tile.Y + dy)))
+            {
+                (x, y) = (x - (dx * ChairWallGap), y - (dy * ChairWallGap));
+            }
+        }
+
+        return (x, y);
+    }
+
+    /// <summary>Whether the floor next to a chair's tile carries on without a wall in between.</summary>
+    private bool ChairFloorOpen(GridCoord tile, GridCoord next)
+    {
+        var room = _spaces.Values.FirstOrDefault(s => s.HasWalls && s.Rect.Contains(tile));
+        return room is not null
+            ? room.Rect.Contains(next)
+            : _spaces.Values.Any(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(next)) && !_spaces.Values.Any(s => s.HasWalls && s.Rect.Contains(next));
+    }
+
     public WallSide SuggestChairFacing(GridCoord tile)
     {
         var sides = new[] { WallSide.North, WallSide.West, WallSide.East, WallSide.South };
-        var room = _spaces.Values.FirstOrDefault(s => s.HasWalls && s.Rect.Contains(tile));
-        bool Open(GridCoord t) => room is not null
-            ? room.Rect.Contains(t)
-            : _spaces.Values.Any(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(t)) && !_spaces.Values.Any(s => s.HasWalls && s.Rect.Contains(t));
+        bool Open(GridCoord t) => ChairFloorOpen(tile, t);
         GridCoord Next(WallSide side)
         {
             var (dx, dy) = WaitingRoomLayout.Step(side);

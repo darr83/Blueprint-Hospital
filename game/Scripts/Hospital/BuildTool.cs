@@ -581,7 +581,7 @@ public partial class BuildTool : Node2D
             DrawPolyline(quad.Append(quad[0]).ToArray(), ok ? Good : Bad, 2f, true);
             if (ok)
             {
-                ChairArt.Whole(this, tile, facing, new Color(colour, 0.85f));
+                ChairArt.Whole(this, tile, facing, new Color(colour, 0.85f), _sim.ChairShift(tile));
             }
 
             // An arrow showing which way people will sit.

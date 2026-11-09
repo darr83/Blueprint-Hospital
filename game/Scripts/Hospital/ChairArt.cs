@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using BlueprintHospital.Simulation.World;
 using Godot;
 
@@ -28,9 +29,17 @@ public static class ChairArt
     /// </summary>
     public const double Inset = 0.1;
 
-    /// <summary>The middle of the chair's seat, in grid units.</summary>
-    public static (double X, double Y) Centre(GridCoord tile, WallSide facing)
+    /// <summary>
+    /// The middle of the chair's seat, in grid units. <paramref name="shift"/> moves it off the middle of its tile
+    /// (placed chairs move away from the walls around them); without it the chair stands <see cref="Inset"/> forward.
+    /// </summary>
+    public static (double X, double Y) Centre(GridCoord tile, WallSide facing, (double X, double Y)? shift = null)
     {
+        if (shift is { } s)
+        {
+            return (tile.X + 0.5 + s.X, tile.Y + 0.5 + s.Y);
+        }
+
         var (fx, fy) = Direction(facing);
         return (tile.X + 0.5 + (fx * Inset), tile.Y + 0.5 + (fy * Inset));
     }
@@ -58,18 +67,32 @@ public static class ChairArt
     public static float Lean(WallSide facing) => Math.Sign(ScreenDirection(facing).X);
 
     /// <summary>Where the chair's frame and seat sort: just behind the person sitting on it.</summary>
-    public static Vector2 SeatAnchor(GridCoord tile, WallSide facing)
+    public static Vector2 SeatAnchor(GridCoord tile, WallSide facing, (double X, double Y)? shift = null)
     {
-        var (cx, cy) = Centre(tile, facing);
+        var (cx, cy) = Centre(tile, facing, shift);
         return IsoDraw.ToScreen(cx, cy) - new Vector2(0, 1);
     }
 
-    /// <summary>Where the chair's back sorts: the middle of its back edge.</summary>
-    public static Vector2 BackAnchor(GridCoord tile, WallSide facing)
+    /// <summary>
+    /// Where the chair's back sorts. Facing the viewer, the back sorts with the seat, just behind the sitter:
+    /// sorting it by its own back edge let the wall pieces behind it (which sort by their nearest end) paint
+    /// over it, so the back seemed to sink into the wall. Facing away, it sorts by its nearest corner, in front
+    /// of the sitter.
+    /// </summary>
+    public static Vector2 BackAnchor(GridCoord tile, WallSide facing, (double X, double Y)? shift = null)
     {
-        var (fx, fy) = Direction(facing);
-        var (cx, cy) = Centre(tile, facing);
-        return IsoDraw.ToScreen(cx - (fx * HalfDepth), cy - (fy * HalfDepth));
+        if (!FacesAway(facing))
+        {
+            return SeatAnchor(tile, facing, shift) - new Vector2(0, 1);
+        }
+
+        var (cx, cy) = Centre(tile, facing, shift);
+        var back = Local(cx, cy, facing, -HalfWidth, -HalfDepth, HalfWidth, -HalfDepth + 0.12);
+        return new[]
+        {
+            IsoDraw.ToScreen(back.X, back.Y), IsoDraw.ToScreen(back.X + back.W, back.Y),
+            IsoDraw.ToScreen(back.X, back.Y + back.L), IsoDraw.ToScreen(back.X + back.W, back.Y + back.L),
+        }.MaxBy(p => p.Y);
     }
 
     /// <summary>A rectangle in the chair's own frame (u across, v from back to front) as a grid footprint.</summary>
@@ -88,9 +111,9 @@ public static class ChairArt
         IsoDraw.Box(c, r.X, r.Y, r.W, r.L, height, colour, lift, shadow: shadow);
 
     /// <summary>The legs, seat and arms: everything a sitter sits in front of.</summary>
-    public static void Seat(CanvasItem c, GridCoord tile, WallSide facing, Color colour)
+    public static void Seat(CanvasItem c, GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null)
     {
-        var (cx, cy) = Centre(tile, facing);
+        var (cx, cy) = Centre(tile, facing, shift);
         var (hw, hd) = (HalfWidth, HalfDepth);
 
         // Soft shadow on the floor.
@@ -118,9 +141,9 @@ public static class ChairArt
     }
 
     /// <summary>The back of the chair: two posts and an upholstered pad.</summary>
-    public static void Back(CanvasItem c, GridCoord tile, WallSide facing, Color colour)
+    public static void Back(CanvasItem c, GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null)
     {
-        var (cx, cy) = Centre(tile, facing);
+        var (cx, cy) = Centre(tile, facing, shift);
         var (hw, hd) = (HalfWidth, HalfDepth);
         foreach (var u in new[] { -hw + 0.08, hw - 0.14 })
         {
@@ -134,17 +157,17 @@ public static class ChairArt
     }
 
     /// <summary>The whole chair, back to front, for previews and the art gallery.</summary>
-    public static void Whole(CanvasItem c, GridCoord tile, WallSide facing, Color colour)
+    public static void Whole(CanvasItem c, GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null)
     {
         if (FacesAway(facing))
         {
-            Seat(c, tile, facing, colour);
-            Back(c, tile, facing, colour);
+            Seat(c, tile, facing, colour, shift);
+            Back(c, tile, facing, colour, shift);
         }
         else
         {
-            Back(c, tile, facing, colour);
-            Seat(c, tile, facing, colour);
+            Back(c, tile, facing, colour, shift);
+            Seat(c, tile, facing, colour, shift);
         }
     }
 
