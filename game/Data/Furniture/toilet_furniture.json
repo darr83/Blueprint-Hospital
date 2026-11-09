@@ -1,0 +1,57 @@
+[
+{
+ "id": "toilet_cubicle",
+ "name": "Toilet cubicle",
+ "width_m": 0.95,
+ "depth_m": 1.5,
+ "height_m": 1.9,
+ "style": "box",
+ "colour": "#7AA3C8",
+ "cost": 1400,
+ "is_equipment": false
+},
+{
+ "id": "toilet_pan",
+ "name": "Toilet",
+ "width_m": 0.4,
+ "depth_m": 0.7,
+ "height_m": 0.8,
+ "style": "box",
+ "colour": "#F7F9FA",
+ "cost": 450,
+ "is_equipment": false
+},
+{
+ "id": "accessible_wc",
+ "name": "Accessible toilet with grab rails",
+ "width_m": 0.45,
+ "depth_m": 0.75,
+ "height_m": 0.8,
+ "style": "box",
+ "colour": "#F7F9FA",
+ "cost": 1200,
+ "is_equipment": false
+},
+{
+ "id": "wash_basin",
+ "name": "Wash basin",
+ "width_m": 0.5,
+ "depth_m": 0.45,
+ "height_m": 0.85,
+ "style": "box",
+ "colour": "#F2F5F7",
+ "cost": 300,
+ "is_equipment": false
+},
+{
+ "id": "hand_dryer",
+ "name": "Hand dryer",
+ "width_m": 0.3,
+ "depth_m": 0.25,
+ "height_m": 1.4,
+ "style": "box",
+ "colour": "#CFD8DC",
+ "cost": 350,
+ "is_equipment": false
+}
+]

@@ -440,6 +440,9 @@ public partial class WorldLayer : Node2D
                     case FurnitureStyle.Chair:
                         Chair(item.Tile, colour);
                         break;
+                    case FurnitureStyle.Box when ToiletArt.Draws(def.Id):
+                        ToiletArt.Add(def.Id, space, item, colour, _sim, (anchor, draw, animated) => AddProp(anchor, draw, animated));
+                        break;
                     case FurnitureStyle.Box when CafeArt.Draws(def.Id):
                         CafeArt.Add(def.Id, space, item, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, (anchor, draw) => AddProp(anchor, draw));
                         break;
@@ -692,7 +695,7 @@ public partial class WorldLayer : Node2D
             {
                 Patient p => world.IsOnMap(p) && !world.InBed(p),
                 _ => true,
-            };
+            } && world.Simulation.ToiletTripOf(agent)?.Stage != ToiletStage.Using;
 
             // Seated people sit just in front of their chair. A trolley is long, so it sorts by its
             // nearest corner: walls behind it don't cover it as it passes.

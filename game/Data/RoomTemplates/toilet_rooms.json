@@ -1,0 +1,58 @@
+[
+  {
+    "id": "public_toilets",
+    "name": "Toilets",
+    "category": "Facilities",
+    "description": "Toilets for patients and visitors: a row of cubicles along the back wall (about one for every metre of wall, up to 6), wash basins and a hand dryer. Waiting patients get up to use them now and then, and walk out sooner if the hospital has none.",
+    "kind": "toilets",
+    "department": "facilities",
+    "layout": "toilets",
+    "sizes": [
+      { "name": "Two cubicles", "width_m": 3, "length_m": 3 },
+      { "name": "Three cubicles", "width_m": 3.5, "length_m": 3.5 },
+      { "name": "Four cubicles", "width_m": 5, "length_m": 3.5 },
+      { "name": "Six cubicles", "width_m": 7, "length_m": 4 }
+    ],
+    "min_width_m": 3, "min_length_m": 3, "max_width_m": 10, "max_length_m": 6,
+    "door_width_m": 1.0,
+    "base_cost": 2500, "cost_per_square_metre": 900,
+    "staffing": "None: cleaned by the hospital's cleaning contract, part of the building's upkeep.",
+    "furniture": ["toilet_cubicle", "wash_basin", "hand_dryer"]
+  },
+  {
+    "id": "accessible_toilet",
+    "name": "Accessible toilet",
+    "category": "Facilities",
+    "description": "A single toilet room with space to turn a wheelchair, grab rails, a low basin and a red emergency pull cord. Older patients use it first, and anyone may use it when the other toilets are busy.",
+    "kind": "accessible_toilet",
+    "department": "facilities",
+    "layout": "toilets",
+    "sizes": [
+      { "name": "Standard", "width_m": 2.5, "length_m": 2.5 },
+      { "name": "Large", "width_m": 3, "length_m": 3 }
+    ],
+    "min_width_m": 2.5, "min_length_m": 2.5, "max_width_m": 4, "max_length_m": 4,
+    "door_width_m": 1.0,
+    "base_cost": 2000, "cost_per_square_metre": 900,
+    "staffing": "None: cleaned by the hospital's cleaning contract, part of the building's upkeep.",
+    "furniture": ["accessible_wc", "wash_basin"]
+  },
+  {
+    "id": "staff_toilet",
+    "name": "Staff toilet",
+    "category": "Facilities",
+    "description": "A small toilet for staff only. Staff on a break pop in now and then; without one they use the public toilets.",
+    "kind": "staff_toilet",
+    "department": "facilities",
+    "layout": "toilets",
+    "sizes": [
+      { "name": "Standard", "width_m": 1.5, "length_m": 2.5 },
+      { "name": "Roomy", "width_m": 2, "length_m": 3 }
+    ],
+    "min_width_m": 1.5, "min_length_m": 2.5, "max_width_m": 3, "max_length_m": 3,
+    "door_width_m": 0.5,
+    "base_cost": 1500, "cost_per_square_metre": 900,
+    "staffing": "None: staff only.",
+    "furniture": ["toilet_pan", "wash_basin"]
+  }
+]

@@ -67,6 +67,8 @@ public partial class SmokeTest : Node
         Specialty,
         Cafe,
         Vending,
+        Toilets,
+        ToiletsRotated,
         CriticalCare,
         UpperFloor,
         UpperFloorWalk,
@@ -363,6 +365,24 @@ public partial class SmokeTest : Node
 
             case Stage.Vending when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09h_vending_point");
+                hospital.RotateView(2);
+                BuildToilets(hospital);
+                _frame = 0;
+                _stage = Stage.Toilets;
+                break;
+
+            case Stage.Toilets when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09i_toilets");
+
+                // The same toilets from the other side.
+                hospital.RotateView(2);
+                hospital.Camera.SnapTo(ToiletsCentre(hospital) + new Vector2(120, 0), 1.15f);
+                _frame = 0;
+                _stage = Stage.ToiletsRotated;
+                break;
+
+            case Stage.ToiletsRotated when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09j_toilets_rotated");
                 hospital.RotateView(2);
                 BuildIntensiveCare(hospital);
                 _frame = 0;
@@ -766,6 +786,67 @@ public partial class SmokeTest : Node
         GD.Print($"[smoke] Built {lab.Name}, {echo.Name} and the early pregnancy unit with their specialists.");
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 21, b.Y - 22), 0.8f);
+    }
+
+    private static Vector2 ToiletsCentre(HospitalScene hospital)
+    {
+        var block = hospital.Session.Simulation.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Toilets).Single();
+        return IsoDraw.ToScreen(block.Rect.X + 5, block.Rect.Y + 1);
+    }
+
+    /// <summary>
+    /// A small wing west of the facilities wing, either side of a corridor, with a toilet block, an accessible toilet and a staff toilet.
+    /// The clock runs until someone is using the toilets, and a wet patch is left on the corridor floor to show what happens
+    /// when patients can't get to one.
+    /// </summary>
+    private static void BuildToilets(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        sim.AdjustBalance(500_000);
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 40, b.Y + 20, 10, 24));
+        Check(wing.CanBuild, "Toilet wing refused: " + string.Join("; ", wing.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 40, b.Y + 32, 10, 4), Simulation.World.WallSide.South));
+        Check(corridor.CanBuild, "Toilet corridor refused: " + string.Join("; ", corridor.Problems));
+        foreach (var (template, rect) in new[]
+        {
+            ("public_toilets", new Simulation.World.GridRect(b.X - 40, b.Y + 36, 10, 8)),
+            ("accessible_toilet", new Simulation.World.GridRect(b.X - 40, b.Y + 27, 5, 5)),
+            ("staff_toilet", new Simulation.World.GridRect(b.X - 34, b.Y + 27, 3, 5)),
+        })
+        {
+            var built = sim.BuildRoom(sim.AutoPlan(template, rect));
+            Check(built.CanBuild, $"{template} refused: " + string.Join("; ", built.Problems));
+        }
+
+        var block = sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Toilets).Single();
+        Check(block.ToiletSpots.Count == 4, $"The toilet block has {block.ToiletSpots.Count} cubicles, not 4.");
+        Check(block.SinkSpots.Count >= 1, "The toilet block has no basins.");
+        Check(sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.AccessibleToilet).Single().ToiletSpots.Count == 1, "The accessible toilet has no toilet.");
+        Check(sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.StaffToilet).Single().ToiletSpots.Count == 1, "The staff toilet has no toilet.");
+        Check(sim.HasPublicToilets, "The hospital should have public toilets now.");
+
+        for (var i = 0; i < 16; i++)
+        {
+            sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration");
+        }
+
+        // Run until someone is in a cubicle and someone else is washing or walking to the toilets.
+        var clock = hospital.Session.Clock;
+        var limit = clock.Now.AddHours(10);
+        while (clock.Now < limit && !(sim.ToiletTrips.Any(t => t.Stage == Simulation.Simulation.ToiletStage.Using) && sim.ToiletTrips.Count >= 2))
+        {
+            clock.Step();
+        }
+
+        GD.Print($"[smoke] Toilets: {block.ToiletSpots.Count} cubicles, {block.SinkSpots.Count} basins; {sim.ToiletTrips.Count} people at the toilets at {clock.Now:HH:mm}.");
+        Check(sim.ToiletTrips.Count > 0, "Nobody went to the toilets in ten hours.");
+        sim.SpillForTest(new Simulation.World.GridCoord(b.X - 37, b.Y + 33));
+        Check(sim.FloorAccidents.Count == 1, "The wet patch wasn't left on the floor.");
+        clock.SetSpeed(SimulationSpeed.Paused);
+        hospital.SetMode(GameMode.Play);
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(ToiletsCentre(hospital) - new Vector2(220, 40), 1.15f);
     }
 
     /// <summary>

@@ -87,6 +87,11 @@ public partial class HospitalScene : Node2D
         _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
         AddChild(_highlight);
 
+        // Wet patches where someone didn't make it to a toilet, on the floor under everything else.
+        var accidents = new AccidentLayer { Name = "Accidents" };
+        AddChild(accidents);
+        accidents.Initialise(_session.Simulation);
+
         // Walls, furniture, people and vehicles, depth-sorted together; labels on top.
         _world = new WorldLayer { Name = "World" };
         AddChild(_world);

@@ -339,7 +339,7 @@ public sealed partial class HospitalSimulation
 
     private static int Distance(GridCoord a, GridCoord b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 
-    /// <summary>A patient who has had something to eat or drink recently is half as likely to walk out.</summary>
+    /// <summary>A patient who has had something to eat or drink recently is half as likely to walk out; with no toilets, more likely.</summary>
     private double WalkOutFactor(Patient patient) =>
-        patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0;
+        (patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0) * ToiletWalkOutFactor();
 }
