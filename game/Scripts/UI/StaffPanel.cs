@@ -59,6 +59,8 @@ public partial class StaffPanel : PanelContainer
         who.AddThemeConstantOverride("separation", 0);
         _name.AddThemeFontSizeOverride("font_size", 20);
         _name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        // Long grades and room names trim rather than widening the panel past the screen edge.
+        _role.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         who.AddChild(_name);
         who.AddChild(_role);
         header.AddChild(who);
@@ -100,6 +102,7 @@ public partial class StaffPanel : PanelContainer
         column.AddChild(tiles);
 
         _queueTitle = HudWidgets.Section("Up next");
+        _queueTitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         column.AddChild(_queueTitle);
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         _queue.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -107,6 +110,8 @@ public partial class StaffPanel : PanelContainer
         scroll.AddChild(_queue);
         column.AddChild(scroll);
 
+        // The age, pay and shift line wraps: on one line it made the panel wider than the screen.
+        _footer.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         column.AddChild(_footer);
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 8);
@@ -131,7 +136,9 @@ public partial class StaffPanel : PanelContainer
     {
         _member = member;
         ResetLetGo();
-        _queueSignature = string.Empty;
+        // Never matches a real signature, so the "Waiting for" list is rebuilt for this person even when
+        // nothing is waiting (it used to keep showing the previous person's list).
+        _queueSignature = "\0";
         Visible = true;
         Refresh();
     }
