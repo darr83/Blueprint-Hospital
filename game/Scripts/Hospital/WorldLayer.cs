@@ -26,8 +26,8 @@ public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y, WardBed
 /// </summary>
 public partial class WorldLayer : Node2D
 {
-    /// <summary>Height of every wall on screen (about 1.1 m, cut away so the rooms stay visible).</summary>
-    public const float WallHeight = 30f;
+    /// <summary>Height of every wall on screen (2.5 m), level with the top of the door frames.</summary>
+    public const float WallHeight = RoomSigns.FrameHeight;
 
     /// <summary>Wall thickness in tiles.</summary>
     public const double WallThickness = 0.3;
@@ -374,6 +374,28 @@ public partial class WorldLayer : Node2D
             var frame = doorPoints.Contains((x, y));
             AddProp(FrontFace(x - h, y - h, WallThickness, WallThickness), c => Wall(c, x - h, y - h, WallThickness, WallThickness, joined, frame));
         }
+
+        // Each room's doorway: frame, doors and name board.
+        foreach (var space in ViewSpaces.Where(RoomSigns.Named))
+        {
+            var (fx, fy, fw, fl) = RoomSigns.SignFootprint(space);
+            var (mx, my) = RoomSigns.DoorMiddle(space);
+            AddProp(FrontFace(fx, fy, fw, fl), c => RoomSigns.Doorway(c, space, DoorOpenness(space, mx, my), WallThickness, WallHeight, WallTop, WallFace, FrameTop, FrameFace), animated: true);
+        }
+    }
+
+    private readonly Dictionary<CareSpace, (float Open, double At)> _doors = new();
+
+    /// <summary>How far a room's door stands open: it swings open as someone comes near and closes behind them.</summary>
+    private float DoorOpenness(CareSpace space, double mx, double my)
+    {
+        static bool Near(Agent a, double x, double y) => Math.Abs(a.X - x) < 1.6 && Math.Abs(a.Y - y) < 1.6;
+        var near = _sim.Patients.Any(p => Near(p, mx, my)) || _sim.Staff.Any(s => Near(s, mx, my));
+        var (open, at) = _doors.GetValueOrDefault(space, (0f, Time));
+        var step = (float)Math.Clamp((Time - at) * 4, 0, 1);
+        open = Math.Clamp(open + (near ? step : -step), 0, 1);
+        _doors[space] = (open, Time);
+        return open;
     }
 
     private static readonly Color WallSkirting = new("#9FB0BE");

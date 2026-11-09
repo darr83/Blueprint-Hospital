@@ -53,10 +53,14 @@ public partial class DepartmentRenderer : Node2D
     };
 
     private HospitalSimulation _sim = null!;
+    private static HospitalSimulation? _current;
+
+    private static bool IsCriticalCare(CareSpace space) => _current?.IsCriticalCareUnit(space) == true;
 
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;
+        _current = simulation;
         QueueRedraw();
     }
 
@@ -111,6 +115,33 @@ public partial class DepartmentRenderer : Node2D
         }
     }
 
+    /// <summary>The colour of the band outside a clinical room's door, or null for rooms without one.</summary>
+    public static Color? WayfindingColour(CareSpace space) =>
+        space.Kind switch
+        {
+            CareSpaceKind.Resus => new Color("#E53935"),
+            CareSpaceKind.Majors => new Color("#F9A825"),
+            CareSpaceKind.Minors => new Color("#43A047"),
+            CareSpaceKind.Triage => new Color("#7E57C2"),
+            CareSpaceKind.Ward when IsCriticalCare(space) => new Color("#5E35B1"),
+            CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MaternityDepartmentId => new Color("#D46A9F"),
+            CareSpaceKind.DeliveryRoom => new Color("#D46A9F"),
+            CareSpaceKind.Ward => new Color("#1E88E5"),
+            CareSpaceKind.OutreachOffice => new Color("#5E35B1"),
+            CareSpaceKind.XRay or CareSpaceKind.CT => new Color("#546E7A"),
+            CareSpaceKind.Theatre => new Color("#00897B"),
+            CareSpaceKind.Pharmacy => new Color("#7CB342"),
+            CareSpaceKind.Clinic => new Color("#5C6BC0"),
+            CareSpaceKind.Echo or CareSpaceKind.CathLab => new Color("#AD1457"),
+            CareSpaceKind.Eeg => new Color("#6A1B9A"),
+            CareSpaceKind.Ultrasound => new Color("#00838F"),
+            CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery => new Color("#455A64"),
+            CareSpaceKind.PlasterRoom => new Color("#8D6E63"),
+            CareSpaceKind.PhysioGym => new Color("#2E7D32"),
+            CareSpaceKind.Lift or CareSpaceKind.Stairs => new Color("#37474F"),
+            _ => (Color?)null,
+        };
+
     /// <summary>
     /// A coloured band on the corridor floor outside each clinical room's door, so the way to
     /// Resus (red), Majors (amber), Minors (green) and Triage (purple) can be seen at a glance.
@@ -119,30 +150,7 @@ public partial class DepartmentRenderer : Node2D
     {
         foreach (var space in _sim.Spaces.Where(s => s.HasWalls && s.Doors.Count > 0 && IsoDraw.OnViewFloor(s.Rect.Y)))
         {
-            var colour = space.Kind switch
-            {
-                CareSpaceKind.Resus => new Color("#E53935"),
-                CareSpaceKind.Majors => new Color("#F9A825"),
-                CareSpaceKind.Minors => new Color("#43A047"),
-                CareSpaceKind.Triage => new Color("#7E57C2"),
-                CareSpaceKind.Ward when _sim.IsCriticalCareUnit(space) => new Color("#5E35B1"),
-                CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MaternityDepartmentId => new Color("#D46A9F"),
-                CareSpaceKind.DeliveryRoom => new Color("#D46A9F"),
-                CareSpaceKind.Ward => new Color("#1E88E5"),
-                CareSpaceKind.OutreachOffice => new Color("#5E35B1"),
-                CareSpaceKind.XRay or CareSpaceKind.CT => new Color("#546E7A"),
-                CareSpaceKind.Theatre => new Color("#00897B"),
-                CareSpaceKind.Pharmacy => new Color("#7CB342"),
-                CareSpaceKind.Clinic => new Color("#5C6BC0"),
-                CareSpaceKind.Echo or CareSpaceKind.CathLab => new Color("#AD1457"),
-                CareSpaceKind.Eeg => new Color("#6A1B9A"),
-                CareSpaceKind.Ultrasound => new Color("#00838F"),
-                CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery => new Color("#455A64"),
-                CareSpaceKind.PlasterRoom => new Color("#8D6E63"),
-                CareSpaceKind.PhysioGym => new Color("#2E7D32"),
-                CareSpaceKind.Lift or CareSpaceKind.Stairs => new Color("#37474F"),
-                _ => (Color?)null,
-            };
+            var colour = WayfindingColour(space);
             if (colour is not { } c)
             {
                 continue;

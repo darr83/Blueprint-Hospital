@@ -93,6 +93,7 @@ public partial class ArtShots : Node
                 ("overview", Overview),
                 ("bed", BedCloseUp),
                 ("corner", Corner),
+                ("triage", TriageDoor),
             };
 
         var rotation = _shot / (shots.Length * 2);
@@ -167,6 +168,13 @@ public partial class ArtShots : Node
         var bay = h.Session.Simulation.Spaces.Where(s => s.IsTreatmentSpace).OrderBy(s => s.IsFree).ThenBy(s => s.Id).First();
         var spot = bay.PatientSpot;
         return (IsoDraw.ToScreen(spot.X + 0.5, spot.Y + 0.5) + new Vector2(0, -30), 2.2f);
+    }
+
+    private static (Vector2, float) TriageDoor(HospitalScene h)
+    {
+        var room = h.Session.Simulation.Spaces.First(s => s.Kind == CareSpaceKind.Triage);
+        var r = room.Rect;
+        return (IsoDraw.ToScreen(r.X + (r.Width / 2.0), r.Y + (r.Length / 2.0)) + new Vector2(0, 20), 1.5f);
     }
 
     private static (Vector2, float) Corner(HospitalScene h)

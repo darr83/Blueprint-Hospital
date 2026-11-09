@@ -9,7 +9,7 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// Labels drawn above the world: room name cards, triage markers over patients who are up and
+/// Labels drawn above the world: obs monitor screens, triage markers over patients who are up and
 /// about, and small bubbles saying what each busy member of staff is doing.
 /// </summary>
 public partial class OverlayLayer : Node2D
@@ -36,11 +36,6 @@ public partial class OverlayLayer : Node2D
         }
 
         var sim = _world.Simulation;
-        foreach (var space in sim.Spaces.Where(s => s.Kind != CareSpaceKind.Corridor && IsoDraw.OnViewFloor(s.Rect.Y)))
-        {
-            RoomCard(space);
-        }
-
         // Obs monitor screens, always visible above walls and beds.
         foreach (var monitor in _world.Monitors)
         {
@@ -63,39 +58,6 @@ public partial class OverlayLayer : Node2D
                 StaffBubble(member);
             }
         }
-    }
-
-    private void RoomCard(CareSpace space)
-    {
-        var r = space.Rect;
-        var anchor = IsoDraw.ToScreen(r.X + (r.Width / 2.0), r.Bottom - 1.1);
-
-        var title = space.Name;
-        var detail = $"{r.Width / 2.0:0.#} × {r.Length / 2.0:0.#} m · {space.AreaSquareMetres:0} m²";
-        if (space.IsTreatmentSpace)
-        {
-            detail = space.IsFree ? $"{detail} · free" : $"{detail} · in use";
-        }
-        else if (space.IsWard && _world.Simulation.NeonatalUnits.Contains(space))
-        {
-            detail = $"{detail} · {_world.Simulation.BabiesIn(space).Count()}/{space.Beds.Count} babies";
-        }
-        else if (space.IsWard)
-        {
-            detail = $"{detail} · {space.Beds.Count(b => b.OccupantId is not null)}/{space.Beds.Count} beds";
-        }
-
-        const int titleSize = 22;
-        const int detailSize = 15;
-        var width = Math.Max(_font.GetStringSize(title, HorizontalAlignment.Left, -1, titleSize).X + 18, _font.GetStringSize(detail, HorizontalAlignment.Left, -1, detailSize).X) + 16;
-        var card = new Rect2(anchor - new Vector2(width / 2, 25), new Vector2(width, 50));
-
-        DrawRect(new Rect2(card.Position + new Vector2(1.5f, 2), card.Size), new Color(0, 0, 0, 0.15f));
-        DrawRect(card, new Color(1, 1, 1, 0.94f));
-        var accent = DepartmentRenderer.FloorColours[space.Kind].Darkened(0.45f);
-        DrawCircle(card.Position + new Vector2(14, 16), 5.5f, accent);
-        DrawString(_font, card.Position + new Vector2(26, 23), title, HorizontalAlignment.Left, -1, titleSize, new Color("#1D2B36"));
-        DrawString(_font, card.Position + new Vector2(9, 42), detail, HorizontalAlignment.Left, -1, detailSize, new Color("#5B6B78"));
     }
 
     private void TriageMarker(Patient patient, Vector2 at)
