@@ -60,6 +60,11 @@ public sealed partial class HospitalSimulation
             return member.Role == StaffRole.OutreachNurse;
         }
 
+        if (task.Kind == TaskKind.CarryBaby)
+        {
+            return IsCarryForMember(task, member);
+        }
+
         if (ServiceRoomKind(task) is not { } kind)
         {
             return TeamFor(task) == member.BaseRoomId || CoveredByEmergencyTeam(task, member);
@@ -68,6 +73,7 @@ public sealed partial class HospitalSimulation
         return member.BaseRoomId is { } id && FindSpace(id) is { } room && room.Kind == kind
                && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
                && !_recovering.Values.Any(r => r.RoomId == room.Id)
+               && DeliveryRoomFreeFor(room, task.PatientId)
                && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre
                    || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null));
     }
@@ -82,6 +88,12 @@ public sealed partial class HospitalSimulation
 
         task.SpaceId = room.Id;
         room.ReservedByStaffId = member.Id;
+        if (room.Kind == CareSpaceKind.DeliveryRoom)
+        {
+            // She has the room to herself through labour and the birth.
+            room.OccupantId = patient.Id;
+        }
+
         if (task.Kind is TaskKind.Imaging or TaskKind.Surgery or TaskKind.Procedure)
         {
             ReleaseSeat(patient);
@@ -184,6 +196,12 @@ public sealed partial class HospitalSimulation
     private void CompleteSurgery(StaffMember surgeon, Patient patient)
     {
         var planned = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
+        if (planned.IsMaternity)
+        {
+            CompleteBirth(surgeon, patient);
+            return;
+        }
+
         var operation = planned.Operation!;
         var inTheatre = operation.Room == CareSpaceKind.Theatre;
         if (planned.Id == patient.Condition.Id)

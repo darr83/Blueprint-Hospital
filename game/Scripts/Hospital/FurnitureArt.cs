@@ -54,13 +54,20 @@ public static class FurnitureArt
     /// </summary>
     public static void Slice(CanvasItem c, string id, double sx, double sy, double sw, double sl, (double X, double Y, double W, double L) whole, float height, Color colour, Sides joined)
     {
-        if (EquipmentArt.Draws(id))
+        if (EquipmentArt.Draws(id) || MaternityArt.Draws(id))
         {
             // Drawn whole, once, by the slice under the item's centre.
             var (cx, cy) = (whole.X + (whole.W / 2), whole.Y + (whole.L / 2));
             if (cx >= sx - 1e-6 && cx < sx + sw - 1e-6 && cy >= sy - 1e-6 && cy < sy + sl - 1e-6)
             {
-                EquipmentArt.Draw(c, id, whole, height, colour);
+                if (MaternityArt.Draws(id))
+                {
+                    MaternityArt.Draw(c, id, whole, height, colour);
+                }
+                else
+                {
+                    EquipmentArt.Draw(c, id, whole, height, colour);
+                }
             }
 
             return;

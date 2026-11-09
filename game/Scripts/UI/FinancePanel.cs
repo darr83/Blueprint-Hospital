@@ -128,6 +128,7 @@ public partial class FinancePanel : PanelContainer
         MoneyCategory.Operations => "Operations",
         MoneyCategory.Clinics => "Clinics",
         MoneyCategory.Catering => "Cafe and vending",
+        MoneyCategory.Maternity => "Maternity",
         MoneyCategory.Cheats => "Cheats",
         _ => category.ToString(),
     };

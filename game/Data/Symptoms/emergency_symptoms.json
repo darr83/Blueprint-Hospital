@@ -292,5 +292,33 @@
     "patient_description": "The pain came on all of a sudden, it's the worst I've ever had.",
     "body_system": "gastrointestinal",
     "is_red_flag": true
+  },
+  {
+    "id": "contractions",
+    "name": "Regular contractions",
+    "patient_description": "The contractions are coming every few minutes and they're getting stronger.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
+  },
+  {
+    "id": "waters_broken",
+    "name": "Waters broken",
+    "patient_description": "My waters have gone.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
+  },
+  {
+    "id": "reduced_fetal_movements",
+    "name": "Baby moving less",
+    "patient_description": "The baby hasn't been moving as much as usual.",
+    "body_system": "gynaecological",
+    "is_red_flag": true
+  },
+  {
+    "id": "constant_uterine_pain",
+    "name": "Constant pain in the bump",
+    "patient_description": "My bump has gone hard and it hurts all the time, it doesn't ease off between contractions.",
+    "body_system": "gynaecological",
+    "is_red_flag": true
   }
 ]

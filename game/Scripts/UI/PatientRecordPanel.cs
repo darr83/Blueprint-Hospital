@@ -103,6 +103,14 @@ public partial class PatientRecordPanel : PanelContainer
         _text.AddThemeColorOverride("default_color", UiStyle.TextDark);
         _text.AddThemeFontSizeOverride("normal_font_size", 14);
         _text.AddThemeFontSizeOverride("bold_font_size", 14);
+        _text.MetaClicked += meta =>
+        {
+            var link = meta.AsString();
+            if (link.StartsWith("rename-baby:", StringComparison.Ordinal) && int.TryParse(link["rename-baby:".Length..], out var id))
+            {
+                RenameBaby(id);
+            }
+        };
         _scroll.AddChild(_text);
         column.AddChild(_scroll);
 
@@ -140,7 +148,7 @@ public partial class PatientRecordPanel : PanelContainer
         var tile = p.Tile;
         var place = p.IsInDepartment ? _sim.Spaces.Where(s => s.Rect.Contains(tile) && s.Kind != BlueprintHospital.Simulation.Hospital.CareSpaceKind.Corridor).Select(s => s.Name).FirstOrDefault() : null;
         HudWidgets.SetChip(_placeChip, place ?? string.Empty, UiStyle.Ground);
-        HudWidgets.SetChip(_arrivalChip, p.ArrivalMethod == ArrivalMethod.Ambulance ? "Ambulance" : "Walked in", UiStyle.Ground);
+        HudWidgets.SetChip(_arrivalChip, p.Maternity ? "Maternity" : p.ArrivalMethod == ArrivalMethod.Ambulance ? "Ambulance" : "Walked in", UiStyle.Ground);
 
         _now.Heading.Text = p.IsInDepartment ? "Right now" : "Left the department";
         _now.Text.Text = ClinicalText.Whereabouts(_sim, p);
@@ -157,9 +165,11 @@ public partial class PatientRecordPanel : PanelContainer
 
         _now.Detail.Visible = _now.Detail.Text.Length > 0;
 
-        var time = p.TimeInDepartment(now);
+        var time = p.Maternity ? now - p.ArrivedAt : p.TimeInDepartment(now);
+        var counting = p.IsInDepartment && !p.Maternity;
+        ((Label)_timeTile.Value.GetParent().GetChild(1)).Text = p.Maternity ? "In hospital" : "In A&E";
         _timeTile.Value.Text = ClinicalText.Duration(time);
-        _timeTile.Value.AddThemeColorOverride("font_color", time > TimeSpan.FromHours(4) && p.IsInDepartment ? UiStyle.Red : time > TimeSpan.FromHours(2) && p.IsInDepartment ? UiStyle.AmberText : UiStyle.TextDark);
+        _timeTile.Value.AddThemeColorOverride("font_color", time > TimeSpan.FromHours(4) && counting ? UiStyle.Red : time > TimeSpan.FromHours(2) && counting ? UiStyle.AmberText : UiStyle.TextDark);
         if (p.LatestObservations is { } latest)
         {
             _painTile.Value.Text = $"{latest.Obs.PainScore}/10";
@@ -232,8 +242,16 @@ public partial class PatientRecordPanel : PanelContainer
 
         sb.Append($"{p.Sex}, {p.Age} · {p.HospitalNumber} · DOB {p.DateOfBirth:dd/MM/yyyy}\n");
         var how = p.ArrivalMethod == ArrivalMethod.Ambulance ? "by ambulance" : "walked in";
-        sb.Append($"Arrived {p.ArrivedAt:HH:mm} ({how}) · [b]{ClinicalText.Duration(p.TimeInDepartment(now))}[/b] in A&E");
-        if (p.TimeInDepartment(now) > TimeSpan.FromHours(4) && p.IsInDepartment)
+        if (p.Maternity)
+        {
+            sb.Append($"Came to the maternity unit at {p.ArrivedAt:HH:mm} · [b]{ClinicalText.Duration(now - p.ArrivedAt)}[/b] in hospital");
+        }
+        else
+        {
+            sb.Append($"Arrived {p.ArrivedAt:HH:mm} ({how}) · [b]{ClinicalText.Duration(p.TimeInDepartment(now))}[/b] in A&E");
+        }
+
+        if (!p.Maternity && p.TimeInDepartment(now) > TimeSpan.FromHours(4) && p.IsInDepartment)
         {
             sb.Append($" [color={ClinicalText.RedHex}][b]· over 4 hours[/b][/color]");
         }
@@ -254,6 +272,11 @@ public partial class PatientRecordPanel : PanelContainer
         if (p.AmbulanceHandover is { } handover)
         {
             sb.Append($"[b]Ambulance handover:[/b] [i]{E(handover)}[/i]\n");
+        }
+
+        if (p.Maternity)
+        {
+            MaternitySection(p, sb, Section);
         }
 
         // Observations.
@@ -378,4 +401,70 @@ public partial class PatientRecordPanel : PanelContainer
     }
 
     private const string GreenHex = ClinicalText.GreenHex;
+
+    /// <summary>The pregnancy and the babies, each with a link to rename them.</summary>
+    private void MaternitySection(Patient p, StringBuilder sb, Action<string> section)
+    {
+        string E(string s) => ClinicalText.Escape(s);
+        section(p.Delivered ? "MOTHER AND BABY" : "PREGNANCY");
+        sb.Append($"[b]{p.GestationWeeks} weeks[/b] pregnant{(p.Delivered ? " at delivery" : "")}\n");
+        foreach (var baby in _sim.BabiesOf(p))
+        {
+            var place = baby.Place switch
+            {
+                BabyPlace.WithMother => "with mum",
+                BabyPlace.Carried => "being carried to or from the neonatal unit",
+                BabyPlace.NeonatalUnit => $"on the neonatal unit{(baby.CotIndex is { } i ? $", incubator {i + 1}" : "")}",
+                BabyPlace.Transferred => "transferred to another hospital's neonatal unit",
+                _ => "gone home",
+            };
+            var colour = baby.Sex == Sex.Female ? "#B0457A" : "#2F6FB0";
+            sb.Append($"[color={colour}]●[/color] [b]{E(baby.FullName)}[/b] [url=rename-baby:{baby.Id}][color=#1F5FBF](rename)[/color][/url]\n");
+            sb.Append($"   {(baby.Sex == Sex.Female ? "Girl" : "Boy")}, {baby.WeightKg:0.00} kg, born {baby.BornAt:HH:mm} ({E(baby.Delivery.ToLowerInvariant())}), {place}\n");
+            if (baby.NeonatalReason is { } reason)
+            {
+                sb.Append($"   [color=#5B6B79]Neonatal care: {E(reason)}[/color]\n");
+            }
+
+            foreach (var entry in baby.Timeline.Where(t => t.Important).Reverse().Take(3))
+            {
+                sb.Append($"   [color=#5B6B79]{entry.Time:HH:mm}  {E(entry.Text)}[/color]\n");
+            }
+        }
+    }
+
+    /// <summary>Asks for a baby's new name.</summary>
+    private void RenameBaby(int babyId)
+    {
+        if (_sim.FindBaby(babyId) is not { } baby)
+        {
+            return;
+        }
+
+        var dialog = new AcceptDialog { Title = "Rename baby", OkButtonText = "Save", Theme = UiStyle.Theme };
+        var edit = new LineEdit { Text = baby.FullName, CustomMinimumSize = new Vector2(320, 0) };
+        dialog.AddChild(edit);
+        dialog.RegisterTextEnter(edit);
+        dialog.AddCancelButton("Cancel");
+        dialog.Confirmed += () =>
+        {
+            if (!string.IsNullOrWhiteSpace(edit.Text))
+            {
+                _sim.RenameBaby(babyId, edit.Text.Trim());
+                _lastText = string.Empty;
+                Refresh();
+            }
+        };
+        dialog.VisibilityChanged += () =>
+        {
+            if (!dialog.Visible)
+            {
+                dialog.QueueFree();
+            }
+        };
+        AddChild(dialog);
+        dialog.PopupCentered();
+        edit.GrabFocus();
+        edit.SelectAll();
+    }
 }

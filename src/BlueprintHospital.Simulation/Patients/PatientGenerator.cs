@@ -25,7 +25,7 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
             ? PickCondition(forcedMethod)
             : database.Conditions[conditionId];
 
-        var sex = random.Chance(condition.FemaleFraction) ? Sex.Female : Sex.Male;
+        var sex = condition.IsMaternity ? Sex.Female : random.Chance(condition.FemaleFraction) ? Sex.Female : Sex.Male;
         var age = SampleAge(condition);
         var dob = now.Date.AddYears(-age).AddDays(-random.Range(1, 364));
         var names = database.Names.Values.First();
@@ -83,13 +83,29 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
             QueuedSince = now,
         };
 
+        if (condition.Maternity is { } maternity)
+        {
+            patient.Maternity = true;
+            patient.GestationWeeks = random.Range(maternity.GestationWeeks[0], maternity.GestationWeeks[1]);
+        }
+
         patient.KnownSymptoms.Add(condition.PresentingComplaint);
         return patient;
     }
 
+    /// <summary>A woman coming to the maternity unit: a maternity condition chosen by how common it is.</summary>
+    public Patient GenerateMaternity(DateTime now, string? conditionId = null)
+    {
+        var condition = conditionId ?? random.PickWeighted(
+            database.Conditions.Values.Where(c => c.Maternity is { Arrives: true }).OrderBy(c => c.Id, StringComparer.Ordinal).ToList(),
+            c => c.Prevalence).Id;
+        return Generate(now, ArrivalMethod.WalkIn, condition);
+    }
+
     private ConditionDefinition PickCondition(ArrivalMethod? method)
     {
-        var conditions = database.Conditions.Values.OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+        // Women in labour go to the maternity unit, not A&E.
+        var conditions = database.Conditions.Values.Where(c => !c.IsMaternity).OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
         return method switch
         {
             ArrivalMethod.Ambulance => random.PickWeighted(conditions, c => c.Prevalence * c.AmbulanceProbability),

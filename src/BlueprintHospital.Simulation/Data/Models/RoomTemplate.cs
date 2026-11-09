@@ -71,6 +71,9 @@ public enum WardUnit
 
     /// <summary>An intensive care unit (ICU): level 3 critical care, a ventilator and a nurse at every bed.</summary>
     IntensiveCare,
+
+    /// <summary>A neonatal unit: incubators for newborn babies who need special care, a nurse for every two babies.</summary>
+    Neonatal,
 }
 
 /// <summary>
@@ -114,6 +117,12 @@ public sealed class RoomTemplate : IDataRecord
 
     /// <summary>For wards: the kind of unit (assessment, day surgery, HDU or ICU). An ordinary ward if left out.</summary>
     public WardUnit Unit { get; init; }
+
+    /// <summary>
+    /// For operating theatres kept for one department (the maternity C-section theatre): the only
+    /// departments it takes, fixed for good. Empty for an ordinary theatre, whose departments the player ticks.
+    /// </summary>
+    public IReadOnlyList<string> TheatreDepartments { get; init; } = Array.Empty<string>();
 
     /// <summary>Fixed cost to fit out the room, in pounds.</summary>
     public int BaseCost { get; init; }
@@ -164,6 +173,12 @@ public sealed class RoomTemplate : IDataRecord
         if (Unit != WardUnit.None && Kind != CareSpaceKind.Ward)
         {
             context.Error("unit", "only wards can be a unit.");
+        }
+
+        context.RequireIds("theatre_departments", TheatreDepartments);
+        if (TheatreDepartments.Count > 0 && Kind != CareSpaceKind.Theatre)
+        {
+            context.Error("theatre_departments", "only operating theatres can be kept for a department.");
         }
 
         if ((Layout == RoomLayoutKind.None) != IsCorridor)

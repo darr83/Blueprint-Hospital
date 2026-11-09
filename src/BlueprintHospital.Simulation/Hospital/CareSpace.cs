@@ -72,6 +72,9 @@ public enum CareSpaceKind
 
     /// <summary>Stairs through every floor, for people on foot.</summary>
     Stairs,
+
+    /// <summary>Delivery room on the labour ward: a midwife stays with one woman through labour and the birth.</summary>
+    DeliveryRoom,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -177,7 +180,7 @@ public sealed class CareSpace
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
         or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab
-        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice;
+        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice or CareSpaceKind.DeliveryRoom;
 
     /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
     public static bool IsTestRoom(CareSpaceKind kind) =>

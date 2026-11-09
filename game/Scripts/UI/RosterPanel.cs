@@ -140,6 +140,7 @@ public partial class RosterPanel : PanelContainer
                     StaffRole.CardiacPhysiologist => new Color("#7A2E4A"),
                     StaffRole.Neurophysiologist => new Color("#5A3D7A"),
                     StaffRole.Sonographer => new Color("#2F5D73"),
+                    StaffRole.Midwife => new Color("#8A2D6E"),
                     StaffRole.Endoscopist => new Color("#2C4F7C"),
                     StaffRole.PlasterTechnician => new Color("#5D6B78"),
                     StaffRole.Physiotherapist => new Color("#1A5E8A"),

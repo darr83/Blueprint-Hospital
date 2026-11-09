@@ -1,0 +1,34 @@
+[
+  {
+    "id": "maternity_default",
+    "department": "maternity",
+    "description": "Women coming to the maternity unit in labour or with a pregnancy emergency: about 5 a day, a little busier overnight and in the early morning.",
+    "hourly_arrivals": [
+      0.27,
+      0.285,
+      0.285,
+      0.27,
+      0.255,
+      0.24,
+      0.225,
+      0.21,
+      0.195,
+      0.195,
+      0.195,
+      0.195,
+      0.195,
+      0.195,
+      0.195,
+      0.195,
+      0.203,
+      0.21,
+      0.217,
+      0.225,
+      0.232,
+      0.24,
+      0.247,
+      0.262
+    ],
+    "weekday_multipliers": {}
+  }
+]

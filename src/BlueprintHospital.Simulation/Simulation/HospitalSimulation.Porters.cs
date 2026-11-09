@@ -75,6 +75,14 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        // Women in labour walk to the delivery room (unless they are very unwell, or going to theatre).
+        if (patient.Maternity && !patient.Delivered && patient.Triage != TriageCategory.Red
+            && patient.WorkingDiagnosis is { } labour && OperationRoom(labour.ConditionId) == CareSpaceKind.DeliveryRoom)
+        {
+            patient.Mobility = Mobility.Walking;
+            return;
+        }
+
         var ambulance = patient.ArrivalMethod == ArrivalMethod.Ambulance;
         if (patient.Triage == TriageCategory.Red || patient.Stage == PatientStage.AwaitingSurgery || patient.PreOp || patient.CareLevel >= 2 || (ambulance && patient.Triage != TriageCategory.Green))
         {

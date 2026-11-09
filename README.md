@@ -363,6 +363,37 @@ or intensive care (ICU).
   patient's decline (most on ICU), and each day on ICU (£1,800) or HDU (£900) is paid for on top of
   the admission.
 
+### Maternity
+
+Unlock **Maternity** (£250,000) in Build → Departments, then build its rooms from **Build → Maternity**.
+Midwives (Band 5 to Band 8 consultant midwife) are a new staff type in Recruitment.
+
+| Room | What it's for |
+| --- | --- |
+| Delivery room | One woman in labour at a time with her midwife: a birthing bed, CTG monitor, cot, resuscitaire and birthing ball |
+| Mother and baby ward | A cot beside every bed. Women in labour wait here for a delivery room, and come back here with their baby. One midwife for every 6 beds |
+| Neonatal unit | An incubator and monitor for each baby, and a nurse for every two babies |
+| C-section theatre | Caesarean sections only, for Maternity only; needs a surgeon and an anaesthetist |
+| Antenatal clinic | Booked pregnancy check-ups, run by a midwife (needs an Outpatients reception) |
+| Pregnancy scan room | Booked 12 and 20 week scans and growth scans, run by a sonographer |
+
+- **Opening:** the unit takes women once it has a delivery room with a midwife posted to it and a
+  mother and baby ward. Until then, and whenever every bed is full, women go to a neighbouring hospital.
+- **Labour:** women in labour skip A&E and go straight to a ward bed, then walk to a free delivery
+  room. About 1 in 8 labours ends in an emergency caesarean in the C-section theatre (or a forceps
+  delivery if there is no theatre). Breech babies, severe pre-eclampsia and placental abruption go
+  straight to theatre, so they are sent elsewhere without one.
+- **Babies** are born with a name, sex and weight (lighter the earlier they come), lie on mum's chest
+  for skin-to-skin, then sleep in the cot beside her bed and go home with her. Premature or poorly
+  babies are carried to the neonatal unit by one of its nurses, and back to mum when they are well;
+  without a neonatal unit (or a free incubator) they are transferred out. A baby can stay on the unit
+  after mum goes home. Click mum to see her babies in her record, and rename them there.
+- **Money:** £1,900 for a birth, £3,800 for a caesarean and £1,100 for each day on the neonatal unit
+  (**Maternity** in Finances).
+- **Medical data:** labour conditions live in `game/Data/Conditions/maternity_conditions.json` with a
+  `maternity` block (weeks pregnant, chances of twins, an emergency caesarean or the neonatal unit,
+  neonatal reasons and stay). The medical editor edits these too.
+
 ### Upper floors, lifts and stairs
 
 - **Adding a floor:** Build → Building → *Build the first floor* (or the **+▲** button bottom right,

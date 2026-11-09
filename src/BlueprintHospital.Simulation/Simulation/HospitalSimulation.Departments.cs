@@ -195,17 +195,27 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- theatres
 
-    /// <summary>Departments whose patients can need an operation (the ones a theatre can be opened to).</summary>
+    /// <summary>
+    /// Departments whose patients can need an operation in an ordinary theatre (the ones a theatre can be
+    /// opened to). Departments with a theatre of their own (Maternity's C-section theatre) aren't listed.
+    /// </summary>
     public IReadOnlyList<DepartmentDefinition> SurgicalDepartments =>
         Database.Departments.Values
             .Where(d => Database.Conditions.Values.Any(c => c.Disposition == Disposition.Surgery && c.Operation?.Room == CareSpaceKind.Theatre && c.Department == d.Id))
+            .Where(d => !Database.RoomTemplates.Values.Any(t => t.TheatreDepartments.Contains(d.Id)))
             .OrderBy(d => d.Name)
             .ToList();
+
+    /// <summary>The departments a theatre is kept for, when it can't be opened to others (the C-section theatre); empty for an ordinary theatre.</summary>
+    public IReadOnlyList<string> FixedTheatreDepartments(CareSpace theatre) =>
+        theatre.Kind == CareSpaceKind.Theatre && Database.RoomTemplates.TryGetValue(theatre.TemplateId, out var template)
+            ? template.TheatreDepartments
+            : Array.Empty<string>();
 
     /// <summary>Lets (or stops) a department's patients use an operating theatre.</summary>
     public void SetTheatreAccess(string roomId, string departmentId, bool allowed)
     {
-        if (FindSpace(roomId) is not { Kind: CareSpaceKind.Theatre } theatre)
+        if (FindSpace(roomId) is not { Kind: CareSpaceKind.Theatre } theatre || FixedTheatreDepartments(theatre).Count > 0)
         {
             return;
         }

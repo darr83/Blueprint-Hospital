@@ -174,10 +174,12 @@ public sealed partial class HospitalSimulation
 
         RefreshCandidatesIfDue();
         AnnounceOpening();
+        AnnounceMaternityOpening();
 
         if (_options.AutomaticArrivals)
         {
             GenerateArrivals(dt);
+            GenerateMaternityArrivals(dt);
         }
 
         DispatchDuePreAlerts();
@@ -208,6 +210,7 @@ public sealed partial class HospitalSimulation
         UpdateClinics(dt);
         UpdateRefreshments(dt);
         UpdateRecovery();
+        UpdateBabies(dt);
         SchedulePhysio();
         ScheduleOutreach();
         ProcessScheduledResults();

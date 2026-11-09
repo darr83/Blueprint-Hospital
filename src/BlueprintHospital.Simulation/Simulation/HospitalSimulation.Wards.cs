@@ -370,6 +370,10 @@ public sealed partial class HospitalSimulation
         patient.OutcomeNote = $"Admitted to {ward?.Name ?? "a ward"} and discharged home after {days:0.0} days.";
         patient.Log(Now, $"Discharged home from {ward?.Name ?? "the ward"} by {nurse.Name} after {days:0.0} days.");
         EndVisit(patient, PatientOutcome.Discharged);
+        if (patient.Maternity)
+        {
+            SendBabiesHomeWith(patient);
+        }
         WalkTo(patient, WalkInSpawn);
     }
 

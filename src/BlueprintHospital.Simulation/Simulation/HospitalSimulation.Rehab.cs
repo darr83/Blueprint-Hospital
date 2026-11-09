@@ -65,14 +65,15 @@ public sealed partial class HospitalSimulation
             }
 
             _recovering.Remove(state.PatientId);
-            if (FindSpace(state.RoomId) is { Kind: CareSpaceKind.EndoscopyRecovery } bay && bay.OccupantId == state.PatientId)
+            var place = FindSpace(state.RoomId);
+            if (place is { Kind: CareSpaceKind.EndoscopyRecovery or CareSpaceKind.DeliveryRoom } bay && bay.OccupantId == state.PatientId)
             {
                 bay.OccupantId = null;
             }
 
             if (present)
             {
-                patient!.Log(Now, "Awake and recovered from sedation.");
+                patient!.Log(Now, place is { Kind: CareSpaceKind.DeliveryRoom } ? BackFromBirthNote(place) : "Awake and recovered from sedation.");
                 ReturnFromServiceRoom(patient);
             }
         }

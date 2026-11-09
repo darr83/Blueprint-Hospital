@@ -170,6 +170,15 @@ public partial class DepartmentDashboard : PanelContainer
             footer += $"\nWards: {s.WardDischarges} home · {s.WardDeaths} died";
         }
 
+        if (_sim.IsUnlocked(HospitalSimulation.MaternityDepartmentId))
+        {
+            var m = _sim.MaternityStats;
+            var shut = _sim.MaternityClosedReasons;
+            footer += shut.Count > 0
+                ? $"\n[b][color=#17232E]Maternity[/color][/b] · closed, needs {string.Join(", ", shut)}"
+                : $"\n[b][color=#17232E]Maternity[/color][/b] · {m.Births} babies born · {m.Caesareans} caesareans · {m.NeonatalAdmissions} to the neonatal unit · {m.NeonatalTransfers + m.Diverted} sent elsewhere";
+        }
+
         Set(_footer, footer);
     }
 

@@ -76,6 +76,10 @@ public partial class OverlayLayer : Node2D
         {
             detail = space.IsFree ? $"{detail} · free" : $"{detail} · in use";
         }
+        else if (space.IsWard && _world.Simulation.NeonatalUnits.Contains(space))
+        {
+            detail = $"{detail} · {_world.Simulation.BabiesIn(space).Count()}/{space.Beds.Count} babies";
+        }
         else if (space.IsWard)
         {
             detail = $"{detail} · {space.Beds.Count(b => b.OccupantId is not null)}/{space.Beds.Count} beds";

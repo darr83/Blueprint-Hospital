@@ -145,6 +145,16 @@ public partial class RoomPanel : PanelContainer
             return;
         }
 
+        if (_sim.FixedTheatreDepartments(room) is { Count: > 0 } fixedFor)
+        {
+            // A dedicated theatre, such as the C-section theatre, is only ever used by its own department.
+            var names = fixedFor.Select(id => _sim.Database.Departments.TryGetValue(id, out var d) ? d.Name : id);
+            var only = new Label { Text = $"Used only by {string.Join(" and ", names)}.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+            only.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+            _access.AddChild(only);
+            return;
+        }
+
         var departments = _sim.SurgicalDepartments;
         var heading = new Label { Text = "Departments that can use this theatre" };
         heading.AddThemeColorOverride("font_color", UiStyle.TextMuted);

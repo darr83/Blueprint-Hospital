@@ -44,6 +44,69 @@ public sealed class OperationDefinition
     public bool DayCase { get; init; }
 }
 
+/// <summary>
+/// Pregnancy and birth: a woman in labour (or with a pregnancy emergency) comes straight to the maternity
+/// unit instead of A&amp;E, is looked after by midwives and has her baby by the condition's operation (a
+/// birth in the delivery room, or a caesarean section in theatre).
+/// </summary>
+public sealed class MaternityDefinition
+{
+    /// <summary>False for something that only happens once she is in hospital (labour that stops progressing); such conditions never arrive.</summary>
+    public bool Arrives { get; init; } = true;
+
+    /// <summary>[earliest, latest] weeks of pregnancy.</summary>
+    public int[] GestationWeeks { get; init; } = { 37, 42 };
+
+    /// <summary>Chance each baby needs the neonatal unit after the birth.</summary>
+    public double NeonatalChance { get; init; }
+
+    /// <summary>Chance labour in the delivery room ends in an emergency caesarean section instead.</summary>
+    public double EmergencyCaesareanChance { get; init; }
+
+    /// <summary>The condition (with a theatre operation) used when labour ends in an emergency caesarean section.</summary>
+    public string? EmergencyCaesarean { get; init; }
+
+    /// <summary>Chance of twins.</summary>
+    public double TwinsChance { get; init; }
+
+    /// <summary>Why a baby from this birth needs the neonatal unit, shown in the baby's notes.</summary>
+    public IReadOnlyList<string> NeonatalReasons { get; init; } = Array.Empty<string>();
+
+    /// <summary>[shortest, longest] hours a baby from this birth stays on the neonatal unit.</summary>
+    public double[] NeonatalStayHours { get; init; } = { 24, 96 };
+
+    internal void Validate(ValidationContext context, ConditionDefinition owner)
+    {
+        if (GestationWeeks.Length != 2 || GestationWeeks[0] < 20 || GestationWeeks[1] > 43 || GestationWeeks[0] > GestationWeeks[1])
+        {
+            context.Error("maternity.gestation_weeks", "must be [earliest, latest] weeks between 20 and 43.");
+        }
+
+        context.RequireRange("maternity.neonatal_chance", NeonatalChance, 0, 1);
+        context.RequireRange("maternity.emergency_caesarean_chance", EmergencyCaesareanChance, 0, 1);
+        context.RequireRange("maternity.twins_chance", TwinsChance, 0, 0.5);
+        if (EmergencyCaesareanChance > 0 && string.IsNullOrWhiteSpace(EmergencyCaesarean))
+        {
+            context.Error("maternity.emergency_caesarean", "must name the caesarean section condition when emergency_caesarean_chance is above 0.");
+        }
+
+        if (NeonatalChance > 0 && NeonatalReasons.Count == 0)
+        {
+            context.Error("maternity.neonatal_reasons", "list at least one reason a baby needs the neonatal unit.");
+        }
+
+        if (NeonatalStayHours.Length != 2 || NeonatalStayHours[0] < 1 || NeonatalStayHours[1] < NeonatalStayHours[0] || NeonatalStayHours[1] > 24 * 60)
+        {
+            context.Error("maternity.neonatal_stay_hours", "must be [shortest, longest] in hours, between 1 and 1440.");
+        }
+
+        if (owner.Disposition != Disposition.Surgery || owner.Operation is null)
+        {
+            context.Error("maternity", "maternity conditions need disposition surgery and an operation (the birth).");
+        }
+    }
+}
+
 public sealed class SymptomChance
 {
     public string Symptom { get; init; } = string.Empty;
@@ -211,6 +274,12 @@ public sealed class ConditionDefinition : IDataRecord
     /// <summary>Ward patients who need physiotherapy to get home (after a broken hip or a stroke).</summary>
     public bool NeedsPhysio { get; init; }
 
+    /// <summary>Labour and pregnancy emergencies: the patient comes straight to the maternity unit and has her baby here. Null for everything else.</summary>
+    public MaternityDefinition? Maternity { get; init; }
+
+    /// <summary>Women in labour come to the maternity unit, not A&amp;E.</summary>
+    public bool IsMaternity => Maternity is not null;
+
     public double ChanceOf(string symptomId) =>
         Symptoms.FirstOrDefault(s => s.Symptom == symptomId)?.Probability ?? 0;
 
@@ -295,9 +364,14 @@ public sealed class ConditionDefinition : IDataRecord
             {
                 context.RequireText("operation.name", Operation.Name);
                 context.RequireRange("operation.minutes", Operation.Minutes, 10, 600);
-                if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab))
+                if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab or CareSpaceKind.DeliveryRoom))
                 {
-                    context.Error("operation.room", "must be theatre or cath_lab.");
+                    context.Error("operation.room", "must be theatre, cath_lab or delivery_room.");
+                }
+
+                if (Operation.Room == CareSpaceKind.DeliveryRoom && Maternity is null)
+                {
+                    context.Error("operation.room", "only maternity conditions can use the delivery room.");
                 }
 
                 if (Operation.Major && Operation.DayCase)
@@ -306,6 +380,8 @@ public sealed class ConditionDefinition : IDataRecord
                 }
             }
         }
+
+        Maternity?.Validate(context, this);
 
         if (LengthOfStayHours.Length != 2 || LengthOfStayHours[0] < 1 || LengthOfStayHours[1] < LengthOfStayHours[0] || LengthOfStayHours[1] > 24 * 60)
         {

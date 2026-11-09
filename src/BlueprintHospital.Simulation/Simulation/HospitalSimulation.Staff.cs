@@ -232,7 +232,7 @@ public sealed partial class HospitalSimulation
         var candidates = _tasks.Values
             .Where(t => t.AssignedStaffId is null && CanStart(t) && (bedside is not null
                 ? IsBedsideWork(t, member, bedside)
-                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member)) && IsForMember(t, member)))
+                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member) || MidwifeCanCover(t, member)) && IsForMember(t, member)))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
@@ -272,6 +272,13 @@ public sealed partial class HospitalSimulation
         if (best.Kind == TaskKind.MovePatient)
         {
             WalkTo(member, StaffPositionFor(best, patient));
+            return;
+        }
+
+        if (best.Kind == TaskKind.CarryBaby)
+        {
+            // Mum isn't tied up while a nurse fetches (or brings back) her baby.
+            member.StatusText = best.Label;
             return;
         }
 
@@ -319,6 +326,10 @@ public sealed partial class HospitalSimulation
         }
     }
 
+    /// <summary>Midwives do the nursing work for mothers on their ward (observations, discharge).</summary>
+    private bool MidwifeCanCover(ClinicalTask task, StaffMember member) =>
+        member.Role == StaffRole.Midwife && task.Role == StaffRole.Nurse && task.Kind is not (TaskKind.MovePatient or TaskKind.CarryBaby or TaskKind.StayWithPatient);
+
     /// <summary>A nurse pushes a patient themselves when the move has waited too long for a porter.</summary>
     private bool NurseCanCover(ClinicalTask task, StaffMember member) =>
         task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseCoversPorterAfter;
@@ -355,7 +366,7 @@ public sealed partial class HospitalSimulation
             return patient.PendingMove is not null;
         }
 
-        if (task.Kind == TaskKind.StayWithPatient)
+        if (task.Kind is TaskKind.StayWithPatient or TaskKind.CarryBaby)
         {
             return true;
         }
@@ -409,7 +420,10 @@ public sealed partial class HospitalSimulation
 
         if (BedOf(patient) is { } bed)
         {
-            return bed.StaffSpot;
+            // A mother still in the delivery room after the birth is seen where she is, not at her empty ward bed.
+            return patient.Maternity && !patient.IsMoving && patient.Tile != bed.PatientSpot && _recovering.ContainsKey(patient.Id)
+                ? BesideTile(patient.Tile)
+                : bed.StaffSpot;
         }
 
         if (patient.CareSpaceId is { } spaceId && task.Kind != TaskKind.EscortToTransfer && FindSpace(spaceId) is { } space)
@@ -462,6 +476,12 @@ public sealed partial class HospitalSimulation
         if (task.Kind == TaskKind.StayWithPatient)
         {
             ProgressBedsideCall(member, task, patient);
+            return;
+        }
+
+        if (task.Kind == TaskKind.CarryBaby)
+        {
+            ProgressCarryBaby(member, task, patient);
             return;
         }
 

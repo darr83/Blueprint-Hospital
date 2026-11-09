@@ -106,5 +106,48 @@
       "Lump to check",
       "Follow-up after bowel surgery"
     ]
+  },
+  {
+    "id": "antenatal_clinic",
+    "appointment_minutes": 20,
+    "tariff": 140,
+    "female_only": true,
+    "clinician": "midwife",
+    "age_range": [
+      17,
+      44
+    ],
+    "reasons": [
+      "Booking appointment (first visit)",
+      "16 week check",
+      "25 week check",
+      "28 week check and blood tests",
+      "31 week check",
+      "34 week check",
+      "36 week birth plan",
+      "38 week check",
+      "40 week check",
+      "Blood pressure check",
+      "Gestational diabetes review"
+    ]
+  },
+  {
+    "id": "antenatal_scan_room",
+    "appointment_minutes": 20,
+    "tariff": 170,
+    "female_only": true,
+    "clinician": "sonographer",
+    "age_range": [
+      17,
+      44
+    ],
+    "reasons": [
+      "12 week dating scan",
+      "20 week anomaly scan",
+      "Growth scan",
+      "Twin pregnancy scan",
+      "Placenta position check",
+      "Scan for the baby's position"
+    ]
   }
 ]

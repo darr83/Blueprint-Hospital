@@ -46,6 +46,7 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.VendingPoint] = new Color("#ECE2D6"),
         [CareSpaceKind.Lift] = new Color("#C9CFD5"),
         [CareSpaceKind.Stairs] = new Color("#D8D4CC"),
+        [CareSpaceKind.DeliveryRoom] = new Color("#F2DDE8"),
     };
 
     private HospitalSimulation _sim = null!;
@@ -122,6 +123,8 @@ public partial class DepartmentRenderer : Node2D
                 CareSpaceKind.Minors => new Color("#43A047"),
                 CareSpaceKind.Triage => new Color("#7E57C2"),
                 CareSpaceKind.Ward when _sim.IsCriticalCareUnit(space) => new Color("#5E35B1"),
+                CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MaternityDepartmentId => new Color("#D46A9F"),
+                CareSpaceKind.DeliveryRoom => new Color("#D46A9F"),
                 CareSpaceKind.Ward => new Color("#1E88E5"),
                 CareSpaceKind.OutreachOffice => new Color("#5E35B1"),
                 CareSpaceKind.XRay or CareSpaceKind.CT => new Color("#546E7A"),

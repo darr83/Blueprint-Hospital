@@ -1,0 +1,240 @@
+[
+  {
+    "id": "delivery_room",
+    "name": "Delivery room",
+    "category": "Maternity",
+    "description": "A labour room on the delivery suite. A midwife stays with one woman through labour and the birth, with a CTG monitor for the baby's heart rate, a cot and a resuscitaire in case the baby needs help breathing.",
+    "kind": "delivery_room",
+    "department": "maternity",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 5,
+        "length_m": 4.5
+      },
+      {
+        "name": "Large",
+        "width_m": 6,
+        "length_m": 5.5
+      }
+    ],
+    "min_width_m": 4.5,
+    "min_length_m": 4,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 20000,
+    "cost_per_square_metre": 1600,
+    "staffing": "Hire a midwife from Recruitment (H), posted to this room. Maternity opens once it has a delivery room with a midwife and a mother and baby ward.",
+    "furniture": [
+      "birthing_bed",
+      "ctg_monitor",
+      "cot",
+      "resuscitaire",
+      "birthing_ball",
+      "visitor_chair",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "mother_baby_ward",
+    "name": "Mother and baby ward",
+    "category": "Maternity",
+    "description": "Mothers and their new babies recover together, with a cot beside every bed. Women in labour wait here for a delivery room, and come back here with their baby afterwards.",
+    "kind": "ward",
+    "department": "maternity",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 beds",
+        "width_m": 12.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "8 beds",
+        "width_m": 12.5,
+        "length_m": 8
+      },
+      {
+        "name": "12 beds",
+        "width_m": 18,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 18000,
+    "cost_per_square_metre": 1300,
+    "staffing": "Hire a midwife for every 6 beds and a ward doctor from Recruitment (H), posted to this ward.",
+    "furniture": [
+      "hospital_bed",
+      "cot",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "visitor_chair",
+      "baby_changing_unit"
+    ]
+  },
+  {
+    "id": "neonatal_unit",
+    "name": "Neonatal unit",
+    "category": "Maternity",
+    "description": "Special care for newborn babies who are premature or poorly: an incubator and monitor for each baby, and a nurse for every two babies. Without one, babies who need it are transferred to another hospital.",
+    "kind": "ward",
+    "department": "maternity",
+    "layout": "ward",
+    "unit": "neonatal",
+    "sizes": [
+      {
+        "name": "4 incubators",
+        "width_m": 9,
+        "length_m": 5.5
+      },
+      {
+        "name": "8 incubators",
+        "width_m": 9,
+        "length_m": 8
+      },
+      {
+        "name": "12 incubators",
+        "width_m": 13,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 1.5,
+    "base_cost": 45000,
+    "cost_per_square_metre": 2200,
+    "staffing": "Hire a nurse for every two incubators and a doctor, posted to the unit.",
+    "furniture": [
+      "incubator",
+      "obs_monitor",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "breast_pump"
+    ]
+  },
+  {
+    "id": "caesarean_theatre",
+    "name": "C-section theatre",
+    "category": "Maternity",
+    "description": "The maternity unit's own operating theatre for caesarean sections, with a resuscitaire for the baby. Only Maternity uses it.",
+    "kind": "theatre",
+    "department": "maternity",
+    "layout": "equipment",
+    "theatre_departments": [
+      "maternity"
+    ],
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 6,
+        "length_m": 6
+      },
+      {
+        "name": "Large",
+        "width_m": 7.5,
+        "length_m": 7
+      }
+    ],
+    "min_width_m": 5.5,
+    "min_length_m": 5.5,
+    "max_width_m": 10,
+    "max_length_m": 10,
+    "door_width_m": 2.0,
+    "base_cost": 45000,
+    "cost_per_square_metre": 2500,
+    "staffing": "Hire a surgeon and an anaesthetist from Recruitment (H), posted to this theatre.",
+    "furniture": [
+      "operating_table",
+      "anaesthetic_machine",
+      "resuscitaire",
+      "instrument_trolley",
+      "hand_basin",
+      "clinical_cupboard"
+    ]
+  },
+  {
+    "id": "antenatal_clinic",
+    "name": "Antenatal clinic",
+    "category": "Maternity",
+    "description": "Booked check-ups for pregnant women: blood pressure, urine, the baby's growth and heartbeat. Run by a midwife.",
+    "kind": "clinic",
+    "department": "maternity",
+    "layout": "triage",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4,
+        "length_m": 3.5
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 3,
+    "max_width_m": 8,
+    "max_length_m": 8,
+    "door_width_m": 1.0,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "Hire a midwife posted to this clinic. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "office_desk",
+      "staff_chair",
+      "visitor_chair",
+      "obs_monitor",
+      "examination_couch",
+      "ctg_monitor",
+      "hand_basin"
+    ]
+  },
+  {
+    "id": "antenatal_scan_room",
+    "name": "Pregnancy scan room",
+    "category": "Maternity",
+    "description": "Booked ultrasound scans: the 12 week dating scan, the 20 week anomaly scan and growth scans later in pregnancy. Run by a sonographer.",
+    "kind": "clinic",
+    "department": "maternity",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 4.5,
+        "length_m": 4
+      },
+      {
+        "name": "Large",
+        "width_m": 5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 4,
+    "min_length_m": 3.5,
+    "max_width_m": 7,
+    "max_length_m": 7,
+    "door_width_m": 1.5,
+    "base_cost": 10000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Hire a sonographer posted to this room. Needs an Outpatients reception with a receptionist.",
+    "furniture": [
+      "scan_couch",
+      "ultrasound_machine",
+      "visitor_chair",
+      "staff_chair",
+      "hand_basin"
+    ]
+  }
+]

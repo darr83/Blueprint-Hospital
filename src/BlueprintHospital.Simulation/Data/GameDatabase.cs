@@ -130,6 +130,26 @@ public sealed class GameDatabase
             {
                 Missing("treatment", "medication", m.Medication!);
             }
+
+            if (condition.Maternity?.EmergencyCaesarean is { Length: > 0 } section)
+            {
+                if (!Conditions.TryGetValue(section, out var target))
+                {
+                    Missing("maternity.emergency_caesarean", "condition", section);
+                }
+                else if (target.Maternity is null || target.Operation?.Room != CareSpaceKind.Theatre)
+                {
+                    errors.Add(new DataValidationError(file, condition.Id, "maternity.emergency_caesarean", $"'{section}' must be a maternity condition operated on in theatre."));
+                }
+            }
+        }
+
+        foreach (var template in RoomTemplates.Values)
+        {
+            foreach (var d in template.TheatreDepartments.Where(d => !Departments.ContainsKey(d)))
+            {
+                errors.Add(new DataValidationError($"{RoomTemplatesFolder}/", template.Id, "theatre_departments", $"refers to unknown department '{d}'."));
+            }
         }
 
         foreach (var symptom in Symptoms.Values)

@@ -420,9 +420,27 @@ function validate() {
       else {
         text(K, c, "operation name", op.name);
         range(K, c, "operation minutes", op.minutes ?? 0, 10, 600);
-        if (op.room && !["theatre", "cath_lab"].includes(op.room)) err(K, c, "operation room", "must be theatre or cath lab.");
+        if (op.room && !["theatre", "cath_lab", "delivery_room"].includes(op.room)) err(K, c, "operation room", "must be theatre, cath lab or delivery room.");
+        if (op.room === "delivery_room" && !c.maternity) err(K, c, "operation room", "only maternity illnesses can use the delivery room.");
         if (op.major && op.day_case) err(K, c, "operation", "can't be both major and a day case.");
       }
+    }
+    if (c.maternity) {
+      const m = c.maternity;
+      if (disp !== "surgery" || !c.operation) err(K, c, "maternity", "needs the outcome 'Operation' (the birth) with operation details.");
+      const g = m.gestation_weeks || [37, 42];
+      if (g.length !== 2 || g[0] < 20 || g[1] > 43 || g[0] > g[1]) err(K, c, "weeks pregnant", "must be earliest to latest, between 20 and 43.");
+      range(K, c, "baby needs the neonatal unit", m.neonatal_chance ?? 0, 0, 1);
+      range(K, c, "emergency caesarean chance", m.emergency_caesarean_chance ?? 0, 0, 1);
+      range(K, c, "twins chance", m.twins_chance ?? 0, 0, 0.5);
+      if ((m.emergency_caesarean_chance ?? 0) > 0) {
+        const cs = byId("conditions", m.emergency_caesarean);
+        if (!cs) err(K, c, "emergency caesarean", "must name the caesarean section illness.");
+        else if (!cs.maternity || (cs.operation?.room ?? "theatre") !== "theatre") err(K, c, "emergency caesarean", `'${cs.name}' must be a maternity illness operated on in theatre.`);
+      }
+      if ((m.neonatal_chance ?? 0) > 0 && !(m.neonatal_reasons || []).filter(Boolean).length) err(K, c, "neonatal reasons", "list at least one reason a baby needs the neonatal unit.");
+      const n = m.neonatal_stay_hours || [24, 96];
+      if (n.length !== 2 || n[0] < 1 || n[1] < n[0] || n[1] > 1440) err(K, c, "neonatal stay", "must be shortest to longest hours, between 1 and 1440.");
     }
     const los = c.length_of_stay_hours || [24, 72];
     if (los.length !== 2 || los[0] < 1 || los[1] < los[0] || los[1] > 1440) err(K, c, "ward stay", "must be shortest to longest hours, between 1 and 1440.");
@@ -769,11 +787,33 @@ function conditionForm(c) {
     opCard = card("Operation", null, h("div", { class: "grid" },
       textIn(c, o, "name", "Operation name"),
       numIn(c, o, "minutes", "Minutes in the room", { int: true, min: 10, max: 600 }),
-      selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]], { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
+      selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]].concat(c.maternity ? [["delivery_room", "Delivery room (a midwife-led birth)"]] : []), { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
       checkIn(c, o, "major", "Major (recovers on HDU first)"),
       checkIn(c, o, "day_case", "Day case (home the same day)")));
   } else if (op) {
     opCard = card("Operation", "Only used when the outcome is an operation.", h("button", { class: "danger small", onclick: () => { delete c.operation; touch(c); renderContent(); } }, "Remove operation details"));
+  }
+
+  let matCard;
+  if (c.maternity) {
+    const m = c.maternity;
+    m.neonatal_reasons ||= [];
+    const caesareans = records("conditions").filter(x => x.maternity && x.id !== c.id && (x.operation?.room ?? "theatre") === "theatre").map(x => [x.id, x.name || x.id]);
+    matCard = card("Pregnancy and birth", "Women with this come straight to the maternity unit (not A&E) and have their baby there. The operation above is the birth.",
+      h("div", { class: "grid" },
+        checkIn(c, { get arrives() { return m.arrives !== false; }, set arrives(v) { if (v) delete m.arrives; else m.arrives = false; } }, "arrives", "Women arrive with this (untick for one the team switch to)"),
+        pairIn(c, m, "gestation_weeks", "Weeks pregnant", ["from", "to"], { int: true, min: 20, max: 43, defaults: [37, 42] }),
+        pctIn(c, m, "neonatal_chance", "Baby needs the neonatal unit"),
+        pctIn(c, m, "twins_chance", "Twins"),
+        pctIn(c, m, "emergency_caesarean_chance", "Ends in an emergency caesarean"),
+        selectIn(c, m, "emergency_caesarean", "Emergency caesarean illness", caesareans, { emptyLabel: "None", emptyIsNone: true }),
+        pairIn(c, m, "neonatal_stay_hours", "Neonatal unit stay", ["from", "to"], { unit: "hours", min: 1, max: 1440, defaults: [24, 96] })),
+      h("div", { class: "lbl", style: "margin:12px 0 6px" }, "Why a baby needs the neonatal unit (one is picked at random)"),
+      stringList(c, m.neonatal_reasons, { placeholder: "e.g. Breathing difficulties", addLabel: "+ Add reason" }),
+      h("div", { style: "margin-top:10px" }, h("button", { class: "danger small", onclick: () => { delete c.maternity; touch(c); renderContent(); } }, "Not a pregnancy illness")));
+  } else {
+    matCard = card("Pregnancy and birth", "For labour and pregnancy emergencies: the woman goes straight to the maternity unit.",
+      h("button", { class: "small", onclick: () => { c.maternity = { gestation_weeks: [37, 42], neonatal_chance: 0.05, neonatal_reasons: ["Breathing difficulties"] }; c.female_fraction = 1; c.disposition = "surgery"; touch(c); renderContent(); } }, "Make this a pregnancy illness"));
   }
 
   return h("div", {},
@@ -815,7 +855,8 @@ function conditionForm(c) {
         h("button", { class: "small", onclick: () => { c.treatment.push({ type: "medication", medication: records("medications")[0]?.id, essential: false }); touch(c); renderContent(); } }, "+ Add medicine"),
         h("button", { class: "small", onclick: () => { c.treatment.push({ type: "procedure", name: "", performed_by: "nurse", minutes: 10, essential: false }); touch(c); renderContent(); } }, "+ Add procedure"))),
     card("Outcome", null, h("div", { class: "grid" }, outcome)),
-    opCard);
+    opCard,
+    matCard);
 }
 
 let titleTimer;

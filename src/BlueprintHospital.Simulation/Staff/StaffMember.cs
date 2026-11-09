@@ -40,6 +40,9 @@ public enum StaffRole
 
     /// <summary>Healthcare assistant: sits one-to-one with a patient whose monitor is red, and does their obs.</summary>
     HealthcareAssistant,
+
+    /// <summary>Delivers babies in the delivery room, looks after mothers and babies on the maternity wards and runs antenatal clinics.</summary>
+    Midwife,
 }
 
 public enum StaffActivity
