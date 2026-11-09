@@ -93,6 +93,31 @@ public class WardTests
     }
 
     [Fact]
+    public void Admission_stops_the_AandE_clock_and_starts_length_of_stay()
+    {
+        var (h, _) = WithWard(seed: 5);
+        var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
+        Assert.Null(patient.AdmissionType);
+        Assert.Null(patient.LengthOfStay(h.Sim.Now));
+        Assert.True(patient.EmergencyClockRunning);
+
+        h.RunUntil(() => patient.Stage is PatientStage.OnWard or PatientStage.Gone, TimeSpan.FromHours(12), "pneumonia patient to reach the ward");
+        Assert.True(patient.Stage == PatientStage.OnWard, h.Journey(patient));
+        var inEmergency = patient.TimeInEmergency(h.Sim.Now);
+        Assert.Equal(patient.AdmittedAt!.Value - patient.ArrivedAt, inEmergency);
+
+        h.RunFor(TimeSpan.FromHours(5));
+        Assert.True(patient.Stage == PatientStage.OnWard, h.Journey(patient));
+        Assert.Equal(inEmergency, patient.TimeInEmergency(h.Sim.Now));
+        Assert.Equal(inEmergency, patient.TimeInDepartment(h.Sim.Now));
+        Assert.False(patient.EmergencyClockRunning);
+        Assert.False(patient.OverFourHours(h.Sim.Now));
+        Assert.Equal("Inpatient", patient.AdmissionType);
+        Assert.Equal(h.Sim.Now - patient.AdmittedAt!.Value, patient.LengthOfStay(h.Sim.Now));
+        Assert.True(patient.LengthOfStay(h.Sim.Now) >= TimeSpan.FromHours(5));
+    }
+
+    [Fact]
     public void Pneumonia_is_admitted_to_a_ward_bed_and_goes_home_when_better()
     {
         var (h, ward) = WithWard(seed: 5);

@@ -103,7 +103,7 @@ public partial class RosterPanel : PanelContainer
             .ThenBy(p => p.ArrivedAt)
             .ToList();
 
-        var rows = patients.Select(p => (Patient: p, Text: $"{p.FullName}, {p.Age}  ·  {ClinicalText.Duration(p.TimeInDepartment(now))}\n{ClinicalText.Whereabouts(_sim, p)}")).ToList();
+        var rows = patients.Select(p => (Patient: p, Text: $"{p.FullName}, {p.Age}  ·  {(p.AdmissionType is { } type ? $"{type} {ClinicalText.Duration(p.LengthOfStay(now)!.Value)}" : ClinicalText.Duration(p.TimeInEmergency(now)))}\n{ClinicalText.Whereabouts(_sim, p)}")).ToList();
         Rebuild(string.Join("|", rows.Select(r => r.Text)), () =>
         {
             if (rows.Count == 0)
