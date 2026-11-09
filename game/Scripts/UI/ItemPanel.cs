@@ -5,6 +5,7 @@ using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Simulation;
+using BlueprintHospital.Simulation.World;
 using Godot;
 
 namespace BlueprintHospital.UI;
@@ -35,8 +36,13 @@ public partial class ItemPanel : PanelContainer
     /// <summary>True when showing a bed in play mode rather than an item in build mode.</summary>
     public bool AsBed { get; private set; }
 
-    /// <summary>True when the item is a waiting chair placed in a corridor rather than part of a room.</summary>
-    private bool IsCorridorChair => Item is not null && _sim.CorridorChairs.Contains(Item);
+    private readonly VBoxContainer _chairTools = new();
+    private readonly HFlowContainer _swatches = new();
+
+    /// <summary>The waiting chair shown, when the item is one the player placed rather than part of a room.</summary>
+    private PlacedChair? Chair => Item is not null && Item.ItemId == HospitalSimulation.ChairItem ? _sim.ChairAt(Item.Tile) : null;
+
+    private bool IsCorridorChair => Chair is not null;
 
     public void Initialise(HospitalSimulation simulation)
     {
@@ -60,6 +66,32 @@ public partial class ItemPanel : PanelContainer
 
         _info.AddThemeColorOverride("default_color", UiStyle.TextDark);
         column.AddChild(_info);
+
+        // A placed chair can be turned and recoloured in place.
+        var turn = new Button { Text = "Turn ⟳", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 34), TooltipText = "Turn the chair a quarter (free)" };
+        turn.Pressed += () => Restyle(c => (WaitingRoomLayout.Clockwise(c.Facing), c.Colour));
+        _chairTools.AddThemeConstantOverride("separation", 8);
+        _swatches.AddThemeConstantOverride("h_separation", 4);
+        _swatches.AddThemeConstantOverride("v_separation", 4);
+        _swatches.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        foreach (var (name, hex) in ChairColours.All)
+        {
+            var swatch = new Button { FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(26, 26), TooltipText = $"{name} (free)" };
+            var box = new StyleBoxFlat { BgColor = new Color(hex) };
+            box.SetCornerRadiusAll(4);
+            swatch.AddThemeStyleboxOverride("normal", box);
+            var hover = (StyleBoxFlat)box.Duplicate();
+            hover.BorderColor = Colors.White;
+            hover.SetBorderWidthAll(2);
+            swatch.AddThemeStyleboxOverride("hover", hover);
+            swatch.AddThemeStyleboxOverride("pressed", hover);
+            swatch.Pressed += () => Restyle(c => (c.Facing, hex));
+            _swatches.AddChild(swatch);
+        }
+
+        _chairTools.AddChild(_swatches);
+        _chairTools.AddChild(turn);
+        column.AddChild(_chairTools);
         column.AddChild(_action);
         _action.Pressed += OnAction;
     }
@@ -115,6 +147,7 @@ public partial class ItemPanel : PanelContainer
 
         var def = _sim.Database.Furniture.GetValueOrDefault(Item.ItemId);
         var muted = "[color=#5B6B79]";
+        _chairTools.Visible = false;
         if (AsBed)
         {
             var number = room.IsWard ? room.Beds.ToList().FindIndex(b => b.PatientSpot == Item.Tile) + 1 : 0;
@@ -132,13 +165,17 @@ public partial class ItemPanel : PanelContainer
             return;
         }
 
-        if (IsCorridorChair)
+        _chairTools.Visible = Chair is not null;
+        if (Chair is { } chair)
         {
-            var waitingOn = _sim.Outpatients.FirstOrDefault(o => o.Seat == Item.Tile && !o.IsMoving && o.Tile == Item.Tile);
-            var who = waitingOn is not null && _sim.FindAppointment(waitingOn.AppointmentId) is { } a ? a.FullName : "Free";
+            var tile = chair.Tile;
+            var patient = _sim.Patients.FirstOrDefault(p => p.Tile == tile && !p.IsMoving && p.IsAlive);
+            var outpatient = _sim.Outpatients.FirstOrDefault(o => o.Tile == tile && !o.IsMoving);
+            var who = patient?.FullName ?? (outpatient is not null && _sim.FindAppointment(outpatient.AppointmentId) is { } a ? a.FullName : "Free");
+            var where = room.Kind == CareSpaceKind.Corridor ? "patients waiting for a nearby room or clinic" : "patients waiting for triage";
             _title.Text = "Waiting chair";
-            _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}For[/color]  clinic patients waiting to be called\n{muted}Sitting here[/color]  {who}";
-            _action.Text = $"Remove chair (refund £{_sim.CorridorChairCost / 2:N0})";
+            _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}For[/color]  {where}\n{muted}Faces[/color]  {chair.Facing.ToString().ToLowerInvariant()} · {ChairColours.NameOf(chair.Colour)}\n{muted}Sitting here[/color]  {who}";
+            _action.Text = $"Remove chair (refund £{_sim.ChairCost / 2:N0})";
             _action.Visible = true;
             return;
         }
@@ -152,6 +189,19 @@ public partial class ItemPanel : PanelContainer
         _action.Visible = true;
     }
 
+    /// <summary>Turns or recolours the chair shown, for free.</summary>
+    private void Restyle(Func<PlacedChair, (WallSide Facing, string Colour)> change)
+    {
+        if (Chair is not { } chair)
+        {
+            return;
+        }
+
+        var (facing, colour) = change(chair);
+        _sim.PlaceChair(chair.Tile, facing, colour);
+        Refresh();
+    }
+
     private void OnAction()
     {
         if (Room is not { } room || Item is not { } item)
@@ -161,7 +211,7 @@ public partial class ItemPanel : PanelContainer
 
         if (!AsBed && IsCorridorChair)
         {
-            _sim.RemoveCorridorChair(item.Tile);
+            _sim.RemoveChair(item.Tile);
             Close();
             return;
         }

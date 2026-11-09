@@ -64,8 +64,11 @@ public sealed class LayoutState
 /// <summary>Building: placing, moving and demolishing rooms and corridors, extending the building, and paying for it.</summary>
 public sealed partial class HospitalSimulation
 {
-    /// <summary>Money a new hospital starts with, in pounds.</summary>
-    public const long StartingBalance = 750_000;
+    /// <summary>
+    /// Money a new hospital starts with, in pounds. It includes about £75,000 for the waiting room, which
+    /// the player now builds and fits out themselves (it used to come free with the hospital).
+    /// </summary>
+    public const long StartingBalance = 825_000;
 
     /// <summary>Cost of extending the building, per square metre of new floor.</summary>
     public const int ExtensionCostPerSquareMetre = 1_400;

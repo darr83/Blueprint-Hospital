@@ -46,6 +46,8 @@ public partial class SmokeTest : Node
         WaitForHospital,
         RunSimulation,
         CloseUp,
+        WaitingRoom,
+        WaitingRoomTurned,
         PatientRecord,
         StaffPanel,
         BuildPreview,
@@ -152,10 +154,10 @@ public partial class SmokeTest : Node
 
             case Stage.EmptyBuilding when scene is HospitalScene empty && empty.IsNodeReady() && _frame >= 15:
                 Screenshot("01c_empty_building");
-                Check(empty.Session.Simulation.Spaces.Count() == 1, "The empty building should only have its waiting room.");
+                Check(!empty.Session.Simulation.Spaces.Any(), "The empty building should have no rooms, not even a waiting room.");
                 Check(!empty.Session.Simulation.Staff.Any(), "The empty building should have no staff.");
                 Check(!empty.Session.Simulation.IsEmergencyOpen, "A&E should be closed in an empty building.");
-                GD.Print($"[smoke] Empty building: 1 room, no staff, £{empty.Session.Simulation.Balance:N0}, closed until it has {string.Join(", ", empty.Session.Simulation.ClosedReasons)}.");
+                GD.Print($"[smoke] Empty building: no rooms, no staff, £{empty.Session.Simulation.Balance:N0}, closed until it has {string.Join(", ", empty.Session.Simulation.ClosedReasons)}.");
                 manager.StartNewGame("Smoke Test General");
                 _stage = Stage.WaitForHospital;
                 break;
@@ -165,6 +167,7 @@ public partial class SmokeTest : Node
                 Check(hospital.Camera.IsCurrent(), "Camera is not active.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 GD.Print("[smoke] Hospital scene loaded.");
+                FitOutWaitingRoom(hospital);
                 CheckPatientJourney(hospital);
                 _frame = 0;
                 _stage = Stage.RunSimulation;
@@ -183,6 +186,22 @@ public partial class SmokeTest : Node
 
             case Stage.CloseUp when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("03_close_up");
+                LookAtWaitingRoom(hospital);
+                _frame = 0;
+                _stage = Stage.WaitingRoom;
+                break;
+
+            case Stage.WaitingRoom when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("03a_waiting_room");
+                hospital.RotateView(1);
+                LookAtWaitingRoom(hospital);
+                _frame = 0;
+                _stage = Stage.WaitingRoomTurned;
+                break;
+
+            case Stage.WaitingRoomTurned when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("03b_waiting_room_turned");
+                hospital.RotateView(-1);
                 hospital.Camera.SnapTo(new Vector2((float)_overview!.X, (float)_overview.Y), (float)_overview.Zoom);
                 OpenARecord(hospital);
                 _frame = 0;
@@ -243,9 +262,27 @@ public partial class SmokeTest : Node
                 hospital.Hud.Build.ShowHover("minors_cubicle");
                 break;
 
-            case Stage.Departments when scene is HospitalScene && _frame == 8:
+            case Stage.Departments when scene is HospitalScene hospital && _frame == 8:
+            {
                 Screenshot("06c_build_bar_ae");
-                ((HospitalScene)scene).Hud.Build.Open("cardiology");
+
+                // Waiting chairs: the colour row shows under the tiles, and a dragged row previews as ghost chairs.
+                hospital.Hud.Build.Choose(Simulation.Data.BuildMenu.WaitingChairs);
+                Check(hospital.BuildTool.Mode == BuildMode.Chair, "Picking waiting chairs did not start the chair tool.");
+                var room = hospital.Session.Simulation.MainWaitingRoom!.Rect;
+                hospital.Camera.SnapTo(IsoDraw.ToScreen(room.X + 10, room.Bottom - 6), 1.1f);
+                hospital.BuildTool.ChairColour = Simulation.Hospital.ChairColours.All[3].Hex;
+                hospital.BuildTool.FaceChairs(Simulation.World.WallSide.North);
+                hospital.BuildTool.PreviewDrag(new Simulation.World.GridCoord(room.X + 2, room.Bottom - 2), new Simulation.World.GridCoord(room.X + 9, room.Bottom - 2));
+                break;
+            }
+
+            case Stage.Departments when scene is HospitalScene hospital && _frame == 10:
+                Screenshot("06c2_build_bar_chairs");
+                Check(hospital.BuildTool.Check is { CanBuild: true }, "The chair row preview should be placeable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
+                hospital.BuildTool.Cancel();
+                hospital.BuildTool.FollowMouse = true;
+                hospital.Hud.Build.Open("cardiology");
                 break;
 
             case Stage.Departments when scene is HospitalScene hospital && _frame == 12:
@@ -561,7 +598,7 @@ public partial class SmokeTest : Node
                 _savedBabies = hospital.Session.Simulation.Babies.Count;
                 _savedOnWard = hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard);
                 _savedAppointments = hospital.Session.Simulation.Appointments.Count;
-                _savedChairs = hospital.Session.Simulation.CorridorChairs.Count;
+                _savedChairs = hospital.Session.Simulation.Chairs.Count;
                 _savedFloors = hospital.Session.Simulation.FloorCount;
                 manager.SaveGame(SlotName, _savedCamera);
                 GD.Print("[smoke] Game saved.");
@@ -579,7 +616,7 @@ public partial class SmokeTest : Node
                 Check(hospital.Session.Simulation.Patients.Count(p => p.Stage == Simulation.Patients.PatientStage.OnWard) == _savedOnWard, "Ward patients not restored.");
                 Check(hospital.Session.Simulation.Babies.Count == _savedBabies && _savedBabies > 0, $"Babies not restored ({hospital.Session.Simulation.Babies.Count} of {_savedBabies}).");
                 Check(hospital.Session.Simulation.Appointments.Count == _savedAppointments, "Clinic appointments not restored.");
-                Check(hospital.Session.Simulation.CorridorChairs.Count == _savedChairs, "Corridor chairs not restored.");
+                Check(hospital.Session.Simulation.Chairs.Count == _savedChairs, "Waiting chairs not restored.");
                 Check(hospital.Session.Simulation.FloorCount == _savedFloors && _savedFloors > 1, $"Floors not restored ({hospital.Session.Simulation.FloorCount} of {_savedFloors}).");
                 Check(hospital.Session.Simulation.Nav.Links.Any(), "Lifts and stairs not linked after loading.");
                 GD.Print($"[smoke] {_savedPatients} patients restored, {_savedOnWard} on the ward.");
@@ -741,20 +778,20 @@ public partial class SmokeTest : Node
         for (var y = b.Y - 13; y < b.Y - 1 && placed < 6; y++)
         {
             var tile = new Simulation.World.GridCoord(b.X - 15, y);
-            if (!sim.CheckCorridorChair(tile).CanBuild)
+            if (!sim.CheckChair(tile, tool.FacingFor(tile), tool.ChairColour).CanBuild)
             {
                 continue;
             }
 
             tool.PreviewDrag(tile, tile);
             tool.Confirm();
-            placed = sim.CorridorChairs.Count;
+            placed = sim.Chairs.Count(c => c.Tile.X == b.X - 15);
         }
 
         tool.Cancel();
         tool.FollowMouse = true;
         Check(placed >= 4, $"Only {placed} corridor chairs could be placed.");
-        Check(sim.CheckCorridorChair(new Simulation.World.GridCoord(desk.Rect.X + 2, desk.Rect.Y + 2)).Problems.Any(p => p.Contains("corridors")), "A chair should not go inside a room.");
+        Check(sim.CheckChair(new Simulation.World.GridCoord(desk.Rect.X + 2, desk.Rect.Y + 2), Simulation.World.WallSide.South, Simulation.Hospital.ChairColours.Default).Problems.Any(p => p.Contains("corridor")), "A chair should not go inside a room.");
 
         var clock = hospital.Session.Clock;
         // Clinics run 09:00 to 16:30 on weekdays: run on to the next weekday morning's clinic if need be
@@ -1171,15 +1208,77 @@ public partial class SmokeTest : Node
         return nurse;
     }
 
+    /// <summary>
+    /// A new game has no waiting room and A&amp;E stays shut until there is one. Builds it with the build tools,
+    /// like a player: drag out the room, place the desk, the entrance on the front path, a door onto the
+    /// corridor, then rows of chairs.
+    /// </summary>
+    private static void FitOutWaitingRoom(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        Check(!sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Waiting).Any(), "A new game should start without a waiting room.");
+        Check(!sim.IsEmergencyOpen && sim.ClosedReasons.Contains("a waiting room"), "A&E should wait for a waiting room: " + string.Join(", ", sim.ClosedReasons));
+        var tool = hospital.BuildTool;
+        Simulation.World.GridCoord At(int x, int y) => new(b.X + x, b.Y + y);
+        void Do(string what)
+        {
+            Check(tool.Check is { CanBuild: true }, $"{what} refused: " + string.Join("; ", tool.Check?.Problems ?? Array.Empty<string>()));
+            tool.Confirm();
+        }
+
+        tool.StartRoom(sim.Database.RoomTemplates["waiting_room"]);
+        tool.PreviewDrag(At(15, 26), At(36, 39));
+        Do("The waiting room");
+        var room = sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Waiting).Single();
+        Check(room.Doors.Count == 0 && sim.DeskOf(room) is null, "A new waiting room should be empty.");
+
+        tool.StartDesk();
+        tool.PreviewAt(At(30, 32));
+        Do("The reception desk");
+        tool.StartDoors();
+        tool.PreviewAt(At(26, 39));
+        Do("The entrance door");
+        tool.PreviewAt(At(26, 26));
+        Do("The door onto the corridor");
+
+        // Rows of chairs facing the desk, in two colours.
+        tool.StartChairs(Simulation.Hospital.ChairColours.All[1].Hex);
+        tool.FaceChairs(Simulation.World.WallSide.East);
+        foreach (var x in new[] { 18, 21, 24 })
+        {
+            tool.PreviewDrag(At(x, 28), At(x, 36));
+            Do("A row of chairs");
+        }
+
+        tool.ChairColour = Simulation.Hospital.ChairColours.All[5].Hex;
+        tool.FaceChairs(Simulation.World.WallSide.West);
+        tool.PreviewDrag(At(35, 28), At(35, 30));
+        Do("A row of chairs by the wall");
+        tool.Cancel();
+        tool.FollowMouse = true;
+
+        Check(sim.WaitingRoomProblems(sim.FindSpace(room.Id)!).Count == 0, "The waiting room is not ready: " + string.Join(", ", sim.WaitingRoomProblems(sim.FindSpace(room.Id)!)));
+        Check(sim.IsEmergencyOpen, "A&E did not open once its waiting room was fitted out: " + string.Join(", ", sim.ClosedReasons));
+        GD.Print($"[smoke] Waiting room fitted out: desk, 2 doors, {sim.Chairs.Count} chairs; balance £{sim.Balance:N0}.");
+    }
+
+    /// <summary>Centres the camera on the waiting room, to the right of the A&amp;E board.</summary>
+    private static void LookAtWaitingRoom(HospitalScene hospital)
+    {
+        var room = hospital.Session.Simulation.MainWaitingRoom!.Rect;
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(room.X + (room.Width / 2.0), room.Y + (room.Length / 2.0)) - new Vector2(160, 0), 0.95f);
+    }
+
     /// <summary>Build mode: clicking a corridor chair opens it with a Remove button.</summary>
     private static void ClickCorridorChair(HospitalScene hospital)
     {
         hospital.SetMode(GameMode.Build);
         hospital.Hud.HideRightPanels();
         var sim = hospital.Session.Simulation;
-        var chair = sim.CorridorChairs.First();
-        hospital.ClickAt(IsoDraw.ToScreen(chair.CentreX, chair.CentreY));
-        Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.Item == chair, "Clicking a corridor chair in build mode did not open it.");
+        var chair = sim.Chairs.First(c => sim.Spaces.Any(s => s.Kind == Simulation.Hospital.CareSpaceKind.Corridor && s.Rect.Contains(c.Tile)) && !sim.Spaces.Any(s => s.HasWalls && s.Rect.Contains(c.Tile)));
+        hospital.ClickAt(IsoDraw.ToScreen(chair.Tile.X + 0.5, chair.Tile.Y + 0.5) + new Vector2(0, -8));
+        Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.Item?.Tile == chair.Tile, "Clicking a corridor chair in build mode did not open it.");
     }
 
     /// <summary>Play mode: clicking a clinic patient opens the clinic calendars.</summary>
