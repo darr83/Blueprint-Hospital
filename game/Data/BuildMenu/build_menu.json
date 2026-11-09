@@ -1,0 +1,52 @@
+{
+  "_comment": "The bottom build bar. Each icon pops up a row of rooms. A room may sit under several icons (shared rooms). Room ids that don't exist yet are skipped, an icon whose department doesn't exist is hidden, and any room template not listed here is added to the icon of its own department. Special items: extend_building, add_floor, waiting_chairs.",
+  "groups": [
+    {
+      "name": "Building",
+      "icons": [
+        { "id": "building", "label": "Building", "name": "Hospital building", "colour": "#37474F", "glyph": "building",
+          "items": ["extend_building", "add_floor", "corridor", "waiting_chairs", "lift", "stairs"] }
+      ]
+    },
+    {
+      "name": "Departments",
+      "icons": [
+        { "id": "emergency", "label": "A&E", "name": "Accident and Emergency", "department": "emergency", "colour": "#E53935", "glyph": "ae",
+          "items": ["waiting_room", "triage_room", "minors_cubicle", "majors_cubicle", "resus_bay", "emergency_ward", "nurses_station", "doctors_office", "staff_room", "xray_room", "ct_scanner"] },
+        { "id": "general_medicine", "label": "Medicine", "name": "Acute and General Medicine", "department": "general_medicine", "colour": "#1E88E5", "glyph": "medicine",
+          "items": ["acute_medical_unit", "ambulatory_care_unit", "medical_ward", "medical_clinic", "nurses_station", "doctors_office"] },
+        { "id": "general_surgery", "label": "Surgery", "name": "General Surgery", "department": "general_surgery", "colour": "#EF6C00", "glyph": "surgery",
+          "items": ["surgical_assessment_unit", "surgical_ward", "day_surgery_unit", "surgical_clinic", "operating_theatre", "nurses_station", "doctors_office"] },
+        { "id": "critical_care", "label": "ICU / HDU", "name": "Critical Care", "department": "critical_care", "colour": "#3F2B96", "glyph": "icu",
+          "items": ["intensive_care_unit", "high_dependency_unit", "outreach_office", "nurses_station", "doctors_office"] },
+        { "id": "cardiology", "label": "Cardiology", "name": "Cardiology", "department": "cardiology", "colour": "#AD1457", "glyph": "cardiology",
+          "items": ["cardiology_clinic", "echo_room", "cath_lab", "coronary_care_unit", "cardiology_ward", "nurses_station", "doctors_office"] },
+        { "id": "neurology", "label": "Neurology", "name": "Neurology", "department": "neurology", "colour": "#00ACC1", "glyph": "neurology",
+          "items": ["neurology_clinic", "eeg_room", "stroke_unit", "neurology_ward", "ct_scanner", "nurses_station", "doctors_office"] },
+        { "id": "gastroenterology", "label": "Gastro", "name": "Gastroenterology", "department": "gastroenterology", "colour": "#827717", "glyph": "gastro",
+          "items": ["gastro_clinic", "endoscopy_room", "endoscopy_recovery", "gastro_ward", "nurses_station", "doctors_office"] },
+        { "id": "trauma_orthopaedics", "label": "T&O", "name": "Trauma and Orthopaedics", "department": "trauma_orthopaedics", "colour": "#795548", "glyph": "ortho",
+          "items": ["fracture_clinic", "plaster_room", "physio_gym", "orthopaedic_ward", "xray_room", "operating_theatre", "nurses_station", "doctors_office"] },
+        { "id": "gynaecology", "label": "Gynae", "name": "Gynaecology", "department": "gynaecology", "colour": "#8E24AA", "glyph": "gynae",
+          "items": ["gynaecology_clinic", "gynae_exam_room", "early_pregnancy_unit", "gynaecology_ward", "operating_theatre", "nurses_station", "doctors_office"] },
+        { "id": "maternity", "label": "Maternity", "name": "Maternity", "department": "maternity", "colour": "#F48FB1", "glyph": "maternity",
+          "items": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "nurses_station", "doctors_office"] }
+      ]
+    },
+    {
+      "name": "Shared services",
+      "icons": [
+        { "id": "outpatients", "label": "Clinics", "name": "Outpatients", "department": "outpatients", "colour": "#00897B", "glyph": "clinics",
+          "items": ["outpatient_reception", "waiting_chairs", "medical_clinic", "surgical_clinic", "cardiology_clinic", "neurology_clinic", "gastro_clinic", "gynaecology_clinic", "gynae_exam_room", "fracture_clinic", "antenatal_clinic"] },
+        { "id": "radiology", "label": "Imaging", "name": "Radiology", "department": "radiology", "colour": "#90A4AE", "glyph": "imaging",
+          "items": ["xray_room", "ct_scanner", "antenatal_scan_room"] },
+        { "id": "theatres", "label": "Theatres", "name": "Operating Theatres", "department": "theatres", "colour": "#2E7D32", "glyph": "theatres",
+          "items": ["operating_theatre"] },
+        { "id": "pharmacy", "label": "Pharmacy", "name": "Pharmacy", "department": "pharmacy", "colour": "#9CCC65", "glyph": "pharmacy",
+          "items": ["pharmacy"] },
+        { "id": "facilities", "label": "Facilities", "name": "Facilities", "department": "facilities", "colour": "#FFCA28", "glyph": "facilities", "catch_all": true,
+          "items": ["cafeteria", "vending_point", "public_toilets", "accessible_toilet", "staff_toilet", "staff_room"] }
+      ]
+    }
+  ]
+}

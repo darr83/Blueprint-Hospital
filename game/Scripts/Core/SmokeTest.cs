@@ -52,6 +52,7 @@ public partial class SmokeTest : Node
         RoomPanel,
         BuildItem,
         Departments,
+        BuildBarMaternity,
         Recruitment,
         Rota,
         RotaBreaks,
@@ -230,16 +231,57 @@ public partial class SmokeTest : Node
             case Stage.BuildItem when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("06a_build_item");
                 hospital.Hud.HideRightPanels();
-                hospital.Hud.Build.Visible = true;
-                hospital.Hud.Build.ShowTab("Departments");
+                hospital.SetMode(GameMode.Build);
+                CheckBuildBar(hospital);
+                hospital.Hud.Build.Open("emergency");
                 _frame = 0;
                 _stage = Stage.Departments;
                 break;
 
-            case Stage.Departments when scene is HospitalScene hospital && _frame >= 5:
-                Screenshot("06c_departments");
-                hospital.Hud.Build.ShowTab("A&E");
+            case Stage.Departments when scene is HospitalScene hospital && _frame == 5:
+                CheckBuildPopup(hospital);
+                hospital.Hud.Build.ShowHover("minors_cubicle");
+                break;
+
+            case Stage.Departments when scene is HospitalScene && _frame == 8:
+                Screenshot("06c_build_bar_ae");
+                ((HospitalScene)scene).Hud.Build.Open("cardiology");
+                break;
+
+            case Stage.Departments when scene is HospitalScene hospital && _frame == 12:
+                CheckBuildPopup(hospital);
+                Screenshot("06d_build_bar_locked");
+                hospital.Hud.Build.Open("building");
+                break;
+
+            case Stage.Departments when scene is HospitalScene hospital && _frame == 15:
+                hospital.Hud.Build.ShowHover("lift");
+                break;
+
+            case Stage.Departments when scene is HospitalScene hospital && _frame >= 18:
+                CheckBuildPopup(hospital);
+                Screenshot("06e_build_bar_building");
+                hospital.Hud.Build.Open("maternity");
+                _frame = 0;
+                _stage = Stage.BuildBarMaternity;
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 3:
+                hospital.Hud.Build.ShowHover("delivery_room");
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 6:
+                CheckBuildPopup(hospital);
+                Screenshot("06f_build_bar_maternity");
+                hospital.Hud.Build.Open("facilities");
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame >= 9:
+                CheckBuildPopup(hospital);
+                Screenshot("06g_build_bar_facilities");
+                Check(hospital.Hud.Build.PopupOpen, "The Facilities pop-up did not open.");
                 hospital.SetMode(GameMode.Play);
+                Check(!hospital.Hud.Build.PopupOpen, "Leaving Build mode should close the build pop-up.");
                 Check(!hospital.Hud.Build.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should close the build menu and item panel.");
                 BuildWard(hospital);
                 hospital.Hud.ToggleRecruitment();
@@ -1195,6 +1237,34 @@ public partial class SmokeTest : Node
             .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.World.HitTest(b.At) is null);
         hospital.ClickAt(bed.At);
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.AsBed, "Clicking an empty bed in play mode did not open it.");
+    }
+
+    /// <summary>The build bar fits on screen and every room can be reached from it.</summary>
+    private void CheckBuildBar(HospitalScene hospital)
+    {
+        var bar = hospital.Hud.Build;
+        Check(bar.Visible, "Build mode did not show the build bar.");
+        var screen = GetViewport().GetVisibleRect().Size;
+        var rect = bar.BarRect;
+        Check(rect.Position.X >= MainHUD.NavWidth && rect.End.X <= screen.X && rect.End.Y <= screen.Y, $"The build bar does not fit on screen: {rect} on {screen}.");
+        var listed = bar.Menu.Icons.SelectMany(i => i.Items).ToHashSet();
+        foreach (var id in hospital.Session.Database.RoomTemplates.Keys.Where(id => !listed.Contains(id)))
+        {
+            Check(false, $"Room '{id}' cannot be built from the build bar.");
+        }
+
+        Check(bar.Menu.Icons.Any(i => i.Id == "maternity" && i.Items.Contains("delivery_room")), "The build bar has no Maternity icon with a delivery room.");
+        Check(bar.Menu.Icons.Any(i => i.Id == "facilities" && i.Items.Contains("public_toilets")), "The Facilities icon has no toilets.");
+    }
+
+    /// <summary>The open pop-up sits above the bar and inside the screen.</summary>
+    private void CheckBuildPopup(HospitalScene hospital)
+    {
+        var bar = hospital.Hud.Build;
+        var screen = GetViewport().GetVisibleRect().Size;
+        var popup = bar.PopupRect;
+        Check(bar.PopupOpen, "The build pop-up did not open.");
+        Check(popup.Position.X >= 0 && popup.End.X <= screen.X && popup.End.Y <= bar.BarRect.Position.Y, $"The {bar.OpenIcon} pop-up does not fit: {popup} on {screen}.");
     }
 
     /// <summary>Builds a ward south of the new corridor, then sends in patients with pneumonia and runs the clock until some are on it.</summary>
