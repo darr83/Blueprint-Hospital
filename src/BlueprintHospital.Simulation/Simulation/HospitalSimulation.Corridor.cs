@@ -30,15 +30,18 @@ public sealed partial class HospitalSimulation
     public IReadOnlyList<GridCoord> CorridorCareSpots()
     {
         // The nav grid is rebuilt whenever anything is built, moved or sold, so it marks a layout change.
-        if (_corridorSpotCache is { } cache && ReferenceEquals(cache.Nav, Nav) && cache.Chairs == _corridorChairs.Count)
+        if (_corridorSpotCache is { } cache && ReferenceEquals(cache.Nav, Nav) && cache.Chairs == ChairLayoutKey())
         {
             return cache.Spots;
         }
 
         var result = FindCorridorCareSpots();
-        _corridorSpotCache = (Nav, _corridorChairs.Count, result);
+        _corridorSpotCache = (Nav, ChairLayoutKey(), result);
         return result;
     }
+
+    /// <summary>Changes whenever a chair is placed, moved or removed.</summary>
+    private int ChairLayoutKey() => _chairs.Aggregate(_chairs.Count, (h, c) => HashCode.Combine(h, c.Tile));
 
     private List<GridCoord> FindCorridorCareSpots()
     {
@@ -182,7 +185,7 @@ public sealed partial class HospitalSimulation
             return false;
         }
 
-        return _corridorChairs.All(c => Math.Abs(c.Tile.X - tile.X) > 1 || Math.Abs(c.Tile.Y - tile.Y) > 1);
+        return _chairs.All(c => Math.Abs(c.Tile.X - tile.X) > 1 || Math.Abs(c.Tile.Y - tile.Y) > 1);
     }
 
     /// <summary>
