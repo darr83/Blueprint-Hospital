@@ -11,7 +11,7 @@ internal sealed class SimulationHarness
 {
     private static GameDatabase? _database;
 
-    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0, StartingHospital startWith = StartingHospital.SmallEmergency)
+    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0, StartingHospital startWith = StartingHospital.SmallEmergency, bool waitingRoom = true)
     {
         Database = _database ??= GameDatabase.Load(new FileSystemDataSource(TestData.GameDataDirectory()));
         Events = new EventBus();
@@ -24,6 +24,12 @@ internal sealed class SimulationHarness
             Start = startWith,
         });
         Clock.Ticked += _ => Sim.Tick();
+
+        // A new game has no waiting room; most tests want A&E's usual one, fitted out with desk, doors and seats.
+        if (waitingRoom && startWith == StartingHospital.SmallEmergency)
+        {
+            Sim.BuildStarterWaitingRoom();
+        }
     }
 
     public GameDatabase Database { get; }

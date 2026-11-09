@@ -101,24 +101,35 @@ public static class Figures
     }
 
     /// <summary>A person sitting on a chair whose seat centre is at <paramref name="foot"/>.</summary>
-    public static void Seated(CanvasItem c, Vector2 foot, PersonLook look, float alpha = 1f, BabyLook? holding = null)
+    /// <remarks>
+    /// <paramref name="away"/> draws them from behind (their legs are hidden by the chair and their body);
+    /// <paramref name="lean"/> turns their knees a little to the left (-1) or right (+1) of the screen.
+    /// </remarks>
+    public static void Seated(CanvasItem c, Vector2 foot, PersonLook look, float alpha = 1f, BabyLook? holding = null, bool away = false, float lean = 0)
     {
+        if (away)
+        {
+            Body(c, foot, look, 0, alpha, drop: 7, away: true, holding);
+            return;
+        }
+
+        var k = lean * 2.5f;
         var trousers = A(look.Trousers, alpha);
         var shins = look.Skirt ? A(look.Skin.Darkened(0.15f), alpha) : trousers;
 
         // Thighs forward (towards the viewer), shins down to the floor.
-        c.DrawLine(foot + new Vector2(-3.5f, -15), foot + new Vector2(-4.5f, -10), trousers, 5.5f);
-        c.DrawLine(foot + new Vector2(3.5f, -15), foot + new Vector2(4.5f, -10), trousers.Darkened(0.08f), 5.5f);
-        c.DrawLine(foot + new Vector2(-4.5f, -10), foot + new Vector2(-4.5f, 2), shins, look.Skirt ? 3.5f : 5f);
-        c.DrawLine(foot + new Vector2(4.5f, -10), foot + new Vector2(4.5f, 2), shins.Darkened(0.08f), look.Skirt ? 3.5f : 5f);
+        c.DrawLine(foot + new Vector2(-3.5f, -15), foot + new Vector2(-4.5f + k, -10), trousers, 5.5f);
+        c.DrawLine(foot + new Vector2(3.5f, -15), foot + new Vector2(4.5f + k, -10), trousers.Darkened(0.08f), 5.5f);
+        c.DrawLine(foot + new Vector2(-4.5f + k, -10), foot + new Vector2(-4.5f + k, 2), shins, look.Skirt ? 3.5f : 5f);
+        c.DrawLine(foot + new Vector2(4.5f + k, -10), foot + new Vector2(4.5f + k, 2), shins.Darkened(0.08f), look.Skirt ? 3.5f : 5f);
         if (look.Skirt)
         {
             c.DrawColoredPolygon(new[] { foot + new Vector2(-8.5f, -16), foot + new Vector2(8.5f, -16), foot + new Vector2(9, -8), foot + new Vector2(-9, -8) }, trousers);
         }
 
         var shoes = A(look.ShoeColour ?? Shoes, alpha);
-        c.DrawColoredPolygon(Ellipse(foot + new Vector2(-4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
-        c.DrawColoredPolygon(Ellipse(foot + new Vector2(4.5f, 3.4f), 3.3f, 2.3f, 10), shoes);
+        c.DrawColoredPolygon(Ellipse(foot + new Vector2(-4.5f + k, 3.4f), 3.3f, 2.3f, 10), shoes);
+        c.DrawColoredPolygon(Ellipse(foot + new Vector2(4.5f + k, 3.4f), 3.3f, 2.3f, 10), shoes);
 
         Body(c, foot, look, 0, alpha, drop: 7, away: false, holding);
     }

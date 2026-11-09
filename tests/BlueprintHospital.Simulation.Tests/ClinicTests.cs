@@ -109,11 +109,11 @@ public class ClinicTests
         var inRoom = new GridCoord(reception.Rect.X + 3, reception.Rect.Y + 3);
 
         var before = h.Sim.Balance;
-        Assert.True(h.Sim.PlaceCorridorChair(corridorTile).CanBuild);
-        Assert.Equal(before - h.Sim.CorridorChairCost, h.Sim.Balance);
+        Assert.True(h.Sim.PlaceChair(corridorTile, WallSide.South, ChairColours.Default).CanBuild);
+        Assert.Equal(before - h.Sim.ChairCost, h.Sim.Balance);
         Assert.Contains(corridorTile, h.Sim.OutpatientSeats);
-        Assert.Contains(h.Sim.CheckCorridorChair(corridorTile).Problems, p => p.Contains("already a chair"));
-        Assert.Contains(h.Sim.CheckCorridorChair(inRoom).Problems, p => p.Contains("corridors"));
+        Assert.Contains(h.Sim.CheckChair(corridorTile, WallSide.South, ChairColours.Default).Problems, p => p.Contains("already a chair"));
+        Assert.Contains(h.Sim.CheckChair(inRoom, WallSide.South, ChairColours.Default).Problems, p => p.Contains("corridor"));
 
         var door = reception.Doors.First();
         var doorway = reception.DoorSide == WallSide.North
@@ -121,19 +121,28 @@ public class ClinicTests
             : new GridCoord(-1, -1);
         if (doorway.X >= 0)
         {
-            Assert.Contains(h.Sim.CheckCorridorChair(doorway).Problems, p => p.Contains("doorways"));
+            Assert.Contains(h.Sim.CheckChair(doorway, WallSide.South, ChairColours.Default).Problems, p => p.Contains("doorways"));
         }
 
-        Assert.True(h.Sim.RemoveCorridorChair(corridorTile));
-        Assert.Equal(before - h.Sim.CorridorChairCost + (h.Sim.CorridorChairCost / 2), h.Sim.Balance);
-        Assert.Empty(h.Sim.CorridorChairs);
+        // Placing on a chair again turns and recolours it, free.
+        var plum = ChairColours.All[3].Hex;
+        Assert.True(h.Sim.PlaceChair(corridorTile, WallSide.East, plum).CanBuild);
+        Assert.Equal(before - h.Sim.ChairCost, h.Sim.Balance);
+        Assert.Equal((WallSide.East, plum), (h.Sim.ChairAt(corridorTile)!.Facing, h.Sim.ChairAt(corridorTile)!.Colour));
+
+        var count = h.Sim.Chairs.Count;
+        Assert.True(h.Sim.RemoveChair(corridorTile));
+        Assert.Equal(before - h.Sim.ChairCost + (h.Sim.ChairCost / 2), h.Sim.Balance);
+        Assert.Equal(count - 1, h.Sim.Chairs.Count);
+        Assert.Null(h.Sim.ChairAt(corridorTile));
     }
 
     [Fact]
     public void Clinics_and_corridor_chairs_are_saved()
     {
         var (h, _, clinic) = Outpatients();
-        h.Sim.PlaceCorridorChair(new GridCoord(B.X - 25, B.Y + 12));
+        var chairTile = new GridCoord(B.X - 25, B.Y + 12);
+        h.Sim.PlaceChair(chairTile, WallSide.West, ChairColours.All[1].Hex);
         h.RunUntil(() => h.Sim.Outpatients.Any(o => o.Stage == OutpatientStage.BeingSeen), TimeSpan.FromHours(2), "a clinic patient being seen");
 
         var json = SaveSerializer.Serialize(new SaveGame { Clock = h.Clock.CaptureState(), Layout = h.Sim.CaptureLayout(), People = h.Sim.CapturePeople() });
@@ -143,7 +152,8 @@ public class ClinicTests
         to.Sim.RestoreLayout(save.Layout!);
         to.Sim.RestorePeople(save.People!);
 
-        Assert.Single(to.Sim.CorridorChairs);
+        Assert.Equal(h.Sim.Chairs.Count, to.Sim.Chairs.Count);
+        Assert.Equal(new PlacedChair(chairTile, WallSide.West, ChairColours.All[1].Hex), to.Sim.ChairAt(chairTile));
         Assert.Equal(h.Sim.Appointments.Count, to.Sim.Appointments.Count);
         Assert.Equal(h.Sim.Outpatients.Count, to.Sim.Outpatients.Count);
         var seen = h.Sim.Outpatients.First(o => o.Stage == OutpatientStage.BeingSeen);

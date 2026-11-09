@@ -242,7 +242,7 @@ public sealed partial class HospitalSimulation
     private CareSpace? ReceptionFor(Outpatient outpatient)
     {
         var clinic = FindSpace(outpatient.ClinicId);
-        var target = clinic?.Rect ?? Waiting.Rect;
+        var target = clinic?.Rect ?? new GridRect(EntranceTile.X, EntranceTile.Y, 1, 1);
         return SpacesOfKind(CareSpaceKind.OutpatientReception)
             .Where(IsStaffed)
             .OrderBy(r => Math.Abs(r.Rect.X - target.X) + Math.Abs(r.Rect.Y - target.Y))
@@ -327,39 +327,40 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- waiting
 
-    /// <summary>Every chair a clinic patient can wait on: Outpatients reception seats and chairs in the corridors.</summary>
-    public IEnumerable<GridCoord> OutpatientSeats =>
-        SpacesOfKind(CareSpaceKind.OutpatientReception).SelectMany(r => r.Seats).Concat(_corridorChairs.Select(c => c.Tile));
+    /// <summary>Every chair a clinic patient can wait on: the chairs along the corridors (waiting room chairs are for A&amp;E).</summary>
+    public IEnumerable<GridCoord> OutpatientSeats => _chairs.Select(c => c.Tile).Where(t => !InWaitingRoom(t));
 
+    /// <summary>Checked-in clinic patients sit on the free corridor chair nearest their clinic, or stand outside it.</summary>
     private void SeatWaitingPatients()
     {
-        var taken = _outpatients.Where(o => o.Seat is not null).Select(o => o.Seat!.Value).ToHashSet();
+        var seats = OutpatientSeats.ToHashSet();
         foreach (var o in _outpatients.Where(o => o.Stage == OutpatientStage.Waiting))
         {
-            if (o.Seat is { } seat && OutpatientSeats.Contains(seat))
+            if (o.Seat is { } seat && seats.Contains(seat))
             {
                 continue;
             }
 
-            if (o.Seat is not null)
+            o.Seat = null;
+            if (Away(o))
             {
-                taken.Remove(o.Seat.Value);
-                o.Seat = null;
+                continue;
             }
 
             var clinic = FindSpace(o.ClinicId);
-            var near = clinic is null ? o.Tile : new GridCoord(clinic.Rect.X + (clinic.Rect.Width / 2), clinic.Rect.Y + (clinic.Rect.Length / 2));
-            var free = OutpatientSeats.Where(s => !taken.Contains(s)).OrderBy(s => Math.Abs(s.X - near.X) + Math.Abs(s.Y - near.Y)).FirstOrDefault(new GridCoord(-1, -1));
+            var near = clinic is null ? o.Tile : DoorstepOf(clinic);
+            var taken = TakenChairs();
+            var free = seats.Where(s => !taken.Contains(s)).OrderBy(s => WaitDistance(s, near)).ThenBy(s => s.Y).ThenBy(s => s.X).FirstOrDefault(new GridCoord(-1, -1));
             if (free.X >= 0)
             {
                 o.Seat = free;
-                taken.Add(free);
+                o.StatusText = "Waiting to be called";
                 Walk(o, free);
             }
-            else if (!o.IsMoving && o.Destination is null && ReceptionFor(o) is { } reception)
+            else if (!o.IsMoving && o.Destination is null && o.StatusText != "Waiting (no free chair)")
             {
-                // Nowhere to sit: stand near the reception desk.
-                Walk(o, WaitingPlace(20 + (o.Id % 12)));
+                // Nowhere to sit: stand near the clinic.
+                Walk(o, StandingSpot(near, inWaitingRoom: false, o));
                 o.StatusText = "Waiting (no free chair)";
             }
         }
@@ -550,80 +551,7 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    // ---------------------------------------------------------------- chairs in corridors
-
-    private readonly List<PlacedFurniture> _corridorChairs = new();
-
-    /// <summary>The furniture item used for chairs placed in corridors.</summary>
-    public const string CorridorChairItem = "waiting_seat";
-
-    /// <summary>Chairs the player has placed in corridors for clinic patients to wait on.</summary>
-    public IReadOnlyList<PlacedFurniture> CorridorChairs => _corridorChairs;
-
-    public int CorridorChairCost => Database.Furniture.TryGetValue(CorridorChairItem, out var chair) ? chair.Cost : 0;
-
-    private static PlacedFurniture ChairAt(GridCoord tile) => new(CorridorChairItem, tile.X + 0.15, tile.Y + 0.15, 0.7, 0.7);
-
-    /// <summary>Whether a chair can go on this corridor tile.</summary>
-    public BuildCheck CheckCorridorChair(GridCoord tile)
-    {
-        var problems = new List<string>();
-        var inCorridor = _spaces.Values.Any(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(tile))
-                         && !_spaces.Values.Any(s => s.HasWalls && s.Rect.Contains(tile));
-        if (!inCorridor)
-        {
-            problems.Add("Chairs go in corridors.");
-        }
-        else if (_corridorChairs.Any(c => c.Tile == tile))
-        {
-            problems.Add("There is already a chair there.");
-        }
-        else if (DoorwayTiles().Contains(tile))
-        {
-            problems.Add("Keep doorways clear.");
-        }
-
-        if (!CanAfford(CorridorChairCost))
-        {
-            problems.Add($"Not enough money: costs £{CorridorChairCost:N0}, you have £{Balance:N0}.");
-        }
-
-        return new BuildCheck(CorridorChairCost, problems);
-    }
-
-    public BuildCheck PlaceCorridorChair(GridCoord tile)
-    {
-        var check = CheckCorridorChair(tile);
-        if (!check.CanBuild)
-        {
-            return check;
-        }
-
-        _corridorChairs.Add(ChairAt(tile));
-        Book(MoneyCategory.Construction, -check.Cost);
-        Events.Publish(new LayoutChanged());
-        return check;
-    }
-
-    /// <summary>Takes a corridor chair away, refunding half its cost.</summary>
-    public bool RemoveCorridorChair(GridCoord tile)
-    {
-        var chair = _corridorChairs.FirstOrDefault(c => c.Tile == tile);
-        if (chair is null)
-        {
-            return false;
-        }
-
-        _corridorChairs.Remove(chair);
-        Book(MoneyCategory.Construction, CorridorChairCost / 2);
-        foreach (var o in _outpatients.Where(o => o.Seat == tile))
-        {
-            o.Seat = null;
-        }
-
-        Events.Publish(new LayoutChanged());
-        return true;
-    }
+    // ---------------------------------------------------------------- doorways
 
     /// <summary>The corridor tiles just outside each room's doors (and the entrances), which must stay clear.</summary>
     private HashSet<GridCoord> DoorwayTiles()
@@ -657,23 +585,5 @@ public sealed partial class HospitalSimulation
         }
 
         return tiles;
-    }
-
-    /// <summary>After building work, chairs no longer in a clear corridor are taken away (refunded in full).</summary>
-    private void PruneCorridorChairs()
-    {
-        var doorways = DoorwayTiles();
-        foreach (var chair in _corridorChairs.ToList())
-        {
-            var tile = chair.Tile;
-            var ok = _spaces.Values.Any(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(tile))
-                     && !_spaces.Values.Any(s => s.HasWalls && s.Rect.Contains(tile))
-                     && !doorways.Contains(tile);
-            if (!ok)
-            {
-                _corridorChairs.Remove(chair);
-                Book(MoneyCategory.Construction, CorridorChairCost);
-            }
-        }
     }
 }
