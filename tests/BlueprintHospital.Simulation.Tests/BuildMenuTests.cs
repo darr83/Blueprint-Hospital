@@ -35,6 +35,23 @@ public class BuildMenuTests
     }
 
     [Fact]
+    public void Maternity_and_toilet_rooms_have_their_icons()
+    {
+        var (_, menu) = Shipped();
+        var maternity = menu.Icons.Single(i => i.Id == "maternity");
+        foreach (var id in new[] { "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "antenatal_clinic", "antenatal_scan_room" })
+        {
+            Assert.Contains(id, maternity.Items);
+        }
+
+        var facilities = menu.Icons.Single(i => i.Id == "facilities");
+        foreach (var id in new[] { "public_toilets", "accessible_toilet", "staff_toilet" })
+        {
+            Assert.Contains(id, facilities.Items);
+        }
+    }
+
+    [Fact]
     public void Shared_rooms_appear_under_several_departments()
     {
         var (_, menu) = Shipped();

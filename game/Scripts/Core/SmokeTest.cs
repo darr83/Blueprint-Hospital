@@ -52,6 +52,7 @@ public partial class SmokeTest : Node
         RoomPanel,
         BuildItem,
         Departments,
+        BuildBarMaternity,
         Recruitment,
         Rota,
         RotaBreaks,
@@ -260,7 +261,24 @@ public partial class SmokeTest : Node
             case Stage.Departments when scene is HospitalScene hospital && _frame >= 18:
                 CheckBuildPopup(hospital);
                 Screenshot("06e_build_bar_building");
+                hospital.Hud.Build.Open("maternity");
+                _frame = 0;
+                _stage = Stage.BuildBarMaternity;
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 3:
+                hospital.Hud.Build.ShowHover("delivery_room");
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 6:
+                CheckBuildPopup(hospital);
+                Screenshot("06f_build_bar_maternity");
                 hospital.Hud.Build.Open("facilities");
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame >= 9:
+                CheckBuildPopup(hospital);
+                Screenshot("06g_build_bar_facilities");
                 Check(hospital.Hud.Build.PopupOpen, "The Facilities pop-up did not open.");
                 hospital.SetMode(GameMode.Play);
                 Check(!hospital.Hud.Build.PopupOpen, "Leaving Build mode should close the build pop-up.");
@@ -1234,6 +1252,9 @@ public partial class SmokeTest : Node
         {
             Check(false, $"Room '{id}' cannot be built from the build bar.");
         }
+
+        Check(bar.Menu.Icons.Any(i => i.Id == "maternity" && i.Items.Contains("delivery_room")), "The build bar has no Maternity icon with a delivery room.");
+        Check(bar.Menu.Icons.Any(i => i.Id == "facilities" && i.Items.Contains("public_toilets")), "The Facilities icon has no toilets.");
     }
 
     /// <summary>The open pop-up sits above the bar and inside the screen.</summary>

@@ -71,7 +71,7 @@ public static class BuildIcons
         ["waiting_room"] = "chairs", ["triage_room"] = "triage", ["resus_bay"] = "resus",
         ["nurses_station"] = "station", ["doctors_office"] = "office", ["staff_room"] = "people", ["outreach_office"] = "office",
         ["ambulatory_care_unit"] = "chairs", ["echo_room"] = "heart", ["cath_lab"] = "icu", ["eeg_room"] = "brainwave",
-        ["ct_scanner"] = "scanner", ["xray_room"] = "imaging", ["operating_theatre"] = "theatres", ["csection_theatre"] = "theatres",
+        ["ct_scanner"] = "scanner", ["xray_room"] = "imaging", ["operating_theatre"] = "theatres", ["csection_theatre"] = "theatres", ["caesarean_theatre"] = "theatres", ["antenatal_scan_room"] = "wave", ["delivery_room"] = "bed",
         ["early_pregnancy_unit"] = "wave", ["ultrasound_room"] = "wave", ["endoscopy_room"] = "scope",
         ["plaster_room"] = "cast", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
@@ -94,6 +94,11 @@ public static class BuildIcons
             return "wc";
         }
 
+        if (id.Contains("clinic", System.StringComparison.Ordinal))
+        {
+            return "desk";
+        }
+
         return template?.Layout switch
         {
             RoomLayoutKind.Ward => "wardbed",
@@ -102,7 +107,7 @@ public static class BuildIcons
             RoomLayoutKind.Triage => "triage",
             RoomLayoutKind.Office => "office",
             RoomLayoutKind.StaffRoom => "people",
-            _ => id.Contains("clinic", System.StringComparison.Ordinal) ? "desk" : "door",
+            _ => "door",
         };
     }
 
