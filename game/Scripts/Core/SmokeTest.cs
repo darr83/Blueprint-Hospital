@@ -59,6 +59,7 @@ public partial class SmokeTest : Node
         Imaging,
         Theatre,
         Clinics,
+        ReceptionistPanel,
         ClinicChair,
         ClinicCalendar,
         Specialty,
@@ -307,6 +308,17 @@ public partial class SmokeTest : Node
 
             case Stage.Clinics when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09c_clinic_waiting");
+                hospital.SetMode(GameMode.Play);
+                hospital.SelectStaff(hospital.Session.Simulation.Staff.First(m => m.Role == Simulation.Staff.StaffRole.Receptionist), centre: true);
+                _frame = 0;
+                _stage = Stage.ReceptionistPanel;
+                break;
+
+            case Stage.ReceptionistPanel when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("09c2_receptionist_panel");
+                CheckStaffPanelsFit(hospital);
+                hospital.ClearSelectionForTest();
+                hospital.SetMode(GameMode.Build);
                 ClickCorridorChair(hospital);
                 _frame = 0;
                 _stage = Stage.ClinicChair;
@@ -499,6 +511,23 @@ public partial class SmokeTest : Node
     private const long CheatMoney = 123_456;
 
     /// <summary>Ctrl+C opens the cheat console; "money" adds to the balance under a Cheats line.</summary>
+    /// <summary>
+    /// Every kind of staff member's panel must fit inside its dock and the screen: a long role, place or
+    /// footer line used to push the receptionist's panel off the right-hand edge.
+    /// </summary>
+    private static void CheckStaffPanelsFit(HospitalScene hospital)
+    {
+        var panel = hospital.Hud.StaffInfo;
+        foreach (var member in hospital.Session.Simulation.Staff.GroupBy(m => m.Role).Select(g => g.First()))
+        {
+            hospital.Hud.ShowStaff(member);
+            var width = panel.GetCombinedMinimumSize().X;
+            GD.Print($"[smoke] Staff panel for {member.Role}: needs {width:0}, has {panel.Size.X:0}");
+            Check(width <= panel.Size.X + 1 && panel.GetGlobalRect().End.X <= panel.GetViewportRect().Size.X + 1,
+                $"The {member.Role} staff panel is wider than its dock ({width:0} > {panel.Size.X:0}).");
+        }
+    }
+
     private static void CheckCheatConsole(HospitalScene hospital)
     {
         PressCtrlC(hospital);
