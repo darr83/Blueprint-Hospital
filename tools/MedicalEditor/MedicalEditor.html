@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medical Data Editor</title>
+<!--
+  Blueprint Hospital medical data editor.
+  Open this file in Chrome or Edge, press "Open game data", pick the game's Data folder
+  (or the Blueprint Hospital folder itself) and edit illnesses, symptoms, tests and medicines.
+  "Save changes" writes straight back into the JSON files the game loads.
+  The JSON files stay the source of truth: nothing is stored anywhere else.
+-->
+<style>
+:root {
+  --blue: #1F5FBF; --blue-soft: #E8F0FB; --ink: #1B2430; --muted: #5E6B7A; --line: #D9E0E8;
+  --bg: #F4F6F9; --card: #FFFFFF; --red: #C62828; --red-soft: #FDECEC; --amber: #B26A00;
+  --amber-soft: #FFF4E0; --green: #2E7D32; --green-soft: #E8F5E9;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font: 14px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--ink); background: var(--bg); display: flex; flex-direction: column; }
+button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; padding: 5px 10px; }
+button:hover { border-color: var(--blue); }
+button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+button.primary:disabled { background: #9DB5DA; border-color: #9DB5DA; cursor: default; }
+button.danger { color: var(--red); }
+button.small { padding: 2px 7px; font-size: 12px; }
+button.icon { padding: 2px 6px; line-height: 1; }
+input, select, textarea { font: inherit; color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; background: #fff; min-width: 0; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #9DB5DA; border-color: var(--blue); }
+input[type=number] { width: 90px; }
+input[type=checkbox] { width: 16px; height: 16px; vertical-align: middle; }
+textarea { width: 100%; resize: vertical; min-height: 54px; }
+
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; color: var(--blue); }
+header .where { color: var(--muted); font-size: 12px; flex: 1; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { font-size: 12px; padding: 3px 8px; border-radius: 10px; background: var(--green-soft); color: var(--green); white-space: nowrap; cursor: pointer; border: 0; }
+.status.bad { background: var(--red-soft); color: var(--red); }
+.status.dirty { background: var(--amber-soft); color: var(--amber); }
+
+main { flex: 1; display: flex; min-height: 0; }
+nav { width: 300px; flex: none; background: var(--card); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; border-radius: 0; padding: 9px 2px; font-size: 13px; border-bottom: 3px solid transparent; }
+.tabs button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+.tabs .count { display: block; font-size: 11px; color: var(--muted); font-weight: normal; }
+.navtools { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+.navtools input { flex: 1; }
+.list { overflow-y: auto; flex: 1; }
+.group { padding: 8px 10px 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.item { padding: 6px 10px 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; border-left: 3px solid transparent; }
+.item:hover { background: var(--bg); }
+.item.on { background: var(--blue-soft); border-left-color: var(--blue); }
+.item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.err { background: var(--red); }
+.dot.dirty { background: var(--amber); }
+
+.content { flex: 1; overflow-y: auto; padding: 16px 20px 60px; min-width: 0; }
+.welcome { max-width: 640px; margin: 40px auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 24px 28px; }
+.welcome h2 { margin-top: 0; color: var(--blue); }
+.welcome li { margin: 4px 0; }
+.title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+.title-row h2 { margin: 0; font-size: 20px; flex: 1; min-width: 200px; }
+.sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.card h3 { margin: 0 0 10px; font-size: 14px; color: var(--blue); text-transform: uppercase; letter-spacing: .04em; }
+.card .hint { color: var(--muted); font-size: 12px; margin: -6px 0 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 16px; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field.wide { grid-column: 1 / -1; }
+.field > label, .lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+.field .help { font-size: 11px; color: var(--muted); }
+.field.check { flex-direction: row; align-items: center; gap: 8px; }
+.field.check label { color: var(--ink); font-weight: normal; font-size: 14px; }
+.pair { display: flex; gap: 6px; align-items: center; }
+.pair span { color: var(--muted); font-size: 12px; }
+.bad-input { border-color: var(--red) !important; background: var(--red-soft); }
+
+table.rows { width: 100%; border-collapse: collapse; }
+table.rows th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+table.rows td { padding: 4px 6px; border-bottom: 1px solid #EEF1F5; vertical-align: top; }
+table.rows select, table.rows input[type=text] { width: 100%; }
+.pct { display: flex; align-items: center; gap: 6px; }
+.pct input[type=range] { flex: 1; min-width: 80px; }
+.pct input[type=number] { width: 64px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { background: var(--blue-soft); color: var(--blue); border-radius: 12px; padding: 2px 4px 2px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.chip.bad { background: var(--red-soft); color: var(--red); }
+.chip button { border: 0; background: transparent; color: inherit; padding: 0 4px; font-size: 14px; }
+.chips select, .chips input { width: auto; max-width: 220px; }
+.strings { display: flex; flex-direction: column; gap: 5px; }
+.strings .row { display: flex; gap: 6px; }
+.strings input { flex: 1; }
+.sub-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: #FAFBFD; }
+.sub-card .head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.sub-card .head b { flex: 1; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links a { color: var(--blue); cursor: pointer; text-decoration: none; background: var(--blue-soft); padding: 2px 9px; border-radius: 12px; font-size: 13px; }
+.links a:hover { text-decoration: underline; }
+.muted { color: var(--muted); }
+.issues { background: var(--red-soft); border: 1px solid #F3C1C1; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; color: var(--red); }
+.issues ul { margin: 4px 0 0; padding-left: 18px; }
+.issues li { margin: 2px 0; }
+.issues a { color: inherit; cursor: pointer; text-decoration: underline; }
+dialog { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; max-width: 640px; width: calc(100% - 32px); }
+dialog::backdrop { background: rgba(20, 30, 45, .35); }
+dialog h3 { margin-top: 0; }
+dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+dialog .scroll { max-height: 50vh; overflow-y: auto; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+.toast.on { opacity: 1; }
+
+@media (max-width: 760px) {
+  main { flex-direction: column; }
+  nav { width: auto; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .content { padding: 12px 16px 40px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Medical Data Editor</h1>
+  <div class="where" id="where">No data folder open</div>
+  <button class="status" id="status" hidden></button>
+  <button id="openBtn" class="primary">Open game data</button>
+  <input type="file" id="folderInput" webkitdirectory multiple hidden>
+  <button id="saveBtn" class="primary" disabled>Save changes</button>
+</header>
+<main>
+  <nav>
+    <div class="tabs" id="tabs"></div>
+    <div class="navtools">
+      <input type="search" id="search" placeholder="Search…">
+      <button id="newBtn" title="Add a new record">+ New</button>
+    </div>
+    <div class="list" id="list"></div>
+  </nav>
+  <div class="content" id="content"></div>
+</main>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------------------------
+// Data store. Each kind maps to a folder under game/Data. Records are edited in place, so any
+// field this editor does not know about is kept exactly as it was.
+// ---------------------------------------------------------------------------------------------
+
+const KINDS = {
+  conditions:     { folder: "Conditions",     label: "Illnesses",  one: "illness" },
+  symptoms:       { folder: "Symptoms",       label: "Symptoms",   one: "symptom" },
+  investigations: { folder: "Investigations", label: "Tests",      one: "test" },
+  medications:    { folder: "Medications",    label: "Medicines",  one: "medicine" },
+};
+const READ_ONLY = { departments: "Departments" };
+
+const store = {
+  mode: null,            // "fs" (File System Access, saves in place) or "download"
+  root: null,            // directory handle for the Data folder (fs mode)
+  rootName: "",
+  files: {},             // kind -> [{ name, handle, indent, trailingNewline, records, dirty, deleted }]
+  departments: [],
+};
+const fileOf = new WeakMap();   // record -> file entry
+
+const ui = { kind: "conditions", selected: null, search: "", issues: [] };
+
+const $ = (id) => document.getElementById(id);
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "value") el.value = v;
+    else if (k === "checked") el.checked = !!v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid === null || kid === undefined || kid === false) continue;
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+
+function records(kind) {
+  return (store.files[kind] || []).filter(f => !f.deleted).flatMap(f => f.records);
+}
+function byId(kind, id) { return records(kind).find(r => r.id === id); }
+function nameOf(kind, id) {
+  if (kind === "departments") { const d = store.departments.find(x => x.id === id); return d ? d.name : id; }
+  const r = byId(kind, id); return r ? (r.name || id) : id;
+}
+function touch(rec) {
+  const f = fileOf.get(rec);
+  if (f) f.dirty = true;
+  scheduleRefresh();
+}
+function dirtyFiles() {
+  return Object.values(store.files).flat().filter(f => f.dirty);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Loading and saving
+// ---------------------------------------------------------------------------------------------
+
+function parseFile(text, name) {
+  const records = JSON.parse(text);
+  if (!Array.isArray(records)) throw new Error(name + " does not hold a list of records.");
+  const m = text.match(/^\[\r?\n([ \t]+)\S/);
+  return {
+    records,
+    indent: m ? (m[1].includes("\t") ? "\t" : m[1].length) : 2,
+    trailingNewline: /\n$/.test(text),
+    crlf: /\r\n/.test(text),
+  };
+}
+function serialise(file) {
+  let text = JSON.stringify(file.records, null, file.indent);
+  if (file.trailingNewline) text += "\n";
+  if (file.crlf) text = text.replace(/\n/g, "\r\n");
+  return text;
+}
+
+async function openFolder() {
+  if (!window.showDirectoryPicker) { $("folderInput").click(); return; }
+  let dir;
+  try { dir = await window.showDirectoryPicker({ id: "blueprint-hospital-data", mode: "readwrite" }); }
+  catch (e) { if (e.name !== "AbortError") alert("Could not open the folder: " + e.message); return; }
+  try {
+    dir = await findDataDir(dir);
+    if (!dir) { alert("That folder doesn't contain the game's Data folder. Pick Blueprint Hospital, its game folder, or game\\Data."); return; }
+    const loaded = {};
+    for (const [kind, k] of Object.entries({ ...KINDS, ...Object.fromEntries(Object.entries(READ_ONLY).map(([a, b]) => [a, { folder: b }])) })) {
+      loaded[kind] = [];
+      let sub;
+      try { sub = await dir.getDirectoryHandle(k.folder); } catch { continue; }
+      for await (const [name, handle] of sub.entries()) {
+        if (handle.kind !== "file" || !name.toLowerCase().endsWith(".json")) continue;
+        const text = await (await handle.getFile()).text();
+        loaded[kind].push({ name, handle, folder: k.folder, ...parseFile(text, k.folder + "/" + name) });
+      }
+    }
+    install("fs", dir, dir.name, loaded);
+  } catch (e) {
+    alert("Could not read the data: " + e.message);
+  }
+}
+
+async function findDataDir(dir) {
+  const has = async (d, name) => { try { return await d.getDirectoryHandle(name); } catch { return null; } };
+  if (await has(dir, "Conditions")) return dir;
+  const data = await has(dir, "Data");
+  if (data && await has(data, "Conditions")) return data;
+  const game = await has(dir, "game");
+  if (game) { const d = await has(game, "Data"); if (d && await has(d, "Conditions")) return d; }
+  return null;
+}
+
+async function openFromInput(fileList) {
+  // Fallback for browsers without folder write access: read every file, save as downloads.
+  const loaded = {};
+  const folders = { ...Object.fromEntries(Object.entries(KINDS).map(([k, v]) => [v.folder, k])), ...Object.fromEntries(Object.entries(READ_ONLY).map(([k, v]) => [v, k])) };
+  let rootName = "";
+  for (const file of fileList) {
+    const parts = (file.webkitRelativePath || file.name).split("/");
+    if (parts.length < 2 || !file.name.toLowerCase().endsWith(".json")) continue;
+    const kind = folders[parts[parts.length - 2]];
+    if (!kind) continue;
+    rootName = parts.slice(0, -2).join("/");
+    (loaded[kind] ||= []).push({ name: file.name, folder: parts[parts.length - 2], ...parseFile(await file.text(), file.name) });
+  }
+  if (!loaded.conditions) { alert("No Conditions folder found. Pick the game's Data folder."); return; }
+  install("download", null, rootName, loaded);
+}
+
+function install(mode, root, rootName, loaded) {
+  store.mode = mode; store.root = root; store.rootName = rootName;
+  store.departments = (loaded.departments || []).flatMap(f => f.records);
+  store.files = {};
+  for (const kind of Object.keys(KINDS)) {
+    store.files[kind] = (loaded[kind] || []).sort((a, b) => a.name.localeCompare(b.name));
+    for (const f of store.files[kind]) for (const r of f.records) fileOf.set(r, f);
+  }
+  ui.selected = null;
+  $("where").textContent = (mode === "fs" ? "Editing " : "Read from ") + rootName +
+    (mode === "fs" ? " (saves straight into the game's files)" : " (this browser can't write to folders: saving downloads the changed files)");
+  validate(); renderAll();
+}
+
+async function save() {
+  validate();
+  const errors = ui.issues.length;
+  if (errors && !(await confirmDlg("Save with problems?",
+      `There ${errors === 1 ? "is 1 problem" : `are ${errors} problems`} the game will refuse to load. The game's menu will list them until they are fixed. Save anyway?`, "Save anyway"))) return;
+  const files = dirtyFiles();
+  try {
+    for (const f of files) {
+      const kindFolder = f.folder;
+      if (store.mode === "fs") {
+        const dir = await store.root.getDirectoryHandle(kindFolder);
+        if (f.deleted) { await dir.removeEntry(f.name); continue; }
+        f.handle ||= await dir.getFileHandle(f.name, { create: true });
+        const w = await f.handle.createWritable();
+        await w.write(serialise(f));
+        await w.close();
+      } else if (!f.deleted) {
+        const a = h("a", { href: URL.createObjectURL(new Blob([serialise(f)], { type: "application/json" })), download: f.name });
+        document.body.append(a); a.click(); a.remove();
+      }
+    }
+    for (const f of files) f.dirty = false;
+    for (const kind of Object.keys(store.files)) store.files[kind] = store.files[kind].filter(f => !f.deleted);
+    toast(store.mode === "fs"
+      ? `Saved ${files.length} file${files.length === 1 ? "" : "s"}. Restart the game (or press Play in Godot) to load the changes.`
+      : `Downloaded ${files.length} file${files.length === 1 ? "" : "s"}: copy them into the matching game/Data folders.`);
+    renderAll();
+  } catch (e) {
+    alert("Saving failed: " + e.message);
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Validation: the same rules the game checks when it starts.
+// ---------------------------------------------------------------------------------------------
+
+const ID_RE = /^[a-z][a-z0-9_]*$/;
+const TEST_ROOMS = ["x_ray", "ct", "echo", "eeg", "ultrasound", "endoscopy"];
+const OBS = [
+  ["heart_rate", "Heart rate", "bpm", 20, 250],
+  ["systolic_bp", "Systolic BP", "mmHg", 40, 260],
+  ["diastolic_bp", "Diastolic BP", "mmHg", 20, 160],
+  ["respiratory_rate", "Respiratory rate", "/min", 4, 60],
+  ["oxygen_saturation", "Oxygen saturation", "%", 50, 100],
+  ["temperature", "Temperature", "°C", 30, 43],
+];
+
+function validate() {
+  const out = [];
+  const err = (kind, rec, field, msg) => out.push({ kind, rec, field, msg });
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const range = (kind, r, field, v, lo, hi) => {
+    if (!isNum(v) || v < lo || v > hi) err(kind, r, field, `must be between ${lo} and ${hi}${isNum(v) ? ` (is ${v})` : ""}.`);
+  };
+  const text = (kind, r, field, v) => { if (typeof v !== "string" || !v.trim()) err(kind, r, field, "must not be empty."); };
+  const id = (kind, r, field, v) => {
+    if (typeof v !== "string" || !v) err(kind, r, field, "must not be empty.");
+    else if (!ID_RE.test(v)) err(kind, r, field, `'${v}' is not a valid id: use lowercase letters, digits and underscores, starting with a letter.`);
+  };
+  const ids = (kind, r, field, list) => {
+    (list || []).forEach((v, i) => id(kind, r, `${field} ${i + 1}`, v));
+    const seen = new Set();
+    for (const v of list || []) { if (seen.has(v)) err(kind, r, field, `lists '${v}' more than once.`); seen.add(v); }
+  };
+  const ref = (kind, r, field, refKind, v) => {
+    if (v && !(refKind === "departments" ? store.departments.some(d => d.id === v) : byId(refKind, v)))
+      err(kind, r, field, `refers to unknown ${refKind === "departments" ? "department" : KINDS[refKind].one} '${v}'.`);
+  };
+
+  for (const kind of Object.keys(KINDS)) {
+    const seen = new Map();
+    for (const r of records(kind)) {
+      if (seen.has(r.id)) err(kind, r, "id", `'${r.id}' is used twice.`);
+      seen.set(r.id, r);
+    }
+  }
+
+  for (const c of records("conditions")) {
+    const K = "conditions";
+    id(K, c, "id", c.id); text(K, c, "name", c.name); id(K, c, "department", c.department);
+    ref(K, c, "department", "departments", c.department);
+    range(K, c, "prevalence", c.prevalence, 0.0001, 1000);
+    const a = c.age_range || [];
+    if (a.length !== 2 || a[0] < 0 || a[1] > 110 || a[0] > a[1]) err(K, c, "age range", "must be youngest to oldest, between 0 and 110.");
+    range(K, c, "female fraction", c.female_fraction ?? 0.5, 0, 1);
+    range(K, c, "ambulance probability", c.ambulance_probability ?? 0, 0, 1);
+    id(K, c, "presenting complaint", c.presenting_complaint);
+    const sy = c.symptoms || [];
+    if (!sy.length) err(K, c, "symptoms", "must list at least one symptom.");
+    sy.forEach((s, i) => { id(K, c, `symptom ${i + 1}`, s.symptom); range(K, c, `symptom ${i + 1} chance`, s.probability, 0, 1); ref(K, c, "symptoms", "symptoms", s.symptom); });
+    if (c.presenting_complaint && !sy.some(s => s.symptom === c.presenting_complaint))
+      err(K, c, "presenting complaint", `'${nameOf("symptoms", c.presenting_complaint)}' must also be listed in the symptoms.`);
+    const o = c.observations || {};
+    for (const [k, label, , lo, hi] of [...OBS, ["pain_score", "Pain score", "", 0, 10]]) {
+      const p = o[k];
+      if (!Array.isArray(p) || p.length !== 2) err(K, c, label, "needs two numbers.");
+      else range(K, c, label, p[0], lo, hi);
+    }
+    const s = c.initial_severity || [];
+    if (s.length !== 2 || s[0] < 0 || s[1] > 1 || s[0] > s[1]) err(K, c, "severity on arrival", "must be min to max between 0 and 1.");
+    range(K, c, "deterioration per hour", c.deterioration_per_hour ?? 0, 0, 5);
+    range(K, c, "recovery per hour", c.recovery_per_hour ?? 0, 0, 5);
+    ids(K, c, "key tests", c.key_investigations);
+    (c.key_investigations || []).forEach(v => ref(K, c, "key tests", "investigations", v));
+    (c.treatment || []).forEach((t, i) => {
+      if (t.type === "medication") { id(K, c, `treatment ${i + 1}`, t.medication); ref(K, c, `treatment ${i + 1}`, "medications", t.medication); }
+      else {
+        text(K, c, `treatment ${i + 1} name`, t.name);
+        range(K, c, `treatment ${i + 1} minutes`, t.minutes ?? 5, 1, 600);
+        if (t.room && t.room !== "plaster_room") err(K, c, `treatment ${i + 1} room`, "must be the plaster room or none.");
+      }
+    });
+    const disp = c.disposition;
+    if (!["discharge", "transfer", "admit", "surgery"].includes(disp)) err(K, c, "outcome", "must be discharge, transfer, admit or surgery.");
+    if (c.ambulatory_hours) {
+      const h2 = c.ambulatory_hours;
+      if (disp !== "admit" || h2.length !== 2 || h2[0] < 1 || h2[1] < h2[0] || h2[1] > 12) err(K, c, "same-day care hours", "must be shortest to longest, up to 12 hours, and only for admitted illnesses.");
+    }
+    text(K, c, "outcome note", c.disposition_note);
+    if (c.needs_intensive_care && disp !== "admit") err(K, c, "needs intensive care", "only applies when the outcome is admit.");
+    if (disp === "surgery") {
+      const op = c.operation;
+      if (!op) err(K, c, "operation", "is required when the outcome is surgery.");
+      else {
+        text(K, c, "operation name", op.name);
+        range(K, c, "operation minutes", op.minutes ?? 0, 10, 600);
+        if (op.room && !["theatre", "cath_lab"].includes(op.room)) err(K, c, "operation room", "must be theatre or cath lab.");
+        if (op.major && op.day_case) err(K, c, "operation", "can't be both major and a day case.");
+      }
+    }
+    const los = c.length_of_stay_hours || [24, 72];
+    if (los.length !== 2 || los[0] < 1 || los[1] < los[0] || los[1] > 1440) err(K, c, "ward stay", "must be shortest to longest hours, between 1 and 1440.");
+  }
+
+  for (const s of records("symptoms")) {
+    const K = "symptoms";
+    id(K, s, "id", s.id); text(K, s, "name", s.name); text(K, s, "what the patient says", s.patient_description);
+    ids(K, s, "triage tests", s.triage_investigations);
+    (s.triage_investigations || []).forEach(v => ref(K, s, "triage tests", "investigations", v));
+  }
+
+  for (const t of records("investigations")) {
+    const K = "investigations";
+    id(K, t, "id", t.id); text(K, t, "name", t.name);
+    range(K, t, "procedure minutes", t.procedure_minutes ?? 0, 1, 240);
+    range(K, t, "turnaround minutes", t.turnaround_minutes ?? 0, 0, 1440);
+    range(K, t, "cost", t.cost ?? 0, 0, 100000);
+    range(K, t, "false positive rate", t.false_positive_rate ?? 0, 0, 1);
+    const tmpl = (field, x) => {
+      if (!x) return;
+      if (!x.summaries || !x.summaries.length || x.summaries.some(v => !v || !v.trim())) err(K, t, field + " reports", "needs at least one report and no empty ones.");
+      if (x.value_range && (x.value_range.length !== 2 || x.value_range[0] > x.value_range[1])) err(K, t, field + " value range", "must be low to high.");
+      if (!x.value_range && (x.summaries || []).some(v => v.includes("{value}"))) err(K, t, field + " reports", "use {value} but no value range is set.");
+    };
+    if (!t.normal) err(K, t, "normal result", "is required."); else tmpl("normal result", t.normal);
+    if ((t.category === "imaging") !== TEST_ROOMS.includes(t.room)) err(K, t, "room", "imaging tests, and only imaging tests, need a room: X-ray, CT, echo, EEG, ultrasound or endoscopy.");
+    if ((t.false_positive_rate || 0) > 0) { if (!t.false_positive) err(K, t, "false positive result", "is required when the false positive rate is above 0."); else tmpl("false positive result", t.false_positive); }
+    (t.abnormal || []).forEach((a, i) => {
+      const label = `result for ${nameOf("conditions", a.condition) || "illness " + (i + 1)}`;
+      id(K, t, label, a.condition); range(K, t, label + " chance", a.probability, 0, 1); tmpl(label, a);
+      ref(K, t, label, "conditions", a.condition);
+    });
+  }
+
+  for (const m of records("medications")) {
+    const K = "medications";
+    id(K, m, "id", m.id); text(K, m, "name", m.name); text(K, m, "drug class", m.drug_class);
+    text(K, m, "route", m.route); text(K, m, "typical dose", m.typical_dose);
+    ids(K, m, "allergy groups", m.allergy_groups);
+    range(K, m, "cost per dose", m.cost_per_dose ?? 0, 0, 100000);
+  }
+  ui.issues = out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------------------------
+
+let refreshTimer = null;
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => { validate(); renderChrome(); renderList(); renderIssues(); }, 250);
+}
+
+function renderAll() { renderChrome(); renderList(); renderContent(); }
+
+function renderChrome() {
+  const loaded = !!store.mode;
+  const dirty = dirtyFiles().length;
+  $("saveBtn").disabled = !dirty;
+  $("saveBtn").textContent = dirty ? `Save changes (${dirty} file${dirty === 1 ? "" : "s"})` : "Save changes";
+  const st = $("status");
+  st.hidden = !loaded;
+  const n = ui.issues.length;
+  st.className = "status" + (n ? " bad" : dirty ? " dirty" : "");
+  st.textContent = n ? `${n} problem${n === 1 ? "" : "s"}` : dirty ? "Unsaved changes" : "All valid";
+  $("tabs").replaceChildren(...Object.entries(KINDS).map(([kind, k]) => h("button", {
+    class: ui.kind === kind ? "on" : "", onclick: () => { ui.kind = kind; ui.selected = null; renderAll(); },
+  }, k.label, h("span", { class: "count" }, loaded ? records(kind).length : ""))));
+  $("newBtn").disabled = !loaded;
+}
+
+function groupKey(kind, r) {
+  if (kind === "conditions") return nameOf("departments", r.department) || "No department";
+  if (kind === "symptoms") return cap(r.body_system || "other");
+  if (kind === "investigations") return cap(r.category || "other");
+  return r.drug_class || "Other";
+}
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
+
+function renderList() {
+  const list = $("list");
+  if (!store.mode) { list.replaceChildren(h("div", { class: "group" }, "Open the game data to start")); return; }
+  const q = ui.search.trim().toLowerCase();
+  const bad = new Set(ui.issues.map(i => i.rec));
+  const rows = records(ui.kind).filter(r => !q || JSON.stringify(r).toLowerCase().includes(q));
+  const groups = new Map();
+  for (const r of rows) { const g = groupKey(ui.kind, r); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(r); }
+  const kids = [];
+  for (const g of [...groups.keys()].sort()) {
+    kids.push(h("div", { class: "group" }, g));
+    for (const r of groups.get(g).sort((a, b) => (a.name || a.id || "").localeCompare(b.name || b.id || ""))) {
+      kids.push(h("div", { class: "item" + (r === ui.selected ? " on" : ""), onclick: () => select(ui.kind, r) },
+        h("span", { class: "nm" }, r.name || r.id || "(unnamed)"),
+        bad.has(r) ? h("span", { class: "dot err", title: "Has problems" }) : fileOf.get(r)?.dirty ? h("span", { class: "dot dirty", title: "File has unsaved changes" }) : null));
+    }
+  }
+  if (!rows.length) kids.push(h("div", { class: "group" }, "Nothing matches"));
+  list.replaceChildren(...kids);
+}
+
+function select(kind, rec) {
+  ui.kind = kind; ui.selected = rec;
+  renderAll();
+  $("content").scrollTop = 0;
+}
+
+function renderIssues() {
+  const box = document.getElementById("issuesBox");
+  if (!box || !ui.selected) return;
+  const mine = ui.issues.filter(i => i.rec === ui.selected);
+  box.hidden = !mine.length;
+  box.replaceChildren(h("b", {}, "The game will refuse this until it's fixed:"),
+    h("ul", {}, mine.map(i => h("li", {}, cap(i.field), " ", i.msg))));
+}
+
+function renderContent() {
+  const c = $("content");
+  if (!store.mode) { c.replaceChildren(welcome()); return; }
+  const r = ui.selected;
+  if (!r) { c.replaceChildren(overview()); return; }
+  const form = { conditions: conditionForm, symptoms: symptomForm, investigations: investigationForm, medications: medicationForm }[ui.kind](r);
+  const f = fileOf.get(r);
+  c.replaceChildren(
+    h("div", { class: "title-row" },
+      h("h2", {}, r.name || r.id || "(unnamed)"),
+      h("button", { onclick: () => duplicate(ui.kind, r) }, "Duplicate"),
+      h("button", { class: "danger", onclick: () => remove(ui.kind, r) }, "Delete")),
+    h("div", { class: "sub" }, `id: ${r.id}  ·  file: ${f.folder}/${f.name}`),
+    h("div", { class: "issues", id: "issuesBox", hidden: true }),
+    form);
+  renderIssues();
+}
+
+function welcome() {
+  const supported = !!window.showDirectoryPicker;
+  return h("div", { class: "welcome" },
+    h("h2", {}, "Edit illnesses, symptoms, tests and medicines"),
+    h("p", {}, "This page edits the game's medical data files directly. Nothing is copied anywhere else: the JSON files in ", h("code", {}, "game\\Data"), " stay the game's database."),
+    h("ol", {},
+      h("li", {}, "Press ", h("b", {}, "Open game data"), " and pick your ", h("b", {}, "Blueprint Hospital"), " folder (or its ", h("code", {}, "game\\Data"), " folder)."),
+      h("li", {}, "Allow the browser to edit files in that folder when it asks."),
+      h("li", {}, "Pick an illness, symptom, test or medicine on the left and change anything."),
+      h("li", {}, "Press ", h("b", {}, "Save changes"), ". Restart the game, or press Play in Godot, to see them.")),
+    h("p", { class: "muted" }, "Problems the game would reject (missing fields, numbers out of range, links to things that don't exist) are flagged as you type, with the same rules the game uses."),
+    supported ? null : h("p", { class: "issues" }, "This browser can't save into folders, so changed files will download instead and you'll copy them into game\\Data yourself. Chrome or Edge can save in place."));
+}
+
+function overview() {
+  const k = KINDS[ui.kind];
+  return h("div", { class: "welcome" },
+    h("h2", {}, k.label),
+    h("p", {}, `${records(ui.kind).length} ${k.label.toLowerCase()} in ${store.files[ui.kind].length} file${store.files[ui.kind].length === 1 ? "" : "s"}. Pick one on the left, or press + New.`),
+    ui.issues.length ? h("div", { class: "issues" }, h("b", {}, `${ui.issues.length} problem${ui.issues.length === 1 ? "" : "s"} in all:`),
+      h("ul", {}, ui.issues.slice(0, 40).map(i => h("li", {}, h("a", { onclick: () => select(i.kind, i.rec) }, i.rec.name || i.rec.id), ": ", cap(i.field), " ", i.msg)))) : h("p", { class: "muted" }, "Everything passes the game's checks."));
+}
+
+// --- field widgets -----------------------------------------------------------------------------
+
+function field(label, input, opts = {}) {
+  return h("div", { class: "field" + (opts.wide ? " wide" : "") }, h("label", {}, label), input, opts.help ? h("div", { class: "help" }, opts.help) : null);
+}
+function textIn(rec, obj, key, label, opts = {}) {
+  const el = h(opts.multiline ? "textarea" : "input", { type: "text", value: obj[key] ?? "", placeholder: opts.placeholder,
+    oninput: (e) => { if (opts.removeWhenEmpty && !e.target.value) delete obj[key]; else obj[key] = e.target.value; touch(rec); if (opts.onchange) opts.onchange(); } });
+  if (opts.list) el.setAttribute("list", opts.list);
+  return field(label, el, opts);
+}
+function numIn(rec, obj, key, label, opts = {}) {
+  const el = numBox(rec, () => obj[key], (v) => { obj[key] = v; }, opts);
+  return field(label, el, opts);
+}
+function numBox(rec, get, set, opts = {}) {
+  const el = h("input", { type: "number", step: opts.step ?? "any", min: opts.min, max: opts.max, value: get() ?? "" });
+  el.addEventListener("input", () => {
+    if (el.value === "") { el.classList.add("bad-input"); return; }
+    let v = Number(el.value);
+    if (opts.int) v = Math.round(v);
+    el.classList.toggle("bad-input", (opts.min !== undefined && v < opts.min) || (opts.max !== undefined && v > opts.max));
+    set(v); touch(rec);
+  });
+  return el;
+}
+function pctBox(rec, get, set) {
+  // A 0-1 chance shown as a slider plus a percentage box.
+  const num = h("input", { type: "number", min: 0, max: 100, step: 1, value: Math.round((get() ?? 0) * 1000) / 10 });
+  const slider = h("input", { type: "range", min: 0, max: 100, step: 1, value: (get() ?? 0) * 100 });
+  const apply = (pct) => { const v = Math.max(0, Math.min(100, pct)); set(Math.round(v * 10) / 1000); touch(rec); };
+  slider.addEventListener("input", () => { num.value = slider.value; apply(Number(slider.value)); });
+  num.addEventListener("input", () => { if (num.value !== "") { slider.value = num.value; apply(Number(num.value)); } });
+  return h("div", { class: "pct" }, slider, num, h("span", { class: "muted" }, "%"));
+}
+function pctIn(rec, obj, key, label, opts = {}) { return field(label, pctBox(rec, () => obj[key], (v) => { obj[key] = v; }), opts); }
+function checkIn(rec, obj, key, label, opts = {}) {
+  const idName = "cb_" + key + "_" + Math.random().toString(36).slice(2);
+  const cb = h("input", { type: "checkbox", id: idName, checked: !!obj[key], onchange: (e) => {
+    obj[key] = e.target.checked;
+    touch(rec); if (opts.rerender) renderContent();
+  } });
+  return h("div", { class: "field check" + (opts.wide ? " wide" : "") }, cb, h("label", { for: idName }, label));
+}
+function selectBox(rec, get, set, options, opts = {}) {
+  const cur = get();
+  const opt = (v, l) => h("option", { value: v, selected: v === cur ? "selected" : null }, l);
+  const list = options.map(o => Array.isArray(o) ? o : [o, o]);
+  const el = h("select", { onchange: (e) => { set(e.target.value === "" && opts.emptyIsNone ? undefined : e.target.value); touch(rec); if (opts.rerender) renderContent(); } },
+    opts.emptyLabel !== undefined ? opt("", opts.emptyLabel) : null,
+    cur !== undefined && cur !== "" && !list.some(([v]) => v === cur) ? opt(cur, `${cur} (unknown)`) : null,
+    list.map(([v, l]) => opt(v, l)));
+  el.value = cur ?? "";
+  return el;
+}
+function selectIn(rec, obj, key, label, options, opts = {}) {
+  return field(label, selectBox(rec, () => obj[key], (v) => { if (v === undefined) delete obj[key]; else obj[key] = v; }, options, opts), opts);
+}
+function pairIn(rec, obj, key, label, names, opts = {}) {
+  if (!Array.isArray(obj[key])) obj[key] = (opts.defaults || [0, 0]).slice();
+  const arr = obj[key];
+  return field(label, h("div", { class: "pair" },
+    h("span", {}, names[0]), numBox(rec, () => arr[0], (v) => { arr[0] = v; }, opts),
+    h("span", {}, names[1]), numBox(rec, () => arr[1], (v) => { arr[1] = v; }, opts),
+    opts.unit ? h("span", {}, opts.unit) : null), opts);
+}
+function optionalPairIn(rec, obj, key, label, names, defaults, opts = {}) {
+  const on = Array.isArray(obj[key]);
+  const toggle = h("div", { class: "field check" }, h("input", { type: "checkbox", checked: on, id: "opt_" + key, onchange: (e) => {
+    if (e.target.checked) obj[key] = defaults.slice(); else delete obj[key];
+    touch(rec); renderContent();
+  } }), h("label", { for: "opt_" + key }, label));
+  if (!on) return h("div", { class: "field" + (opts.wide ? " wide" : "") }, toggle, opts.help ? h("div", { class: "help" }, opts.help) : null);
+  const arr = obj[key];
+  return h("div", { class: "field" + (opts.wide ? " wide" : "") }, toggle,
+    h("div", { class: "pair" }, h("span", {}, names[0]), numBox(rec, () => arr[0], (v) => { arr[0] = v; }, opts),
+      h("span", {}, names[1]), numBox(rec, () => arr[1], (v) => { arr[1] = v; }, opts), opts.unit ? h("span", {}, opts.unit) : null),
+    opts.help ? h("div", { class: "help" }, opts.help) : null);
+}
+// A list of ids picked from another kind (key tests, triage tests).
+function idChips(rec, obj, key, refKind, opts = {}) {
+  if (!Array.isArray(obj[key])) obj[key] = [];
+  const arr = obj[key];
+  const known = refKind ? records(refKind) : [];
+  const chips = arr.map((v, i) => h("span", { class: "chip" + (refKind && !byId(refKind, v) ? " bad" : "") },
+    refKind ? h("a", { onclick: () => byId(refKind, v) && select(refKind, byId(refKind, v)), style: "cursor:pointer" }, nameOf(refKind, v)) : v,
+    h("button", { title: "Remove", onclick: () => { arr.splice(i, 1); if (!arr.length && opts.removeWhenEmpty) delete obj[key]; touch(rec); renderContent(); } }, "×")));
+  let adder;
+  if (refKind) {
+    adder = h("select", { onchange: (e) => { if (!e.target.value) return; arr.push(e.target.value); touch(rec); renderContent(); } },
+      h("option", { value: "" }, "+ Add…"),
+      known.filter(k => !arr.includes(k.id)).sort((a, b) => a.name.localeCompare(b.name)).map(k => h("option", { value: k.id }, k.name)));
+  } else {
+    adder = h("input", { type: "text", placeholder: "+ Add, then Enter", onkeydown: (e) => {
+      if (e.key !== "Enter" || !e.target.value.trim()) return;
+      arr.push(e.target.value.trim()); touch(rec); renderContent();
+    } });
+  }
+  return h("div", { class: "chips" }, chips, adder);
+}
+// A list of free-text lines (reports, side effects).
+function stringList(rec, arr, opts = {}) {
+  const rows = arr.map((v, i) => h("div", { class: "row" },
+    h("input", { type: "text", value: v, placeholder: opts.placeholder, oninput: (e) => { arr[i] = e.target.value; touch(rec); } }),
+    h("button", { class: "icon", title: "Remove", onclick: () => { arr.splice(i, 1); touch(rec); renderContent(); } }, "×")));
+  return h("div", { class: "strings" }, rows, h("div", {}, h("button", { class: "small", onclick: () => { arr.push(""); touch(rec); renderContent(); } }, opts.addLabel || "+ Add line")));
+}
+function card(title, hint, ...kids) {
+  return h("div", { class: "card" }, h("h3", {}, title), hint ? h("div", { class: "hint" }, hint) : null, kids);
+}
+function datalist(id, values) {
+  return h("datalist", { id }, [...new Set(values.filter(Boolean))].sort().map(v => h("option", { value: v })));
+}
+function idField(kind, rec) {
+  const el = h("input", { type: "text", value: rec.id });
+  el.addEventListener("change", () => {
+    const v = el.value.trim();
+    if (v === rec.id) return;
+    if (!ID_RE.test(v)) { alert("Ids use lowercase letters, digits and underscores, starting with a letter."); el.value = rec.id; return; }
+    if (byId(kind, v)) { alert(`Another ${KINDS[kind].one} already uses '${v}'.`); el.value = rec.id; return; }
+    renameId(kind, rec, v);
+  });
+  return field("Id", el, { help: "Used by the game and other data to refer to this. Renaming updates every reference." });
+}
+function usedBy(title, list) {
+  return card(title, null, list.length
+    ? h("div", { class: "links" }, list.map(([kind, r]) => h("a", { onclick: () => select(kind, r) }, r.name || r.id)))
+    : h("div", { class: "muted" }, "Nothing uses this yet."));
+}
+const deptOptions = () => store.departments.map(d => [d.id, d.name]);
+const listOf = (kind) => records(kind).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(r => [r.id, r.name || r.id]);
+
+// --- illness form ------------------------------------------------------------------------------
+
+function conditionForm(c) {
+  c.observations ||= {};
+  c.deterioration_effects ||= {};
+  c.symptoms ||= [];
+  c.treatment ||= [];
+  const symptomOpts = listOf("symptoms");
+  const tests = records("investigations").filter(t => (t.abnormal || []).some(a => a.condition === c.id));
+
+  const symRows = c.symptoms.map((s, i) => h("tr", {},
+    h("td", {}, selectBox(c, () => s.symptom, (v) => { s.symptom = v; }, symptomOpts, { rerender: true })),
+    h("td", {}, pctBox(c, () => s.probability, (v) => { s.probability = v; })),
+    h("td", {}, h("button", { class: "icon", title: "Remove", onclick: () => { c.symptoms.splice(i, 1); touch(c); renderContent(); } }, "×"))));
+
+  const treatRows = c.treatment.map((t, i) => {
+    const isMed = t.type === "medication";
+    const what = isMed
+      ? selectBox(c, () => t.medication, (v) => { t.medication = v; }, listOf("medications"))
+      : h("input", { type: "text", value: t.name ?? "", placeholder: "What is done", oninput: (e) => { t.name = e.target.value; touch(c); } });
+    const extra = isMed ? h("span", { class: "muted" }, "given by a nurse") : h("div", { class: "pair" },
+      selectBox(c, () => t.performed_by ?? "nurse", (v) => { t.performed_by = v; }, [["nurse", "Nurse"], ["doctor", "Doctor"]]),
+      numBox(c, () => t.minutes ?? 5, (v) => { t.minutes = v; }, { int: true, min: 1, max: 600 }), h("span", {}, "min"),
+      selectBox(c, () => t.room ?? "", (v) => { if (v) t.room = v; else delete t.room; }, [["plaster_room", "Plaster room if open"]], { emptyLabel: "Any cubicle" }));
+    return h("tr", {},
+      h("td", {}, selectBox(c, () => t.type, (v) => {
+        t.type = v;
+        if (v === "medication") { delete t.name; delete t.performed_by; delete t.minutes; delete t.room; t.medication ||= records("medications")[0]?.id; }
+        else { delete t.medication; t.name ||= ""; t.performed_by ||= "nurse"; t.minutes ||= 10; }
+      }, [["medication", "Medicine"], ["procedure", "Procedure"]], { rerender: true })),
+      h("td", {}, what), h("td", {}, extra),
+      h("td", {}, h("input", { type: "checkbox", checked: !!t.essential, title: "Essential: must be given before the patient starts to recover", onchange: (e) => { t.essential = e.target.checked; touch(c); } })),
+      h("td", { style: "white-space:nowrap" },
+        h("button", { class: "icon", title: "Move up", disabled: i === 0, onclick: () => { c.treatment.splice(i - 1, 0, ...c.treatment.splice(i, 1)); touch(c); renderContent(); } }, "↑"),
+        h("button", { class: "icon", title: "Move down", disabled: i === c.treatment.length - 1, onclick: () => { c.treatment.splice(i + 1, 0, ...c.treatment.splice(i, 1)); touch(c); renderContent(); } }, "↓"),
+        h("button", { class: "icon", title: "Remove", onclick: () => { c.treatment.splice(i, 1); touch(c); renderContent(); } }, "×")));
+  });
+
+  const disp = c.disposition;
+  const op = c.operation;
+  const outcome = [
+    selectIn(c, c, "disposition", "Outcome after A&E", [["discharge", "Discharge home"], ["admit", "Admit to a ward"], ["surgery", "Operation, then a ward"], ["transfer", "Transfer to another hospital"]], { rerender: true }),
+    textIn(c, c, "disposition_note", "Outcome note", { multiline: true, wide: true, help: "Shown in the patient record." }),
+    disp === "admit" || disp === "surgery" ? pairIn(c, c, "length_of_stay_hours", "Ward stay", ["from", "to"], { unit: "hours", min: 1, max: 1440, defaults: [24, 72] }) : null,
+    disp === "discharge" ? optionalPairIn(c, c, "observe_hours", "Observe on the A&E ward first", ["from", "to"], [4, 6], { unit: "hours", help: "When a bed is free, e.g. 4 to 6 hours after anaphylaxis." }) : null,
+    disp === "admit" ? optionalPairIn(c, c, "ambulatory_hours", "Can use same-day emergency care instead", ["from", "to"], [3, 6], { unit: "hours", min: 1, max: 12, help: "Non-Red patients go to an ambulatory care unit when it has room." }) : null,
+    disp === "admit" ? checkIn(c, c, "needs_intensive_care", "Needs intensive care however they look") : null,
+    checkIn(c, c, "needs_physio", "Needs physiotherapy before going home"),
+  ];
+  let opCard = null;
+  if (disp === "surgery") {
+    if (!op) c.operation = { name: "", minutes: 60 };
+    const o = c.operation;
+    opCard = card("Operation", null, h("div", { class: "grid" },
+      textIn(c, o, "name", "Operation name"),
+      numIn(c, o, "minutes", "Minutes in the room", { int: true, min: 10, max: 600 }),
+      selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]], { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
+      checkIn(c, o, "major", "Major (recovers on HDU first)"),
+      checkIn(c, o, "day_case", "Day case (home the same day)")));
+  } else if (op) {
+    opCard = card("Operation", "Only used when the outcome is an operation.", h("button", { class: "danger small", onclick: () => { delete c.operation; touch(c); renderContent(); } }, "Remove operation details"));
+  }
+
+  return h("div", {},
+    datalist("crewList", records("conditions").map(x => x.crew_assessment)),
+    card("Basics", null, h("div", { class: "grid" },
+      textIn(c, c, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("conditions", c),
+      selectIn(c, c, "department", "Department", deptOptions()),
+      numIn(c, c, "prevalence", "How common", { min: 0.0001, max: 1000, help: "Relative weight among A&E arrivals (bigger = more often)." }),
+      textIn(c, c, "description", "Description", { multiline: true, wide: true }),
+      pairIn(c, c, "age_range", "Ages", ["from", "to"], { int: true, min: 0, max: 110, unit: "years" }),
+      pctIn(c, c, "female_fraction", "Female patients"),
+      pctIn(c, c, "ambulance_probability", "Arrive by ambulance"),
+      textIn(c, c, "crew_assessment", "Ambulance crew says", { list: "crewList", help: "Spoken on the tannoy, e.g. \"potential heart attack\"." }),
+      checkIn(c, c, "can_be_fatal", "Can be fatal if untreated"))),
+    card("Symptoms", "The chance each symptom is present. The presenting complaint must be one of them.",
+      h("div", { class: "grid" }, selectIn(c, c, "presenting_complaint", "Presenting complaint (why they came)", symptomOpts)),
+      h("table", { class: "rows", style: "margin-top:10px" }, h("tr", {}, h("th", {}, "Symptom"), h("th", {}, "Chance"), h("th", {})), symRows),
+      h("button", { class: "small", style: "margin-top:8px", onclick: () => { c.symptoms.push({ symptom: symptomOpts.find(([v]) => !c.symptoms.some(s => s.symptom === v))?.[0] ?? "", probability: 0.5 }); touch(c); renderContent(); } }, "+ Add symptom")),
+    card("Observations on arrival", "Average and spread (standard deviation) for each vital sign. Pain is a range out of 10.",
+      h("div", { class: "grid" },
+        OBS.map(([k, label, unit, lo, hi]) => pairIn(c, c.observations, k, label, ["avg", "±"], { unit, min: 0 })),
+        pairIn(c, c.observations, "pain_score", "Pain score", ["from", "to"], { min: 0, max: 10, unit: "/10" }))),
+    card("Severity", "0 is well and 1 is peri-arrest. Untreated patients get worse; once every essential treatment is given they recover.",
+      h("div", { class: "grid" },
+        pairIn(c, c, "initial_severity", "Severity on arrival", ["from", "to"], { min: 0, max: 1, step: 0.05 }),
+        numIn(c, c, "deterioration_per_hour", "Worsens per hour (untreated)", { min: 0, max: 5, step: 0.01 }),
+        numIn(c, c, "recovery_per_hour", "Recovers per hour (treated)", { min: 0, max: 5, step: 0.01 })),
+      h("div", { class: "lbl", style: "margin:12px 0 6px" }, "How the vital signs change by the time severity reaches 1"),
+      h("div", { class: "grid" }, OBS.filter(([k]) => k !== "diastolic_bp").map(([k, label, unit]) =>
+        field(label, h("div", { class: "pair" }, numBox(c, () => c.deterioration_effects[k] ?? 0, (v) => { c.deterioration_effects[k] = v; }), h("span", {}, unit)))))),
+    card("Tests", "Key tests are what a doctor needs before confidently diagnosing it. Below, how each test reports this illness.",
+      idChips(c, c, "key_investigations", "investigations"),
+      h("div", { style: "margin-top:14px" }, tests.map(t => testResultEditor(t, t.abnormal.find(a => a.condition === c.id), c))),
+      testAdder(c)),
+    card("Treatment", "In order. Tick Essential for steps that must be given before the patient starts to recover.",
+      h("table", { class: "rows" }, h("tr", {}, h("th", {}, "Type"), h("th", {}, "Medicine or procedure"), h("th", {}, "Done by / time / room"), h("th", {}, "Essential"), h("th", {})), treatRows),
+      h("div", { style: "margin-top:8px; display:flex; gap:6px" },
+        h("button", { class: "small", onclick: () => { c.treatment.push({ type: "medication", medication: records("medications")[0]?.id, essential: false }); touch(c); renderContent(); } }, "+ Add medicine"),
+        h("button", { class: "small", onclick: () => { c.treatment.push({ type: "procedure", name: "", performed_by: "nurse", minutes: 10, essential: false }); touch(c); renderContent(); } }, "+ Add procedure"))),
+    card("Outcome", null, h("div", { class: "grid" }, outcome)),
+    opCard);
+}
+
+let titleTimer;
+function scheduleTitle() {
+  clearTimeout(titleTimer);
+  titleTimer = setTimeout(() => { const t = document.querySelector(".title-row h2"); if (t && ui.selected) t.textContent = ui.selected.name || ui.selected.id; }, 150);
+}
+
+// One test's result for one illness: lives in the test's file, edited from either side.
+function testResultEditor(test, a, ownerRec) {
+  const onTest = ownerRec === test;
+  const label = onTest ? null : h("a", { onclick: () => select("investigations", test), style: "cursor:pointer;color:var(--blue)" }, test.name);
+  a.summaries ||= [];
+  const hasValue = !!test.unit || !!a.value_range;
+  return h("div", { class: "sub-card" },
+    h("div", { class: "head" },
+      onTest ? selectBox(test, () => a.condition, (v) => { a.condition = v; }, listOf("conditions")) : h("b", {}, label),
+      h("span", { class: "lbl" }, "Shows as abnormal"),
+      h("div", { style: "width:220px" }, pctBox(test, () => a.probability, (v) => { a.probability = v; })),
+      h("button", { class: "icon danger", title: "Remove this result", onclick: () => { test.abnormal.splice(test.abnormal.indexOf(a), 1); touch(test); renderContent(); } }, "×")),
+    hasValue ? h("div", { class: "pair", style: "margin-bottom:8px" }, h("span", {}, "Value from"),
+      numBox(test, () => a.value_range?.[0], (v) => { (a.value_range ||= [0, 0])[0] = v; }), h("span", {}, "to"),
+      numBox(test, () => a.value_range?.[1], (v) => { (a.value_range ||= [0, 0])[1] = v; }), h("span", {}, test.unit || ""),
+      a.value_range ? h("button", { class: "small", onclick: () => { delete a.value_range; touch(test); renderContent(); } }, "No value") : null) : null,
+    h("div", { class: "lbl", style: "margin-bottom:4px" }, "Report text (one is picked at random" + (hasValue ? "; {value} is replaced by the number" : "") + ")"),
+    stringList(test, a.summaries, { addLabel: "+ Add report" }));
+}
+function testAdder(c) {
+  const free = records("investigations").filter(t => !(t.abnormal || []).some(a => a.condition === c.id)).sort((a, b) => a.name.localeCompare(b.name));
+  return h("select", { style: "margin-top:4px", onchange: (e) => {
+    const t = byId("investigations", e.target.value); if (!t) return;
+    (t.abnormal ||= []).push({ condition: c.id, probability: 0.8, ...(t.unit ? { value_range: [0, 0] } : {}), summaries: [""] });
+    touch(t); renderContent();
+  } }, h("option", { value: "" }, "+ Add how a test shows this illness…"), free.map(t => h("option", { value: t.id }, t.name)));
+}
+
+// --- symptom form ------------------------------------------------------------------------------
+
+function symptomForm(s) {
+  const users = records("conditions").filter(c => (c.symptoms || []).some(x => x.symptom === s.id) || c.presenting_complaint === s.id);
+  return h("div", {},
+    datalist("bodyList", records("symptoms").map(x => x.body_system)),
+    card("Symptom", null, h("div", { class: "grid" },
+      textIn(s, s, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("symptoms", s),
+      textIn(s, s, "body_system", "Body system", { list: "bodyList" }),
+      checkIn(s, s, "is_red_flag", "Red flag (worrying at triage)"),
+      textIn(s, s, "patient_description", "What the patient says", { wide: true }))),
+    card("Triage tests", "Tests the triage nurse starts straight away for this symptom.", idChips(s, s, "triage_investigations", "investigations")),
+    usedBy("Illnesses with this symptom", users.map(c => ["conditions", c])));
+}
+
+// --- test form ---------------------------------------------------------------------------------
+
+function investigationForm(t) {
+  t.abnormal ||= [];
+  t.normal ||= { summaries: [""] };
+  const keyFor = records("conditions").filter(c => (c.key_investigations || []).includes(t.id));
+  const triage = records("symptoms").filter(s => (s.triage_investigations || []).includes(t.id));
+  const tmpl = (key, title, hint, optional) => {
+    const x = t[key];
+    if (!x) return card(title, hint, h("button", { class: "small", onclick: () => { t[key] = { summaries: [""] }; touch(t); renderContent(); } }, "+ Add " + title.toLowerCase()));
+    x.summaries ||= [];
+    return card(title, hint,
+      h("div", { class: "field check", style: "margin-bottom:8px" }, h("input", { type: "checkbox", id: key + "_vr", checked: !!x.value_range, onchange: (e) => { if (e.target.checked) x.value_range = [0, 0]; else delete x.value_range; touch(t); renderContent(); } }), h("label", { for: key + "_vr" }, "Gives a number")),
+      x.value_range ? h("div", { class: "pair", style: "margin-bottom:8px" }, h("span", {}, "from"), numBox(t, () => x.value_range[0], (v) => { x.value_range[0] = v; }), h("span", {}, "to"), numBox(t, () => x.value_range[1], (v) => { x.value_range[1] = v; }), h("span", {}, t.unit || "")) : null,
+      stringList(t, x.summaries, { addLabel: "+ Add report" }),
+      optional ? h("button", { class: "small danger", style: "margin-top:8px", onclick: () => { delete t[key]; touch(t); renderContent(); } }, "Remove") : null);
+  };
+  return h("div", {},
+    card("Test", null, h("div", { class: "grid" },
+      textIn(t, t, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("investigations", t),
+      selectIn(t, t, "category", "Category", [["bedside", "Bedside"], ["blood", "Blood test"], ["imaging", "Imaging"]], { rerender: true }),
+      selectIn(t, t, "performed_by", "Done by", [["nurse", "Nurse"], ["doctor", "Doctor"]]),
+      t.category === "imaging" || t.room ? selectIn(t, t, "room", "Room", [["x_ray", "X-ray"], ["ct", "CT"], ["echo", "Echo"], ["eeg", "EEG"], ["ultrasound", "Ultrasound"], ["endoscopy", "Endoscopy"]], { emptyLabel: "None", emptyIsNone: true }) : null,
+      numIn(t, t, "procedure_minutes", "Minutes to do", { int: true, min: 1, max: 240 }),
+      numIn(t, t, "turnaround_minutes", "Minutes until the result", { int: true, min: 0, max: 1440 }),
+      numIn(t, t, "cost", "Cost (£)", { int: true, min: 0, max: 100000 }),
+      selectIn(t, t, "applies_to_sex", "Patients", [["any", "Anyone"], ["female", "Female only"], ["male", "Male only"]]),
+      textIn(t, t, "unit", "Unit (for numbers)", { placeholder: "e.g. ng/L", removeWhenEmpty: true }),
+      pctIn(t, t, "false_positive_rate", "False positive rate"),
+      checkIn(t, t, "escalate_to_red_if_abnormal", "Abnormal result makes the patient Red"))),
+    tmpl("normal", "Normal result", "What the report says when the test is normal.", false),
+    tmpl("false_positive", "False positive result", "Used when a well patient's test comes back mildly abnormal.", true),
+    card("Abnormal results by illness", "How often this test is abnormal in each illness, and what it reports.",
+      t.abnormal.map(a => testResultEditor(t, a, t)),
+      h("button", { class: "small", onclick: () => { t.abnormal.push({ condition: records("conditions")[0]?.id, probability: 0.8, summaries: [""] }); touch(t); renderContent(); } }, "+ Add illness")),
+    usedBy("Key test for", keyFor.map(c => ["conditions", c])),
+    triage.length ? usedBy("Started at triage for", triage.map(s => ["symptoms", s])) : null);
+}
+
+// --- medicine form -----------------------------------------------------------------------------
+
+function medicationForm(m) {
+  m.common_side_effects ||= [];
+  const users = records("conditions").filter(c => (c.treatment || []).some(t => t.medication === m.id));
+  return h("div", {},
+    datalist("routeList", records("medications").map(x => x.route)),
+    datalist("classList", records("medications").map(x => x.drug_class)),
+    card("Medicine", null, h("div", { class: "grid" },
+      textIn(m, m, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("medications", m),
+      textIn(m, m, "drug_class", "Drug class", { list: "classList" }),
+      textIn(m, m, "route", "Route", { list: "routeList" }),
+      textIn(m, m, "typical_dose", "Typical dose"),
+      numIn(m, m, "cost_per_dose", "Cost per dose (£)", { int: true, min: 0, max: 100000 }),
+      textIn(m, m, "indications", "Used for", { multiline: true, wide: true }),
+      textIn(m, m, "contraindications", "Don't give if", { multiline: true, wide: true }))),
+    card("Allergy groups", "Patients allergic to any of these groups can't have it.", idChips(m, m, "allergy_groups", null)),
+    card("Common side effects", null, stringList(m, m.common_side_effects, { addLabel: "+ Add side effect" })),
+    usedBy("Used to treat", users.map(c => ["conditions", c])));
+}
+
+// ---------------------------------------------------------------------------------------------
+// New, duplicate, delete, rename
+// ---------------------------------------------------------------------------------------------
+
+function blank(kind) {
+  if (kind === "conditions") return {
+    id: "", name: "", department: "emergency", description: "", prevalence: 1, age_range: [18, 90], female_fraction: 0.5,
+    ambulance_probability: 0.2, crew_assessment: "", presenting_complaint: "", symptoms: [],
+    observations: { heart_rate: [85, 10], systolic_bp: [130, 15], diastolic_bp: [80, 10], respiratory_rate: [16, 2], oxygen_saturation: [97, 1], temperature: [36.9, 0.3], pain_score: [0, 3] },
+    initial_severity: [0.1, 0.3], deterioration_per_hour: 0.02,
+    deterioration_effects: { heart_rate: 20, systolic_bp: -30, respiratory_rate: 6, oxygen_saturation: -5, temperature: 0 },
+    can_be_fatal: false, key_investigations: [], treatment: [], recovery_per_hour: 0.3, disposition: "discharge", disposition_note: "",
+  };
+  if (kind === "symptoms") return { id: "", name: "", patient_description: "", body_system: "general", is_red_flag: false };
+  if (kind === "investigations") return { id: "", name: "", category: "blood", performed_by: "nurse", procedure_minutes: 5, turnaround_minutes: 60, cost: 20, applies_to_sex: "any", normal: { summaries: [""] }, false_positive_rate: 0, abnormal: [] };
+  return { id: "", name: "", drug_class: "", route: "oral", typical_dose: "", indications: "", contraindications: "", allergy_groups: [], common_side_effects: [], cost_per_dose: 1 };
+}
+function slug(s) { let v = s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); if (!/^[a-z]/.test(v)) v = "x_" + v; return v; }
+function uniqueId(kind, base) { let id = base, n = 2; while (byId(kind, id)) id = `${base}_${n++}`; return id; }
+
+async function newRecord() {
+  const kind = ui.kind, k = KINDS[kind];
+  const files = store.files[kind];
+  const dlg = $("dlg");
+  const name = h("input", { type: "text", placeholder: `Name of the new ${k.one}`, style: "width:100%" });
+  const fileSel = h("select", { style: "width:100%" }, files.map(f => h("option", { value: f.name }, f.name)), h("option", { value: "__new" }, "A new file…"));
+  const newFile = h("input", { type: "text", placeholder: "my_new_file.json", style: "width:100%", hidden: true });
+  fileSel.addEventListener("change", () => { newFile.hidden = fileSel.value !== "__new"; });
+  const preferred = kind === "conditions" && ui.selected ? fileOf.get(ui.selected)?.name : null;
+  if (preferred) fileSel.value = preferred;
+  dlg.replaceChildren(h("h3", {}, `New ${k.one}`),
+    h("div", { class: "field", style: "margin-bottom:10px" }, h("label", {}, "Name"), name),
+    h("div", { class: "field" }, h("label", {}, `Save it in ${k.folder}/`), fileSel, newFile),
+    h("div", { class: "actions" }, h("button", { onclick: () => dlg.close("") }, "Cancel"), h("button", { class: "primary", onclick: () => dlg.close("ok") }, "Create")));
+  dlg.returnValue = ""; dlg.showModal(); name.focus();
+  name.addEventListener("keydown", (e) => { if (e.key === "Enter") dlg.close("ok"); });
+  await new Promise(r => dlg.addEventListener("close", r, { once: true }));
+  if (dlg.returnValue !== "ok" || !name.value.trim()) return;
+  let file;
+  if (fileSel.value === "__new") {
+    let fn = slug(newFile.value.replace(/\.json$/i, "") || name.value) + ".json";
+    file = files.find(f => f.name === fn);
+    if (!file) { file = { name: fn, folder: k.folder, indent: 2, trailingNewline: true, records: [], dirty: true }; files.push(file); }
+  } else file = files.find(f => f.name === fileSel.value);
+  const rec = blank(kind);
+  rec.name = name.value.trim();
+  rec.id = uniqueId(kind, slug(rec.name));
+  if (kind === "conditions" && ui.selected && ui.kind === "conditions") rec.department = ui.selected.department;
+  file.records.push(rec); fileOf.set(rec, file); file.dirty = true;
+  validate(); select(kind, rec);
+}
+
+function duplicate(kind, rec) {
+  const copy = JSON.parse(JSON.stringify(rec));
+  copy.name = (rec.name || rec.id) + " (copy)";
+  copy.id = uniqueId(kind, rec.id + "_copy");
+  const f = fileOf.get(rec);
+  f.records.splice(f.records.indexOf(rec) + 1, 0, copy); fileOf.set(copy, f); f.dirty = true;
+  if (kind === "conditions") {
+    // Copy how tests report it too, so the new illness can be diagnosed.
+    for (const t of records("investigations")) for (const a of (t.abnormal || []).filter(x => x.condition === rec.id)) {
+      t.abnormal.push({ ...JSON.parse(JSON.stringify(a)), condition: copy.id }); touch(t);
+    }
+  }
+  validate(); select(kind, copy);
+  toast("Copied. Give it a new name.");
+}
+
+function references(kind, id) {
+  const out = [];
+  if (kind === "symptoms") for (const c of records("conditions")) if ((c.symptoms || []).some(s => s.symptom === id) || c.presenting_complaint === id) out.push(["conditions", c]);
+  if (kind === "medications") for (const c of records("conditions")) if ((c.treatment || []).some(t => t.medication === id)) out.push(["conditions", c]);
+  if (kind === "investigations") {
+    for (const c of records("conditions")) if ((c.key_investigations || []).includes(id)) out.push(["conditions", c]);
+    for (const s of records("symptoms")) if ((s.triage_investigations || []).includes(id)) out.push(["symptoms", s]);
+  }
+  return out;
+}
+
+async function remove(kind, rec) {
+  const refs = references(kind, rec.id);
+  const extra = kind === "conditions" ? " Test results for it are removed too." : refs.length ? ` It is still used by ${refs.map(([, r]) => r.name).join(", ")}: those will show problems until you change them.` : "";
+  if (!(await confirmDlg(`Delete ${rec.name || rec.id}?`, `This removes it from ${fileOf.get(rec).name} when you save.${extra}`, "Delete"))) return;
+  const f = fileOf.get(rec);
+  f.records.splice(f.records.indexOf(rec), 1); f.dirty = true;
+  if (kind === "conditions") for (const t of records("investigations")) {
+    const before = (t.abnormal || []).length;
+    t.abnormal = (t.abnormal || []).filter(a => a.condition !== rec.id);
+    if (t.abnormal.length !== before) touch(t);
+  }
+  ui.selected = null; validate(); renderAll();
+}
+
+function renameId(kind, rec, id) {
+  const old = rec.id;
+  rec.id = id; touch(rec);
+  const fix = (r) => touch(r);
+  if (kind === "conditions") for (const t of records("investigations")) for (const a of t.abnormal || []) if (a.condition === old) { a.condition = id; fix(t); }
+  if (kind === "symptoms") for (const c of records("conditions")) {
+    if (c.presenting_complaint === old) { c.presenting_complaint = id; fix(c); }
+    for (const s of c.symptoms || []) if (s.symptom === old) { s.symptom = id; fix(c); }
+  }
+  if (kind === "medications") for (const c of records("conditions")) for (const t of c.treatment || []) if (t.medication === old) { t.medication = id; fix(c); }
+  if (kind === "investigations") {
+    for (const c of records("conditions")) { const i = (c.key_investigations || []).indexOf(old); if (i >= 0) { c.key_investigations[i] = id; fix(c); } }
+    for (const s of records("symptoms")) { const i = (s.triage_investigations || []).indexOf(old); if (i >= 0) { s.triage_investigations[i] = id; fix(s); } }
+  }
+  validate(); renderContent(); renderList();
+  toast(`Renamed to ${id} and updated every reference.`);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+function confirmDlg(title, text, okLabel) {
+  const dlg = $("dlg");
+  dlg.replaceChildren(h("h3", {}, title), h("p", {}, text),
+    h("div", { class: "actions" }, h("button", { onclick: () => dlg.close("") }, "Cancel"), h("button", { class: "primary", onclick: () => dlg.close("ok") }, okLabel)));
+  dlg.returnValue = ""; dlg.showModal();
+  return new Promise(r => dlg.addEventListener("close", () => r(dlg.returnValue === "ok"), { once: true }));
+}
+let toastTimer;
+function toast(text) {
+  const t = $("toast"); t.textContent = text; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 4000);
+}
+
+$("openBtn").addEventListener("click", async () => {
+  if (dirtyFiles().length && !(await confirmDlg("Discard unsaved changes?", "Opening the data again loses changes you haven't saved.", "Discard"))) return;
+  openFolder();
+});
+$("folderInput").addEventListener("change", (e) => { if (e.target.files.length) openFromInput(e.target.files); e.target.value = ""; });
+$("saveBtn").addEventListener("click", save);
+$("newBtn").addEventListener("click", newRecord);
+$("status").addEventListener("click", () => { ui.selected = null; renderAll(); });
+$("search").addEventListener("input", (e) => { ui.search = e.target.value; renderList(); });
+window.addEventListener("beforeunload", (e) => { if (dirtyFiles().length) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); if (dirtyFiles().length) save(); } });
+
+renderAll();
+</script>
+</body>
+</html>
