@@ -12,8 +12,9 @@ namespace BlueprintHospital.UI;
 
 /// <summary>
 /// In-game heads-up display in the "Clinical light" style. Top bar: hospital, clock and speed, balance
-/// and menu. Left: navigation (board, build, patients, staff, finances, routes, grid). Along the top of
-/// the map: the headline A&amp;E figures. Left column: the A&amp;E board and notifications. Right: a docked
+/// the latest notification (hover for the last five) and menu. Left: navigation (board, build, patients,
+/// staff, finances, routes, grid). Along the top of the map: the headline A&amp;E figures. Left column: the
+/// A&amp;E board. Right: a docked
 /// card for the selected patient, member of staff or room, or the open list. Bottom right: zoom and rotate.
 /// </summary>
 public partial class MainHUD : CanvasLayer
@@ -135,7 +136,7 @@ public partial class MainHUD : CanvasLayer
 
     private PanelContainer? _hoverPanel;
 
-    /// <summary>True while the A&amp;E board and notifications column is showing.</summary>
+    /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
     private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, ItemInfo, Finances, Recruitment, Clinics };
@@ -221,7 +222,7 @@ public partial class MainHUD : CanvasLayer
         }
     }
 
-    /// <summary>Shows or hides the A&amp;E board and notifications.</summary>
+    /// <summary>Shows or hides the A&amp;E board.</summary>
     public void ToggleBoard() => _left.Visible = !_left.Visible;
 
     public void Initialise(GameSession session, BlueprintHospital.Hospital.BuildTool tool)
@@ -234,6 +235,7 @@ public partial class MainHUD : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
+        Feed.Initialise(session.Simulation, session.Events);
         root.AddChild(BuildTag());
         root.AddChild(BuildTopBar());
         root.AddChild(BuildNav());
@@ -248,12 +250,8 @@ public partial class MainHUD : CanvasLayer
         _left.OffsetBottom = -Gap;
         _left.AddThemeConstantOverride("separation", 10);
         Dashboard.Initialise(sim);
-        Feed.Initialise(sim, session.Events);
         Dashboard.CustomMinimumSize = new Vector2(330, 0);
-        Feed.CustomMinimumSize = new Vector2(330, 120);
-        Feed.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         _left.AddChild(Dashboard);
-        _left.AddChild(Feed);
         root.AddChild(_left);
 
         Record.Initialise(sim);
@@ -303,6 +301,9 @@ public partial class MainHUD : CanvasLayer
         Cheats.OffsetRight = 300;
         Cheats.OffsetTop = TopBarHeight + Gap;
         root.AddChild(Cheats);
+
+        // The notifications drop-down opens over everything else.
+        root.AddChild(Feed.Dropdown);
 
         _speedSubscription = session.Events.Subscribe<SimulationSpeedChanged>(_ => RefreshSpeedButtons());
         RefreshSpeedButtons();
@@ -435,7 +436,9 @@ public partial class MainHUD : CanvasLayer
         row.AddChild(clock);
         row.AddChild(BuildModeSwitch());
 
-        row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
+        // The latest notification fills the gap; hovering drops down the last five.
+        Feed.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(Feed);
 
         _balanceButton.ThemeTypeVariation = UiStyle.Secondary;
         _balanceButton.CustomMinimumSize = new Vector2(0, 40);
@@ -547,7 +550,7 @@ public partial class MainHUD : CanvasLayer
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 6);
         nav.AddChild(column);
-        column.AddChild(NavButton("Hospital", NavIcon.Kind.Hospital, ToggleBoard, "Show or hide the A&E board and notifications"));
+        column.AddChild(NavButton("Hospital", NavIcon.Kind.Hospital, ToggleBoard, "Show or hide the A&E board"));
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
