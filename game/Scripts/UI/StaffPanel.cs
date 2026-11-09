@@ -206,7 +206,7 @@ public partial class StaffPanel : PanelContainer
         _name.Text = m.Name;
         var place = m.BaseRoomId is { } roomId && _sim.Spaces.FirstOrDefault(s => s.Id == roomId) is { } room ? room.Name : "A&E";
         _role.Text = $"{m.Grade} · {place}";
-        var uniform = Looks.Staff(m).Top;
+        var uniform = Looks.UniformColour(m);
         HudWidgets.SetAvatar(_avatar, m.Name, uniform.Luminance > 0.85f ? new Color("#5A6B7A") : uniform);
 
         var task = m.CurrentTaskId is { } taskId ? _sim.Tasks.FirstOrDefault(t => t.Id == taskId) : null;

@@ -111,7 +111,7 @@ public partial class RouteLayer : Node2D
     /// <summary>Uniform colour, with white uniforms (radiographers, pharmacists) shown in slate so the line is visible.</summary>
     private static Color StaffColour(StaffMember member)
     {
-        var top = Looks.Staff(member).Top;
+        var top = Looks.UniformColour(member);
         return top.Luminance > 0.85f ? new Color("#5A6B7A") : top;
     }
 
