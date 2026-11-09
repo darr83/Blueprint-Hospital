@@ -22,6 +22,19 @@ public static class ChairArt
     private const double HalfWidth = 0.42;
     private const double HalfDepth = 0.36;
 
+    /// <summary>
+    /// How far a chair stands forward of the middle of its tile, in tiles, so a chair with its back to a wall
+    /// stands just clear of the wall instead of sinking into it.
+    /// </summary>
+    public const double Inset = 0.1;
+
+    /// <summary>The middle of the chair's seat, in grid units.</summary>
+    public static (double X, double Y) Centre(GridCoord tile, WallSide facing)
+    {
+        var (fx, fy) = Direction(facing);
+        return (tile.X + 0.5 + (fx * Inset), tile.Y + 0.5 + (fy * Inset));
+    }
+
     /// <summary>The way someone sitting on a chair facing <paramref name="facing"/> looks, as a grid step.</summary>
     public static (double X, double Y) Direction(WallSide facing) => facing switch
     {
@@ -45,13 +58,18 @@ public static class ChairArt
     public static float Lean(WallSide facing) => Math.Sign(ScreenDirection(facing).X);
 
     /// <summary>Where the chair's frame and seat sort: just behind the person sitting on it.</summary>
-    public static Vector2 SeatAnchor(GridCoord tile) => IsoDraw.ToScreen(tile.X + 0.5, tile.Y + 0.5) - new Vector2(0, 1);
+    public static Vector2 SeatAnchor(GridCoord tile, WallSide facing)
+    {
+        var (cx, cy) = Centre(tile, facing);
+        return IsoDraw.ToScreen(cx, cy) - new Vector2(0, 1);
+    }
 
     /// <summary>Where the chair's back sorts: the middle of its back edge.</summary>
     public static Vector2 BackAnchor(GridCoord tile, WallSide facing)
     {
         var (fx, fy) = Direction(facing);
-        return IsoDraw.ToScreen(tile.X + 0.5 - (fx * HalfDepth), tile.Y + 0.5 - (fy * HalfDepth));
+        var (cx, cy) = Centre(tile, facing);
+        return IsoDraw.ToScreen(cx - (fx * HalfDepth), cy - (fy * HalfDepth));
     }
 
     /// <summary>A rectangle in the chair's own frame (u across, v from back to front) as a grid footprint.</summary>
@@ -72,7 +90,7 @@ public static class ChairArt
     /// <summary>The legs, seat and arms: everything a sitter sits in front of.</summary>
     public static void Seat(CanvasItem c, GridCoord tile, WallSide facing, Color colour)
     {
-        var (cx, cy) = (tile.X + 0.5, tile.Y + 0.5);
+        var (cx, cy) = Centre(tile, facing);
         var (hw, hd) = (HalfWidth, HalfDepth);
 
         // Soft shadow on the floor.
@@ -102,7 +120,7 @@ public static class ChairArt
     /// <summary>The back of the chair: two posts and an upholstered pad.</summary>
     public static void Back(CanvasItem c, GridCoord tile, WallSide facing, Color colour)
     {
-        var (cx, cy) = (tile.X + 0.5, tile.Y + 0.5);
+        var (cx, cy) = Centre(tile, facing);
         var (hw, hd) = (HalfWidth, HalfDepth);
         foreach (var u in new[] { -hw + 0.08, hw - 0.14 })
         {

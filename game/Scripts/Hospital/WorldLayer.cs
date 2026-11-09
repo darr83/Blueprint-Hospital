@@ -135,6 +135,13 @@ public partial class WorldLayer : Node2D
     public Vector2 FootPosition(Agent agent)
     {
         var (x, y) = Interpolated(agent);
+        if (IsSeated(agent))
+        {
+            // Sitting on a chair, which stands a little forward of the middle of its tile.
+            var (fx, fy) = ChairArt.Direction(SeatFacing(agent));
+            (x, y) = (x + (fx * ChairArt.Inset), y + (fy * ChairArt.Inset));
+        }
+
         return IsoDraw.ToScreen(x, y);
     }
 
@@ -657,7 +664,7 @@ public partial class WorldLayer : Node2D
     /// <summary>A chair in two parts, so whoever sits on it sorts between the seat and the back.</summary>
     private void Chair(GridCoord tile, WallSide facing, Color colour)
     {
-        AddProp(ChairArt.SeatAnchor(tile), c => ChairArt.Seat(c, tile, facing, colour));
+        AddProp(ChairArt.SeatAnchor(tile, facing), c => ChairArt.Seat(c, tile, facing, colour));
         AddProp(ChairArt.BackAnchor(tile, facing), c => ChairArt.Back(c, tile, facing, colour));
     }
 

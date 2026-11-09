@@ -1294,8 +1294,12 @@ public partial class SmokeTest : Node
 
         tool.ChairColour = Simulation.Hospital.ChairColours.All[5].Hex;
         tool.FaceChairs(Simulation.World.WallSide.West);
-        tool.PreviewDrag(At(35, 28), At(35, 30));
-        Do("A row of chairs by the wall");
+        tool.PreviewDrag(At(36, 28), At(36, 30));
+        Do("A row of chairs against the east wall");
+        tool.ChairColour = Simulation.Hospital.ChairColours.All[6].Hex;
+        tool.FaceChairs(Simulation.World.WallSide.South);
+        tool.PreviewDrag(At(31, 26), At(35, 26));
+        Do("A row of chairs against the north wall");
         tool.Cancel();
         tool.FollowMouse = true;
 
