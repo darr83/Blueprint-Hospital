@@ -45,6 +45,7 @@ public partial class SmokeTest : Node
         EmptyBuilding,
         WaitForHospital,
         RunSimulation,
+        Notifications,
         CloseUp,
         WaitingRoom,
         WaitingRoomTurned,
@@ -175,6 +176,18 @@ public partial class SmokeTest : Node
 
             case Stage.RunSimulation when scene is HospitalScene hospital && _frame >= 30:
                 Screenshot("02_emergency_department");
+                Check(hospital.Hud.Feed.GetGlobalRect().End.Y <= UI.MainHUD.TopBarHeight, "The notifications box is not in the top bar.");
+                hospital.Hud.Feed.PinnedOpen = true;
+                _frame = 0;
+                _stage = Stage.Notifications;
+                break;
+
+            case Stage.Notifications when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("02b_notifications");
+                Check(hospital.Hud.Feed.Dropdown.Visible, "Hovering the notifications box did not show the recent events.");
+                Check(hospital.Hud.Feed.RowsShown == Math.Min(UI.NotificationFeed.Shown, hospital.Session.Simulation.Notifications.Count), $"The notifications list shows {hospital.Hud.Feed.RowsShown} events, not up to {UI.NotificationFeed.Shown}.");
+                hospital.Hud.Feed.PinnedOpen = false;
+                GD.Print($"[smoke] Notifications: latest in the top bar, {hospital.Hud.Feed.RowsShown} on hover.");
                 _overview = hospital.CaptureCamera();
                 // Close up on a bed with a patient in it, if there is one.
                 var sim = hospital.Session.Simulation;
