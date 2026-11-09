@@ -67,6 +67,15 @@ public enum CareSpaceKind
     /// <summary>A small alcove of vending machines and a water machine.</summary>
     VendingPoint,
 
+    /// <summary>Public toilets for patients and visitors: a row of cubicles, wash basins and a hand dryer.</summary>
+    Toilets,
+
+    /// <summary>A single accessible toilet with grab rails and an emergency pull cord, for anyone (older patients first).</summary>
+    AccessibleToilet,
+
+    /// <summary>A single toilet for staff only.</summary>
+    StaffToilet,
+
     /// <summary>A bed lift through every floor. Wheelchairs and trolleys change floor only by lift.</summary>
     Lift,
 
@@ -162,6 +171,15 @@ public sealed class CareSpace
 
     /// <summary>In a cafeteria or vending point: the tile in front of each vending machine, where customers stand to buy.</summary>
     public IReadOnlyList<GridCoord> VendingSpots { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>In a toilet room: where someone stands to use each toilet (inside each cubicle, or by the single toilet).</summary>
+    public IReadOnlyList<GridCoord> ToiletSpots { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>In a toilet room: the tile in front of each wash basin.</summary>
+    public IReadOnlyList<GridCoord> SinkSpots { get; init; } = Array.Empty<GridCoord>();
+
+    /// <summary>Public toilets, an accessible toilet or a staff toilet.</summary>
+    public bool IsToilet => Kind is CareSpaceKind.Toilets or CareSpaceKind.AccessibleToilet or CareSpaceKind.StaffToilet;
 
     /// <summary>A cafeteria or vending point, where waiting patients can get something to eat and drink.</summary>
     public bool IsRefreshments => Kind is CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint;

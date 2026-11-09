@@ -25,6 +25,7 @@ public static class RoomLayoutEngine
         RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair", "waiting_seat" },
         RoomLayoutKind.Cafeteria => new[] { "food_counter", "cafe_table", "cafe_chair" },
         RoomLayoutKind.Vending => new[] { "vending_machine" },
+        RoomLayoutKind.Toilets => new[] { "wash_basin" },
         _ => Array.Empty<string>(),
     };
 
@@ -94,6 +95,9 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.Vending:
                 Vending(plan, template);
                 break;
+            case RoomLayoutKind.Toilets:
+                Toilets(plan, template);
+                break;
             case RoomLayoutKind.Lift:
             case RoomLayoutKind.Stairs:
                 // Nothing to furnish: people stand in the middle to ride the lift or start up the stairs.
@@ -128,6 +132,8 @@ public static class RoomLayoutEngine
             Seats = plan.Seats,
             Beds = plan.Beds,
             VendingSpots = plan.Vendors,
+            ToiletSpots = plan.Toilets,
+            SinkSpots = plan.Sinks,
             QueueTiles = plan.Queue,
             Furniture = plan.Items,
             BuildCost = Cost(template, database, rect, plan.Items),
@@ -502,6 +508,98 @@ public static class RoomLayoutEngine
         }
     }
 
+    /// <summary>The most cubicles one toilet block gets.</summary>
+    public const int MaxCubicles = 6;
+
+    /// <summary>
+    /// Toilets. A toilet block gets a row of cubicles along the back wall (as many as fit, up to six), wash
+    /// basins down the side walls in front of them (one for every two cubicles) and a hand dryer. A single
+    /// toilet room (accessible or staff) gets its toilet in a back corner and a basin on the back wall.
+    /// </summary>
+    private static void Toilets(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+        var db = plan.Database;
+        var door = f.Tile(plan.DoorOffset + (plan.DoorWidth / 2), f.D - 2);
+
+        if (template.Furniture.Contains("toilet_cubicle") && db.Furniture.TryGetValue("toilet_cubicle", out var cubicle))
+        {
+            var width = cubicle.WidthM / Units.MetresPerTile;
+            var depth = cubicle.DepthM / Units.MetresPerTile;
+            for (var u = 0.2; plan.Toilets.Count < MaxCubicles && u + width <= f.W - 0.2; u += width + 0.1)
+            {
+                if (plan.TryPlaceLocal("toilet_cubicle", u, 0.2))
+                {
+                    var middle = (int)Math.Floor(u + (width / 2));
+                    plan.Toilets.Add(f.Tile(middle, 1));
+                    plan.Reserve(f.Tile(middle, (int)Math.Ceiling(0.2 + depth)));
+                }
+            }
+
+            // Basins down the side walls in front of the cubicles, then a hand dryer after them.
+            var basins = Math.Clamp((plan.Toilets.Count + 1) / 2, 1, 3);
+            var v = Math.Ceiling(0.2 + depth) + 0.2;
+            var left = true;
+            for (var tries = 0; plan.Sinks.Count < basins && tries < 8; tries++)
+            {
+                if (plan.TryPlaceTurnedAgainstSide("wash_basin", v, left, out var front))
+                {
+                    plan.Reserve(front);
+                    plan.Sinks.Add(front);
+                }
+
+                left = !left;
+                if (left)
+                {
+                    v += 1.2;
+                }
+            }
+
+            if (template.Furniture.Contains("hand_dryer"))
+            {
+                for (var dv = Math.Ceiling(0.2 + depth) + 0.2; dv < f.D - 1; dv += 0.6)
+                {
+                    if (plan.TryPlaceTurnedAgainstSide("hand_dryer", dv, false, out _) || plan.TryPlaceTurnedAgainstSide("hand_dryer", dv, true, out _))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Somewhere to wait just inside the door when every cubicle is in use.
+            plan.Queue = new[] { door, f.Tile(plan.DoorOffset, f.D - 2), f.Tile(plan.DoorOffset + plan.DoorWidth, f.D - 2) }
+                .Distinct().Where(t => !plan.Sinks.Contains(t)).ToList();
+        }
+        else
+        {
+            var pan = template.Furniture.FirstOrDefault(id => id is "accessible_wc" or "toilet_pan") ?? "toilet_pan";
+            if (db.Furniture.TryGetValue(pan, out var wc) && (plan.TryPlaceLocal(pan, 0.3, 0.2) || plan.TryPlaceLocal(pan, 0.3, 0.2, turned: true) || plan.TryPlaceAgainstWalls(pan)))
+            {
+                var item = plan.Items[^1];
+                plan.Toilets.Add(item.Tile);
+            }
+        }
+
+        if (template.Furniture.Contains("wash_basin") && plan.Sinks.Count == 0 && db.Furniture.TryGetValue("wash_basin", out var basin))
+        {
+            var su = basin.WidthM / Units.MetresPerTile;
+            var sv = basin.DepthM / Units.MetresPerTile;
+            var u = f.W - 0.3 - su;
+            if (plan.TryPlaceLocal("wash_basin", u, 0.2))
+            {
+                plan.Sinks.Add(f.Tile((int)Math.Floor(u + (su / 2)), (int)Math.Ceiling(0.2 + sv)));
+            }
+            else if (plan.TryPlaceAgainstWalls("wash_basin"))
+            {
+                var item = plan.Items[^1];
+                plan.Sinks.Add(item.Tile);
+            }
+        }
+
+        plan.PatientSpot = plan.Toilets.Count > 0 ? plan.Toilets[0] : door;
+        plan.StaffSpot = plan.PatientSpot;
+    }
+
     // ------------------------------------------------------------------ frame and plan
 
     /// <summary>
@@ -582,6 +680,12 @@ public static class RoomLayoutEngine
 
         /// <summary>The tile in front of each vending machine, where a customer stands to buy.</summary>
         public List<GridCoord> Vendors { get; } = new();
+
+        /// <summary>Where someone stands to use each toilet.</summary>
+        public List<GridCoord> Toilets { get; } = new();
+
+        /// <summary>The tile in front of each wash basin.</summary>
+        public List<GridCoord> Sinks { get; } = new();
 
         /// <summary>The tiles just inside each doorway, in site coordinates, which furniture must keep clear.</summary>
         public (double X, double Y, double W, double L) DoorApproach(int depth) =>

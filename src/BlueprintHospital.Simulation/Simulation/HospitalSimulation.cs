@@ -207,6 +207,7 @@ public sealed partial class HospitalSimulation
         UpdateWards();
         UpdateClinics(dt);
         UpdateRefreshments(dt);
+        UpdateToilets(dt);
         UpdateRecovery();
         SchedulePhysio();
         ScheduleOutreach();

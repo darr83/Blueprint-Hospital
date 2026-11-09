@@ -404,6 +404,28 @@ nearest, though people will walk further for a cafe), buy something (£2 to £3 
 called while they're away they go straight to the call. Having had something to eat or drink makes
 a patient half as likely to leave without being seen for the next 3 hours.
 
+### Toilets
+
+Build these from **Build → Facilities**. They have no staff; cleaning is part of the building's upkeep.
+
+| Room | Smallest | Furniture |
+| --- | --- | --- |
+| Toilets | 3 × 3 m | Cubicles along the back wall (about one per metre of wall, up to 6), wash basins with mirrors (one per two cubicles) and a hand dryer |
+| Accessible toilet | 2.5 × 2.5 m | A toilet with grab rails and a red emergency pull cord, and a basin |
+| Staff toilet | 1.5 × 2.5 m | A toilet and a basin, for staff only |
+
+Walking patients waiting in A&E (after 30 minutes) and checked-in clinic patients need the toilet
+now and then (about every two hours, twice as often after a drink from the cafe). They walk to the
+nearest free toilet, wait just inside the door if every cubicle is busy (for up to 15 minutes),
+wash their hands and go back to their seat. Someone in a cubicle is hidden and its door latch shows
+red. Patients aged 75 or over use the accessible toilet first. Staff on a break sometimes pop to the
+staff toilet, or to the public ones when there isn't one.
+
+With no public toilets, waiting patients are 50% more likely to leave without being seen. A
+patient who can't get to a toilet (none built, or they gave up queueing) has a 5% chance of an
+accident on the floor (three times that for children under 12): a wet patch with a yellow sign is
+left until the cleaners mop it up 30 minutes later.
+
 ### Outpatient clinics
 
 Build these from **Build → Clinics**: an **Outpatients reception** (desk and seats) and one or more

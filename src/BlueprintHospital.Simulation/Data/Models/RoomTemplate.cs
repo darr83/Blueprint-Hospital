@@ -47,6 +47,9 @@ public enum RoomLayoutKind
     /// <summary>A row of vending machines (up to 4) and a water machine, with a seat or two if there is room.</summary>
     Vending,
 
+    /// <summary>Toilets: a row of cubicles along the back wall with wash basins and a hand dryer, or (with no cubicles) a single toilet and basin.</summary>
+    Toilets,
+
     /// <summary>A lift car: empty floor, drawn as the lift. It stands in the same place on every floor.</summary>
     Lift,
 

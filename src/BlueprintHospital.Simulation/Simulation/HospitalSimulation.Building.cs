@@ -669,6 +669,7 @@ public sealed partial class HospitalSimulation
         foreach (var member in _staff)
         {
             if (member.Activity is StaffActivity.OnBreak or StaffActivity.WalkingToBreak
+                && !_toiletTrips.ContainsKey(member)
                 && !SpacesOfKind(CareSpaceKind.StaffRoom).Any(r => r.Seats.Contains(member.Destination ?? member.Tile)))
             {
                 member.Activity = StaffActivity.Idle;
