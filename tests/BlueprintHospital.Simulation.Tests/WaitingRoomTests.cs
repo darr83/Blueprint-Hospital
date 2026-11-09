@@ -145,6 +145,15 @@ public class WaitingRoomTests
         Assert.True(h.Sim.PlaceChair(new GridCoord(Spot.X + 2, Spot.Y + 4), WallSide.East, colour).CanBuild);
         Assert.Equal(WallSide.East, h.Sim.SuggestChairFacing(new GridCoord(Spot.X + 2, Spot.Y + 5)));
         Assert.Equal(WallSide.East, h.Sim.SuggestChairFacing(new GridCoord(Spot.X, Spot.Y + 9)));
+
+        // Against a wall the back goes to the wall, even beside a chair facing along the wall.
+        Assert.True(h.Sim.PlaceChair(new GridCoord(Spot.X, Spot.Y + 10), WallSide.South, colour).CanBuild);
+        Assert.Equal(WallSide.East, h.Sim.SuggestChairFacing(new GridCoord(Spot.X, Spot.Y + 9)));
+        Assert.Equal(WallSide.East, h.Sim.SuggestChairFacing(new GridCoord(Spot.X, Spot.Y + 11)));
+
+        // In a corner it follows the chairs beside it, as long as that keeps its back to a wall.
+        Assert.True(h.Sim.PlaceChair(new GridCoord(Spot.X + 1, Spot.Y), WallSide.South, colour).CanBuild);
+        Assert.Equal(WallSide.South, h.Sim.SuggestChairFacing(new GridCoord(Spot.X, Spot.Y)));
     }
 
     [Fact]

@@ -501,30 +501,28 @@ public sealed partial class HospitalSimulation
     public WallSide SuggestChairFacing(GridCoord tile)
     {
         var sides = new[] { WallSide.North, WallSide.West, WallSide.East, WallSide.South };
-        foreach (var side in sides)
-        {
-            var (dx, dy) = WaitingRoomLayout.Step(side);
-            if (ChairAt(new GridCoord(tile.X + dx, tile.Y + dy)) is { } beside)
-            {
-                return beside.Facing;
-            }
-        }
-
         var room = _spaces.Values.FirstOrDefault(s => s.HasWalls && s.Rect.Contains(tile));
         bool Open(GridCoord t) => room is not null
             ? room.Rect.Contains(t)
             : _spaces.Values.Any(s => s.Kind == CareSpaceKind.Corridor && s.Rect.Contains(t)) && !_spaces.Values.Any(s => s.HasWalls && s.Rect.Contains(t));
-
-        foreach (var side in sides)
+        GridCoord Next(WallSide side)
         {
             var (dx, dy) = WaitingRoomLayout.Step(side);
-            if (!Open(new GridCoord(tile.X + dx, tile.Y + dy)))
-            {
-                return WaitingRoomLayout.Opposite(side);
-            }
+            return new GridCoord(tile.X + dx, tile.Y + dy);
         }
 
-        return WallSide.South;
+        var neighbours = sides.Select(side => ChairAt(Next(side))).OfType<PlacedChair>().ToList();
+
+        // Against a wall, the back goes to the wall (in a corner, whichever wall the chairs beside it use).
+        var walls = sides.Where(side => !Open(Next(side))).ToList();
+        if (walls.Count > 0)
+        {
+            var away = walls.Select(WaitingRoomLayout.Opposite).ToList();
+            return neighbours.Select(c => c.Facing).FirstOrDefault(f => away.Contains(f), away[0]);
+        }
+
+        // Out in the open, line up with the chairs beside it.
+        return neighbours.Count > 0 ? neighbours[0].Facing : WallSide.South;
     }
 
     /// <summary>After building work, chairs no longer on clear floor are taken away (refunded in full).</summary>
