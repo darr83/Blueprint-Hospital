@@ -114,7 +114,7 @@ public sealed partial class HospitalSimulation
         RunReceptions();
         RunClinics();
         SeatWaitingPatients();
-        _outpatients.RemoveAll(o => o.Stage == OutpatientStage.Leaving && !o.IsMoving);
+        _outpatients.RemoveAll(o => o.Stage == OutpatientStage.Leaving && !o.IsMoving && !IsCollecting(o));
     }
 
     // ---------------------------------------------------------------- the calendar
@@ -475,6 +475,7 @@ public sealed partial class HospitalSimulation
             doctor.StatusText = "Available";
             _consults.Remove(clinic.Id);
             SendHome(o, "Going home");
+            OfferClinicPrescription(o);
         }
     }
 

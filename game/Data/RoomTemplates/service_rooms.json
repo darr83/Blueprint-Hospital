@@ -109,7 +109,7 @@
     "id": "pharmacy",
     "name": "Pharmacy",
     "category": "Services",
-    "description": "Buys medicines at list price and prepares ward patients' medicines to take home. Without one, medicines cost 50% more and ward discharges wait about 4 hours.",
+    "description": "Buys medicines at list price. A&E and clinic patients going home collect their prescriptions at the counter (working-age adults pay the £10 charge), and a porter carries ward patients' medicines to take home up to the ward. Without one, medicines cost 50% more, ward discharges wait about 4 hours and prescriptions go to a chemist in town.",
     "kind": "pharmacy",
     "department": "pharmacy",
     "layout": "office",

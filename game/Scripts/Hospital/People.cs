@@ -257,7 +257,7 @@ public static partial class Figures
     /// A standing (or walking) person whose feet are at <paramref name="foot"/>. With
     /// <paramref name="away"/> they are seen from behind, walking away from the viewer.
     /// </summary>
-    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f, bool away = false, BabyLook? holding = null)
+    public static void Standing(CanvasItem c, Vector2 foot, PersonLook look, double time, bool walking, int seed, float alpha = 1f, bool away = false, BabyLook? holding = null, bool medicineBag = false)
     {
         var pen = new Pen(c, alpha);
         var r = new Rig(look);
@@ -312,7 +312,7 @@ public static partial class Figures
             pen.Poly(new[] { P(-r.HipW, r.HipY - 1 + bob), P(r.HipW, r.HipY - 1 + bob), P(r.HipW * 1.25f, hem + bob), P(-r.HipW * 1.25f, hem + bob) }, look.Trousers);
         }
 
-        Body(pen, c, foot, look, r, -swing, bob, away, holding, alpha, propped: look.Frame || look.Stick);
+        Body(pen, c, foot, look, r, -swing, bob, away, holding, alpha, propped: look.Frame || look.Stick, medicineBag: medicineBag);
 
         if (look.Stick && !away && holding is null)
         {
@@ -400,7 +400,21 @@ public static partial class Figures
     }
 
     /// <summary>Everything above the legs: torso and clothes, arms, neck, head and the kit they carry.</summary>
-    private static void Body(Pen pen, CanvasItem c, Vector2 foot, PersonLook look, Rig r, float armSwing, float drop, bool away, BabyLook? holding, float alpha, bool seated = false, bool propped = false)
+    /// <summary>A white pharmacy paper bag with a green cross, hanging from the hand.</summary>
+    private static void MedicineBag(Pen pen, Vector2 hand, float scale)
+    {
+        var s = scale * 1.35f;
+        var top = hand + new Vector2(-2.6f * s, 0.6f * s);
+        var size = new Vector2(5.2f * s, 6.4f * s);
+        pen.Poly(new[] { top, top + new Vector2(size.X, 0), top + size, top + new Vector2(0, size.Y) }, new Color("#F7F5EE"), new Color("#B8B2A2"), 0.7f);
+        pen.Rect(top + new Vector2(0, -0.8f * s), new Vector2(size.X, 0.9f * s), new Color("#E4DECF"));
+        var mid = top + (size / 2) + new Vector2(0, 0.4f * s);
+        var green = new Color("#1E8E3E");
+        pen.Rect(mid + new Vector2(-0.5f * s, -1.6f * s), new Vector2(1f * s, 3.2f * s), green);
+        pen.Rect(mid + new Vector2(-1.6f * s, -0.5f * s), new Vector2(3.2f * s, 1f * s), green);
+    }
+
+    private static void Body(Pen pen, CanvasItem c, Vector2 foot, PersonLook look, Rig r, float armSwing, float drop, bool away, BabyLook? holding, float alpha, bool seated = false, bool propped = false, bool medicineBag = false)
     {
         Vector2 P(float x, float y) => foot + new Vector2(x, y + drop);
         var s = r.S;
@@ -710,6 +724,10 @@ public static partial class Figures
             }
 
             pen.Dot(hand, r.ArmW * 0.56f, look.Gloves ?? arm);
+            if (medicineBag && side > 0 && !cradling)
+            {
+                MedicineBag(pen, hand, r.S);
+            }
         }
 
         if (teddy)
