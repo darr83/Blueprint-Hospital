@@ -27,7 +27,7 @@ public partial class ArtGallery : Node2D
     private int _shot;
     private Patient[] _patients = Array.Empty<Patient>();
 
-    private static string[] Pages = { "people", "people2", "beds_and_transport", "equipment", "maternity", "chairs", "cafe", "signs", "wallsigns", "furniture", "tables" };
+    private static string[] Pages = { "people", "people2", "beds_and_transport", "equipment", "maternity", "chairs", "cafe", "signs", "wallsigns", "furniture", "tables", "toilets" };
 
     public static bool Begin()
     {
@@ -374,6 +374,39 @@ public partial class ArtGallery : Node2D
                         CafeArt.CounterSlice(c, sx, sy, sw, sl, 28f, new Color("#C98B4E"), i, 5, 2, front, joined);
                     }
                 }
+            }
+
+            case "toilets":
+            {
+                var blue = new Color("#7AA3C8");
+                (string, Action<CanvasItem>) Cubicles(string label, (int X, int Y) front) => (label, c =>
+                {
+                    var alongX = front.X == 0;
+                    var order = Enumerable.Range(0, 3).Select(i => alongX ? (X: -2.85 + (i * 1.9), Y: -1.5, W: 1.9, L: 3.0, I: i) : (X: -1.5, Y: -2.85 + (i * 1.9), W: 3.0, L: 1.9, I: i))
+                        .OrderBy(r => IsoDraw.ToScreen(r.X + (r.W / 2), r.Y + (r.L / 2)).Y);
+                    foreach (var r in order)
+                    {
+                        ToiletArt.Preview(c, "toilet_cubicle", r.X, r.Y, r.W, r.L, front, blue, r.I == 1);
+                    }
+                });
+                (string, Action<CanvasItem>) Piece(string label, string id, double w, double l, (int X, int Y) back) => (label, c =>
+                {
+                    var (pw, pl) = back.X == 0 ? (w, l) : (l, w);
+                    ToiletArt.Preview(c, id, -pw / 2, -pl / 2, pw, pl, back, new Color("#CFD8DC"));
+                });
+                Row(190, 390, new[] { Cubicles("Cubicles (middle one in use)", (0, 1)), Cubicles("Cubicles (other way)", (1, 0)), Cubicles("From behind", (0, -1)), Cubicles("From behind", (-1, 0)) }, 1.25f);
+                Row(480, 220, new[]
+                {
+                    Piece("Toilet", "toilet_pan", 0.8, 1.4, (0, -1)), Piece("Toilet (other way)", "toilet_pan", 0.8, 1.4, (-1, 0)), Piece("From behind", "toilet_pan", 0.8, 1.4, (0, 1)),
+                    Piece("Accessible toilet", "accessible_wc", 0.9, 1.5, (0, -1)), Piece("Accessible (other way)", "accessible_wc", 0.9, 1.5, (-1, 0)),
+                    Piece("Wash basin", "wash_basin", 1.0, 0.9, (0, -1)), Piece("Hand dryer", "hand_dryer", 0.6, 0.5, (-1, 0)),
+                }, 2.2f);
+                Row(770, 300, new[]
+                {
+                    ("Resus trolley", Sliced("resus_trolley", Sides.South)), ("Resus trolley (other way)", Sliced("resus_trolley", Sides.East, 1, false)),
+                    ("From behind", Sliced("resus_trolley", Sides.North)), ("From behind", Sliced("resus_trolley", Sides.West, 1, false)),
+                }, 3.0f);
+                break;
             }
 
             case "chairs":
