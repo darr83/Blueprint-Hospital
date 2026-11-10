@@ -85,6 +85,31 @@ public static partial class Figures
         c.DrawPolyline(new[] { at + new Vector2(-6, 0), at + new Vector2(-2, 0), at + new Vector2(-0.5f, -4), at + new Vector2(1.5f, 3), at + new Vector2(3, 0), at + new Vector2(6, 0) }, Colors.White, 1.4f, true);
     }
 
+    /// <summary>
+    /// A ward emergency (a fall, sepsis, a heart attack...): a pulsing amber ring on the floor and an amber warning
+    /// sign above the patient, until the treatment is in.
+    /// </summary>
+    public static void EmergencyMarker(CanvasItem c, Vector2 centre, double time, float radius = 40, bool treated = false, float height = 84)
+    {
+        var pulse = treated ? 0.3f : (float)(0.5 + (0.5 * Math.Sin(time * 4)));
+        var amber = new Color("#F59E0B");
+        var ring = IsoDraw.FloorEllipse(centre, radius + (pulse * 3), 32);
+        c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color(amber, treated ? 0.35f : 0.5f + (0.4f * pulse)), 3f, true);
+        if (treated)
+        {
+            return;
+        }
+
+        // A warning triangle with an exclamation mark, bobbing gently.
+        var at = centre + new Vector2(0, -height - (pulse * 3));
+        var size = 11f;
+        var triangle = new[] { at + new Vector2(0, -size), at + new Vector2(size * 1.05f, size * 0.8f), at + new Vector2(-size * 1.05f, size * 0.8f) };
+        c.DrawColoredPolygon(triangle, amber);
+        c.DrawPolyline(triangle.Append(triangle[0]).ToArray(), amber.Darkened(0.4f), 1.4f, true);
+        c.DrawLine(at + new Vector2(0, -size * 0.45f), at + new Vector2(0, size * 0.25f), new Color("#3B2A05"), 2.2f, true);
+        c.DrawCircle(at + new Vector2(0, size * 0.55f), 1.3f, new Color("#3B2A05"));
+    }
+
     /// <summary>A resus trolley wherever it is (being pushed, or parked), drawn whole.</summary>
     public static void ResusTrolleyAt(CanvasItem c, double gx, double gy, double w, double l, float height, Color colour, (double X, double Y) facing)
     {

@@ -245,6 +245,46 @@ public sealed class Patient : Agent
     /// </summary>
     public bool MonitorIsRed => MonitorRed && IsInDepartment;
 
+    /// <summary>A sudden emergency in bed (heart attack, fall, bleed...) that is still going on.</summary>
+    public Data.Models.InpatientEmergencyDefinition? Emergency { get; set; }
+
+    public DateTime? EmergencyStartedAt { get; set; }
+
+    /// <summary>How unwell the emergency made them at its worst (the monitor changes fade from here as they settle).</summary>
+    public double EmergencyPeak { get; set; }
+
+    /// <summary>The doctor (or nurse) has seen them at the bedside.</summary>
+    public bool EmergencyReviewed { get; set; }
+
+    /// <summary>The treatment for the emergency is in; they are settling.</summary>
+    public bool EmergencyTreated { get; set; }
+
+    /// <summary>How many emergencies they have had this stay.</summary>
+    public int EmergencyCount { get; set; }
+
+    /// <summary>On the floor beside their bed after a fall, until someone helps them up.</summary>
+    public bool OnFloorAfterFall => Emergency is { Fall: true } && !EmergencyTreated && IsAlive;
+
+    /// <summary>How strongly the emergency still shows on the monitor: 1 until treated, fading to 0 as they settle.</summary>
+    public double EmergencyIntensity
+    {
+        get
+        {
+            if (Emergency is not { } emergency)
+            {
+                return 0;
+            }
+
+            if (!EmergencyTreated)
+            {
+                return 1;
+            }
+
+            var span = EmergencyPeak - emergency.SettledSeverity;
+            return span <= 0.01 ? 0 : Math.Clamp((Severity - emergency.SettledSeverity) / span, 0, 1);
+        }
+    }
+
     /// <summary>When their heart stopped, while a cardiac arrest is going on (null otherwise).</summary>
     public DateTime? ArrestStartedAt { get; set; }
 
@@ -456,15 +496,23 @@ public sealed class Patient : Agent
             _ => b.Consciousness,
         };
 
+        // A sudden emergency shows on the monitor on top of whatever they came in with.
+        var k = EmergencyIntensity;
+        var x = Emergency?.Observations ?? new Data.Models.EmergencyObservations();
+        if (k > 0.3 && x.Confused && consciousness == b.Consciousness)
+        {
+            consciousness = Consciousness.NewConfusion;
+        }
+
         var pain = (int)Math.Round(b.PainScore * (1 - Analgesia) * (Severity < 0.05 && EffectiveTreatmentGiven ? 0.5 : 1));
 
         return new Observations(
-            HeartRate: Clamp(b.HeartRate + (e.HeartRate * delta), 25, 220),
-            SystolicBp: Clamp(b.SystolicBp + (e.SystolicBp * delta), 40, 240),
-            DiastolicBp: Clamp(b.DiastolicBp + (e.SystolicBp * 0.5 * delta), 20, 140),
-            RespiratoryRate: Clamp(b.RespiratoryRate + (e.RespiratoryRate * delta), 6, 50),
-            OxygenSaturation: Clamp(b.OxygenSaturation + (e.OxygenSaturation * delta), 60, 100),
-            Temperature: Math.Round(Math.Clamp(b.Temperature + (e.Temperature * delta), 33, 42.5), 1),
+            HeartRate: Clamp(b.HeartRate + (e.HeartRate * delta) + (x.HeartRate * k), 25, 220),
+            SystolicBp: Clamp(b.SystolicBp + (e.SystolicBp * delta) + (x.SystolicBp * k), 40, 240),
+            DiastolicBp: Clamp(b.DiastolicBp + (((e.SystolicBp * delta) + (x.SystolicBp * k)) * 0.5), 20, 140),
+            RespiratoryRate: Clamp(b.RespiratoryRate + (e.RespiratoryRate * delta) + (x.RespiratoryRate * k), 6, 50),
+            OxygenSaturation: Clamp(b.OxygenSaturation + (e.OxygenSaturation * delta) + (x.OxygenSaturation * k), 60, 100),
+            Temperature: Math.Round(Math.Clamp(b.Temperature + (e.Temperature * delta) + (x.Temperature * k), 33, 42.5), 1),
             Consciousness: consciousness,
             PainScore: Math.Clamp(pain, 0, 10));
     }

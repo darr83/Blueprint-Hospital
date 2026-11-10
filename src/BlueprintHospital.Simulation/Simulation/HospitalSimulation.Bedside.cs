@@ -102,7 +102,7 @@ public sealed partial class HospitalSimulation
                 called = true;
             }
 
-            if (!patient.RedReviewed && calls.All(t => t.Kind != TaskKind.RedReview))
+            if (!patient.RedReviewed && calls.All(t => t.Kind != TaskKind.RedReview) && !HasTask(patient, TaskKind.EmergencyReview))
             {
                 AddTask(TaskKind.RedReview, StaffRole.Doctor, patient, 10, "Red monitor review");
                 called = true;

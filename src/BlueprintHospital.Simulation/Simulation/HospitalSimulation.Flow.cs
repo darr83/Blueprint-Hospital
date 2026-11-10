@@ -152,6 +152,13 @@ public sealed partial class HospitalSimulation
 
             // Just after their heart restarted, the team keep them stable: they don't get worse for a while.
             var stabilised = patient.StabilisedUntil is { } until && Now < until;
+
+            // A sudden emergency in bed runs its own course (see the emergencies file).
+            if (UpdateEmergencyPhysiology(patient, hours, stabilised))
+            {
+                continue;
+            }
+
             var support = CriticalCareFactor(patient, hours);
             if (patient.MonitorIsRed)
             {

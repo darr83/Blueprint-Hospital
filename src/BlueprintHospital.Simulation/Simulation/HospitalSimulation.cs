@@ -31,6 +31,9 @@ public sealed class SimulationOptions
 
     /// <summary>The player can keep spending when the balance is below zero (the money is still counted).</summary>
     public bool UnlimitedMoney { get; init; }
+
+    /// <summary>How often patients already in a bed have sudden emergencies (tests leave them off unless they ask).</summary>
+    public WardEmergencyFrequency WardEmergencies { get; init; } = WardEmergencyFrequency.Off;
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -101,6 +104,7 @@ public sealed partial class HospitalSimulation
         AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + 19, site.Length - 1);
 
         UnlimitedMoney = _options.UnlimitedMoney;
+        WardEmergencies = _options.WardEmergencies;
         UnlockStartingDepartments();
         if (_options.Start == StartingHospital.EmptyBuilding)
         {
@@ -206,6 +210,7 @@ public sealed partial class HospitalSimulation
         UpdateAmbulances();
         UpdatePhysiology(dt);
         UpdateArrests();
+        UpdateWardEmergencies();
         UpdateEmergencyCalls();
         UpdateGeneralAnnouncements();
         UpdatePatientFlow();

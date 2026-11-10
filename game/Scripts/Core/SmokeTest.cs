@@ -65,6 +65,7 @@ public partial class SmokeTest : Node
         WardBed,
         CrashCall,
         CrashPanelOpen,
+        WardFall,
         Transport,
         Imaging,
         Theatre,
@@ -446,6 +447,15 @@ public partial class SmokeTest : Node
                 Screenshot("07d_crash_team");
                 hospital.Hud.Crash.Expanded = false;
                 FinishCrashCall(hospital);
+                StartWardFall(hospital);
+                _frame = 0;
+                _stage = Stage.WardFall;
+                break;
+
+            case Stage.WardFall when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("07e_ward_fall");
+                FinishWardFall(hospital);
+                hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 BuildImagingAndSendForScan(hospital);
                 _frame = 0;
                 _stage = Stage.Transport;
@@ -1574,6 +1584,33 @@ public partial class SmokeTest : Node
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(patient.X, patient.Y), 2.0f);
         GD.Print($"[smoke] Crash call: CPR at {arrest.CprStartedAt}, trolley at {arrest.TrolleyArrivedAt}, team {arrest.Team.Count}, still going {arrest.IsActive} on {ward.Name}.");
+    }
+
+    /// <summary>A patient in a ward bed falls: they lie on the floor beside the bed until the team help them up.</summary>
+    private static void StartWardFall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var patient = sim.Patients.FirstOrDefault(p => p.IsAlive && p.Stage == Simulation.Patients.PatientStage.OnWard && sim.BedOf(p) is not null && p.Emergency is null && !p.InArrest && !p.IsMoving);
+        Check(patient is not null, "Nobody in a ward bed to have a fall.");
+        sim.StartWardEmergency(patient!, hospital.Session.Database.Emergencies["fall"]);
+        Check(patient!.OnFloorAfterFall, "The fall did not put the patient on the floor.");
+        hospital.Session.Clock.SetSpeed(SimulationSpeed.Paused);
+        var bed = sim.BedOf(patient)!;
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(bed.PatientSpot.X, bed.PatientSpot.Y + 0.5), 2.0f);
+    }
+
+    /// <summary>Runs the clock until the fall has been reviewed and the patient helped back to bed.</summary>
+    private static void FinishWardFall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var clock = hospital.Session.Clock;
+        for (var i = 0; i < 3 * 3600 && sim.Patients.Any(p => p.OnFloorAfterFall); i++)
+        {
+            clock.Step();
+        }
+
+        Check(!sim.Patients.Any(p => p.OnFloorAfterFall), "Nobody helped the fallen patient back to bed within three hours.");
+        GD.Print($"[smoke] Fall dealt with; ward emergencies {sim.Stats.WardEmergencies}, treated {sim.Stats.WardEmergenciesTreated}.");
     }
 
     /// <summary>Runs the clock until the arrest is over and the team have stood down.</summary>

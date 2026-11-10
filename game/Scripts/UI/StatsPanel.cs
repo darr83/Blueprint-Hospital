@@ -108,6 +108,11 @@ public partial class StatsPanel : PanelContainer
             ("arrests", "Cardiac arrests"), ("arrest_rosc", "Heart restarted"), ("arrest_survived", "Survived to leave hospital"),
             ("arrest_cpr", "Average time to CPR"), ("arrest_shock", "Average time to first shock"),
         }));
+        grid.AddChild(Card("Ward emergencies", new[]
+        {
+            ("ward_emergencies", "Emergencies in bed"), ("ward_emergencies_treated", "Treated"),
+            ("ward_emergencies_settled", "Settled afterwards"), ("ward_emergency_time", "Average time to treatment"),
+        }));
         grid.AddChild(Card("Theatres, imaging and clinics", new[]
         {
             ("operations", "Operations"), ("scans", "X-rays and scans"), ("clinic_seen", "Clinic patients seen"),
@@ -361,6 +366,13 @@ public partial class StatsPanel : PanelContainer
         var shocks = T(StatKeys.ArrestFirstShocks);
         SetValue("arrest_cpr", cprStarts > 0 ? MinSec(T(StatKeys.ArrestSecondsToCpr) / cprStarts) : "–", cprStarts > 0 ? $"{cprStarts:N0} arrests" : string.Empty,
             cprStarts > 0 && T(StatKeys.ArrestSecondsToCpr) / cprStarts > 120 ? UiStyle.AmberText : null);
+        var wardEmergencies = T(StatKeys.WardEmergencies);
+        var treated = T(StatKeys.WardEmergenciesTreated);
+        SetValue("ward_emergencies", Count(wardEmergencies), null, wardEmergencies > 0 ? UiStyle.AmberText : null);
+        SetValue("ward_emergencies_treated", Count(treated), Share(treated, wardEmergencies));
+        SetValue("ward_emergencies_settled", Count(T(StatKeys.WardEmergenciesSettled)), Share(T(StatKeys.WardEmergenciesSettled), wardEmergencies));
+        SetValue("ward_emergency_time", treated > 0 ? Minutes(T(StatKeys.WardEmergencySecondsToTreatment) / 60.0 / treated) : "–", null,
+            treated > 0 && T(StatKeys.WardEmergencySecondsToTreatment) / treated > 3600 ? UiStyle.AmberText : null);
         SetValue("arrest_shock", shocks > 0 ? MinSec(T(StatKeys.ArrestSecondsToShock) / shocks) : "–", shocks > 0 ? $"{shocks:N0} shockable" : string.Empty,
             shocks > 0 && T(StatKeys.ArrestSecondsToShock) / shocks > 180 ? UiStyle.AmberText : null);
         SetValue("operations", Count(T(StatKeys.Operations)));

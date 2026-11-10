@@ -42,6 +42,22 @@ public sealed class EmergencyStats
     /// <summary>Average minutes from the heart stopping to the first shock (shockable rhythms only).</summary>
     public double AverageMinutesToShock => FirstShocks == 0 ? 0 : SecondsToShockTotal / 60.0 / FirstShocks;
 
+    /// <summary>Sudden emergencies for patients already in a bed (heart attacks, falls, bleeds...).</summary>
+    public int WardEmergencies { get; internal set; }
+
+    /// <summary>Ward emergencies where the treatment went in.</summary>
+    public int WardEmergenciesTreated { get; internal set; }
+
+    /// <summary>Ward emergencies where the patient settled afterwards.</summary>
+    public int WardEmergenciesSettled { get; internal set; }
+
+    internal long SecondsToEmergencyTreatmentTotal { get; set; }
+
+    /// <summary>Average minutes from a ward emergency starting to its treatment going in.</summary>
+    public double AverageMinutesToEmergencyTreatment => WardEmergenciesTreated == 0 ? 0 : SecondsToEmergencyTreatmentTotal / 60.0 / WardEmergenciesTreated;
+
+    internal void RecordTimeToEmergencyTreatment(double seconds) => SecondsToEmergencyTreatmentTotal += (long)Math.Round(seconds);
+
     internal void RecordTimeToCpr(double minutes)
     {
         SecondsToCprTotal += (long)Math.Round(minutes * 60);

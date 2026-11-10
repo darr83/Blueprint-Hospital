@@ -20,6 +20,7 @@ public sealed class GameDatabase
     public const string FurnitureFolder = "Furniture";
     public const string RoomTemplatesFolder = "RoomTemplates";
     public const string ClinicsFolder = "Clinics";
+    public const string EmergenciesFolder = "Emergencies";
 
     private GameDatabase()
     {
@@ -48,6 +49,9 @@ public sealed class GameDatabase
     /// <summary>How each clinic room runs its appointments, by room template id.</summary>
     public IReadOnlyDictionary<string, ClinicDefinition> Clinics { get; private init; } = null!;
 
+    /// <summary>Sudden emergencies for patients already in a bed (heart attack, fall, bleed after surgery...).</summary>
+    public IReadOnlyDictionary<string, InpatientEmergencyDefinition> Emergencies { get; private init; } = null!;
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -70,6 +74,7 @@ public sealed class GameDatabase
             Furniture = RecordLoader.LoadFolder<FurnitureDefinition>(source, FurnitureFolder, errors),
             RoomTemplates = RecordLoader.LoadFolder<RoomTemplate>(source, RoomTemplatesFolder, errors),
             Clinics = RecordLoader.LoadFolder<ClinicDefinition>(source, ClinicsFolder, errors),
+            Emergencies = RecordLoader.LoadFolder<InpatientEmergencyDefinition>(source, EmergenciesFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);

@@ -100,6 +100,18 @@ public sealed class PatientState
 
     public DateTime? PostArrestDeathAt { get; init; }
 
+    public string? EmergencyId { get; init; }
+
+    public DateTime? EmergencyStartedAt { get; init; }
+
+    public double EmergencyPeak { get; init; }
+
+    public bool EmergencyReviewed { get; init; }
+
+    public bool EmergencyTreated { get; init; }
+
+    public int EmergencyCount { get; init; }
+
     public double Analgesia { get; init; }
 
     public string? CareSpaceId { get; init; }
@@ -344,6 +356,9 @@ public sealed class PeopleState
     /// <summary>The game was started with unlimited money (spending can go into the red).</summary>
     public bool UnlimitedMoney { get; init; }
 
+    /// <summary>How often patients in bed have sudden emergencies (left out of older saves: Realistic).</summary>
+    public WardEmergencyFrequency WardEmergencies { get; init; } = WardEmergencyFrequency.Realistic;
+
     public double UnpaidUpkeep { get; init; }
 
     public List<Notification> Notifications { get; init; } = new();
@@ -444,6 +459,7 @@ public sealed partial class HospitalSimulation
         Accounts = _days.Select(d => new DayAccountsState(d.Date, new Dictionary<MoneyCategory, long>(d.Amounts))).ToList(),
         UnpaidWages = _unpaidWages,
         UnlimitedMoney = UnlimitedMoney,
+        WardEmergencies = WardEmergencies,
         UnpaidUpkeep = _unpaidUpkeep,
         Notifications = Notifications.Recent.Take(60).ToList(),
         NextNotificationId = Notifications.NextId,
@@ -577,6 +593,7 @@ public sealed partial class HospitalSimulation
 
         _unpaidWages = state.UnpaidWages;
         UnlimitedMoney = state.UnlimitedMoney;
+        WardEmergencies = state.WardEmergencies;
         _unpaidUpkeep = state.UnpaidUpkeep;
         Notifications.Restore(state.Notifications, state.NextNotificationId);
         _generator.SetNextId(state.NextPatientId);
@@ -718,6 +735,7 @@ public sealed partial class HospitalSimulation
         HistoryTaken = p.HistoryTaken, FirstSeenByDoctorAt = p.FirstSeenByDoctorAt, Investigations = p.Investigations.ToList(),
         WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
         ArrestStartedAt = p.ArrestStartedAt, ArrestCount = p.ArrestCount, StabilisedUntil = p.StabilisedUntil, PostArrestDeathAt = p.PostArrestDeathAt,
+        EmergencyId = p.Emergency?.Id, EmergencyStartedAt = p.EmergencyStartedAt, EmergencyPeak = p.EmergencyPeak, EmergencyReviewed = p.EmergencyReviewed, EmergencyTreated = p.EmergencyTreated, EmergencyCount = p.EmergencyCount,
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, CorridorSpot = p.CorridorSpot, CorridorSince = p.CorridorSince, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
@@ -768,6 +786,12 @@ public sealed partial class HospitalSimulation
         p.ArrestCount = s.ArrestCount;
         p.StabilisedUntil = s.StabilisedUntil;
         p.PostArrestDeathAt = s.PostArrestDeathAt;
+        p.Emergency = s.EmergencyId is { } emergencyId && Database.Emergencies.TryGetValue(emergencyId, out var emergency) ? emergency : null;
+        p.EmergencyStartedAt = s.EmergencyStartedAt;
+        p.EmergencyPeak = s.EmergencyPeak;
+        p.EmergencyReviewed = s.EmergencyReviewed;
+        p.EmergencyTreated = s.EmergencyTreated;
+        p.EmergencyCount = s.EmergencyCount;
         p.Analgesia = s.Analgesia;
         p.CareSpaceId = s.CareSpaceId;
         p.Seat = s.Seat;
@@ -913,6 +937,8 @@ public sealed partial class HospitalSimulation
                 ["minutes_to_doctor"] = s.MinutesToDoctorTotal, ["handovers"] = s.HandoversTotal, ["handover_minutes"] = s.HandoverMinutesTotal,
                 ["cardiac_arrests"] = s.CardiacArrests, ["arrests_rosc"] = s.ArrestsRosc, ["arrest_survivors"] = s.ArrestSurvivors,
                 ["seconds_to_cpr"] = s.SecondsToCprTotal, ["cpr_starts"] = s.CprStarts, ["seconds_to_shock"] = s.SecondsToShockTotal, ["first_shocks"] = s.FirstShocks,
+                ["ward_emergencies"] = s.WardEmergencies, ["ward_emergencies_treated"] = s.WardEmergenciesTreated, ["ward_emergencies_settled"] = s.WardEmergenciesSettled,
+                ["seconds_to_emergency_treatment"] = s.SecondsToEmergencyTreatmentTotal,
             },
             TriagedTotal = new Dictionary<TriageCategory, int>(s.TriagedTotal),
             RecentTimeToDoctor = s.RecentTimeToDoctor.ToList(),
@@ -960,6 +986,10 @@ public sealed partial class HospitalSimulation
         s.CprStarts = I("cpr_starts");
         s.SecondsToShockTotal = state.Counters.GetValueOrDefault("seconds_to_shock");
         s.FirstShocks = I("first_shocks");
+        s.WardEmergencies = I("ward_emergencies");
+        s.WardEmergenciesTreated = I("ward_emergencies_treated");
+        s.WardEmergenciesSettled = I("ward_emergencies_settled");
+        s.SecondsToEmergencyTreatmentTotal = state.Counters.GetValueOrDefault("seconds_to_emergency_treatment");
         foreach (var (category, count) in state.TriagedTotal)
         {
             s.TriagedTotal[category] = count;
