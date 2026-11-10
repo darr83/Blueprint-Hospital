@@ -202,5 +202,412 @@
     "recovery_per_hour": 0.5,
     "disposition": "discharge",
     "disposition_note": "Discharged with an early pregnancy unit scan booked for tomorrow."
+  },
+  {
+    "id": "ovarian_torsion",
+    "name": "Ovarian torsion",
+    "department": "gynaecology",
+    "description": "An ovary, usually with a cyst on it, has twisted on its blood supply. Sudden one-sided pain; needs keyhole surgery to untwist it.",
+    "prevalence": 0.8,
+    "age_range": [
+      12,
+      50
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.2,
+    "crew_assessment": "sudden lower abdominal pain",
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "sudden_severe_abdominal_pain",
+        "probability": 0.7
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.6
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        106,
+        11
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        37.0,
+        0.4
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -15,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "pelvic_ultrasound",
+      "pregnancy_test",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Gynaecology agree: torsion on the scan. To theatre to untwist the ovary.",
+    "operation": {
+      "name": "Laparoscopic ovarian detorsion",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      12,
+      36
+    ]
+  },
+  {
+    "id": "hyperemesis_gravidarum",
+    "name": "Hyperemesis gravidarum",
+    "department": "gynaecology",
+    "description": "Severe sickness in early pregnancy: she can't keep anything down and becomes dehydrated.",
+    "prevalence": 1.5,
+    "age_range": [
+      17,
+      42
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "vomiting in pregnancy, dehydrated",
+    "presenting_complaint": "vomiting",
+    "symptoms": [
+      {
+        "symptom": "vomiting",
+        "probability": 1.0
+      },
+      {
+        "symptom": "nausea",
+        "probability": 1.0
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        10
+      ],
+      "systolic_bp": [
+        108,
+        10
+      ],
+      "diastolic_bp": [
+        66,
+        7
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        99,
+        0.8
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        1,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.35
+    ],
+    "deterioration_per_hour": 0.015,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -20,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "pregnancy_test",
+      "urine_dipstick",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "cyclizine",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "pabrinex",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.06,
+    "disposition": "admit",
+    "disposition_note": "Ketones in the urine and unable to keep fluids down. Admitted to the gynaecology ward for fluids and anti-sickness medicine.",
+    "ambulatory_hours": [
+      4,
+      8
+    ],
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
+  },
+  {
+    "id": "pelvic_inflammatory_disease",
+    "name": "Pelvic inflammatory disease",
+    "department": "gynaecology",
+    "description": "Infection of the womb and tubes, often from chlamydia or gonorrhoea. Treated with antibiotics to protect fertility.",
+    "prevalence": 1.5,
+    "age_range": [
+      16,
+      45
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.05,
+    "crew_assessment": "lower abdominal pain",
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "vaginal_discharge",
+        "probability": 0.7
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.5
+      },
+      {
+        "symptom": "dysuria",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        94,
+        10
+      ],
+      "systolic_bp": [
+        122,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        37.8,
+        0.4
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.12,
+      0.25
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -15,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "pregnancy_test",
+      "c_reactive_protein",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ceftriaxone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "doxycycline",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "metronidazole",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "PID. Home with two weeks of antibiotics; partner tracing through the sexual health clinic."
+  },
+  {
+    "id": "bartholins_abscess",
+    "name": "Bartholin's abscess",
+    "department": "gynaecology",
+    "description": "An infected gland at the entrance to the vagina: a very painful swelling that needs a small operation to drain it.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      50
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0.0,
+    "crew_assessment": "painful vulval swelling",
+    "presenting_complaint": "vulval_swelling",
+    "symptoms": [
+      {
+        "symptom": "vulval_swelling",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        90,
+        9
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        37.4,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": 0,
+      "respiratory_rate": 2,
+      "oxygen_saturation": 0,
+      "temperature": 0.5
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ibuprofen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "surgery",
+    "disposition_note": "Gynaecology agree: Bartholin's abscess for drainage as a day case.",
+    "operation": {
+      "name": "Marsupialisation of Bartholin's abscess",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      12
+    ]
   }
 ]

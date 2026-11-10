@@ -899,5 +899,335 @@
       12,
       24
     ]
+  },
+  {
+    "id": "diverticulitis",
+    "name": "Diverticulitis",
+    "department": "general_surgery",
+    "description": "Infected pouches in the lower bowel wall, causing pain low on the left. Most settle with antibiotics.",
+    "prevalence": 2.5,
+    "age_range": [
+      40,
+      90
+    ],
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.25,
+    "crew_assessment": "abdominal pain, left side",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "left_iliac_fossa_pain",
+        "probability": 0.85
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.6
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.4
+      },
+      {
+        "symptom": "diarrhoea",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        10
+      ],
+      "systolic_bp": [
+        130,
+        14
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        38.0,
+        0.4
+      ],
+      "pain_score": [
+        4,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.35
+    ],
+    "deterioration_per_hour": 0.015,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -2,
+      "temperature": 0.8
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "ct_abdomen"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "admit",
+    "disposition_note": "Uncomplicated diverticulitis on CT. Admitted for IV antibiotics and fluids.",
+    "length_of_stay_hours": [
+      48,
+      120
+    ]
+  },
+  {
+    "id": "testicular_torsion",
+    "name": "Testicular torsion",
+    "department": "general_surgery",
+    "description": "A twisted testicle cutting off its own blood supply. Every hour counts: straight to theatre without waiting for a scan.",
+    "prevalence": 0.8,
+    "age_range": [
+      10,
+      30
+    ],
+    "female_fraction": 0.0,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "sudden testicular pain",
+    "presenting_complaint": "testicular_pain",
+    "symptoms": [
+      {
+        "symptom": "testicular_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.4
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        11
+      ],
+      "systolic_bp": [
+        134,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.5
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -10,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Urology on-call (general surgery here) agree: torsion until proven otherwise. Straight to theatre.",
+    "operation": {
+      "name": "Scrotal exploration and fixation",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      6,
+      24
+    ]
+  },
+  {
+    "id": "large_bowel_obstruction",
+    "name": "Large bowel obstruction",
+    "department": "general_surgery",
+    "description": "The large bowel is blocked, usually by a cancer. The tummy swells and nothing passes. Needs an operation.",
+    "prevalence": 1,
+    "age_range": [
+      55,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.5,
+    "crew_assessment": "abdominal distension, vomiting",
+    "presenting_complaint": "abdominal_distension",
+    "symptoms": [
+      {
+        "symptom": "abdominal_distension",
+        "probability": 1.0
+      },
+      {
+        "symptom": "absolute_constipation",
+        "probability": 0.9
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        11
+      ],
+      "systolic_bp": [
+        124,
+        14
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.2
+      ],
+      "temperature": [
+        37.2,
+        0.4
+      ],
+      "pain_score": [
+        4,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "abdominal_xray",
+      "ct_abdomen",
+      "urea_electrolytes",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Nasogastric tube",
+        "performed_by": "nurse",
+        "minutes": 15,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "surgery",
+    "disposition_note": "Surgical team agree: obstructing bowel tumour needing a Hartmann's procedure.",
+    "operation": {
+      "name": "Hartmann's procedure",
+      "minutes": 180,
+      "major": true
+    },
+    "length_of_stay_hours": [
+      168,
+      336
+    ]
   }
 ]
