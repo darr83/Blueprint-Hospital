@@ -14,7 +14,10 @@ var dataDir = Path.Combine(FindRepoRoot(), "game", "Data");
 var db = GameDatabase.Load(new FileSystemDataSource(dataDir));
 var events = new EventBus();
 var clock = new SimulationClock(events, new DateTime(2027, 1, 4, 0, 0, 0));
-var sim = new HospitalSimulation(db, clock, events, StarterSite.Create(), new SimulationOptions { Seed = seed, ArrivalRateMultiplier = multiplier });
+var sim = new HospitalSimulation(db, clock, events, StarterSite.Create(), new SimulationOptions { Seed = seed, ArrivalRateMultiplier = multiplier, AutomaticArrivals = true });
+
+// A new game has no waiting room; give A&E its usual fitted-out one so patients can arrive.
+sim.BuildStarterWaitingRoom();
 clock.Ticked += _ => sim.Tick();
 
 var ticks = (long)(hours * 3600);

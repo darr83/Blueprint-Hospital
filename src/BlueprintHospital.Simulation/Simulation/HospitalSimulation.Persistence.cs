@@ -683,6 +683,15 @@ public sealed partial class HospitalSimulation
         }
     }
 
+    /// <summary>
+    /// A saved outpatient's walking pace. Saves from before people slowed down hold real-life speeds
+    /// (up to 1.2 m/s), which are scaled back to the game's slower pace.
+    /// </summary>
+    private static double SavedWalkSpeed(double saved) =>
+        saved <= 0 ? Agent.DefaultWalkSpeed
+        : saved > Agent.DefaultWalkSpeed * 1.001 ? saved * Agent.WalkPaceFactor
+        : saved;
+
     private void RestoreClinics(PeopleState state)
     {
         _appointments.Clear();
@@ -695,7 +704,7 @@ public sealed partial class HospitalSimulation
             var outpatient = new Outpatient
             {
                 Id = saved.Id, AppointmentId = saved.AppointmentId, ClinicId = saved.ClinicId, Stage = saved.Stage, Seat = saved.Seat,
-                BusyUntil = saved.BusyUntil, StatusText = saved.StatusText, WalkSpeed = saved.WalkSpeed > 0 ? saved.WalkSpeed : Agent.DefaultWalkSpeed,
+                BusyUntil = saved.BusyUntil, StatusText = saved.StatusText, WalkSpeed = SavedWalkSpeed(saved.WalkSpeed),
             };
             outpatient.PlaceAt(new GridCoord(saved.Position.X, saved.Position.Y));
             _outpatients.Add(outpatient);

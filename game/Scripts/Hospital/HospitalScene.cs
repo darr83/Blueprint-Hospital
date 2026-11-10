@@ -371,6 +371,9 @@ public partial class HospitalScene : Node2D
             case Key.Key3:
                 _session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 break;
+            case Key.Key4:
+                _session.Clock.SetSpeed(SimulationSpeed.Fastest);
+                break;
             case Key.G:
                 ToggleGrid();
                 break;

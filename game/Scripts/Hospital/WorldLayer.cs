@@ -63,6 +63,40 @@ public partial class WorldLayer : Node2D
     /// <summary>The patient or staff member the player has selected, if any.</summary>
     public Agent? Selected { get; set; }
 
+    /// <summary>Leg swing (radians) per tile walked, so steps keep time with how fast someone moves on screen.</summary>
+    private const double StridePerTile = 1.6;
+
+    /// <summary>The fastest legs swing (radians per real second), so fast-forward doesn't turn walking into a blur.</summary>
+    private const double MaxStrideRate = 22;
+
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Agent, StrideState> _strides = new();
+
+    private sealed class StrideState
+    {
+        public double Phase;
+        public double LastTime = double.NaN;
+    }
+
+    /// <summary>
+    /// The animation time to draw <paramref name="agent"/>'s legs at. It runs at the person's real
+    /// on-screen pace (slower walkers and trolley pushers step slower, fast-forward steps faster),
+    /// and holds still while the game is paused.
+    /// </summary>
+    public double StrideTime(Agent agent, bool walking)
+    {
+        var state = _strides.GetOrCreateValue(agent);
+        var dt = double.IsNaN(state.LastTime) ? 0 : Math.Max(0, Time - state.LastTime);
+        state.LastTime = Time;
+        if (walking)
+        {
+            var tilesPerRealSecond = agent.WalkSpeed * SimulationClock.GameTimePerRealSecond.TotalSeconds * (int)_clock.Speed;
+            state.Phase += Math.Min(tilesPerRealSecond * StridePerTile, MaxStrideRate) * dt;
+        }
+
+        // People.Standing swings legs at 9 radians per unit of time.
+        return state.Phase / 9;
+    }
+
     public void Initialise(HospitalSimulation simulation, SimulationClock clock)
     {
         _sim = simulation;
@@ -962,7 +996,7 @@ public partial class WorldLayer : Node2D
                     }
                     else
                     {
-                        Figures.Standing(this, foot, clinicLook, world.Time, outpatient.IsMoving, outpatient.Id * 17, away: WalkingAway(outpatient, outpatient.IsMoving));
+                        Figures.Standing(this, foot, clinicLook, world.StrideTime(outpatient, outpatient.IsMoving), outpatient.IsMoving, outpatient.Id * 17, away: WalkingAway(outpatient, outpatient.IsMoving));
                     }
 
                     break;
@@ -985,9 +1019,8 @@ public partial class WorldLayer : Node2D
                         var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
                         pushing |= member.CrashPatientId is not null && world.Simulation.ResusTrolleys.Any(t => t.PushedByStaffId == member.Id) && member.IsMoving;
 
-                        // The crash team run: their legs go faster.
-                        var pace = member.CrashPatientId is not null && member.IsMoving ? world.Time * 1.8 : world.Time;
-                        Figures.Standing(this, foot, look, pace, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member), medicineBag: world.Simulation.IsCarryingMedicines(member));
+                        // Legs keep time with their pace, so the crash team's run (a faster walk speed) steps faster too.
+                        Figures.Standing(this, foot, look, world.StrideTime(member, member.IsMoving || pushing), member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member), medicineBag: world.Simulation.IsCarryingMedicines(member));
                     }
 
                     break;
@@ -1086,7 +1119,7 @@ public partial class WorldLayer : Node2D
             }
             else
             {
-                Figures.Standing(this, foot, look, world.Time, patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving), baby);
+                Figures.Standing(this, foot, look, world.StrideTime(patient, patient.IsMoving), patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving), baby);
             }
         }
 

@@ -14,10 +14,10 @@ public class SimulationClockTests
     }
 
     [Fact]
-    public void One_real_second_at_1x_is_fifteen_game_seconds()
+    public void Two_real_seconds_at_1x_are_fifteen_game_seconds()
     {
         var clock = new SimulationClock();
-        var ticks = clock.Advance(1.0);
+        var ticks = clock.Advance(2.0);
         Assert.Equal(15, ticks);
         Assert.Equal(SimulationClock.DefaultStart.AddSeconds(15), clock.Now);
     }
@@ -26,11 +26,12 @@ public class SimulationClockTests
     [InlineData(SimulationSpeed.Normal, 15)]
     [InlineData(SimulationSpeed.Fast, 30)]
     [InlineData(SimulationSpeed.VeryFast, 60)]
+    [InlineData(SimulationSpeed.Fastest, 120)]
     public void Speed_multiplies_ticks(SimulationSpeed speed, int expectedTicks)
     {
         var clock = new SimulationClock();
         clock.SetSpeed(speed);
-        Assert.Equal(expectedTicks, clock.Advance(1.0));
+        Assert.Equal(expectedTicks, clock.Advance(2.0));
     }
 
     [Fact]
@@ -47,7 +48,7 @@ public class SimulationClockTests
     {
         var clock = new SimulationClock();
         var total = 0;
-        for (var i = 0; i < 60; i++)
+        for (var i = 0; i < 120; i++)
         {
             total += clock.Advance(1.0 / 60.0);
         }
@@ -105,5 +106,15 @@ public class SimulationClockTests
     public void Rejects_negative_time()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new SimulationClock().Advance(-1));
+    }
+
+    [Fact]
+    public void Crossing_a_20_metre_corridor_takes_several_real_seconds_at_1x()
+    {
+        // 40 tiles is 20 m; people should be visible walking it, not dart across in a second.
+        var gameSeconds = 40 / BlueprintHospital.Simulation.Agents.Agent.DefaultWalkSpeed;
+        var realSeconds = gameSeconds / SimulationClock.GameTimePerRealSecond.TotalSeconds;
+        Assert.InRange(realSeconds, 5, 10);
+        Assert.InRange(gameSeconds / 60, 0.5, 1.5);
     }
 }
