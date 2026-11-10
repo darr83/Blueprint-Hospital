@@ -29,6 +29,7 @@ public static class StatKeys
     public const string WardDeaths = "ward.deaths";
     public const string WardCorrections = "ward.corrections";
     public const string Scans = "services.scans";
+    public const string PrescriptionsCollected = "services.prescriptions";
     public const string Operations = "services.operations";
     public const string Births = "maternity.births";
     public const string Caesareans = "maternity.caesareans";

@@ -257,7 +257,7 @@ public sealed partial class HospitalSimulation
         {
             switch (patient.Stage)
             {
-                case PatientStage.Leaving when !patient.IsMoving:
+                case PatientStage.Leaving when !patient.IsMoving && !IsCollecting(patient):
                     patient.Stage = PatientStage.Gone;
                     break;
 

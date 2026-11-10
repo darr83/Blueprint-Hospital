@@ -12,7 +12,8 @@ namespace BlueprintHospital.Simulation.Simulation;
 /// operating theatres (a surgeon) and the pharmacy (a pharmacist). Each room brings its own staff
 /// when it is built. Without imaging, doctors diagnose without scans; without a theatre, patients
 /// who need an operation are transferred; without a pharmacy, medicines cost more and patients wait
-/// longer to go home from the wards.
+/// longer to go home from the wards. Collecting prescriptions and carrying ward medicines are in the
+/// Pharmacy part.
 /// </summary>
 public sealed partial class HospitalSimulation
 {
@@ -45,7 +46,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Whether this member of staff's team does the task: service work in their own room, ward work on their ward, or A&amp;E work.</summary>
     private bool IsForMember(ClinicalTask task, StaffMember member)
     {
-        if (task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Porter)
+        if (task.Kind is TaskKind.MovePatient or TaskKind.DeliverMedicines && member.Role == StaffRole.Porter)
         {
             return true;
         }
@@ -250,8 +251,8 @@ public sealed partial class HospitalSimulation
 
     private void CompleteDispensing(StaffMember pharmacist, Patient patient)
     {
-        patient.MedicinesReadyAt = Now;
-        patient.Log(Now, $"Medicines to take home checked and dispensed by {pharmacist.Name}.");
+        patient.Log(Now, $"Medicines to take home checked and dispensed by {pharmacist.Name}; {(HasPorters ? "a porter" : "a nurse")} will bring them to the ward.");
+        AddTask(TaskKind.DeliverMedicines, HasPorters ? StaffRole.Porter : StaffRole.Nurse, patient, 0, "Take medicines to the ward", pharmacist.BaseRoomId);
     }
 
     // ---------------------------------------------------------------- when rooms come and go

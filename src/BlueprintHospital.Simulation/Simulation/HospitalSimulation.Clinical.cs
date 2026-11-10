@@ -423,6 +423,7 @@ public sealed partial class HospitalSimulation
         patient.Log(Now, $"Discharged by {nurse.Name}. {diagnosed.DispositionNote}");
         EndVisit(patient, PatientOutcome.Discharged);
         WalkTo(patient, WalkInSpawn);
+        OfferPrescription(patient);
 
         if (!correct)
         {
