@@ -168,6 +168,14 @@ public partial class HospitalScene : Node2D
             }
         };
         _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
+        _hud.Crash.FollowRequested += id =>
+        {
+            if (_session.Simulation.FindPatient(id) is { } patient)
+            {
+                SelectPatient(patient, centre: true);
+                _hud.Crash.Expanded = true;
+            }
+        };
         _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
         _hud.Rota.ShowOnMapRequested += m => SelectStaff(m, centre: true);
         _hud.Clinics.OutpatientClicked += o => SelectOutpatient(o, centre: true);

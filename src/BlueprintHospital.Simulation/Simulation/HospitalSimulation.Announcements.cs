@@ -46,7 +46,6 @@ public sealed partial class HospitalSimulation
     public static readonly int[] PreAlertMinutes = { 5, 10 };
 
     private readonly List<PendingPreAlert> _preAlerts = new();
-    private readonly HashSet<int> _arrestCalled = new();
     private readonly HashSet<int> _traumaCalled = new();
     private DateTime _lastGeneralAnnouncement = DateTime.MinValue;
 
@@ -102,7 +101,7 @@ public sealed partial class HospitalSimulation
         return true;
     }
 
-    /// <summary>Peri-arrest patients in A&amp;E get a crash call; serious trauma arriving in resus gets the trauma team.</summary>
+    /// <summary>Serious trauma arriving in resus gets the trauma team (cardiac arrests put out their own crash call).</summary>
     private void UpdateEmergencyCalls()
     {
         foreach (var patient in _patients.Values)
@@ -110,12 +109,6 @@ public sealed partial class HospitalSimulation
             if (!patient.IsAlive || patient.CareSpaceId is not { } spaceId || FindSpace(spaceId) is not { } space || !space.IsTreatmentSpace)
             {
                 continue;
-            }
-
-            if (patient.Condition.CanBeFatal && patient.Severity >= 0.95 && _arrestCalled.Add(patient.Id))
-            {
-                var place = PlaceName(space);
-                Events.Publish(new Announcement(AnnouncementKind.CardiacArrest, $"Adult cardiac arrest, {place.Spoken}.", new[] { $"arrest_{place.Key}" }, patient.Id));
             }
 
             if (space.Kind == CareSpaceKind.Resus && patient.Condition.Department == "trauma" && patient.ArrivalMethod == ArrivalMethod.Ambulance

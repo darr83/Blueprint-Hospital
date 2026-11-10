@@ -113,6 +113,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>A bed (play mode) or a piece of furniture or equipment (build mode).</summary>
     public ItemPanel ItemInfo { get; } = new() { Name = "ItemInfo", Visible = false };
 
+    /// <summary>The crash call banner and crash team panel, under the top bar while a cardiac arrest is going on.</summary>
+    public CrashPanel Crash { get; } = new() { Name = "CrashPanel" };
+
     /// <summary>The cheat command line, opened with Ctrl+C.</summary>
     public CheatConsole Cheats { get; } = new() { Name = "CheatConsole", Visible = false };
 
@@ -322,6 +325,14 @@ public partial class MainHUD : CanvasLayer
         // The build bar and its pop-ups sit above the panels.
         Build.Initialise(sim, tool, BuildMenu.Load(new BlueprintHospital.Core.GodotDataSource(), sim.Database));
         root.AddChild(Build);
+
+        // The crash call banner hangs under the middle of the top bar.
+        Crash.Initialise(sim);
+        Crash.AnchorLeft = Crash.AnchorRight = 0.5f;
+        Crash.OffsetLeft = -280;
+        Crash.OffsetRight = 280;
+        Crash.OffsetTop = TopBarHeight + Gap;
+        root.AddChild(Crash);
 
         // The cheat console sits on top of everything, centred under the top bar.
         Cheats.Initialise(sim);

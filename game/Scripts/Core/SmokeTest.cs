@@ -63,6 +63,8 @@ public partial class SmokeTest : Node
         StatsWeek,
         Ward,
         WardBed,
+        CrashCall,
+        CrashPanelOpen,
         Transport,
         Imaging,
         Theatre,
@@ -417,6 +419,31 @@ public partial class SmokeTest : Node
             case Stage.WardBed when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("07b_ward_bed");
                 hospital.Hud.HideRightPanels();
+                StartCrashCall(hospital);
+                _frame = 0;
+                _stage = Stage.CrashCall;
+                break;
+
+            case Stage.CrashCall when scene is HospitalScene hospital && _frame == 5:
+                if (hospital.Session.Simulation.Arrests.FirstOrDefault() is { } shown && hospital.Session.Simulation.FindPatient(shown.PatientId) is { } arrested)
+                {
+                    hospital.Camera.SnapTo(IsoDraw.ToScreen(arrested.X, arrested.Y), 2.2f);
+                }
+
+                break;
+
+            case Stage.CrashCall when scene is HospitalScene hospital && _frame >= 10:
+                Check(hospital.Hud.Crash.Visible, "The crash call banner did not show.");
+                Screenshot("07c_crash_call");
+                hospital.Hud.Crash.Expanded = true;
+                _frame = 0;
+                _stage = Stage.CrashPanelOpen;
+                break;
+
+            case Stage.CrashPanelOpen when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07d_crash_team");
+                hospital.Hud.Crash.Expanded = false;
+                FinishCrashCall(hospital);
                 BuildImagingAndSendForScan(hospital);
                 _frame = 0;
                 _stage = Stage.Transport;
@@ -1424,6 +1451,44 @@ public partial class SmokeTest : Node
             .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.World.HitTest(b.At) is null);
         hospital.ClickAt(bed.At);
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.AsBed, "Clicking an empty bed in play mode did not open it.");
+    }
+
+    /// <summary>A patient on the ward arrests: runs the clock until CPR is going and the resus trolley is at the bed.</summary>
+    private static void StartCrashCall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var patient = sim.Patients.First(p => p.Stage == Simulation.Patients.PatientStage.OnWard && p.IsAlive);
+        var arrest = sim.StartArrest(patient, "smoke test");
+        var clock = hospital.Session.Clock;
+        for (var i = 0; i < 20 * 60 && arrest.IsActive && (arrest.TrolleyArrivedAt is null || arrest.CprStartedAt is null); i++)
+        {
+            clock.Step();
+        }
+
+        // Hold the scene still for the screenshots (compressions still animate in real time).
+        clock.SetSpeed(SimulationSpeed.Paused);
+        Check(arrest.CrashCalled, "No crash call was put out.");
+        Check(arrest.CprStartedAt is not null || !arrest.IsActive, "Nobody started CPR.");
+        Check(sim.ResusTrolleys.Count > 0, "The ward has no resus trolley.");
+        var ward = sim.Wards.Single();
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(patient.X, patient.Y), 2.0f);
+        GD.Print($"[smoke] Crash call: CPR at {arrest.CprStartedAt}, trolley at {arrest.TrolleyArrivedAt}, team {arrest.Team.Count}, still going {arrest.IsActive} on {ward.Name}.");
+    }
+
+    /// <summary>Runs the clock until the arrest is over and the team have stood down.</summary>
+    private static void FinishCrashCall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var clock = hospital.Session.Clock;
+        clock.SetSpeed(SimulationSpeed.VeryFast);
+        for (var i = 0; i < 60 * 60 && sim.Arrests.Any(a => a.IsActive); i++)
+        {
+            clock.Step();
+        }
+
+        Check(!sim.Arrests.Any(a => a.IsActive), "The arrest did not end within an hour.");
+        GD.Print($"[smoke] Crash call over: {sim.Arrests.Last().Outcome}; arrests {sim.Stats.CardiacArrests}, ROSC {sim.Stats.ArrestsRosc}.");
     }
 
     /// <summary>The build bar fits on screen and every room can be reached from it.</summary>

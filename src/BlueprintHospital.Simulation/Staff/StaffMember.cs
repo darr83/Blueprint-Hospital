@@ -137,6 +137,9 @@ public sealed class StaffMember : Agent
     public int? BedsidePatientId { get; set; }
 
     /// <summary>Game seconds of work left on the current task.</summary>
+    /// <summary>Answering a crash call: the patient in cardiac arrest they are running to (or resuscitating).</summary>
+    public int? CrashPatientId { get; set; }
+
     public double WorkRemainingSeconds { get; set; }
 
     public DateTime? BreakEndsAt { get; set; }

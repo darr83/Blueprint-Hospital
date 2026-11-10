@@ -28,6 +28,13 @@ public static class StatKeys
     public const string WardDischarges = "ward.discharges";
     public const string WardDeaths = "ward.deaths";
     public const string WardCorrections = "ward.corrections";
+    public const string Arrests = "arrests.total";
+    public const string ArrestsRosc = "arrests.rosc";
+    public const string ArrestSurvivors = "arrests.survived";
+    public const string ArrestSecondsToCpr = "arrests.seconds_to_cpr";
+    public const string ArrestCprStarts = "arrests.cpr_starts";
+    public const string ArrestSecondsToShock = "arrests.seconds_to_shock";
+    public const string ArrestFirstShocks = "arrests.first_shocks";
     public const string Scans = "services.scans";
     public const string Operations = "services.operations";
     public const string Births = "maternity.births";
@@ -118,6 +125,13 @@ public sealed partial class HospitalSimulation
         yield return (StatKeys.WardDischarges, s.WardDischarges);
         yield return (StatKeys.WardDeaths, s.WardDeaths);
         yield return (StatKeys.WardCorrections, s.WardDiagnosesCorrected);
+        yield return (StatKeys.Arrests, s.CardiacArrests);
+        yield return (StatKeys.ArrestsRosc, s.ArrestsRosc);
+        yield return (StatKeys.ArrestSurvivors, s.ArrestSurvivors);
+        yield return (StatKeys.ArrestSecondsToCpr, s.SecondsToCprTotal);
+        yield return (StatKeys.ArrestCprStarts, s.CprStarts);
+        yield return (StatKeys.ArrestSecondsToShock, s.SecondsToShockTotal);
+        yield return (StatKeys.ArrestFirstShocks, s.FirstShocks);
         yield return (StatKeys.Scans, s.ScansDone);
         yield return (StatKeys.Operations, s.OperationsDone);
         var m = MaternityStats;

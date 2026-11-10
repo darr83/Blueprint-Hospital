@@ -38,7 +38,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -80,7 +81,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -122,7 +124,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -164,7 +167,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -206,7 +210,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -248,7 +253,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -290,7 +296,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -332,7 +339,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -374,7 +382,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -416,7 +425,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -454,7 +464,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -497,7 +508,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -539,7 +551,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -577,7 +590,8 @@
       "station_counter",
       "clinical_cupboard",
       "hand_basin",
-      "visitor_chair"
+      "visitor_chair",
+      "resus_trolley"
     ]
   },
   {
@@ -620,7 +634,8 @@
       "obs_monitor",
       "station_counter",
       "clinical_cupboard",
-      "hand_basin"
+      "hand_basin",
+      "resus_trolley"
     ]
   },
   {
@@ -662,7 +677,8 @@
       "obs_monitor",
       "station_counter",
       "clinical_cupboard",
-      "hand_basin"
+      "hand_basin",
+      "resus_trolley"
     ]
   }
 ]
