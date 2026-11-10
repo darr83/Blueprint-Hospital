@@ -272,7 +272,10 @@ public partial class HospitalScene : Node2D
     public override void _Process(double delta)
     {
         _session.Clock.Advance(delta);
-        _highlight.Room = _hud.RoomInfo.Visible && _hud.RoomInfo.RoomId is { } roomId ? _session.Simulation.FindSpace(roomId)?.Rect : null;
+        _highlight.Room = _hud.RoomInfo.Visible && _hud.RoomInfo.RoomId is { } roomId ? _session.Simulation.FindSpace(roomId)?.Rect
+            : _hud.Decorate.Visible && _hud.Decorate.RoomId is { } decorId ? _session.Simulation.FindSpace(decorId)?.Rect
+            : null;
+        _highlight.Hover = _hud.Build.Decorating && GetViewport().GuiGetHoveredControl() is null ? DecorTarget(GetGlobalMousePosition())?.Rect : null;
         var shown = _hud.ItemInfo.Visible && _hud.ItemInfo.Room is { } itemRoom && _hud.ItemInfo.Item is { } item ? (itemRoom, item) : default;
         _itemHighlight.Item = shown.item is null ? null : Footprint(shown.itemRoom, shown.item);
         _itemHighlight.ItemHeight = shown.item is not null && _session.Database.Furniture.TryGetValue(shown.item.ItemId, out var shownDef)
@@ -314,7 +317,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible:
+            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -420,6 +423,20 @@ public partial class HospitalScene : Node2D
             return;
         }
 
+        if (_hud.Build.Decorating)
+        {
+            if (DecorTarget(world) is { } decorRoom)
+            {
+                _hud.ShowDecorate(decorRoom);
+            }
+            else
+            {
+                _hud.HideRightPanels();
+            }
+
+            return;
+        }
+
         if (ItemAt(world, bedsOnly: false) is { } hit)
         {
             _hud.HideRightPanels();
@@ -440,6 +457,16 @@ public partial class HospitalScene : Node2D
         {
             _hud.HideRightPanels();
         }
+    }
+
+    /// <summary>The room under a point on screen that the Decorate tool can work on: rooms before corridors, never lifts or stairs.</summary>
+    public CareSpace? DecorTarget(Vector2 world)
+    {
+        var tile = IsoDraw.ScreenToTile(world);
+        return _session.Simulation.Spaces
+            .Where(s => s.Rect.Contains(tile) && IsoDraw.OnViewFloor(s.Rect.Y) && DecorCatalogue.CanDecorate(s))
+            .OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0)
+            .FirstOrDefault();
     }
 
     /// <summary>

@@ -383,15 +383,49 @@ public partial class WorldLayer : Node2D
 
         const double h = WallThickness / 2;
         const double span = 1 - WallThickness;
+
+        // Which walled room each tile is in, so each face of a wall takes the finish of the room it looks into.
+        var roomAt = new Dictionary<GridCoord, CareSpace>();
+        foreach (var space in ViewSpaces.Where(s => s.HasWalls).OrderByDescending(s => s.Rect.Area))
+        {
+            var r = space.Rect;
+            for (var tx = r.X; tx < r.Right; tx++)
+            {
+                for (var ty = r.Y; ty < r.Bottom; ty++)
+                {
+                    roomAt[new GridCoord(tx, ty)] = space;
+                }
+            }
+        }
+
+        WallPaint?[] Paint(double px, double py, double pw, double pl)
+        {
+            var faces = new WallPaint?[4];
+            var (cx, cy) = (px + (pw / 2), py + (pl / 2));
+            var outward = new[] { (cx, py - 0.4), (px + pw + 0.4, cy), (cx, py + pl + 0.4), (px - 0.4, cy) };
+            for (var i = 0; i < 4; i++)
+            {
+                var tile = new GridCoord((int)Math.Floor(outward[i].Item1), (int)Math.Floor(outward[i].Item2));
+                if (roomAt.TryGetValue(tile, out var room) && DecorArt.LookOf(_sim, room) is { Walls: not WallFinish.Standard } look)
+                {
+                    faces[i] = new WallPaint(look.Walls, DecorArt.WallColour(look), DecorArt.WallAccent(room, look));
+                }
+            }
+
+            return faces;
+        }
+
         foreach (var (x, y, horizontal) in solid)
         {
             if (horizontal)
             {
-                AddProp(FrontFace(x + h, y - h, span, WallThickness), c => Wall(c, x + h, y - h, span, WallThickness, Sides.East | Sides.West));
+                var paint = Paint(x + h, y - h, span, WallThickness);
+                AddProp(FrontFace(x + h, y - h, span, WallThickness), c => Wall(c, x + h, y - h, span, WallThickness, Sides.East | Sides.West, paint: paint));
             }
             else
             {
-                AddProp(FrontFace(x - h, y + h, WallThickness, span), c => Wall(c, x - h, y + h, WallThickness, span, Sides.North | Sides.South));
+                var paint = Paint(x - h, y + h, WallThickness, span);
+                AddProp(FrontFace(x - h, y + h, WallThickness, span), c => Wall(c, x - h, y + h, WallThickness, span, Sides.North | Sides.South, paint: paint));
             }
         }
 
@@ -399,7 +433,8 @@ public partial class WorldLayer : Node2D
         {
             // Posts beside a doorway are its frame, in a darker trim.
             var frame = doorPoints.Contains((x, y));
-            AddProp(FrontFace(x - h, y - h, WallThickness, WallThickness), c => Wall(c, x - h, y - h, WallThickness, WallThickness, joined, frame));
+            var paint = frame ? null : Paint(x - h, y - h, WallThickness, WallThickness);
+            AddProp(FrontFace(x - h, y - h, WallThickness, WallThickness), c => Wall(c, x - h, y - h, WallThickness, WallThickness, joined, frame, paint));
         }
 
         // Each room's doorway: frame, doors and name board.
@@ -430,8 +465,26 @@ public partial class WorldLayer : Node2D
     private static readonly Color FrameFace = new("#A9B7C3");
     private static readonly Color FrameTop = new("#C7D2DB");
 
-    private static void Wall(CanvasItem c, double x, double y, double w, double l, Sides joined, bool frame = false) =>
+    /// <summary>A decorated wall face: its finish, colour and second colour.</summary>
+    private sealed record WallPaint(WallFinish Finish, Color Colour, Color? Accent);
+
+    private static void Wall(CanvasItem c, double x, double y, double w, double l, Sides joined, bool frame = false, WallPaint?[]? paint = null)
+    {
         IsoDraw.Prism(c, x, y, w, l, WallHeight, frame ? FrameTop : WallTop, frame ? FrameFace : WallFace, joined, skirting: frame ? FrameFace.Darkened(0.15f) : WallSkirting, rim: WallRim);
+        if (paint is null)
+        {
+            return;
+        }
+
+        foreach (var (a, b, side, left) in IsoDraw.VisibleFaces(x, y, w, l))
+        {
+            var index = side switch { Sides.North => 0, Sides.East => 1, Sides.South => 2, _ => 3 };
+            if ((joined & side) == 0 && paint[index] is { } face)
+            {
+                DecorArt.DrawWallFace(c, a, b, WallHeight, left ? 0f : 0.1f, face.Finish, face.Colour, face.Accent, WallSkirting);
+            }
+        }
+    }
 
     /// <summary>The middle of whichever side of a footprint is nearest the viewer, so thin pieces sort right from every angle.</summary>
     private static Vector2 FrontFace(double x, double y, double w, double l)

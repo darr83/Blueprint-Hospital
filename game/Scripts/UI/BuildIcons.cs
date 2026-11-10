@@ -13,6 +13,7 @@ public static class BuildIcons
     private static readonly Dictionary<string, string> Glyphs = new()
     {
         // Departments and the building.
+        ["roller"] = "<rect x='3.5' y='3' width='14' height='5.5' rx='1.5'/><path d='M17.5 5.75h2.5v5.5h-8.5v3'/><rect x='10' y='14.25' width='3' height='7' rx='1'/>",
         ["building"] = "<path d='M3 21h18'/><path d='M5 21V9l7-5 7 5v12'/><path d='M9.5 21v-4.5h5V21'/><path d='M8.5 11h2M13.5 11h2M8.5 14h2M13.5 14h2'/>",
         ["ae"] = "<path d='M5 18a7 7 0 0 1 14 0'/><path d='M3.5 18h17v3h-17z'/><path d='M12 3v3M4.6 6.6l2 2M19.4 6.6l-2 2'/><path d='M10 15.5a2 2 0 0 1 2-2'/>",
         ["medicine"] = "<path d='M6 3.5v5a4 4 0 0 0 8 0v-5'/><path d='M10 12.5v2.5a4.5 4.5 0 0 0 9 0v-2'/><circle cx='19' cy='11' r='2'/><path d='M5 3.5h2M13 3.5h2'/>",

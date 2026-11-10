@@ -75,6 +75,12 @@ public partial class DepartmentRenderer : Node2D
         {
             var r = space.Rect;
             var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
+            if (DecorArt.LookOf(_sim, space) is { IsStandard: false } look && look.Floor != FloorFinish.Standard)
+            {
+                DecorArt.DrawRoomFloor(this, space, look);
+                continue;
+            }
+
             IsoDraw.FloorQuad(this, r.X, r.Y, r.Width, r.Length, colour);
 
             // A subtle half-metre tile pattern.

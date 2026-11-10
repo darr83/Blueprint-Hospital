@@ -558,6 +558,7 @@ public sealed partial class HospitalSimulation
         var id = NewRoomId(template);
         var room = Furnish(plan, id, name ?? NextName(template));
         _spaces[id] = room;
+        DecorateNewRoom(room);
         Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Built {room.Name} ({room.AreaSquareMetres:0} m²) for £{check.Cost:N0}.");
         AfterLayoutChange();

@@ -102,7 +102,17 @@ public partial class ArtShots : Node
             return;
         }
 
-        var shots = _corridor
+        var view = OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--art-view=", StringComparison.Ordinal));
+        var shots = view is not null
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("view", _ =>
+                {
+                    var v = view["--art-view=".Length..].Split(',').Select(t => double.Parse(t, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                    return (IsoDraw.ToScreen(v[0], v[1]), (float)v[2]);
+                }),
+            }
+            : _corridor
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {
                 ("corridor", CorridorView),
@@ -234,7 +244,7 @@ public partial class ArtShots : Node
                 {
                     Report(templates[i], check);
                     var built = sim.Spaces.Count() > before ? sim.Spaces.Last().Rect : plot;
-                    shots.Add((templates[i], built.X + (built.Width / 2.0), built.Y + (built.Length / 2.0)));
+                    shots.Add((templates.Count(t => t == templates[i]) > 1 ? $"{templates[i]}{i}" : templates[i], built.X + (built.Width / 2.0), built.Y + (built.Length / 2.0)));
                     break;
                 }
             }

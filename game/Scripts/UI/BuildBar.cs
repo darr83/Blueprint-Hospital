@@ -55,6 +55,9 @@ public partial class BuildBar : Control
 
     public bool PopupOpen => _popup.Visible;
 
+    /// <summary>True while the Decorate tool is open: clicking a room opens its Decorate panel.</summary>
+    public bool Decorating => _popup.Visible && OpenIcon == BuildMenu.Decorate;
+
     /// <summary>The bar's rectangle on screen, for tests.</summary>
     public Rect2 BarRect => _bar.GetGlobalRect();
 
@@ -283,7 +286,8 @@ public partial class BuildBar : Control
         name.AddThemeFontSizeOverride("font_size", 17);
         name.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(name);
-        var count = new Label { Text = $"{icon.Items.Count} to build", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var decorating = icon.Id == BuildMenu.Decorate;
+        var count = new Label { Text = decorating ? "Floors and walls" : $"{icon.Items.Count} to build", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter };
         count.AddThemeFontSizeOverride("font_size", 13);
         count.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         header.AddChild(count);
@@ -325,6 +329,18 @@ public partial class BuildBar : Control
             line.AddChild(_openButton);
             banner.AddChild(line);
             _popupBody.AddChild(banner);
+        }
+
+        if (decorating)
+        {
+            _tool.Cancel();
+            _selectedItem = null;
+            var hint = new Label { Text = "Click any room or corridor to choose its floor and walls. You see each pick straight away, and pay when you press Apply." };
+            hint.AddThemeFontSizeOverride("font_size", 14);
+            hint.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+            _popupBody.AddChild(hint);
+            _popup.Size = Vector2.Zero;
+            return;
         }
 
         // A long row wraps onto a second line so the pop-up stays on screen.
