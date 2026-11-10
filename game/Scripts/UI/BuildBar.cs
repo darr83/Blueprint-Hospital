@@ -623,6 +623,7 @@ public partial class BuildBar : Control
                     BuildMode.Trolley => "Click to buy a resus trolley and keep it here",
                     BuildMode.Door when _tool.RemovingDoor => "Click to take this door out",
                     BuildMode.Door => "Click to put a door here",
+                    BuildMode.Room when _tool.PlannedDoorSide is { } door => $"{(_tool.MovingId is null ? "Release to build" : "Release to rebuild here")} · door on the {RoomPanel.Facing(door)} wall · Z moves it",
                     _ => _tool.MovingId is null ? "Release to build" : "Release to rebuild here",
                 };
                 var price = check.Cost switch
@@ -659,6 +660,7 @@ public partial class BuildBar : Control
                 BuildMode.Desk => "Click inside a waiting room to place its reception desk · Z turns · Right click or Esc stops",
                 BuildMode.Trolley => "Click a resus trolley to move it, or empty floor to buy one · Right click or Esc stops",
                 BuildMode.Door => "Click a waiting room wall: on the front path for the entrance, on a corridor for the way through · Right click or Esc stops",
+                BuildMode.Room => "Drag on the floor from corner to corner · Z moves the door to another wall · Right click or Esc stops",
                 _ => "Drag on the floor from corner to corner · Right click or Esc stops",
             }
             : "Hover over a room for details · Click it, then drag on the floor";

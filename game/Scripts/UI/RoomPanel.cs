@@ -21,9 +21,12 @@ public partial class RoomPanel : PanelContainer
     private readonly RichTextLabel _problems = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false };
     private readonly Button _move = new() { Text = "Move or resize", TooltipText = "Drag out the room again where you want it, at the size you want", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly Button _demolish = new() { Text = "Demolish", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
+    private readonly HBoxContainer _doorRow = new();
+    private readonly Dictionary<WallSide, Button> _doorButtons = new();
     private HospitalSimulation _sim = null!;
     private string? _roomId;
     private double _refresh;
+    private int _doorTick;
 
     /// <summary>Raised when the player wants to move or resize the room.</summary>
     public event Action<CareSpace>? MoveRequested;
@@ -64,6 +67,21 @@ public partial class RoomPanel : PanelContainer
         _access.AddThemeConstantOverride("separation", 2);
         column.AddChild(_access);
 
+        // Door: one button per wall. Moving the door turns the room's layout with it.
+        _doorRow.AddThemeConstantOverride("separation", 4);
+        var doorLabel = new Label { Text = "Door", CustomMinimumSize = new Vector2(44, 0), VerticalAlignment = VerticalAlignment.Center };
+        doorLabel.AddThemeColorOverride("font_color", new Color("#5B6B79"));
+        _doorRow.AddChild(doorLabel);
+        foreach (var side in new[] { WallSide.West, WallSide.North, WallSide.East, WallSide.South })
+        {
+            var button = new Button { Text = ShortFacing(side), ToggleMode = true, FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 32) };
+            button.Pressed += () => MoveDoor(side);
+            _doorButtons[side] = button;
+            _doorRow.AddChild(button);
+        }
+
+        column.AddChild(_doorRow);
+
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 6);
         buttons.AddChild(_move);
@@ -84,6 +102,7 @@ public partial class RoomPanel : PanelContainer
     public void Show(CareSpace room)
     {
         _roomId = room.Id;
+        _doorTick = 0;
         _name.Text = room.Name;
         _problems.Text = string.Empty;
         Visible = true;
@@ -129,6 +148,50 @@ public partial class RoomPanel : PanelContainer
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";
         _move.Visible = room.Kind != CareSpaceKind.Corridor;
+        RefreshDoors(room);
+    }
+
+    /// <summary>Lights the wall the door is on; the others say what moving it there would cost, or why it can't go there.</summary>
+    private void RefreshDoors(CareSpace room)
+    {
+        var template = _sim.Database.RoomTemplates.GetValueOrDefault(room.TemplateId);
+        _doorRow.Visible = room.Kind is not (CareSpaceKind.Corridor or CareSpaceKind.Waiting) && template is { IsShaft: false };
+        // Each check lays the room out again and walks the routes, so only every couple of seconds.
+        if (!_doorRow.Visible || (_doorTick++ % 4 != 0 && _doorButtons[room.DoorSide].ButtonPressed))
+        {
+            return;
+        }
+
+        foreach (var (side, button) in _doorButtons)
+        {
+            button.SetPressedNoSignal(side == room.DoorSide);
+            if (side == room.DoorSide)
+            {
+                button.Disabled = false;
+                button.TooltipText = $"The door is on the {Facing(side)} wall";
+                continue;
+            }
+
+            var check = _sim.CheckDoorSide(room.Id, side);
+            button.Disabled = !check.CanBuild;
+            button.TooltipText = check.CanBuild
+                ? $"Move the door to the {Facing(side)} wall and lay the room out again from there: £{check.Cost:N0}"
+                : string.Join("\n", check.Problems);
+        }
+    }
+
+    private void MoveDoor(WallSide side)
+    {
+        if (_roomId is null || _sim.FindSpace(_roomId) is not { } room || room.DoorSide == side)
+        {
+            Refresh();
+            return;
+        }
+
+        var result = _sim.MoveDoor(_roomId, side);
+        _doorTick = 0;
+        _problems.Text = result.CanBuild ? string.Empty : $"[color=#C4373D]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
+        Refresh();
     }
 
     /// <summary>For a theatre: a tick for each department whose patients may be operated on in it, and one for all of them.</summary>
@@ -291,7 +354,16 @@ public partial class RoomPanel : PanelContainer
         _problems.Text = $"[color=#C4373D]✗ {string.Join("\n✗ ", result.Problems)}[/color]";
     }
 
-    private static string Facing(WallSide side) => side switch
+    /// <summary>Short label for a wall, as the player sees it in the default view.</summary>
+    public static string ShortFacing(WallSide side) => side switch
+    {
+        WallSide.North => "NE",
+        WallSide.East => "SE",
+        WallSide.South => "SW",
+        _ => "NW",
+    };
+
+    public static string Facing(WallSide side) => side switch
     {
         WallSide.North => "north-east",
         WallSide.East => "south-east",

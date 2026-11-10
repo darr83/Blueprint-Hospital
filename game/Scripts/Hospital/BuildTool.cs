@@ -67,6 +67,12 @@ public partial class BuildTool : Node2D
     /// <summary>The way the player has turned chairs with Z; null lets each chair face away from the nearest wall.</summary>
     public WallSide? ChairFacing { get; private set; }
 
+    /// <summary>The wall the player has put a room's door on with Z; null lets the game pick the wall with the most corridor beside it.</summary>
+    public WallSide? DoorChoice { get; private set; }
+
+    /// <summary>The wall the door of the room being dragged out goes on, as things stand.</summary>
+    public WallSide? PlannedDoorSide => Mode == BuildMode.Room && Template is { } t && _dragStart is not null ? _sim.AutoPlan(t.Id, _rect, MovingId, DoorChoice).DoorSide : null;
+
     /// <summary>The side of the reception desk patients stand on.</summary>
     public WallSide DeskFacing { get; private set; } = WallSide.South;
 
@@ -121,6 +127,9 @@ public partial class BuildTool : Node2D
         Mode = BuildMode.Room;
         Template = template;
         MovingId = movingId;
+
+        // Moving or resizing keeps the door on the same wall unless the player turns it.
+        DoorChoice = movingId is not null ? _sim.FindSpace(movingId)?.DoorSide : null;
         Restart();
     }
 
@@ -171,7 +180,7 @@ public partial class BuildTool : Node2D
         Restart();
     }
 
-    /// <summary>Turns the chairs or desk being placed a quarter turn (the Z key).</summary>
+    /// <summary>Turns the chairs or desk being placed a quarter turn, or moves a room's door to its next wall (the Z key).</summary>
     public void Turn()
     {
         switch (Mode)
@@ -181,6 +190,11 @@ public partial class BuildTool : Node2D
                 break;
             case BuildMode.Desk:
                 DeskFacing = WaitingRoomLayout.Clockwise(DeskFacing);
+                break;
+            case BuildMode.Room when Template is { } room:
+                // Step the door round to the next wall with a corridor beside it; the furniture turns with it.
+                var current = PlannedDoorSide ?? DoorChoice ?? WallSide.South;
+                DoorChoice = _dragStart is null ? WaitingRoomLayout.Clockwise(current) : _sim.NextDoorSide(room.Id, _rect, current, MovingId) ?? WaitingRoomLayout.Clockwise(current);
                 break;
             default:
                 return;
@@ -356,7 +370,7 @@ public partial class BuildTool : Node2D
                 Place();
                 return true;
 
-            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Z } when Mode is BuildMode.Chair or BuildMode.Desk:
+            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Z } when Mode is BuildMode.Chair or BuildMode.Desk or BuildMode.Room:
                 Turn();
                 return true;
 
@@ -425,7 +439,7 @@ public partial class BuildTool : Node2D
         switch (Mode)
         {
             case BuildMode.Room when MovingId is { } id:
-                result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id));
+                result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id, DoorChoice));
                 what = $"Moved {_sim.FindSpace(id)?.Name}";
                 break;
             case BuildMode.Chair:
@@ -472,7 +486,7 @@ public partial class BuildTool : Node2D
                 return;
             case BuildMode.Room:
             case BuildMode.Corridor:
-                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect));
+                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null));
                 what = $"Built {Template.Name.ToLowerInvariant()}";
                 break;
             default:
@@ -522,7 +536,7 @@ public partial class BuildTool : Node2D
 
         _rect = DragRect();
 
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -547,7 +561,7 @@ public partial class BuildTool : Node2D
             BuildMode.Door when RemovingDoor => _sim.CheckRemoveWaitingDoor(TargetRoom.Id, Inside(TargetRoom.Rect, _hover)),
             BuildMode.Door => _sim.CheckWaitingDoor(TargetRoom.Id, Inside(TargetRoom.Rect, _hover)),
             BuildMode.Room when _dragStart is null => new BuildCheck(0, new[] { $"Drag out the {Template!.Name.ToLowerInvariant()} from corner to corner." }),
-            BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId),
+            BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId, DoorChoice),
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
