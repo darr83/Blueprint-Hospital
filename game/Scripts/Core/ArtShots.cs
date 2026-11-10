@@ -53,6 +53,11 @@ public partial class ArtShots : Node
                     BuildShowroom(h);
                 }
 
+                if (OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--art-rooms=", StringComparison.Ordinal)) is { } list)
+                {
+                    BuildRooms(h, list["--art-rooms=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries));
+                }
+
                 // Bring in a few patients so there are people in the beds to look at.
                 for (var i = 0; i < 6; i++)
                 {
@@ -105,6 +110,8 @@ public partial class ArtShots : Node
                 ("corridor_close_b", h => CorridorCloseUp(h, 2)),
                 ("corridor_close_c", h => CorridorCloseUp(h, 4)),
             }
+            : _rooms.Length > 0
+            ? _rooms.Select(r => (Name: r.Name, Frame: (Func<HospitalScene, (Vector2 At, float Zoom)>)(_ => (IsoDraw.ToScreen(r.X, r.Y) + new Vector2(0, -24), 1.75f)))).ToArray()
             : _wing
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {
@@ -192,6 +199,48 @@ public partial class ArtShots : Node
             Report(north[i], sim.BuildRoom(sim.AutoPlan(north[i], new Simulation.World.GridRect(44 + (i * 11), 2, 11, 11))));
             Report(south[i], sim.BuildRoom(sim.AutoPlan(south[i], new Simulation.World.GridRect(44 + (i * 11), 18, 11, 12))));
         }
+    }
+
+    private (string Name, double X, double Y)[] _rooms = Array.Empty<(string, double, double)>();
+
+    /// <summary>
+    /// Builds any ten room templates (--art-rooms=a,b,c) in two rows either side of a corridor,
+    /// and photographs each one close up, to review furniture and signs room by room.
+    /// </summary>
+    private void BuildRooms(HospitalScene h, string[] templates)
+    {
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(10_000_000);
+        foreach (var dept in sim.Database.Departments.Keys)
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        Report("extension", sim.ExtendBuilding(new Simulation.World.GridRect(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(44, 13, 56, 5), Simulation.World.WallSide.South)));
+        var shots = new System.Collections.Generic.List<(string, double, double)>();
+        for (var i = 0; i < templates.Length && i < 10; i++)
+        {
+            var plot = i < 5 ? new Simulation.World.GridRect(44 + (i * 11), 2, 11, 11) : new Simulation.World.GridRect(44 + ((i - 5) * 11), 18, 11, 12);
+            // Some rooms have a largest size: try the whole plot, then smaller rooms on the corridor side of it.
+            foreach (var size in new[] { 11, 8, 6, 5 })
+            {
+                var length = Math.Min(size, plot.Length);
+                var rect = new Simulation.World.GridRect(plot.X + ((plot.Width - size) / 2), i < 5 ? plot.Bottom - length : plot.Y, size, length);
+                var before = sim.Spaces.Count();
+                var check = sim.BuildRoom(sim.AutoPlan(templates[i], size == 11 ? plot : rect));
+                if (check.CanBuild || size == 5)
+                {
+                    Report(templates[i], check);
+                    var built = sim.Spaces.Count() > before ? sim.Spaces.Last().Rect : plot;
+                    shots.Add((templates[i], built.X + (built.Width / 2.0), built.Y + (built.Length / 2.0)));
+                    break;
+                }
+            }
+        }
+
+        _rooms = shots.ToArray();
     }
 
     private static void Report(string what, Simulation.Simulation.BuildCheck check) =>

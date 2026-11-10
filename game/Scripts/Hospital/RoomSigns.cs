@@ -11,10 +11,6 @@ namespace BlueprintHospital.Hospital;
 /// </summary>
 public static class RoomSigns
 {
-    private static Font? _sign;
-
-    private static Font Sign => _sign ??= new FontVariation { BaseFont = ThemeDB.FallbackFont, VariationEmbolden = 0.5f };
-
     /// <summary>Rooms that get a name: walled rooms with a door, other than lifts and stairs.</summary>
     public static bool Named(CareSpace space) => space.HasWalls && space.Doors.Count > 0 && space.Kind != CareSpaceKind.Corridor;
 
@@ -95,7 +91,6 @@ public static class RoomSigns
     /// </summary>
     public static void Doorway(CanvasItem c, CareSpace space, float open, double wallThickness, float wallHeight, Color wallTop, Color wallFace, Color frameTop, Color frameFace)
     {
-        var node = (Node2D)c;
         var (a, b, o) = DoorLine(space);
         var horizontal = o.X == 0;
         var unit = horizontal ? (X: 1.0, Y: 0.0) : (X: 0.0, Y: 1.0);
@@ -169,20 +164,32 @@ public static class RoomSigns
         }
 
         // The name board standing on the frame.
-        var name = space.Name;
-        const int size = 15;
-        const float boardHeight = 21f;
-        const float stripe = 3f;
-        const double t = 0.1;
-        var font = Sign;
-        var textWidth = font.GetStringSize(name, HorizontalAlignment.Left, -1, size).X;
         var mid = DoorMiddle(space);
-        var tilePx = (IsoDraw.ToScreen(mid.X + unit.X, mid.Y + unit.Y) - IsoDraw.ToScreen(mid.X, mid.Y)).Length();
-        var boardTiles = Math.Max(Math.Min(openTo - openFrom, 4), (textWidth + 18) / tilePx);
-        var boardBase = Math.Max(FrameHeight, wallHeight) + 2;
-        Along((horizontal ? mid.X : mid.Y) - (boardTiles / 2), boardTiles, t, boardBase, boardBase + boardHeight, new Color("#E9EEF2"), new Color("#FBFCFD"));
+        NameBoard(c, space.Name, Colour(space), Signs.IconFor(space), Signs.DoorStyle, mid, horizontal, o, Math.Max(FrameHeight, wallHeight) + 2, Math.Min(openTo - openFrom, 4));
+    }
 
-        var faceOffset = (X: o.X * ((t / 2) + 0.005), Y: o.Y * ((t / 2) + 0.005));
+    /// <summary>
+    /// A name board: a thin slab standing on a door frame whose middle is <paramref name="mid"/>,
+    /// lettered on whichever face is towards the viewer. <paramref name="outward"/> points out of the room.
+    /// </summary>
+    public static void NameBoard(CanvasItem c, string name, Color colour, Pictogram icon, DoorSignStyle style, (double X, double Y) mid, bool horizontal, (double X, double Y) outward, float boardBase, double minTiles)
+    {
+        const double t = 0.1;
+        var unit = horizontal ? (X: 1.0, Y: 0.0) : (X: 0.0, Y: 1.0);
+        var tilePx = (IsoDraw.ToScreen(mid.X + unit.X, mid.Y + unit.Y) - IsoDraw.ToScreen(mid.X, mid.Y)).Length();
+        var boardTiles = Math.Max(minTiles, Signs.BoardLength(name, icon) / tilePx);
+        var (top, face) = Signs.BoardColours(style, colour);
+        var from = (horizontal ? mid.X : mid.Y) - (boardTiles / 2);
+        if (horizontal)
+        {
+            IsoDraw.Prism(c, from, mid.Y - (t / 2), boardTiles, t, Signs.BoardHeight, top, face, lift: boardBase);
+        }
+        else
+        {
+            IsoDraw.Prism(c, mid.X - (t / 2), from, t, boardTiles, Signs.BoardHeight, top, face, lift: boardBase);
+        }
+
+        var faceOffset = (X: outward.X * ((t / 2) + 0.005), Y: outward.Y * ((t / 2) + 0.005));
         var front = IsoDraw.ToScreen(mid.X + faceOffset.X, mid.Y + faceOffset.Y).Y >= IsoDraw.ToScreen(mid.X - faceOffset.X, mid.Y - faceOffset.Y).Y ? 1 : -1;
         var centre = (X: mid.X + (faceOffset.X * front), Y: mid.Y + (faceOffset.Y * front));
         var c0 = IsoDraw.ToScreen(centre.X, centre.Y);
@@ -193,14 +200,17 @@ public static class RoomSigns
             along = -along;
         }
 
-        var faceTop = c0 + new Vector2(0, -(boardBase + boardHeight));
-        var halfBoard = along * (float)(boardTiles * tilePx / 2);
-        var stripeDown = new Vector2(0, stripe);
-        c.DrawColoredPolygon(new[] { faceTop - halfBoard, faceTop + halfBoard, faceTop + halfBoard + stripeDown, faceTop - halfBoard + stripeDown }, Colour(space));
-        var baseline = faceTop + new Vector2(0, stripe + 13.5f);
-        var origin = baseline - (along * (textWidth / 2));
-        c.DrawSetTransformMatrix(new Transform2D(along, new Vector2(0, 1), origin - node.Position));
-        c.DrawString(font, Vector2.Zero, name, HorizontalAlignment.Left, -1, size, new Color("#1D2B36"));
-        c.DrawSetTransform(-node.Position);
+        var length = (float)(boardTiles * tilePx);
+        var topLeft = c0 + new Vector2(0, -(boardBase + Signs.BoardHeight)) - (along * (length / 2));
+        var dim = along.Y > 0;
+        Flat.On(c, topLeft, along, () =>
+        {
+            Signs.NameBoard(c, style, name, colour, icon, length);
+            if (dim)
+            {
+                // The face turned away from the light.
+                c.DrawRect(new Rect2(0, 0, length, Signs.BoardHeight), new Color(0, 0, 0, 0.07f));
+            }
+        });
     }
 }
