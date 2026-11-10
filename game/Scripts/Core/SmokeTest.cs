@@ -819,8 +819,9 @@ public partial class SmokeTest : Node
         var clinic = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.Clinic);
         Check(sim.ClinicProblems(clinic).Count == 2, "A new clinic should need a doctor and a receptionist.");
         Check(sim.PostingsFor(Simulation.Staff.StaffRole.Doctor).Any(p => p.RoomId == clinic.Id), "Doctors can't be posted to the clinic.");
-        sim.HireStaff(Simulation.Staff.StaffRole.Receptionist, desk.Id, skill: 0.7);
-        sim.HireStaff(Simulation.Staff.StaffRole.Doctor, clinic.Id, skill: 0.7);
+        // Clinics run in the day, so hire their team for days whatever time this step happens to start.
+        sim.HireStaff(Simulation.Staff.StaffRole.Receptionist, desk.Id, skill: 0.7, shift: Simulation.Staff.StaffShift.Day);
+        sim.HireStaff(Simulation.Staff.StaffRole.Doctor, clinic.Id, skill: 0.7, shift: Simulation.Staff.StaffShift.Day);
         Check(sim.IsClinicRunning(clinic), "The staffed clinic is not running: " + string.Join(", ", sim.ClinicProblems(clinic)));
 
         // Waiting chairs along the corridor, through the build tool like a player would.
@@ -1512,6 +1513,9 @@ public partial class SmokeTest : Node
         Check(xray.CanBuild, "X-ray room refused: " + string.Join("; ", xray.Problems));
         var room = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.XRay);
         sim.HireStaff(Simulation.Staff.StaffRole.Radiographer);
+
+        // And one for nights, so a patient whose X-ray is asked for in the evening isn't left waiting until morning.
+        sim.HireStaff(Simulation.Staff.StaffRole.Radiographer, shift: Simulation.Staff.StaffShift.Night);
         Check(sim.Staff.Any(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Radiographer), "No radiographer posted to the X-ray room.");
 
         // Ambulance patients come in: anyone who can't walk is pushed by a porter. Catch one out in a corridor.

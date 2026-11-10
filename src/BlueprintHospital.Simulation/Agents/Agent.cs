@@ -5,8 +5,16 @@ namespace BlueprintHospital.Simulation.Agents;
 /// <summary>Anything that walks around the hospital: patients and staff.</summary>
 public abstract class Agent
 {
-    /// <summary>Walking speed in tiles per game second (1.2 m/s).</summary>
-    public const double DefaultWalkSpeed = 1.2 / Units.MetresPerTile;
+    /// <summary>
+    /// Walking speed in tiles per game second. Real people walk about 1.2 m/s, but the game clock
+    /// squeezes a day into a few hours, so at that pace everyone would dart across the screen. They
+    /// walk at a third of it (0.4 m/s of game time), which looks like a steady walk at 1x and costs
+    /// little in game time, as walks are a small part of anyone's shift.
+    /// </summary>
+    public const double DefaultWalkSpeed = WalkPaceFactor * 1.2 / Units.MetresPerTile;
+
+    /// <summary>How much slower than real life people (and vehicles) move in game time, so the hospital can be watched.</summary>
+    public const double WalkPaceFactor = 1.0 / 3.0;
 
     /// <summary>Tiles still to walk, each with how far the ride to it counts as (0 for an ordinary step; more for a lift or stairs).</summary>
     private readonly Queue<(GridCoord Tile, int Hop)> _path = new();

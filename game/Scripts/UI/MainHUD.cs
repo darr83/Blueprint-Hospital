@@ -452,6 +452,7 @@ public partial class MainHUD : CanvasLayer
         AddSpeedButton(speedRow, "1x", SimulationSpeed.Normal, "Normal speed (1)");
         AddSpeedButton(speedRow, "2x", SimulationSpeed.Fast, "Fast (2)");
         AddSpeedButton(speedRow, "4x", SimulationSpeed.VeryFast, "Very fast (3)");
+        AddSpeedButton(speedRow, "8x", SimulationSpeed.Fastest, "Fastest (4)");
         clockRow.AddChild(speeds);
         clock.AddChild(clockRow);
         row.AddChild(clock);

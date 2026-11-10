@@ -24,7 +24,7 @@ public enum AmbulanceState
 /// <summary>An ambulance on the hospital site. Drives to a bay, waits for handover or collection, then leaves.</summary>
 public sealed class AmbulanceVehicle : Agent
 {
-    public const double DriveSpeedTilesPerSecond = 6.0 / Units.MetresPerTile;
+    public const double DriveSpeedTilesPerSecond = Agent.WalkPaceFactor * 6.0 / Units.MetresPerTile;
 
     public AmbulanceVehicle()
     {

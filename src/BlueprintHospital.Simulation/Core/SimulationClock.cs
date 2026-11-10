@@ -7,6 +7,7 @@ public enum SimulationSpeed
     Normal = 1,
     Fast = 2,
     VeryFast = 4,
+    Fastest = 8,
 }
 
 /// <summary>
@@ -19,10 +20,10 @@ public sealed class SimulationClock
     public static readonly TimeSpan TickLength = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// Game time that passes per real second at 1x speed. At 1x an hour takes four real minutes;
-    /// at 4x a whole day takes about 24 minutes.
+    /// Game time that passes per real second at 1x speed. At 1x an hour takes eight real minutes,
+    /// slow enough to watch people walk about; at 8x a whole day takes about 24 minutes.
     /// </summary>
-    public static readonly TimeSpan GameTimePerRealSecond = TimeSpan.FromSeconds(15);
+    public static readonly TimeSpan GameTimePerRealSecond = TimeSpan.FromSeconds(7.5);
 
     /// <summary>Upper bound on ticks processed in one frame so a long hitch cannot freeze the game.</summary>
     public const int MaxTicksPerAdvance = 240;

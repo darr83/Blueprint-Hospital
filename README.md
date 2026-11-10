@@ -68,7 +68,7 @@ Then:
 | Move camera | Middle mouse drag, or WASD / arrow keys |
 | Zoom | Mouse wheel (zooms towards the cursor), or the + and − buttons bottom right |
 | Pause / resume | Space |
-| Speed 1x / 2x / 4x | 1 / 2 / 3 |
+| Speed 1x / 2x / 4x / 8x | 1 / 2 / 3 / 4 |
 | Toggle building grid | G |
 | Show walking routes | R (or Routes on the left-hand bar) |
 | Rotate the view a quarter turn | Q / E (or the turn buttons bottom right) |
@@ -94,8 +94,10 @@ Then:
 
 ## How the A&E works
 
-Time runs at **15 game seconds per real second** at 1x (a game hour takes 4 real minutes at 1x,
-1 minute at 4x). Patients arrive on a realistic daily pattern, about 35 a day: quiet overnight,
+Time runs at **7.5 game seconds per real second** at 1x (a game hour takes 8 real minutes at 1x,
+1 minute at 8x). People walk at a third of real-life pace in game time (0.4 m/s), so at 1x you can
+watch them cross the hospital (about 7 seconds for a 20 m corridor); procedure and treatment times are
+unchanged in game minutes. Patients arrive on a realistic daily pattern, about 35 a day: quiet overnight,
 busiest from late morning to evening.
 
 - **Walk-ins** queue at reception, are registered, then wait to be called to triage.
