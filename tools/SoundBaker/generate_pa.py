@@ -69,7 +69,11 @@ def build_lines():
         for ward in json.load(f):
             spoken = ward["name"].replace("A&E", "A and E")
             lines[f"arrest_{ward['id']}"] = f"Adult cardiac arrest, {spoken}. Adult cardiac arrest, {spoken}."
-    for key, place in [("theatre", "Theatres"), ("xray", "X-ray"), ("ct", "C T"), ("cathlab", "the cath lab"), ("endoscopy", "Endoscopy"), ("physiogym", "the physio gym")]:
+    for key, place in [("theatre", "Theatres"), ("xray", "X-ray"), ("ct", "C T"), ("cathlab", "the cath lab"), ("endoscopy", "Endoscopy"), ("physiogym", "the physio gym"),
+                       ("endoscopyrecovery", "Endoscopy recovery"), ("plasterroom", "the plaster room"), ("clinic", "Outpatients"),
+                       ("echo", "Echo"), ("eeg", "E E G"), ("ultrasound", "Ultrasound"), ("waiting", "the A and E waiting room"),
+                       ("triage", "Triage"), ("minors", "Minors"), ("toilets", "the public toilets"), ("accessibletoilet", "the public toilets"),
+                       ("cafeteria", "the café"), ("pharmacy", "Pharmacy"), ("outpatientreception", "Outpatients reception")]:
         lines[f"arrest_{key}"] = f"Adult cardiac arrest, {place}. Adult cardiac arrest, {place}."
     lines["arrest_x"] = "Adult cardiac arrest. Adult cardiac arrest."
     lines["paed_arrest"] = "Paediatric cardiac arrest. Paediatric cardiac arrest."
