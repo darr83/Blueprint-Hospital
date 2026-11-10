@@ -61,13 +61,14 @@ public static class BuildIcons
         ["wc"] = "<path d='M6 4h5v7H6z'/><path d='M4 11h15a6 6 0 0 1-6 6H9a5 5 0 0 1-5-5z'/><path d='M9 17l-1 4h7l-1-4'/>",
         ["access"] = "<circle cx='11' cy='4' r='1.8'/><path d='M11 6.5V13h6l2 5'/><path d='M8 9.5a6 6 0 1 0 7.5 7.5'/>",
         ["reception"] = "<path d='M3 12h18v8H3z'/><circle cx='12' cy='6' r='2.5'/><path d='M8 12a4 4 0 0 1 8 0'/>",
+        ["resus_trolley"] = "<rect x='5' y='8' width='12' height='10' rx='1'/><path d='M5 11.5h12M5 15h12'/><path d='M17 9h2.5v-3'/><circle cx='7' cy='20' r='1.3'/><circle cx='15' cy='20' r='1.3'/><path d='M9 3.5l-1.5 2.5h3L9 8.5'/>",
         ["lock"] = "<rect x='5' y='11' width='14' height='10' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
     };
 
     /// <summary>Drawings for particular rooms; anything else is picked by the room's kind and layout.</summary>
     private static readonly Dictionary<string, string> RoomGlyphs = new()
     {
-        ["extend_building"] = "extend", ["add_floor"] = "floor", ["waiting_chairs"] = "seat", ["waiting_desk"] = "reception", ["waiting_doors"] = "door", ["corridor"] = "corridor",
+        ["extend_building"] = "extend", ["add_floor"] = "floor", ["waiting_chairs"] = "seat", ["resus_trolleys"] = "resus_trolley", ["waiting_desk"] = "reception", ["waiting_doors"] = "door", ["corridor"] = "corridor",
         ["lift"] = "lift", ["stairs"] = "stairs",
         ["waiting_room"] = "chairs", ["triage_room"] = "triage", ["resus_bay"] = "resus",
         ["nurses_station"] = "station", ["doctors_office"] = "office", ["staff_room"] = "people", ["outreach_office"] = "office",

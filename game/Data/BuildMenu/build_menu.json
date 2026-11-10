@@ -1,11 +1,11 @@
 {
-  "_comment": "The bottom build bar. Each icon pops up a row of rooms. A room may sit under several icons (shared rooms). Room ids that don't exist yet are skipped, an icon whose department doesn't exist is hidden, and any room template not listed here is added to the icon of its own department. The decorate icon has no items: it opens the Decorate tool. Special items: extend_building, add_floor, waiting_chairs, waiting_desk, waiting_doors.",
+  "_comment": "The bottom build bar. Each icon pops up a row of rooms. A room may sit under several icons (shared rooms). Room ids that don't exist yet are skipped, an icon whose department doesn't exist is hidden, and any room template not listed here is added to the icon of its own department. The decorate icon has no items: it opens the Decorate tool. Special items: extend_building, add_floor, waiting_chairs, waiting_desk, waiting_doors, resus_trolleys.",
   "groups": [
     {
       "name": "Building",
       "icons": [
         { "id": "building", "label": "Building", "name": "Hospital building", "colour": "#37474F", "glyph": "building",
-          "items": ["extend_building", "add_floor", "corridor", "waiting_chairs", "lift", "stairs"] },
+          "items": ["extend_building", "add_floor", "corridor", "waiting_chairs", "resus_trolleys", "lift", "stairs"] },
         { "id": "decorate", "label": "Decorate", "name": "Decorate rooms", "colour": "#1F5FBF", "glyph": "roller", "items": [] }
       ]
     },
@@ -13,7 +13,7 @@
       "name": "Departments",
       "icons": [
         { "id": "emergency", "label": "A&E", "name": "Accident and Emergency", "department": "emergency", "colour": "#E53935", "glyph": "ae",
-          "items": ["waiting_room", "waiting_desk", "waiting_doors", "waiting_chairs", "triage_room", "minors_cubicle", "majors_cubicle", "resus_bay", "emergency_ward", "nurses_station", "doctors_office", "staff_room", "xray_room", "ct_scanner"] },
+          "items": ["waiting_room", "waiting_desk", "waiting_doors", "waiting_chairs", "triage_room", "minors_cubicle", "majors_cubicle", "resus_bay", "resus_trolleys", "emergency_ward", "nurses_station", "doctors_office", "staff_room", "xray_room", "ct_scanner"] },
         { "id": "general_medicine", "label": "Medicine", "name": "Acute and General Medicine", "department": "general_medicine", "colour": "#1E88E5", "glyph": "medicine",
           "items": ["acute_medical_unit", "ambulatory_care_unit", "medical_ward", "medical_clinic", "nurses_station", "doctors_office"] },
         { "id": "general_surgery", "label": "Surgery", "name": "General Surgery", "department": "general_surgery", "colour": "#EF6C00", "glyph": "surgery",

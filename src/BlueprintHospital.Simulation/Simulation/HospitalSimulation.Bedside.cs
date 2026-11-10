@@ -76,6 +76,12 @@ public sealed partial class HospitalSimulation
 
         foreach (var patient in _patients.Values)
         {
+            // The crash team are with a patient in cardiac arrest; the red-monitor calls wait until it's over.
+            if (patient.InArrest)
+            {
+                continue;
+            }
+
             patient.UpdateMonitorRed();
             var calls = _tasks.Values.Where(t => t.PatientId == patient.Id && t.Kind is TaskKind.StayWithPatient or TaskKind.RedReview).ToList();
             if (!patient.MonitorIsRed)

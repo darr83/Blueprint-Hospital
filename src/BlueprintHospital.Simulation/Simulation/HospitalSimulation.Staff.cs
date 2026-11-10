@@ -165,6 +165,11 @@ public sealed partial class HospitalSimulation
         HandleShiftChange();
         foreach (var member in _staff)
         {
+            if (UpdateCrashResponder(member))
+            {
+                continue;
+            }
+
             if (UpdateAssisting(member))
             {
                 continue;
@@ -375,6 +380,12 @@ public sealed partial class HospitalSimulation
     private bool CanStart(ClinicalTask task)
     {
         if (!_patients.TryGetValue(task.PatientId, out var patient) || !patient.IsInDepartment && patient.Stage != PatientStage.WalkingIn)
+        {
+            return false;
+        }
+
+        // Nothing else happens to a patient in cardiac arrest.
+        if (patient.InArrest)
         {
             return false;
         }

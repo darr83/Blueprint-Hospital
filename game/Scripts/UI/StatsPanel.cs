@@ -103,6 +103,11 @@ public partial class StatsPanel : PanelContainer
             ("on_wards", "Patients on the wards"), ("ward_admissions", "Admitted from A&E"), ("ward_home", "Home from a ward"),
             ("ward_died", "Died on a ward"), ("corrected", "Diagnoses corrected on the ward"),
         }));
+        grid.AddChild(Card("Cardiac arrests", new[]
+        {
+            ("arrests", "Cardiac arrests"), ("arrest_rosc", "Heart restarted"), ("arrest_survived", "Survived to leave hospital"),
+            ("arrest_cpr", "Average time to CPR"), ("arrest_shock", "Average time to first shock"),
+        }));
         grid.AddChild(Card("Theatres, imaging and clinics", new[]
         {
             ("operations", "Operations"), ("scans", "X-rays and scans"), ("clinic_seen", "Clinic patients seen"),
@@ -348,6 +353,16 @@ public partial class StatsPanel : PanelContainer
         SetValue("ward_home", Count(T(StatKeys.WardDischarges)));
         SetValue("ward_died", Count(T(StatKeys.WardDeaths)), null, T(StatKeys.WardDeaths) > 0 ? UiStyle.Red : null);
         SetValue("corrected", Count(T(StatKeys.WardCorrections)));
+        var arrests = T(StatKeys.Arrests);
+        SetValue("arrests", Count(arrests), null, arrests > 0 ? UiStyle.Red : null);
+        SetValue("arrest_rosc", Count(T(StatKeys.ArrestsRosc)), Share(T(StatKeys.ArrestsRosc), arrests));
+        SetValue("arrest_survived", Count(T(StatKeys.ArrestSurvivors)), Share(T(StatKeys.ArrestSurvivors), arrests));
+        var cprStarts = T(StatKeys.ArrestCprStarts);
+        var shocks = T(StatKeys.ArrestFirstShocks);
+        SetValue("arrest_cpr", cprStarts > 0 ? MinSec(T(StatKeys.ArrestSecondsToCpr) / cprStarts) : "–", cprStarts > 0 ? $"{cprStarts:N0} arrests" : string.Empty,
+            cprStarts > 0 && T(StatKeys.ArrestSecondsToCpr) / cprStarts > 120 ? UiStyle.AmberText : null);
+        SetValue("arrest_shock", shocks > 0 ? MinSec(T(StatKeys.ArrestSecondsToShock) / shocks) : "–", shocks > 0 ? $"{shocks:N0} shockable" : string.Empty,
+            shocks > 0 && T(StatKeys.ArrestSecondsToShock) / shocks > 180 ? UiStyle.AmberText : null);
         SetValue("operations", Count(T(StatKeys.Operations)));
         SetValue("scans", Count(T(StatKeys.Scans)));
         var seen = T(StatKeys.ClinicSeen);
@@ -440,6 +455,9 @@ public partial class StatsPanel : PanelContainer
     private static string Count(double value) => $"{value:N0}";
 
     private static string Share(double part, double whole) => whole > 0 ? $"{part / whole * 100:0}%" : string.Empty;
+
+    /// <summary>Seconds as "1:45".</summary>
+    private static string MinSec(double seconds) => $"{(int)(seconds / 60)}:{(int)(seconds % 60):00}";
 
     private static string Minutes(double minutes) => ClinicalText.Duration(TimeSpan.FromMinutes(minutes));
 

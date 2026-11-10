@@ -205,6 +205,7 @@ public sealed partial class HospitalSimulation
 
         UpdateAmbulances();
         UpdatePhysiology(dt);
+        UpdateArrests();
         UpdateEmergencyCalls();
         UpdateGeneralAnnouncements();
         UpdatePatientFlow();

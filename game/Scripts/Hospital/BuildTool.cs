@@ -24,6 +24,9 @@ public enum BuildMode
 
     /// <summary>Putting doors in a waiting room's walls, or clicking one to take it out.</summary>
     Door,
+
+    /// <summary>Resus trolleys: click one to pick it up and click again to put it down; click empty floor to buy one. X sells a bought one.</summary>
+    Trolley,
 }
 
 /// <summary>
@@ -69,6 +72,12 @@ public partial class BuildTool : Node2D
 
     /// <summary>The waiting room under the cursor (for the desk and door tools).</summary>
     public CareSpace? TargetRoom { get; private set; }
+
+    /// <summary>The resus trolley picked up to move, if any.</summary>
+    public ResusTrolley? CarriedTrolley { get; private set; }
+
+    /// <summary>The resus trolley under the cursor, if any.</summary>
+    public ResusTrolley? HoveredTrolley => _sim.ResusTrolleys.FirstOrDefault(t => t.Home == _hover || t.Tile == _hover);
 
     /// <summary>True when a click on the door tool would take an existing door out.</summary>
     public bool RemovingDoor { get; private set; }
@@ -131,6 +140,16 @@ public partial class BuildTool : Node2D
         MovingId = null;
         ChairColour = colour ?? ChairColour;
         ChairFacing = null;
+        Restart();
+    }
+
+    /// <summary>Starts moving and buying resus trolleys.</summary>
+    public void StartTrolleys()
+    {
+        Mode = BuildMode.Trolley;
+        Template = null;
+        MovingId = null;
+        CarriedTrolley = null;
         Restart();
     }
 
@@ -276,6 +295,7 @@ public partial class BuildTool : Node2D
 
         Mode = BuildMode.None;
         MovingId = null;
+        CarriedTrolley = null;
         _dragStart = null;
         Check = null;
         QueueRedraw();
@@ -300,6 +320,24 @@ public partial class BuildTool : Node2D
 
         switch (@event)
         {
+            case InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true } when Mode == BuildMode.Trolley && CarriedTrolley is not null:
+                CarriedTrolley = null;
+                Refresh(force: true);
+                return true;
+
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode == BuildMode.Trolley:
+                ClickTrolley();
+                return true;
+
+            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.X } when Mode == BuildMode.Trolley && HoveredTrolley is { HomeRoomId: null } sold:
+                if (_sim.SellResusTrolley(sold.Id))
+                {
+                    Built?.Invoke($"Sold a resus trolley: £{_sim.ResusTrolleyCost / 2:N0} back.");
+                }
+
+                Refresh(force: true);
+                return true;
+
             case InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true }:
                 if (_dragStart is not null)
                 {
@@ -340,6 +378,39 @@ public partial class BuildTool : Node2D
         }
 
         return false;
+    }
+
+    /// <summary>Picks up the trolley under the cursor, or puts the carried one down here, or buys one here.</summary>
+    private void ClickTrolley()
+    {
+        Refresh(force: true);
+        if (CarriedTrolley is null && HoveredTrolley is { } picked)
+        {
+            CarriedTrolley = picked;
+            Refresh(force: true);
+            return;
+        }
+
+        if (Check is not { CanBuild: true })
+        {
+            return;
+        }
+
+        if (CarriedTrolley is { } carried)
+        {
+            if (_sim.MoveResusTrolley(carried.Id, _hover).CanBuild)
+            {
+                Built?.Invoke("Moved the resus trolley.");
+            }
+
+            CarriedTrolley = null;
+        }
+        else if (_sim.BuyResusTrolley(_hover) is { CanBuild: true } bought)
+        {
+            Built?.Invoke($"Placed a resus trolley for £{bought.Cost:N0}.");
+        }
+
+        Refresh(force: true);
     }
 
     private void Place()
@@ -451,7 +522,7 @@ public partial class BuildTool : Node2D
 
         _rect = DragRect();
 
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -468,6 +539,8 @@ public partial class BuildTool : Node2D
         Check = Mode switch
         {
             BuildMode.Chair => CheckChairs(),
+            BuildMode.Trolley when CarriedTrolley is null && HoveredTrolley is not null => new BuildCheck(0, Array.Empty<string>()),
+            BuildMode.Trolley => _sim.CheckResusTrolley(_hover, CarriedTrolley),
             BuildMode.Desk when TargetRoom is null => new BuildCheck(0, new[] { "Click inside a waiting room to place its reception desk." }),
             BuildMode.Desk => _sim.CheckReceptionDesk(TargetRoom.Id, _hover, DeskFacing),
             BuildMode.Door when TargetRoom is null => new BuildCheck(0, new[] { "Click along a waiting room's wall to put a door in." }),
@@ -522,6 +595,12 @@ public partial class BuildTool : Node2D
         if (Mode == BuildMode.Chair)
         {
             DrawChairPreview();
+            return;
+        }
+
+        if (Mode == BuildMode.Trolley)
+        {
+            DrawTrolleyPreview();
             return;
         }
 
@@ -594,6 +673,32 @@ public partial class BuildTool : Node2D
         CostTag(P(last.X + 1, last.Y));
     }
 
+    /// <summary>Every trolley's spot ringed; the tile under the cursor green or red, with a ghost trolley when placing.</summary>
+    private void DrawTrolleyPreview()
+    {
+        foreach (var trolley in _sim.ResusTrolleys.Where(t => IsoDraw.OnViewFloor(t.Home.Y)))
+        {
+            var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(trolley.Home.X + 0.5, trolley.Home.Y + 0.5), 16, 20);
+            var colour = ReferenceEquals(trolley, CarriedTrolley) ? new Color("#FFEB3B") : new Color("#1E88E5");
+            DrawPolyline(ring.Append(ring[0]).ToArray(), colour, 2f, true);
+        }
+
+        var ok = Check!.CanBuild;
+        var t = _hover;
+        var quad = new[] { P(t.X, t.Y), P(t.X + 1, t.Y), P(t.X + 1, t.Y + 1), P(t.X, t.Y + 1) };
+        DrawColoredPolygon(quad, new Color(ok ? Good : Bad, 0.3f));
+        DrawPolyline(quad.Append(quad[0]).ToArray(), ok ? Good : Bad, 2f, true);
+        if (ok && (CarriedTrolley is not null || HoveredTrolley is null))
+        {
+            var def = _sim.Database.Furniture.GetValueOrDefault(HospitalSimulation.ResusTrolleyItem);
+            var w = (def?.WidthM ?? 0.6) / Units.MetresPerTile;
+            var l = (def?.DepthM ?? 0.7) / Units.MetresPerTile;
+            Figures.ResusTrolleyAt(this, t.X + 0.5, t.Y + 0.5, w, l, (float)((def?.HeightM ?? 1.0) * IsoDraw.PixelsPerMetre), new Color(def?.Colour ?? "#D84B3E", 0.8f), (0, 1));
+        }
+
+        CostTag(P(t.X + 1, t.Y));
+    }
+
     /// <summary>The reception desk or door being placed: its tiles, the receptionist and queue spots, and the cost.</summary>
     private void DrawFittingPreview()
     {
@@ -659,7 +764,8 @@ public partial class BuildTool : Node2D
         var font = ThemeDB.FallbackFont;
         var size = (int)Math.Round(17 / zoom);
         var text = ok
-            ? Check.Cost < 0 ? $"Refund £{-Check.Cost:N0}" : Check.Cost == 0 ? "Free" : $"£{Check.Cost:N0}"
+            ? Mode == BuildMode.Trolley && CarriedTrolley is null && HoveredTrolley is not null ? "Click to pick up"
+            : Check.Cost < 0 ? $"Refund £{-Check.Cost:N0}" : Check.Cost == 0 ? (Mode == BuildMode.Trolley ? "Put down here" : "Free") : $"£{Check.Cost:N0}"
             : Check.Problems[0];
         var anchor = at + new Vector2(8 / zoom, -6 / zoom);
         var width = font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X;
