@@ -86,6 +86,7 @@ Then:
 | Build / stop building | Drag with the left button / right click or Esc |
 | Room details, rename, move or demolish | Build mode: left-click the room's floor |
 | Furniture or equipment details | Build mode: left-click the item |
+| Decorate a room (floor and walls) | Build bar → Decorate, then click the room |
 | Place waiting chairs in corridors | Build → Corridors → Place waiting chairs, then click corridor tiles |
 | Remove a corridor chair | Build mode: left-click the chair, then Remove |
 | Close a record, list or panel | Esc |
@@ -158,6 +159,15 @@ Press **B** to go into build mode and open the build menu. Every room is built f
   locked department shows a padlock, and its pop-up has the button to open it. Esc closes the
   pop-up. The icons and their rooms are listed in `game/Data/BuildMenu/build_menu.json`; a room
   template that isn't listed there is added to its own department's icon automatically.
+- **Decorating:** Build bar → **Decorate** (next to Building), then click any room or corridor
+  to open its Decorate panel. Floors: standard, vinyl sheet, safety vinyl, ceramic tiles, wood
+  planks, terrazzo, carpet tiles or chequer; walls: standard, paint, two-tone, stripe, wall tiles
+  or wood panelling, each in a colour (or the finish's usual colour for that room). Each pick
+  shows in the world straight away; **Apply** pays for it by floor area (£12–£55 per m² for
+  floors, £6–£30 for walls). Tick *Use this look for every new ...* to give new rooms of that
+  type the same look. New rooms start with a finish that suits them (safety vinyl and two-tone
+  walls on wards and cubicles, tiles in toilets and theatres, wood in staff rooms, and so on);
+  lifts and stairs can't be decorated. Finishes only change the look.
 
 - **Rooms** (A&E: Minors and Majors cubicles, Resus bay, Triage room, Waiting room; Staff:
   doctors' office, nurses' station, staff room) are **dragged out from corner to corner at any

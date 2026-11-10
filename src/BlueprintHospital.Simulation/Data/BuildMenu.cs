@@ -14,6 +14,9 @@ public sealed class BuildMenu
     public const string Folder = "BuildMenu";
     public const string FileName = "build_menu.json";
 
+    /// <summary>The icon that opens the Decorate tool: click a room to choose its floor and walls.</summary>
+    public const string Decorate = "decorate";
+
     /// <summary>Pops up the building extension tool.</summary>
     public const string ExtendBuilding = "extend_building";
 

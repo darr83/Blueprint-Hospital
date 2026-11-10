@@ -100,6 +100,9 @@ public partial class MainHUD : CanvasLayer
 
     public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
 
+    /// <summary>The Decorate panel: a room's floor and wall finish.</summary>
+    public DecoratePanel Decorate { get; } = new() { Name = "Decorate", Visible = false };
+
     public FinancePanel Finances { get; } = new() { Name = "Finances", Visible = false };
 
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
@@ -124,6 +127,10 @@ public partial class MainHUD : CanvasLayer
         {
             _mode = value;
             Build.Visible = value == BlueprintHospital.Hospital.GameMode.Build;
+            if (value != BlueprintHospital.Hospital.GameMode.Build && Decorate.Visible)
+            {
+                Decorate.Close();
+            }
         }
     }
 
@@ -134,7 +141,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, ItemInfo, Finances, Recruitment, Clinics };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -147,6 +154,7 @@ public partial class MainHUD : CanvasLayer
     {
         Record.Visible = StaffInfo.Visible = Roster.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = false;
         RoomInfo.Close();
+        Decorate.Close();
         ItemInfo.Close();
     }
 
@@ -186,6 +194,13 @@ public partial class MainHUD : CanvasLayer
     {
         HideRightPanels();
         RoomInfo.Show(room);
+    }
+
+    /// <summary>Opens the Decorate panel on a room, closing the other right-hand panels.</summary>
+    public void ShowDecorate(BlueprintHospital.Simulation.Hospital.CareSpace room)
+    {
+        HideRightPanels();
+        Decorate.Show(room);
     }
 
     /// <summary>Shows a member of staff's panel, closing the other right-hand panels.</summary>
@@ -268,6 +283,9 @@ public partial class MainHUD : CanvasLayer
         RoomInfo.Initialise(sim);
         DockRight(RoomInfo, 380);
         root.AddChild(RoomInfo);
+        Decorate.Initialise(sim);
+        DockRight(Decorate, 410);
+        root.AddChild(Decorate);
         Finances.Initialise(sim);
         DockRight(Finances, 452);
         root.AddChild(Finances);

@@ -362,6 +362,12 @@ public sealed class PeopleState
     /// <summary>Each theatre's ticked departments (null in older saves: every theatre takes everyone).</summary>
     public Dictionary<string, List<string>>? TheatreAccess { get; init; }
 
+    /// <summary>Each room's floor and wall finish (null in older saves: every room standard).</summary>
+    public Dictionary<string, RoomDecor>? Decor { get; init; }
+
+    /// <summary>The look the player chose for new rooms, by room template (null in older saves).</summary>
+    public Dictionary<string, RoomDecor>? DecorDefaults { get; init; }
+
     public List<Appointment> Appointments { get; init; } = new();
 
     public List<OutpatientState> Outpatients { get; init; } = new();
@@ -428,6 +434,8 @@ public sealed partial class HospitalSimulation
         NextCandidateId = _nextCandidateId,
         UnlockedDepartments = _unlockedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         TheatreAccess = SpacesOfKind(CareSpaceKind.Theatre).ToDictionary(t => t.Id, t => t.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList()),
+        Decor = CaptureDecor(),
+        DecorDefaults = _decorDefaults.OrderBy(d => d.Key, StringComparer.Ordinal).ToDictionary(d => d.Key, d => d.Value),
         Appointments = _appointments.ToList(),
         Outpatients = _outpatients.Select(o => new OutpatientState
         {
@@ -577,6 +585,8 @@ public sealed partial class HospitalSimulation
                 theatre.AllowedDepartments.UnionWith(allowed.Where(Database.Departments.ContainsKey));
             }
         }
+
+        RestoreDecor(state.Decor, state.DecorDefaults);
 
         // A saved game can't carry on the old random sequence, so start a new one.
         Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));

@@ -82,6 +82,11 @@ public sealed partial class HospitalSimulation
         var building = site.Buildings[0];
         _spaces = EmergencyDepartmentLayout.Create(building, database).ToDictionary(s => s.Id);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
+        foreach (var space in _spaces.Values)
+        {
+            DecorateNewRoom(space);
+        }
+
         _generator = new PatientGenerator(database, Random);
         _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);

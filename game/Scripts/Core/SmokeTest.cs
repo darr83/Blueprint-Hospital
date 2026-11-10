@@ -328,11 +328,22 @@ public partial class SmokeTest : Node
                 hospital.Hud.Build.Open("facilities");
                 break;
 
-            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame >= 9:
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 9:
                 CheckBuildPopup(hospital);
                 Screenshot("06g_build_bar_facilities");
                 Check(hospital.Hud.Build.PopupOpen, "The Facilities pop-up did not open.");
+                StartDecorating(hospital);
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame == 12:
+                Screenshot("06h_decorate_panel");
+                FinishDecorating(hospital);
+                break;
+
+            case Stage.BuildBarMaternity when scene is HospitalScene hospital && _frame >= 15:
+                Screenshot("06i_decorated");
                 hospital.SetMode(GameMode.Play);
+                Check(!hospital.Hud.Decorate.Visible, "Leaving Build mode should close the Decorate panel.");
                 Check(!hospital.Hud.Build.PopupOpen, "Leaving Build mode should close the build pop-up.");
                 Check(!hospital.Hud.Build.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should close the build menu and item panel.");
                 BuildWard(hospital);
@@ -1324,6 +1335,38 @@ public partial class SmokeTest : Node
         var chair = sim.Chairs.First(c => sim.Spaces.Any(s => s.Kind == Simulation.Hospital.CareSpaceKind.Corridor && s.Rect.Contains(c.Tile)) && !sim.Spaces.Any(s => s.HasWalls && s.Rect.Contains(c.Tile)));
         hospital.ClickAt(IsoDraw.ToScreen(chair.Tile.X + 0.5, chair.Tile.Y + 0.5) + new Vector2(0, -8));
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.Item?.Tile == chair.Tile, "Clicking a corridor chair in build mode did not open it.");
+    }
+
+    /// <summary>The Decorate tool: clicking the staff room opens its panel, and picks show in the world before they are paid for.</summary>
+    private static void StartDecorating(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        hospital.Hud.Build.Open(Simulation.Data.BuildMenu.Decorate);
+        Check(hospital.Hud.Build.Decorating, "The Decorate icon did not open the Decorate tool.");
+        var room = sim.Spaces.First(s => s.Kind == Simulation.Hospital.CareSpaceKind.StaffRoom);
+        var (cx, cy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0));
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(cx, cy), 1.4f);
+        hospital.ClickAt(IsoDraw.ToScreen(cx, cy));
+        Check(hospital.Hud.Decorate.Visible && hospital.Hud.Decorate.RoomId == room.Id, "Clicking a room with the Decorate tool did not open its Decorate panel.");
+        Check(!hospital.Hud.RoomInfo.Visible, "The Decorate tool should open the Decorate panel, not the room panel.");
+        var before = sim.DecorOf(room);
+        hospital.Hud.Decorate.PickFloor(Simulation.Hospital.FloorFinish.CarpetTiles, "#8FA7B8");
+        hospital.Hud.Decorate.PickWalls(Simulation.Hospital.WallFinish.Stripe, "#DCEBF5");
+        Check(sim.DecorOf(room) == before, "Picking a finish should not pay for it before Apply.");
+        Check(DecorArt.Preview is { } preview && preview.RoomId == room.Id, "Picking a finish should show it in the world.");
+    }
+
+    private static void FinishDecorating(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var room = sim.FindSpace(hospital.Hud.Decorate.RoomId!)!;
+        var balance = sim.Balance;
+        var cost = sim.DecorateCost(room, hospital.Hud.Decorate.Draft);
+        hospital.Hud.Decorate.Apply();
+        Check(sim.DecorOf(room).Floor == Simulation.Hospital.FloorFinish.CarpetTiles && sim.DecorOf(room).Walls == Simulation.Hospital.WallFinish.Stripe, "Apply did not redecorate the room.");
+        Check(cost > 0 && sim.Balance == balance - cost, $"Redecorating should cost £{cost:N0}.");
+        Check(DecorArt.Preview is null, "After Apply nothing should be left on trial.");
+        hospital.Hud.Build.ClosePopup();
     }
 
     /// <summary>Play mode: clicking a clinic patient opens the clinic calendars.</summary>

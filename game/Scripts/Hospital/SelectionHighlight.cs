@@ -12,6 +12,9 @@ public partial class SelectionHighlight : Node2D
     /// <summary>The selected room, outlined along its walls.</summary>
     public GridRect? Room { get; set; }
 
+    /// <summary>The room under the mouse while decorating: a lighter outline.</summary>
+    public GridRect? Hover { get; set; }
+
     /// <summary>The selected item or bed: its footprint on the floor (X, Y, width, length in tiles).</summary>
     public (double X, double Y, double W, double L)? Item { get; set; }
 
@@ -23,6 +26,11 @@ public partial class SelectionHighlight : Node2D
     public override void _Draw()
     {
         var line = UiStyle.Blue;
+        if (Hover is { } h && h != Room)
+        {
+            IsoDraw.FloorQuad(this, h.X, h.Y, h.Width, h.Length, new Color(UiStyle.Blue, 0.1f));
+            IsoDraw.FloorOutline(this, h.X + 0.3, h.Y + 0.3, h.Width - 0.6, h.Length - 0.6, new Color(UiStyle.Blue, 0.6f), 2f);
+        }
         if (Room is { } r)
         {
             // Just inside the walls, so the walls don't hide the outline.
