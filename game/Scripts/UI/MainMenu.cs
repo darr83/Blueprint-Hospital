@@ -58,7 +58,7 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!ArtGallery.Begin())
+        else if (!ArtGallery.Begin() && !DoorShots.Begin())
         {
             ArtShots.Begin(this);
         }

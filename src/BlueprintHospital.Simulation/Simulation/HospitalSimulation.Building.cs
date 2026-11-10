@@ -109,14 +109,68 @@ public sealed partial class HospitalSimulation
 
     /// <summary>
     /// Plans a room dragged out over <paramref name="rect"/>: the door goes on the wall with the longest
-    /// stretch onto a corridor (or the waiting room), centred on that stretch.
+    /// stretch onto a corridor (or the waiting room), centred on that stretch. The player can pick the wall
+    /// with <paramref name="doorSide"/>; if that wall has no corridor beside it the door goes where it would anyway.
+    /// The furniture is laid out from the door, so choosing the door wall also turns the room.
     /// </summary>
-    public RoomPlan AutoPlan(string templateId, GridRect rect, string? replacingId = null)
+    public RoomPlan AutoPlan(string templateId, GridRect rect, string? replacingId = null, WallSide? doorSide = null)
     {
+        if (Database.RoomTemplates[templateId].IsCorridor)
+        {
+            return new RoomPlan(templateId, rect, WallSide.South);
+        }
+
+        var runs = DoorRuns(templateId, rect, replacingId);
+        if (runs.Count == 0)
+        {
+            // Nowhere for a door: the check will say so.
+            return new RoomPlan(templateId, rect, doorSide ?? WallSide.South, 1, 0);
+        }
+
+        var b = doorSide is { } wanted && runs.ContainsKey(wanted) ? runs[wanted] : runs.Values.OrderByDescending(r => r.Run).ThenBy(r => Array.IndexOf(DoorSideOrder, r.Side)).First();
+        return new RoomPlan(templateId, rect, b.Side, b.Start, b.Run);
+    }
+
+    /// <summary>The order walls are tried in when choosing a door, and the order the Z key steps through them.</summary>
+    public static readonly WallSide[] DoorSideOrder = { WallSide.South, WallSide.East, WallSide.North, WallSide.West };
+
+    /// <summary>The walls of a room dragged out over <paramref name="rect"/> that could take its door (they have a corridor beside them).</summary>
+    public IReadOnlyList<WallSide> DoorSides(string templateId, GridRect rect, string? replacingId = null)
+    {
+        var runs = DoorRuns(templateId, rect, replacingId);
+        return DoorSideOrder.Where(runs.ContainsKey).ToList();
+    }
+
+    /// <summary>The next wall round from <paramref name="current"/> that could take the door, clockwise.</summary>
+    public WallSide? NextDoorSide(string templateId, GridRect rect, WallSide current, string? replacingId = null)
+    {
+        var sides = DoorSides(templateId, rect, replacingId);
+        if (sides.Count == 0)
+        {
+            return null;
+        }
+
+        var start = Array.IndexOf(DoorSideOrder, current);
+        for (var i = 1; i <= DoorSideOrder.Length; i++)
+        {
+            var side = DoorSideOrder[(start + i) % DoorSideOrder.Length];
+            if (sides.Contains(side))
+            {
+                return side;
+            }
+        }
+
+        return sides[0];
+    }
+
+    /// <summary>For each wall that touches a corridor, its longest stretch onto one (tiles from the room's corner).</summary>
+    private Dictionary<WallSide, (WallSide Side, int Start, int Run)> DoorRuns(string templateId, GridRect rect, string? replacingId)
+    {
+        var result = new Dictionary<WallSide, (WallSide Side, int Start, int Run)>();
         var template = Database.RoomTemplates[templateId];
         if (template.IsCorridor)
         {
-            return new RoomPlan(templateId, rect, WallSide.South);
+            return result;
         }
 
         var replacing = replacingId is null ? null : FindSpace(replacingId);
@@ -125,8 +179,7 @@ public sealed partial class HospitalSimulation
 
         // A lift or staircase has its door in the same place on every floor: choose it from the best floor.
         var floors = template.IsShaft ? Enumerable.Range(0, Site.FloorCount).Select(f => Site.OnFloor(Site.Local(rect), f)).ToList() : new List<GridRect> { rect };
-        (WallSide Side, int Start, int Run)? best = null;
-        foreach (var (side, onFloor) in new[] { WallSide.South, WallSide.East, WallSide.North, WallSide.West }.SelectMany(side => floors.Select(f => (side, f))))
+        foreach (var (side, onFloor) in DoorSideOrder.SelectMany(side => floors.Select(f => (side, f))))
         {
             var r = onFloor;
             var length = side is WallSide.North or WallSide.South ? rect.Width : rect.Length;
@@ -143,19 +196,47 @@ public sealed partial class HospitalSimulation
 
                 // The corner tiles of a wall can't take a door, so they don't count.
                 run = i > 0 && i < length - 1 && Open(outside) ? run + 1 : 0;
-                if (run > 0 && (best is null || run > best.Value.Run))
+                if (run > 0 && (!result.TryGetValue(side, out var best) || run > best.Run))
                 {
-                    best = (side, i - run + 1, run);
+                    result[side] = (side, i - run + 1, run);
                 }
             }
         }
 
-        return best is { } b ? new RoomPlan(templateId, rect, b.Side, b.Start, b.Run) : new RoomPlan(templateId, rect, WallSide.South, 1, 0);
+        return result;
     }
 
     /// <summary>Checks a room dragged out over <paramref name="rect"/>, with its door placed automatically.</summary>
-    public BuildCheck CheckRoomAt(string templateId, GridRect rect, string? replacingId = null) =>
-        CheckRoom(AutoPlan(templateId, rect, replacingId), replacingId);
+    public BuildCheck CheckRoomAt(string templateId, GridRect rect, string? replacingId = null, WallSide? doorSide = null) =>
+        CheckRoom(AutoPlan(templateId, rect, replacingId, doorSide), replacingId);
+
+    /// <summary>Checks moving an existing room's door to <paramref name="side"/>, re-laying its furniture to match. It costs the same as moving the room.</summary>
+    public BuildCheck CheckDoorSide(string id, WallSide side)
+    {
+        if (FindSpace(id) is not { } room || room.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting || Database.RoomTemplates.GetValueOrDefault(room.TemplateId) is not { } template || template.IsShaft)
+        {
+            return new BuildCheck(0, new[] { "This room's door can't be moved." });
+        }
+
+        if (room.DoorSide == side)
+        {
+            return new BuildCheck(0, new[] { "The door is already on that wall." });
+        }
+
+        if (!DoorSides(room.TemplateId, room.Rect, id).Contains(side))
+        {
+            return new BuildCheck(0, new[] { "There is no corridor on that side for a door." });
+        }
+
+        return CheckRoom(AutoPlan(room.TemplateId, room.Rect, id, side), id);
+    }
+
+    /// <summary>Moves an existing room's door to <paramref name="side"/> and lays its furniture out again from there.</summary>
+    public BuildCheck MoveDoor(string id, WallSide side)
+    {
+        var check = CheckDoorSide(id, side);
+        return check.CanBuild ? MoveRoom(id, AutoPlan(FindSpace(id)!.TemplateId, FindSpace(id)!.Rect, id, side)) : check;
+    }
 
     /// <summary>Doorways where a room's wall lines up with an entrance in the building's outer wall.</summary>
     private List<Doorway> StreetDoors(GridRect rect)
