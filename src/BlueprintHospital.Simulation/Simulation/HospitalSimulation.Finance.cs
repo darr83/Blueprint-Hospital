@@ -39,6 +39,9 @@ public enum MoneyCategory
 
     /// <summary>Payment for each birth (more for a caesarean section) and each day a baby spends on the neonatal unit.</summary>
     Maternity,
+
+    /// <summary>Prescription charges paid by working-age patients collecting medicines from the pharmacy.</summary>
+    Prescriptions,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

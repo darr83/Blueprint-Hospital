@@ -431,5 +431,416 @@
       96,
       240
     ]
+  },
+  {
+    "id": "bacterial_meningitis",
+    "name": "Bacterial meningitis",
+    "department": "neurology",
+    "description": "Infection of the lining of the brain. Antibiotics must start within the hour; it can kill within hours.",
+    "prevalence": 0.6,
+    "age_range": [
+      1,
+      80
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.6,
+    "crew_assessment": "query meningitis, non-blanching rash",
+    "presenting_complaint": "headache",
+    "symptoms": [
+      {
+        "symptom": "headache",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.95
+      },
+      {
+        "symptom": "neck_stiffness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "photophobia",
+        "probability": 0.7
+      },
+      {
+        "symptom": "non_blanching_rash",
+        "probability": 0.5
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        122,
+        14
+      ],
+      "systolic_bp": [
+        102,
+        16
+      ],
+      "diastolic_bp": [
+        60,
+        9
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        39.1,
+        0.5
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.4,
+      0.6
+    ],
+    "deterioration_per_hour": 0.1,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -50,
+      "respiratory_rate": 10,
+      "oxygen_saturation": -6,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "blood_cultures",
+      "lumbar_puncture",
+      "full_blood_count",
+      "c_reactive_protein",
+      "ct_head"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ceftriaxone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "dexamethasone",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.03,
+    "disposition": "admit",
+    "disposition_note": "Meningitis confirmed on the lumbar puncture. Admitted for two weeks of IV antibiotics; close contacts given antibiotics.",
+    "length_of_stay_hours": [
+      168,
+      336
+    ]
+  },
+  {
+    "id": "bells_palsy",
+    "name": "Bell's palsy",
+    "department": "neurology",
+    "description": "A sudden weakness of one side of the face, including the forehead, from an inflamed facial nerve. Not a stroke, but it has to be told apart from one.",
+    "prevalence": 1.5,
+    "age_range": [
+      15,
+      80
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.05,
+    "crew_assessment": "facial droop, query stroke",
+    "presenting_complaint": "facial_droop",
+    "symptoms": [
+      {
+        "symptom": "facial_droop",
+        "probability": 1.0
+      },
+      {
+        "symptom": "numbness",
+        "probability": 0.3
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.1
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        80,
+        9
+      ],
+      "systolic_bp": [
+        130,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.08,
+      0.15
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "prednisolone",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Eye protection advice and tape",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Bell's palsy: whole side of the face including the forehead, no other signs. Home with steroids and eye care."
+  },
+  {
+    "id": "transient_ischaemic_attack",
+    "name": "TIA (mini-stroke)",
+    "department": "neurology",
+    "description": "Stroke symptoms that went away within an hour. A warning sign: blood thinners now and the TIA clinic within a day.",
+    "prevalence": 2,
+    "age_range": [
+      45,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.3,
+    "crew_assessment": "query TIA, symptoms resolved",
+    "presenting_complaint": "slurred_speech",
+    "symptoms": [
+      {
+        "symptom": "slurred_speech",
+        "probability": 1.0
+      },
+      {
+        "symptom": "numbness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "weakness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.3
+      },
+      {
+        "symptom": "facial_droop",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        80,
+        9
+      ],
+      "systolic_bp": [
+        152,
+        16
+      ],
+      "diastolic_bp": [
+        88,
+        9
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.12,
+      0.2
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ct_head",
+      "ecg",
+      "capillary_glucose"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "aspirin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "clopidogrel",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Symptoms fully gone, CT normal. Aspirin started and booked into the TIA clinic tomorrow."
+  },
+  {
+    "id": "status_epilepticus",
+    "name": "Status epilepticus",
+    "department": "neurology",
+    "description": "A fit that won't stop. Brain damage starts after 30 minutes, so medicine is given quickly and the patient goes to intensive care.",
+    "prevalence": 0.6,
+    "age_range": [
+      5,
+      85
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.95,
+    "crew_assessment": "seizure not stopping",
+    "presenting_complaint": "seizures",
+    "symptoms": [
+      {
+        "symptom": "seizures",
+        "probability": 1.0
+      },
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 1.0
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        128,
+        14
+      ],
+      "systolic_bp": [
+        156,
+        18
+      ],
+      "diastolic_bp": [
+        90,
+        10
+      ],
+      "respiratory_rate": [
+        26,
+        4
+      ],
+      "oxygen_saturation": [
+        91,
+        3
+      ],
+      "temperature": [
+        37.8,
+        0.5
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.55,
+      0.75
+    ],
+    "deterioration_per_hour": 0.12,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -50,
+      "respiratory_rate": -10,
+      "oxygen_saturation": -12,
+      "temperature": 1
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "capillary_glucose",
+      "urea_electrolytes",
+      "ct_head"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "lorazepam",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "levetiracetam",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "admit",
+    "disposition_note": "Fits stopped after lorazepam and levetiracetam. Admitted to intensive care.",
+    "needs_intensive_care": true,
+    "length_of_stay_hours": [
+      72,
+      168
+    ]
   }
 ]

@@ -19,6 +19,41 @@ public sealed class EmergencyStats
 
     internal Queue<double> RecentCorridorMinutes => _recentCorridorMinutes;
 
+    /// <summary>Cardiac arrests in the hospital (A&amp;E and the wards).</summary>
+    public int CardiacArrests { get; internal set; }
+
+    /// <summary>Arrests where the heart restarted (ROSC).</summary>
+    public int ArrestsRosc { get; internal set; }
+
+    /// <summary>Patients who had an arrest here and left hospital alive.</summary>
+    public int ArrestSurvivors { get; internal set; }
+
+    internal long SecondsToCprTotal { get; set; }
+
+    internal int CprStarts { get; set; }
+
+    internal long SecondsToShockTotal { get; set; }
+
+    internal int FirstShocks { get; set; }
+
+    /// <summary>Average minutes from the heart stopping to CPR starting.</summary>
+    public double AverageMinutesToCpr => CprStarts == 0 ? 0 : SecondsToCprTotal / 60.0 / CprStarts;
+
+    /// <summary>Average minutes from the heart stopping to the first shock (shockable rhythms only).</summary>
+    public double AverageMinutesToShock => FirstShocks == 0 ? 0 : SecondsToShockTotal / 60.0 / FirstShocks;
+
+    internal void RecordTimeToCpr(double minutes)
+    {
+        SecondsToCprTotal += (long)Math.Round(minutes * 60);
+        CprStarts++;
+    }
+
+    internal void RecordTimeToShock(double minutes)
+    {
+        SecondsToShockTotal += (long)Math.Round(minutes * 60);
+        FirstShocks++;
+    }
+
     /// <summary>Ambulance patients who have spent time in corridor care (no cubicle free after handover).</summary>
     public int CorridorCareTotal { get; internal set; }
 
@@ -70,6 +105,12 @@ public sealed class EmergencyStats
 
     /// <summary>Operations done in the hospital's theatres.</summary>
     public int OperationsDone { get; internal set; }
+
+    /// <summary>Planned day-case procedures done.</summary>
+    public int PlannedDone { get; internal set; }
+
+    /// <summary>Planned patients cancelled on the day.</summary>
+    public int PlannedCancelled { get; internal set; }
 
     /// <summary>Patients in A&amp;E waiting to go to theatre.</summary>
     public int AwaitingSurgery { get; internal set; }

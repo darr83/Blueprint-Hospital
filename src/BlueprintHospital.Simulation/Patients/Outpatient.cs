@@ -52,6 +52,12 @@ public sealed class Appointment
 
     public required string Reason { get; init; }
 
+    /// <summary>A procedure (a smear test, a mole removal) rather than a consultation.</summary>
+    public bool IsProcedure { get; init; }
+
+    /// <summary>What this appointment pays, when it isn't the clinic's usual fee (procedures).</summary>
+    public int? Tariff { get; init; }
+
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Booked;
 
     /// <summary>The person walking around the hospital, once they have arrived.</summary>

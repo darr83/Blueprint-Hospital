@@ -559,5 +559,341 @@
       "Drowsiness"
     ],
     "cost_per_dose": 2
+  },
+  {
+    "id": "oxygen",
+    "name": "Oxygen",
+    "drug_class": "Medical gas",
+    "route": "inhaled",
+    "typical_dose": "Titrated to oxygen saturations of 94–98%",
+    "indications": "Low oxygen levels, shock, fitting.",
+    "contraindications": "Target 88–92% in COPD.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Dry nose"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "entonox",
+    "name": "Entonox (gas and air)",
+    "drug_class": "Inhaled analgesic",
+    "route": "inhaled",
+    "typical_dose": "Self-administered 50% nitrous oxide, 50% oxygen",
+    "indications": "Short painful procedures, fractures.",
+    "contraindications": "Pneumothorax, head injury with reduced consciousness.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Light-headedness",
+      "Nausea"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "lidocaine",
+    "name": "Lidocaine",
+    "drug_class": "Local anaesthetic",
+    "route": "local injection",
+    "typical_dose": "1% up to 3 mg/kg",
+    "indications": "Numbing skin and mucosa before procedures.",
+    "contraindications": "Allergy to local anaesthetics.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Stinging on injection"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "midazolam",
+    "name": "Midazolam",
+    "drug_class": "Benzodiazepine sedative",
+    "route": "intravenous",
+    "typical_dose": "1–2 mg, titrated",
+    "indications": "Procedural sedation.",
+    "contraindications": "Severe breathing problems.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness",
+      "Slowed breathing"
+    ],
+    "cost_per_dose": 2
+  },
+  {
+    "id": "codeine",
+    "name": "Codeine",
+    "drug_class": "Opioid analgesic",
+    "route": "oral",
+    "typical_dose": "30–60 mg four times a day",
+    "indications": "Moderate pain.",
+    "contraindications": "Children under 12, breastfeeding, opioid allergy.",
+    "allergy_groups": [
+      "opioid"
+    ],
+    "common_side_effects": [
+      "Constipation",
+      "Drowsiness",
+      "Nausea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "naproxen",
+    "name": "Naproxen",
+    "drug_class": "Non-steroidal anti-inflammatory",
+    "route": "oral",
+    "typical_dose": "500 mg twice a day",
+    "indications": "Musculoskeletal pain, gout.",
+    "contraindications": "Stomach ulcer, kidney disease, NSAID allergy.",
+    "allergy_groups": [
+      "nsaid"
+    ],
+    "common_side_effects": [
+      "Indigestion",
+      "Stomach bleeding"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "colchicine",
+    "name": "Colchicine",
+    "drug_class": "Anti-inflammatory (gout)",
+    "route": "oral",
+    "typical_dose": "500 micrograms two to four times a day",
+    "indications": "Acute gout, pericarditis.",
+    "contraindications": "Severe kidney disease.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Diarrhoea",
+      "Nausea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "dexamethasone",
+    "name": "Dexamethasone",
+    "drug_class": "Corticosteroid",
+    "route": "oral",
+    "typical_dose": "150 micrograms/kg (croup); 10 mg IV (meningitis)",
+    "indications": "Croup, bacterial meningitis.",
+    "contraindications": "Untreated systemic infection (except meningitis).",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Raised blood sugar",
+      "Mood change"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "tranexamic_acid",
+    "name": "Tranexamic acid",
+    "drug_class": "Antifibrinolytic",
+    "route": "intravenous",
+    "typical_dose": "1 g",
+    "indications": "Bleeding: nosebleeds, trauma.",
+    "contraindications": "Active clot (DVT or PE).",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Nausea",
+      "Dizziness if given fast"
+    ],
+    "cost_per_dose": 3
+  },
+  {
+    "id": "acetylcysteine",
+    "name": "Acetylcysteine",
+    "drug_class": "Antidote (paracetamol)",
+    "route": "intravenous",
+    "typical_dose": "Two-bag regimen over 12 hours, by weight",
+    "indications": "Paracetamol overdose above the treatment line.",
+    "contraindications": "None in overdose.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Flushing",
+      "Itchy rash",
+      "Nausea"
+    ],
+    "cost_per_dose": 25
+  },
+  {
+    "id": "chlordiazepoxide",
+    "name": "Chlordiazepoxide",
+    "drug_class": "Benzodiazepine",
+    "route": "oral",
+    "typical_dose": "Reducing course from 20–30 mg four times a day",
+    "indications": "Alcohol withdrawal.",
+    "contraindications": "Severe liver failure, breathing problems.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness",
+      "Unsteadiness"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "pabrinex",
+    "name": "Pabrinex (vitamins B and C)",
+    "drug_class": "Vitamin replacement",
+    "route": "intravenous",
+    "typical_dose": "Two pairs of ampoules three times a day",
+    "indications": "Preventing Wernicke's encephalopathy in alcohol misuse or poor nutrition.",
+    "contraindications": "Previous reaction to Pabrinex.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Rarely, allergic reaction"
+    ],
+    "cost_per_dose": 6
+  },
+  {
+    "id": "oseltamivir",
+    "name": "Oseltamivir (Tamiflu)",
+    "drug_class": "Antiviral",
+    "route": "oral",
+    "typical_dose": "75 mg twice a day for 5 days",
+    "indications": "Influenza.",
+    "contraindications": "Severe kidney disease (reduce dose).",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Nausea",
+      "Headache"
+    ],
+    "cost_per_dose": 10
+  },
+  {
+    "id": "fondaparinux",
+    "name": "Fondaparinux",
+    "drug_class": "Anticoagulant",
+    "route": "subcutaneous",
+    "typical_dose": "2.5 mg once a day",
+    "indications": "NSTEMI and unstable angina.",
+    "contraindications": "Active bleeding, severe kidney disease.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Bleeding",
+      "Bruising"
+    ],
+    "cost_per_dose": 8
+  },
+  {
+    "id": "clopidogrel",
+    "name": "Clopidogrel",
+    "drug_class": "Antiplatelet",
+    "route": "oral",
+    "typical_dose": "300 mg loading dose, then 75 mg daily",
+    "indications": "Acute coronary syndrome, TIA and stroke.",
+    "contraindications": "Active bleeding.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Bleeding",
+      "Indigestion"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "atropine",
+    "name": "Atropine",
+    "drug_class": "Anticholinergic",
+    "route": "intravenous",
+    "typical_dose": "500 micrograms, repeated to 3 mg",
+    "indications": "Dangerously slow heart rate.",
+    "contraindications": "None in an emergency.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Dry mouth",
+      "Blurred vision"
+    ],
+    "cost_per_dose": 4
+  },
+  {
+    "id": "ceftriaxone",
+    "name": "Ceftriaxone",
+    "drug_class": "Cephalosporin antibiotic",
+    "route": "intravenous",
+    "typical_dose": "2 g twice a day (meningitis); 1 g once (PID)",
+    "indications": "Bacterial meningitis, PID, severe infection.",
+    "contraindications": "Severe penicillin allergy (anaphylaxis).",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Diarrhoea",
+      "Rash"
+    ],
+    "cost_per_dose": 5
+  },
+  {
+    "id": "metronidazole",
+    "name": "Metronidazole",
+    "drug_class": "Antibiotic",
+    "route": "oral",
+    "typical_dose": "400 mg twice a day",
+    "indications": "Anaerobic infections: PID, abdominal infection.",
+    "contraindications": "Alcohol during and 48 hours after the course.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Metallic taste",
+      "Nausea"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "flucloxacillin_iv",
+    "name": "Flucloxacillin (intravenous)",
+    "drug_class": "Penicillin antibiotic",
+    "route": "intravenous",
+    "typical_dose": "2 g four times a day",
+    "indications": "Bone and joint infection, severe skin infection.",
+    "contraindications": "Penicillin allergy.",
+    "allergy_groups": [
+      "penicillin"
+    ],
+    "common_side_effects": [
+      "Diarrhoea",
+      "Rash"
+    ],
+    "cost_per_dose": 4
+  },
+  {
+    "id": "levetiracetam",
+    "name": "Levetiracetam",
+    "drug_class": "Anti-epileptic",
+    "route": "intravenous",
+    "typical_dose": "60 mg/kg up to 4.5 g",
+    "indications": "Status epilepticus after a benzodiazepine.",
+    "contraindications": "Allergy to levetiracetam.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness",
+      "Irritability"
+    ],
+    "cost_per_dose": 12
+  },
+  {
+    "id": "cyclizine",
+    "name": "Cyclizine",
+    "drug_class": "Antiemetic",
+    "route": "intravenous",
+    "typical_dose": "50 mg three times a day",
+    "indications": "Nausea and vomiting, including in pregnancy.",
+    "contraindications": "Severe heart failure.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness",
+      "Dry mouth"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "human_albumin",
+    "name": "Human albumin 20%",
+    "drug_class": "Plasma protein",
+    "route": "intravenous",
+    "typical_dose": "100 mL for every 2–3 litres of fluid drained",
+    "indications": "Large ascitic drains, liver failure.",
+    "contraindications": "Heart failure with fluid overload.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Fluid overload"
+    ],
+    "cost_per_dose": 60
   }
 ]

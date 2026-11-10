@@ -1372,5 +1372,426 @@
       24,
       72
     ]
+  },
+  {
+    "id": "paracetamol_overdose",
+    "name": "Paracetamol overdose",
+    "department": "general_medicine",
+    "description": "Too many paracetamol tablets, which can quietly damage the liver over a day or two. Treated with an acetylcysteine drip.",
+    "prevalence": 1.5,
+    "age_range": [
+      14,
+      65
+    ],
+    "female_fraction": 0.65,
+    "ambulance_probability": 0.4,
+    "crew_assessment": "overdose of paracetamol",
+    "presenting_complaint": "overdose",
+    "symptoms": [
+      {
+        "symptom": "overdose",
+        "probability": 1.0
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.5
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.3
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        10
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.35
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -20,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "paracetamol_level",
+      "liver_function_tests",
+      "clotting_screen"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "acetylcysteine",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "admit",
+    "disposition_note": "Paracetamol level above the treatment line. Admitted for the acetylcysteine drip and a mental health review.",
+    "length_of_stay_hours": [
+      21,
+      48
+    ]
+  },
+  {
+    "id": "alcohol_withdrawal",
+    "name": "Alcohol withdrawal",
+    "department": "general_medicine",
+    "description": "Shaking, sweating and agitation after heavy drinking stops. It can lead to fits or delirium tremens.",
+    "prevalence": 1.5,
+    "age_range": [
+      25,
+      75
+    ],
+    "female_fraction": 0.3,
+    "ambulance_probability": 0.4,
+    "crew_assessment": "alcohol withdrawal, shaky and agitated",
+    "presenting_complaint": "tremor",
+    "symptoms": [
+      {
+        "symptom": "tremor",
+        "probability": 1.0
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.8
+      },
+      {
+        "symptom": "hallucinations",
+        "probability": 0.3
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.6
+      },
+      {
+        "symptom": "seizures",
+        "probability": 0.1
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        148,
+        16
+      ],
+      "diastolic_bp": [
+        90,
+        9
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        37.5,
+        0.4
+      ],
+      "pain_score": [
+        0,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.45
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": 20,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -2,
+      "temperature": 0.8
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "capillary_glucose",
+      "liver_function_tests",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "chlordiazepoxide",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "pabrinex",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.03,
+    "disposition": "admit",
+    "disposition_note": "Admitted for a reducing chlordiazepoxide course, Pabrinex and alcohol team support.",
+    "length_of_stay_hours": [
+      72,
+      144
+    ]
+  },
+  {
+    "id": "influenza",
+    "name": "Flu",
+    "department": "general_medicine",
+    "description": "Influenza: fever, aches and a dry cough. Most people go home; frail older people may need admission.",
+    "prevalence": 4,
+    "age_range": [
+      5,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.25,
+    "crew_assessment": "flu-like illness, short of breath",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.9
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.9
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.6
+      },
+      {
+        "symptom": "sore_throat",
+        "probability": 0.5
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        11
+      ],
+      "systolic_bp": [
+        122,
+        13
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        95,
+        1.5
+      ],
+      "temperature": [
+        38.6,
+        0.4
+      ],
+      "pain_score": [
+        1,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.35
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -6,
+      "temperature": 0.6
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "viral_swab",
+      "chest_xray",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "oseltamivir",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "discharge",
+    "disposition_note": "Flu swab positive, no pneumonia. Home with oseltamivir and advice."
+  },
+  {
+    "id": "fall_older_person",
+    "name": "Fall in an older person",
+    "department": "general_medicine",
+    "description": "An older person who has fallen at home and can't manage. No bones broken, but they need checking over and help to get back on their feet.",
+    "prevalence": 3,
+    "age_range": [
+      75,
+      100
+    ],
+    "female_fraction": 0.65,
+    "ambulance_probability": 0.85,
+    "crew_assessment": "elderly fall, long lie",
+    "presenting_complaint": "weakness",
+    "symptoms": [
+      {
+        "symptom": "weakness",
+        "probability": 1.0
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.3
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        86,
+        10
+      ],
+      "systolic_bp": [
+        128,
+        18
+      ],
+      "diastolic_bp": [
+        72,
+        9
+      ],
+      "respiratory_rate": [
+        17,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.2
+      ],
+      "temperature": [
+        36.6,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -15,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "full_blood_count",
+      "urea_electrolytes",
+      "ecg",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Falls assessment",
+        "performed_by": "nurse",
+        "minutes": 15,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted for falls assessment, physiotherapy and a safe discharge plan.",
+    "needs_physio": true,
+    "length_of_stay_hours": [
+      72,
+      192
+    ]
   }
 ]

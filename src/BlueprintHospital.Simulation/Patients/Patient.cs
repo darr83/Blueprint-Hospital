@@ -245,6 +245,24 @@ public sealed class Patient : Agent
     /// </summary>
     public bool MonitorIsRed => MonitorRed && IsInDepartment;
 
+    /// <summary>When their heart stopped, while a cardiac arrest is going on (null otherwise).</summary>
+    public DateTime? ArrestStartedAt { get; set; }
+
+    /// <summary>In cardiac arrest right now: the crash team are (or should be) resuscitating them.</summary>
+    public bool InArrest => ArrestStartedAt is not null && IsAlive;
+
+    /// <summary>Cardiac arrests they have had on this visit.</summary>
+    public int ArrestCount { get; set; }
+
+    /// <summary>After the heart restarts, the team keep them stable for a while: they don't get worse until then.</summary>
+    public DateTime? StabilisedUntil { get; set; }
+
+    /// <summary>
+    /// Hidden: their heart restarted but the arrest did too much damage, and they will die then, on intensive
+    /// care, however well they are looked after. Null for those who will pull through.
+    /// </summary>
+    public DateTime? PostArrestDeathAt { get; set; }
+
     /// <summary>The stored red-monitor state (see <see cref="MonitorIsRed"/>).</summary>
     public bool MonitorRed { get; set; }
 

@@ -538,6 +538,9 @@ public partial class BuildBar : Control
             case BuildMenu.WaitingChairs:
                 _tool.StartChairs();
                 break;
+            case BuildMenu.ResusTrolleys:
+                _tool.StartTrolleys();
+                break;
             case BuildMenu.WaitingDesk:
                 _tool.StartDesk();
                 break;
@@ -615,6 +618,9 @@ public partial class BuildBar : Control
                 {
                     BuildMode.Chair => $"Click to place a chair, drag for a row · facing {_tool.FacingFor(_tool.Hover).ToString().ToLowerInvariant()} · Z turns",
                     BuildMode.Desk => $"Click to place the reception desk · Z turns",
+                    BuildMode.Trolley when _tool.CarriedTrolley is null && _tool.HoveredTrolley is not null => "Click to pick this trolley up and move it" + (_tool.HoveredTrolley.HomeRoomId is null ? " · X sells it" : string.Empty),
+                    BuildMode.Trolley when _tool.CarriedTrolley is not null => "Click to keep the trolley here",
+                    BuildMode.Trolley => "Click to buy a resus trolley and keep it here",
                     BuildMode.Door when _tool.RemovingDoor => "Click to take this door out",
                     BuildMode.Door => "Click to put a door here",
                     _ => _tool.MovingId is null ? "Release to build" : "Release to rebuild here",
@@ -651,6 +657,7 @@ public partial class BuildBar : Control
             {
                 BuildMode.Chair => "Click a waiting room or corridor tile for a chair, drag for a row · Z turns · Right click or Esc stops",
                 BuildMode.Desk => "Click inside a waiting room to place its reception desk · Z turns · Right click or Esc stops",
+                BuildMode.Trolley => "Click a resus trolley to move it, or empty floor to buy one · Right click or Esc stops",
                 BuildMode.Door => "Click a waiting room wall: on the front path for the entrance, on a corridor for the way through · Right click or Esc stops",
                 _ => "Drag on the floor from corner to corner · Right click or Esc stops",
             }
@@ -706,6 +713,7 @@ public partial class BuildBar : Control
         BuildMenu.ExtendBuilding => "Extend building",
         BuildMenu.AddFloor => "Add a floor",
         BuildMenu.WaitingChairs => "Waiting chairs",
+        BuildMenu.ResusTrolleys => "Resus trolleys",
         BuildMenu.WaitingDesk => "Reception desk",
         BuildMenu.WaitingDoors => "Waiting room doors",
         _ => _sim.Database.RoomTemplates.TryGetValue(item, out var t) ? t.Name : item,
@@ -746,6 +754,14 @@ public partial class BuildBar : Control
                 lines.Add("Place chairs in a waiting room or anywhere along a corridor. Patients waiting for triage sit in the waiting room; everyone else sits on the free chair nearest where they are going, or stands if there isn't one. Drag for a row, Z turns them, and pick a colour below.");
                 lines.Add($"{muted}Cost[/color]  £{_sim.ChairCost:N0} each; turning or recolouring a placed chair is free");
                 lines.Add($"{muted}Placed[/color]  {_sim.Chairs.Count} ({inRooms} in waiting rooms, {_sim.Chairs.Count - inRooms} in corridors)");
+                break;
+            }
+
+            case BuildMenu.ResusTrolleys:
+            {
+                lines.Add("The crash trolley: defibrillator, drugs and airway kit. Every resus bay and ward comes with one. In a cardiac arrest the nearest is pushed to the bed, so keep them close to where patients are. Click one to move it (free) or click empty floor to buy another.");
+                lines.Add($"{muted}Cost[/color]  £{_sim.ResusTrolleyCost:N0} each; moving one is free; X sells one you bought for half price");
+                lines.Add($"{muted}In the hospital[/color]  {_sim.ResusTrolleys.Count}");
                 break;
             }
 

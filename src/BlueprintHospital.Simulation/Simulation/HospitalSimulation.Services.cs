@@ -12,7 +12,8 @@ namespace BlueprintHospital.Simulation.Simulation;
 /// operating theatres (a surgeon) and the pharmacy (a pharmacist). Each room brings its own staff
 /// when it is built. Without imaging, doctors diagnose without scans; without a theatre, patients
 /// who need an operation are transferred; without a pharmacy, medicines cost more and patients wait
-/// longer to go home from the wards.
+/// longer to go home from the wards. Collecting prescriptions and carrying ward medicines are in the
+/// Pharmacy part.
 /// </summary>
 public sealed partial class HospitalSimulation
 {
@@ -45,7 +46,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Whether this member of staff's team does the task: service work in their own room, ward work on their ward, or A&amp;E work.</summary>
     private bool IsForMember(ClinicalTask task, StaffMember member)
     {
-        if (task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Porter)
+        if (task.Kind is TaskKind.MovePatient or TaskKind.DeliverMedicines && member.Role == StaffRole.Porter)
         {
             return true;
         }
@@ -158,7 +159,7 @@ public sealed partial class HospitalSimulation
     private void RequestSurgery(Patient patient, ConditionDefinition diagnosed)
     {
         var operation = diagnosed.Operation!;
-        var place = operation.Room == CareSpaceKind.CathLab ? "the cath lab" : "theatre";
+        var place = ProcedurePlace(operation.Room);
         if (!HasProcedureRoomFor(operation, diagnosed.Department))
         {
             var why = operation.Room != CareSpaceKind.Theatre
@@ -204,6 +205,7 @@ public sealed partial class HospitalSimulation
 
         var operation = planned.Operation!;
         var inTheatre = operation.Room == CareSpaceKind.Theatre;
+        var place = ProcedurePlace(operation.Room);
         if (planned.Id == patient.Condition.Id)
         {
             patient.Log(Now, $"{operation.Name} performed by {surgeon.Name}. The {(inTheatre ? "operation" : "procedure")} went well.", important: true);
@@ -213,7 +215,7 @@ public sealed partial class HospitalSimulation
             // The surgeon finds what is really wrong and the team change the plan.
             patient.WorkingDiagnosis = new Diagnosis(patient.Condition.Id, 0.95, Now, surgeon.Id);
             patient.Log(Now, $"{operation.Name} by {surgeon.Name}: the findings did not fit {planned.Name.ToLowerInvariant()}. The {(inTheatre ? "surgeon" : "team")} found {patient.Condition.Name.ToLowerInvariant()}.", important: true);
-            Notifications.Add(Now, NotificationLevel.Warning, $"Wrong diagnosis found in {(inTheatre ? "theatre" : "the cath lab")}: {patient.FullName} actually had {patient.Condition.Name.ToLowerInvariant()}.", patient.Id);
+            Notifications.Add(Now, NotificationLevel.Warning, $"Wrong diagnosis found in {place}: {patient.FullName} actually had {patient.Condition.Name.ToLowerInvariant()}.", patient.Id);
         }
 
         patient.EffectiveTreatmentGiven = true;
@@ -221,7 +223,15 @@ public sealed partial class HospitalSimulation
         patient.PreOp = false;
         patient.Severity = Math.Min(patient.Severity, 0.6) * 0.7;
         Stats.OperationsDone++;
-        Book(MoneyCategory.Operations, OperationTariff);
+        if (planned.IsPlanned)
+        {
+            CompletePlanned(patient, planned);
+        }
+        else
+        {
+            Book(MoneyCategory.Operations, OperationTariff);
+        }
+
         ReturnFromServiceRoom(patient);
 
         // Big operations recover on HDU; small ones go home the same day from day surgery.
@@ -230,7 +240,7 @@ public sealed partial class HospitalSimulation
         patient.CareLevel = after.Major && HasHighDependencyBeds ? Math.Max(patient.CareLevel, 2) : 0;
         patient.DayCase = after.DayCase && Wards.Any(w => UnitOf(w) == WardUnit.DaySurgery);
         var needs = after.Major ? "high dependency care to recover" : patient.DayCase ? "a few hours on the day surgery unit" : "a ward bed to recover";
-        RequestWardBed(patient, done, $"Back from {(inTheatre ? "theatre" : "the cath lab")}; needs {needs}.");
+        RequestWardBed(patient, done, $"Back from {place}; needs {needs}.");
     }
 
     // ---------------------------------------------------------------- pharmacy
@@ -250,8 +260,8 @@ public sealed partial class HospitalSimulation
 
     private void CompleteDispensing(StaffMember pharmacist, Patient patient)
     {
-        patient.MedicinesReadyAt = Now;
-        patient.Log(Now, $"Medicines to take home checked and dispensed by {pharmacist.Name}.");
+        patient.Log(Now, $"Medicines to take home checked and dispensed by {pharmacist.Name}; {(HasPorters ? "a porter" : "a nurse")} will bring them to the ward.");
+        AddTask(TaskKind.DeliverMedicines, HasPorters ? StaffRole.Porter : StaffRole.Nurse, patient, 0, "Take medicines to the ward", pharmacist.BaseRoomId);
     }
 
     // ---------------------------------------------------------------- when rooms come and go
@@ -277,6 +287,9 @@ public sealed partial class HospitalSimulation
                     patient.Investigations.RemoveAll(o => o.InvestigationId == task.Detail && o.Status == InvestigationStatus.Requested);
                     patient.Log(Now, $"{task.Label} cancelled: there is no longer a room to do it in.");
                     RequestReviewIfResultsComplete(patient);
+                    break;
+                case TaskKind.Surgery when patient.Condition.IsPlanned && patient.PreOp && _plannedBookings.FirstOrDefault(b => b.PatientId == patient.Id) is { } booking:
+                    CancelPlanned(booking, patient.Condition, "the room for it has closed", patient);
                     break;
                 case TaskKind.Surgery when patient.Stage == PatientStage.AwaitingSurgery || patient.PreOp:
                     patient.PreOp = false;

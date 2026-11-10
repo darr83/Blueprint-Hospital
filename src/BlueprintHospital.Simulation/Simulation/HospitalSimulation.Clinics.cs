@@ -114,7 +114,7 @@ public sealed partial class HospitalSimulation
         RunReceptions();
         RunClinics();
         SeatWaitingPatients();
-        _outpatients.RemoveAll(o => o.Stage == OutpatientStage.Leaving && !o.IsMoving);
+        _outpatients.RemoveAll(o => o.Stage == OutpatientStage.Leaving && !o.IsMoving && !IsCollecting(o));
     }
 
     // ---------------------------------------------------------------- the calendar
@@ -152,10 +152,27 @@ public sealed partial class HospitalSimulation
         var names = Database.Names.Values.First();
         foreach (var (start, end) in ClinicSessions)
         {
-            for (var t = date + start; t + TimeSpan.FromMinutes(definition.AppointmentMinutes) <= date + end; t = t.AddMinutes(definition.AppointmentMinutes))
+            var slot = TimeSpan.FromMinutes(definition.AppointmentMinutes);
+            for (var t = date + start; t + slot <= date + end;)
             {
                 if (t < earliest || !Random.Chance(SlotBookedChance))
                 {
+                    t += slot;
+                    continue;
+                }
+
+                // Some appointments are procedures: they take as many slots as they need, if the session has room.
+                var procedure = definition.Procedures.Count > 0 && Random.Chance(definition.ProcedureShare) ? Random.Pick(definition.Procedures) : null;
+                var length = procedure is null ? slot : TimeSpan.FromMinutes(Math.Ceiling(procedure.Minutes / (double)definition.AppointmentMinutes) * definition.AppointmentMinutes);
+                if (procedure is not null && t + length > date + end)
+                {
+                    procedure = null;
+                    length = slot;
+                }
+
+                if (procedure is null && definition.Reasons.Count == 0)
+                {
+                    t += slot;
                     continue;
                 }
 
@@ -166,15 +183,18 @@ public sealed partial class HospitalSimulation
                     Id = _nextAppointmentId++,
                     ClinicId = clinic.Id,
                     Time = t,
-                    Minutes = definition.AppointmentMinutes,
+                    Minutes = procedure?.Minutes ?? definition.AppointmentMinutes,
                     FirstName = Random.Pick(sex == Sex.Female ? names.FemaleFirstNames : names.MaleFirstNames),
                     Surname = Random.Pick(names.Surnames),
                     Age = definition.AgeRange is { } ages ? Random.Range(ages[0], ages[1]) : definition.FemaleOnly ? Random.Range(18, 80) : Random.Range(18, 92),
                     Sex = sex,
-                    Reason = Random.Pick(definition.Reasons),
+                    Reason = procedure?.Name ?? Random.Pick(definition.Reasons),
+                    IsProcedure = procedure is not null,
+                    Tariff = procedure?.Tariff,
                     WillAttend = !Random.Chance(DidNotAttendChance),
                     ArrivesAt = late ? t.AddMinutes(Random.Range(3, 20)) : t.AddMinutes(-Random.Range(5, 25)),
                 });
+                t += length;
             }
         }
     }
@@ -451,7 +471,7 @@ public sealed partial class HospitalSimulation
         if (o.Stage == OutpatientStage.GoingIn && !o.IsMoving && !doctor.IsMoving)
         {
             o.Stage = OutpatientStage.BeingSeen;
-            o.StatusText = $"Being seen: {appointment.Reason.ToLowerInvariant()}";
+            o.StatusText = appointment.IsProcedure ? $"Having a procedure: {appointment.Reason.ToLowerInvariant()}" : $"Being seen: {appointment.Reason.ToLowerInvariant()}";
             var minutes = appointment.Minutes * Random.Range(0.7, 1.3) * (1.25 - (doctor.Skill * 0.5));
             o.BusyUntil = Now.AddMinutes(minutes);
             doctor.Activity = StaffActivity.Working;
@@ -465,7 +485,11 @@ public sealed partial class HospitalSimulation
             Tally(StatKeys.ClinicSeen);
             appointment.SeenAt = Now;
             appointment.SeenByStaffId = doctor.Id;
-            if (ClinicOf(clinic) is { } definition)
+            if (appointment.Tariff is { } fee)
+            {
+                Book(MoneyCategory.Clinics, fee);
+            }
+            else if (ClinicOf(clinic) is { } definition)
             {
                 Book(MoneyCategory.Clinics, definition.Tariff);
             }
@@ -475,6 +499,7 @@ public sealed partial class HospitalSimulation
             doctor.StatusText = "Available";
             _consults.Remove(clinic.Id);
             SendHome(o, "Going home");
+            OfferClinicPrescription(o);
         }
     }
 

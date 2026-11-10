@@ -166,6 +166,68 @@ public partial class WorldLayer : Node2D
         }
 
         SyncAgents();
+        SyncTrolleys();
+    }
+
+    // ------------------------------------------------------------------ resus trolleys
+
+    private readonly Dictionary<int, TrolleyNode> _trolleyNodes = new();
+
+    /// <summary>Resus trolleys move (pushed to an arrest and back, or moved by the player), so each has its own node.</summary>
+    private void SyncTrolleys()
+    {
+        var present = _sim.ResusTrolleys.ToDictionary(t => t.Id);
+        foreach (var gone in _trolleyNodes.Keys.Where(id => !present.ContainsKey(id)).ToList())
+        {
+            _trolleyNodes[gone].QueueFree();
+            _trolleyNodes.Remove(gone);
+        }
+
+        foreach (var trolley in present.Values)
+        {
+            if (!_trolleyNodes.TryGetValue(trolley.Id, out var node))
+            {
+                node = new TrolleyNode(this, trolley);
+                _trolleyNodes[trolley.Id] = node;
+                AddChild(node);
+            }
+
+            node.Sync();
+        }
+    }
+
+    /// <summary>Where a trolley is now, between simulation ticks.</summary>
+    public (double X, double Y) Interpolated(ResusTrolley trolley)
+    {
+        var t = _clock.TickProgress;
+        if (IsoDraw.FloorOf(trolley.PreviousY) != IsoDraw.FloorOf(trolley.Y))
+        {
+            return (trolley.X, trolley.Y);
+        }
+
+        return (trolley.PreviousX + ((trolley.X - trolley.PreviousX) * t), trolley.PreviousY + ((trolley.Y - trolley.PreviousY) * t));
+    }
+
+    private sealed partial class TrolleyNode(WorldLayer world, ResusTrolley trolley) : Node2D
+    {
+        public void Sync()
+        {
+            var (x, y) = world.Interpolated(trolley);
+            Visible = IsoDraw.OnViewFloor(y);
+            Position = IsoDraw.ToScreen(x, y);
+            QueueRedraw();
+        }
+
+        public override void _Draw()
+        {
+            DrawSetTransform(-Position);
+            var (x, y) = world.Interpolated(trolley);
+            var def = world.Simulation.Database.Furniture.GetValueOrDefault(HospitalSimulation.ResusTrolleyItem);
+            var w = (def?.WidthM ?? 0.6) / BlueprintHospital.Simulation.World.Units.MetresPerTile;
+            var l = (def?.DepthM ?? 0.7) / BlueprintHospital.Simulation.World.Units.MetresPerTile;
+            var height = (float)((def?.HeightM ?? 1.0) * IsoDraw.PixelsPerMetre);
+            Figures.ResusTrolleyAt(this, x, y, w, l, height, new Color(def?.Colour ?? "#D84B3E"), trolley.Facing);
+        }
     }
 
     // ------------------------------------------------------------------ people and vehicles
@@ -226,6 +288,35 @@ public partial class WorldLayer : Node2D
         }
 
         return best;
+    }
+
+    /// <summary>For the member of a crash team doing compressions right now: where the patient's chest is on screen.</summary>
+    public (Vector2 Chest, Vector2 Foot)? CprChest(StaffMember member)
+    {
+        if (member.CrashPatientId is not { } id || member.IsMoving || _sim.ArrestOf(id) is not { } arrest || !ReferenceEquals(_sim.CompressingNow(arrest), member)
+            || _sim.FindPatient(id) is not { } patient)
+        {
+            return null;
+        }
+
+        var (x, y) = Interpolated(patient);
+        var raised = OnTrolley(patient) || OnAmbulanceStretcher(patient);
+        var lift = new Vector2(0, InBed(patient) ? -22 : raised ? -24 : -6);
+
+        // Stand right up against the bed (or beside the patient on the floor), on whichever side they were sent to,
+        // with the hands on the near side of the chest.
+        var (mx, my) = Interpolated(member);
+        var (dx, dy) = (mx - x, my - y);
+        var length = Math.Sqrt((dx * dx) + (dy * dy));
+        if (length < 0.01)
+        {
+            return (IsoDraw.ToScreen(x, y) + lift, IsoDraw.ToScreen(mx, my));
+        }
+
+        var (ux, uy) = (dx / length, dy / length);
+        var gap = InBed(patient) || raised ? 1.25 : 0.8;
+        var chest = IsoDraw.ToScreen(x + (ux * 0.25), y + (uy * 0.25)) + lift;
+        return (chest, IsoDraw.ToScreen(x + (ux * gap), y + (uy * gap)));
     }
 
     /// <summary>On a trolley away from a bed: being pushed, waiting for a porter, or parked in corridor care.</summary>
@@ -539,7 +630,8 @@ public partial class WorldLayer : Node2D
         {
             foreach (var item in space.Furniture)
             {
-                if (!_sim.Database.Furniture.TryGetValue(item.ItemId, out var def))
+                // Resus trolleys can be moved and pushed about, so they are drawn on their own (see SyncTrolleys).
+                if (item.ItemId == HospitalSimulation.ResusTrolleyItem || !_sim.Database.Furniture.TryGetValue(item.ItemId, out var def))
                 {
                     continue;
                 }
@@ -626,6 +718,11 @@ public partial class WorldLayer : Node2D
                     Figures.Lying(c, cx, cy, Looks.Patient(occupant!), cover, lift, headSouth, band, OnChest(occupant!));
                 }
             });
+
+            if (occupant is { InArrest: true })
+            {
+                Figures.CrashMarker(c, IsoDraw.ToScreen(cx, cy), Time);
+            }
         }, animated: true);
     }
 
@@ -903,10 +1000,17 @@ public partial class WorldLayer : Node2D
                         var facing = world.SeatFacing(member);
                         Figures.Seated(this, foot, look, away: ChairArt.FacesAway(facing), lean: ChairArt.Lean(facing));
                     }
+                    else if (world.CprChest(member) is { } cpr)
+                    {
+                        Figures.DoingCpr(this, cpr.Foot, look, cpr.Chest, world.Time, member.Id * 7);
+                    }
                     else
                     {
                         var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
-                        Figures.Standing(this, foot, look, world.StrideTime(member, member.IsMoving || pushing), member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member));
+                        pushing |= member.CrashPatientId is not null && world.Simulation.ResusTrolleys.Any(t => t.PushedByStaffId == member.Id) && member.IsMoving;
+
+                        // Legs keep time with their pace, so the crash team's run (a faster walk speed) steps faster too.
+                        Figures.Standing(this, foot, look, world.StrideTime(member, member.IsMoving || pushing), member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member), medicineBag: world.Simulation.IsCarryingMedicines(member));
                     }
 
                     break;
@@ -944,6 +1048,11 @@ public partial class WorldLayer : Node2D
                 }
 
                 Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, new Color("#B5413B"), Looks.Wristband(patient.Triage));
+                if (patient.InArrest)
+                {
+                    Figures.CrashMarker(this, foot, world.Time, 40);
+                }
+
                 return;
             }
 
@@ -960,6 +1069,20 @@ public partial class WorldLayer : Node2D
                 var lift = Figures.Trolley(this, gx, gy, patient.Facing);
                 var blanket = patient.Maternity ? Looks.MaternityBlanket : patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket;
                 Figures.LyingAlong(this, gx, gy, patient.Facing, look, blanket, lift, patient.Maternity ? null : Looks.Wristband(patient.Triage), world.BabiesWith(patient));
+                if (patient.InArrest)
+                {
+                    Figures.CrashMarker(this, foot, world.Time, 40);
+                }
+
+                return;
+            }
+
+            if (patient.InArrest)
+            {
+                // Collapsed where they were: lying on the floor with the crash team round them.
+                var (gx, gy) = world.Interpolated(patient);
+                Figures.LyingAlong(this, gx, gy, patient.Facing, look, look.Top, 0);
+                Figures.CrashMarker(this, foot, world.Time, 34);
                 return;
             }
 

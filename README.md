@@ -215,54 +215,88 @@ today, yesterday and the last week by category, and what the hospital costs to r
 
 ### Conditions
 
-The game has 43 conditions, each with its own symptoms, observations, tests, treatment and
-outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
+The game has 76 A&E conditions (plus the maternity ones), each with its own symptoms, observations,
+tests, treatment and outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
+Children's illnesses (croup, bronchiolitis, febrile convulsion) are seen in A&E.
 
 | Condition | After A&E |
 |---|---|
-| Acute appendicitis | Operation, then admit |
-| Acute asthma | Discharge |
+| Acute appendicitis | Laparoscopic appendicectomy in the theatre, then admit |
+| Acute asthma | Discharge after observation |
 | Acute cholecystitis | Admit |
 | Acute heart failure | Admit |
 | Acute kidney injury | Admit |
-| Acute myocardial infarction | Transfer |
+| Acute myocardial infarction | Primary PCI in the cath lab (else transfer) |
 | Acute pancreatitis | Admit |
+| Alcohol withdrawal | Admit |
 | Allergic reaction (hives) | Discharge |
-| Anaphylaxis | Discharge |
+| Anaphylaxis | Discharge after observation |
 | Ankle fracture | Discharge |
 | Ankle sprain | Discharge |
 | Atrial fibrillation with fast heart rate | Admit |
+| Bacterial meningitis | Admit |
+| Bartholin's abscess | Day case: Marsupialisation of Bartholin's abscess, then home |
+| Bell's palsy | Discharge |
 | Biliary colic | Discharge |
+| Bronchiolitis | Discharge after observation |
 | Cellulitis | Discharge |
 | Community-acquired pneumonia | Admit |
+| Complete heart block | Pacemaker insertion in the cath lab, then admit |
 | COPD exacerbation | Admit |
+| Croup | Discharge after observation |
 | Deep vein thrombosis | Discharge |
 | Diabetic ketoacidosis | Admit |
-| Ectopic pregnancy | Operation, then admit |
-| Fractured neck of femur | Operation, then admit |
+| Dislocated shoulder | Discharge after observation |
+| Diverticulitis | Admit |
+| Ectopic pregnancy | Laparoscopic salpingectomy in the theatre, then admit |
+| Fall in an older person | Admit |
+| Febrile convulsion | Discharge after observation |
+| Flu | Discharge |
+| Fractured neck of femur | Hip hemiarthroplasty in the theatre, then admit |
 | Gastro-oesophageal reflux | Discharge |
 | Gastroenteritis | Discharge |
-| Hypoglycaemia | Discharge |
+| Gout | Discharge |
+| Hyperemesis gravidarum | Admit |
+| Hypoglycaemia | Discharge after observation |
+| Large bowel obstruction | Major operation (Hartmann's procedure), then HDU |
+| Liver cirrhosis with fluid | Admit |
+| Mechanical back pain | Discharge |
 | Migraine | Discharge |
+| Minor burn | Discharge |
+| Minor head injury | Discharge after observation |
 | Musculoskeletal chest pain | Discharge |
-| Perforated peptic ulcer | Major operation, then HDU |
-| Perianal abscess | Day case operation, then home |
+| Nosebleed | Discharge after observation |
+| NSTEMI (heart attack) | Coronary angiogram and stent in the cath lab, then admit |
+| Ovarian torsion | Laparoscopic ovarian detorsion in the theatre, then admit |
+| Panic attack | Discharge |
+| Paracetamol overdose | Admit |
+| Pelvic inflammatory disease | Discharge |
+| Perforated peptic ulcer | Major operation (Laparotomy and ulcer repair), then HDU |
+| Perianal abscess | Day case: Incision and drainage of abscess, then home |
+| Pericarditis | Discharge |
 | Pulmonary embolism | Admit |
 | Pyelonephritis | Admit |
 | Renal colic | Discharge |
-| Seizure in known epilepsy | Discharge |
+| Seizure in known epilepsy | Discharge after observation |
+| Septic arthritis of the knee | Arthroscopic knee washout in the theatre, then admit |
 | Septic shock | Intensive care |
 | Simple laceration | Discharge |
 | Small bowel obstruction | Admit |
-| Strangulated inguinal hernia | Operation, then admit |
+| Status epilepticus | Intensive care |
+| Strangulated inguinal hernia | Emergency hernia repair in the theatre, then admit |
 | Stroke | Admit |
 | Subarachnoid haemorrhage | Transfer |
 | Supraventricular tachycardia | Discharge |
+| Testicular torsion | Day case: Scrotal exploration and fixation, then home |
 | Threatened miscarriage | Discharge |
+| TIA (mini-stroke) | Discharge |
+| Tibial shaft fracture | Intramedullary nailing of the tibia in the theatre, then admit |
 | Tonsillitis | Discharge |
+| Ulcerative colitis flare | Admit |
 | Upper gastrointestinal bleed | Admit |
 | Urinary tract infection | Discharge |
-| Vasovagal syncope (faint) | Discharge |
+| Vasovagal syncope (faint) | Discharge after observation |
+| Wrist fracture | Discharge |
 
 "Admit" goes to a ward bed when there is one, otherwise to another hospital. "Operation" goes to
 theatre and then a ward bed; without a theatre the patient is transferred. "Transfer" goes to a
@@ -504,9 +538,38 @@ examination room and fracture clinic). Specialty clinics need their department u
   placed in the corridors** (£120 each; doorways must stay clear). With no free chair they stand.
 - The clinic doctor calls each patient in at their appointment time, sees them, and they go home.
   The hospital is paid per patient seen (Clinics in the finances).
+- Some appointments are **procedures** (a smear test, colposcopy, coil fitting, mole removal, cast
+  change, pacemaker check). Each has its own length and fee; a long one takes as many slots as it
+  needs. The Clinics panel marks them "Procedure".
 - Open **Clinics** (C) to see each clinic's calendar: who is booked, arriving, waiting (and for how
   long), in clinic, seen or did not attend. Click a patient's name to find them on the map. Clinic
   patients have a lilac ring.
+
+### Planned day lists
+
+Alongside the emergencies, the hospital runs **planned lists** on weekdays. Each morning it books
+patients for the day (arriving 07:30 to 13:00) for every list that can run:
+
+| Procedure | Department | Done in |
+|---|---|---|
+| Inguinal hernia repair, laparoscopic cholecystectomy | General Surgery | a theatre ticked for General Surgery |
+| Carpal tunnel release, knee arthroscopy | Trauma & Orthopaedics | a theatre ticked for T&O |
+| Hysteroscopy | Gynaecology | a theatre ticked for Gynaecology |
+| Coronary angiogram | Cardiology | the cath lab |
+| Gastroscopy (OGD), colonoscopy | Gastroenterology | the endoscopy room |
+
+- A list needs its department, a staffed room for it (a surgeon and an anaesthetist in theatre, a
+  cardiac physiologist in the cath lab, an endoscopist in the endoscopy room) and a **day surgery
+  unit**. More staffed rooms mean more patients per day.
+- Planned patients skip A&E: they walk straight onto the day surgery unit, go for their procedure
+  when the room is free, recover there for a few hours and go home. Each pays its own fee
+  (Operations in the finances).
+- **Emergencies come first.** Emergency patients take the theatre ahead of the list, and each day
+  surgery unit keeps a quarter of its beds (at least one) free for emergency day cases.
+- A planned patient is **cancelled** if there is no spare day surgery bed when they arrive, if the
+  room or its staff are lost, or if their procedure hasn't started by 18:00. Each cancellation costs
+  reputation and shows a notification.
+- The Clinics panel (C) shows the day's planned lists and what each closed list still needs.
 
 ### Starting a new game
 
@@ -705,6 +768,10 @@ Add an entry to any file in `game/Data/Conditions/`. This is a complete example:
   Optional: `"ambulatory_hours": [4, 8]` for an `admit` condition that can be managed the same day in an
   ambulatory care unit, and `"needs_physio": true` for ward patients who need physiotherapy to get home.
   A treatment procedure can name `"room": "plaster_room"` to be done there by a plaster technician.
+- A **planned** procedure (see `Conditions/planned_procedures.json`) is a `surgery` condition with a
+  day-case `operation` and `"planned": { "per_day": [1, 3], "tariff": 2400 }`: patients are booked onto
+  weekday lists (`per_day` for each staffed room) and never come through A&E. Its operation `room` can
+  also be `endoscopy`.
 
 ### How to add an investigation
 
@@ -773,7 +840,8 @@ withhold it if they match. Patient allergies come from `game/Data/PatientBackgro
 
 - `Clinics/` has one entry per clinic room template (`id` matches the template): `appointment_minutes`,
   `tariff` (paid per patient seen), the `reasons` patients are booked for, and `female_only` for
-  gynaecology. Loading checks every clinic room template has an entry.
+  gynaecology. Optional `procedures` (each with `name`, `minutes` and `tariff`) and `procedure_share`
+  (the share of booked appointments that are procedures) add outpatient procedures. Loading checks every clinic room template has an entry.
 
 ### Room templates and furniture
 

@@ -9,7 +9,7 @@ loudness evened out. The tannoy speaker sound is added in the game (Announcement
 Existing takes are skipped, so re-running never spends credits twice. Needs ffmpeg.
 
 The keys match the clip names the simulation sends (HospitalSimulation.Announcements.cs):
-call_<doctor|registrar|consultant>_resus_<1-6|x>, arrest_<resus_N|majors|ae>,
+call_<doctor|registrar|consultant>_resus_<1-6|x>, arrest_<resus_N|majors|ae|ward template id|room>, paed_arrest, obstetric_emergency,
 trauma_<resus_N|resus_x>, amb_due_<5|10>, assess_<condition id>, gen_<name>.
 """
 
@@ -64,6 +64,16 @@ def build_lines():
         lines[f"trauma_{key}"] = f"Trauma team to {place}."
     lines["arrest_majors"] = "Adult cardiac arrest, Majors. Adult cardiac arrest, Majors."
     lines["arrest_ae"] = "Adult cardiac arrest, A and E. Adult cardiac arrest, A and E."
+    # Crash calls anywhere in the hospital: each kind of ward by name, a few other rooms, children and maternity.
+    with open(os.path.join(ROOT, "game", "Data", "RoomTemplates", "ward_rooms.json")) as f:
+        for ward in json.load(f):
+            spoken = ward["name"].replace("A&E", "A and E")
+            lines[f"arrest_{ward['id']}"] = f"Adult cardiac arrest, {spoken}. Adult cardiac arrest, {spoken}."
+    for key, place in [("theatre", "Theatres"), ("xray", "X-ray"), ("ct", "C T"), ("cathlab", "the cath lab"), ("endoscopy", "Endoscopy"), ("physiogym", "the physio gym")]:
+        lines[f"arrest_{key}"] = f"Adult cardiac arrest, {place}. Adult cardiac arrest, {place}."
+    lines["arrest_x"] = "Adult cardiac arrest. Adult cardiac arrest."
+    lines["paed_arrest"] = "Paediatric cardiac arrest. Paediatric cardiac arrest."
+    lines["obstetric_emergency"] = "Obstetric emergency, Maternity. Obstetric emergency, Maternity."
     lines["amb_due_5"] = "Ambulance due in five minutes."
     lines["amb_due_10"] = "Ambulance due in ten minutes."
     for path in sorted(glob.glob(os.path.join(CONDITIONS, "*.json"))):

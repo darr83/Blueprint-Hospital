@@ -140,9 +140,18 @@ public sealed partial class HospitalSimulation
     private void UpdatePhysiology(double dt)
     {
         var hours = dt / 3600.0;
-        foreach (var patient in _patients.Values.Where(p => p.IsAlive && p.Stage != PatientStage.Gone))
+        foreach (var patient in _patients.Values.Where(p => p.IsAlive && p.Stage != PatientStage.Gone).ToList())
         {
             var condition = patient.Condition;
+
+            // In cardiac arrest the crash team decide what happens (see the arrests file).
+            if (patient.InArrest)
+            {
+                continue;
+            }
+
+            // Just after their heart restarted, the team keep them stable: they don't get worse for a while.
+            var stabilised = patient.StabilisedUntil is { } until && Now < until;
             var support = CriticalCareFactor(patient, hours);
             if (patient.MonitorIsRed)
             {
@@ -152,7 +161,7 @@ public sealed partial class HospitalSimulation
                 {
                     patient.Severity = Math.Max(0, patient.Severity - (RedRecoveryPerHour(patient) * hours));
                 }
-                else
+                else if (!stabilised)
                 {
                     patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
                 }
@@ -161,24 +170,36 @@ public sealed partial class HospitalSimulation
             {
                 patient.Severity = Math.Max(0, patient.Severity - (condition.RecoveryPerHour * hours));
             }
-            else if (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal)
+            else if (!stabilised && (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal))
             {
                 patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
             }
 
             if (condition.CanBeFatal && patient.Severity >= 1.0 && patient.Stage != PatientStage.Leaving)
             {
-                PatientDied(patient);
+                // In a bed, cubicle or trolley the heart stops and the crash team come; anywhere else it's too late.
+                if (CanBeResuscitated(patient))
+                {
+                    StartArrest(patient);
+                }
+                else
+                {
+                    PatientDied(patient);
+                }
             }
         }
     }
 
-    private void PatientDied(Patient patient)
+    private void PatientDied(Patient patient, string? note = null)
     {
+        var resuscitated = patient.ArrestCount > 0 || patient.InArrest;
+        patient.ArrestStartedAt = null;
         patient.Outcome = PatientOutcome.Died;
         var where = patient.Stage == PatientStage.OnWard && patient.CareSpaceId is { } wardId ? $"on {FindSpace(wardId)?.Name ?? "the ward"}" : "in A&E";
         patient.OutcomeNote = $"Died {where}. Underlying condition: {patient.Condition.Name.ToLowerInvariant()}.";
-        patient.Log(Now, $"Cardiac arrest. Resuscitation was unsuccessful; time of death {Now:HH:mm}.", important: true);
+        patient.Log(Now, note ?? (resuscitated
+            ? $"Resuscitation was unsuccessful; time of death {Now:HH:mm}."
+            : $"Cardiac arrest. Resuscitation was unsuccessful; time of death {Now:HH:mm}."), important: true);
         Notifications.Add(Now, NotificationLevel.Critical, $"{patient.FullName} has sadly died {where}. Their care can be reviewed in their record.", patient.Id, patient.CareSpaceId, patient.Triage);
         EndVisit(patient, PatientOutcome.Died);
         patient.StopMoving();
@@ -187,6 +208,11 @@ public sealed partial class HospitalSimulation
     /// <summary>Removes every trace of a patient from rooms, queues and the task board.</summary>
     internal void EndVisit(Patient patient, PatientOutcome outcome)
     {
+        if (outcome != PatientOutcome.Died && patient.ArrestCount > 0 && patient.Outcome != PatientOutcome.Died)
+        {
+            Stats.ArrestSurvivors++;
+        }
+
         patient.Outcome = outcome;
         patient.LeftAt = Now;
         LeaveCorridor(patient);
@@ -214,8 +240,9 @@ public sealed partial class HospitalSimulation
         {
             PayForAttendance(patient);
         }
-        else
+        else if (!patient.Condition.IsPlanned)
         {
+            // Planned patients are paid for by the procedure itself.
             PayForAdmission(patient);
         }
 
@@ -257,7 +284,7 @@ public sealed partial class HospitalSimulation
         {
             switch (patient.Stage)
             {
-                case PatientStage.Leaving when !patient.IsMoving:
+                case PatientStage.Leaving when !patient.IsMoving && !IsCollecting(patient):
                     patient.Stage = PatientStage.Gone;
                     break;
 

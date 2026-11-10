@@ -205,14 +205,17 @@ public sealed partial class HospitalSimulation
 
         UpdateAmbulances();
         UpdatePhysiology(dt);
+        UpdateArrests();
         UpdateEmergencyCalls();
         UpdateGeneralAnnouncements();
         UpdatePatientFlow();
         ReseatStandingPatients();
         UpdateWards();
         UpdateClinics(dt);
+        UpdatePlannedLists();
         UpdateRefreshments(dt);
         UpdateToilets(dt);
+        UpdatePharmacyTrips();
         UpdateRecovery();
         UpdateBabies(dt);
         SchedulePhysio();

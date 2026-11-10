@@ -92,6 +92,14 @@ public sealed class PatientState
 
     public bool RedReviewed { get; init; }
 
+    public DateTime? ArrestStartedAt { get; init; }
+
+    public int ArrestCount { get; init; }
+
+    public DateTime? StabilisedUntil { get; init; }
+
+    public DateTime? PostArrestDeathAt { get; init; }
+
     public double Analgesia { get; init; }
 
     public string? CareSpaceId { get; init; }
@@ -379,6 +387,14 @@ public sealed class PeopleState
 
     public int NextAppointmentId { get; init; }
 
+    /// <summary>Patients booked onto planned lists (absent in older saves).</summary>
+    public List<PlannedBooking>? PlannedBookings { get; init; }
+
+    /// <summary>Weekdays whose planned lists are already booked, as "yyyy-MM-dd".</summary>
+    public List<string>? BookedPlannedDays { get; init; }
+
+    public int NextPlannedId { get; init; }
+
     public int NextOutpatientId { get; init; }
 
     /// <summary>Patients coming round after endoscopy, and mothers having skin-to-skin after a birth.</summary>
@@ -390,6 +406,12 @@ public sealed class PeopleState
     public int NextBabyId { get; init; }
 
     public MaternityStats? Maternity { get; init; }
+
+    /// <summary>Resus trolleys and where they are kept (absent in older saves: each room gets its own).</summary>
+    public List<ResusTrolleyState>? ResusTrolleys { get; init; }
+
+    /// <summary>Cardiac arrests going on when the game was saved.</summary>
+    public List<CardiacArrest>? Arrests { get; init; }
 
     /// <summary>The Stats screen's figures (absent in older saves).</summary>
     public StatsHistoryState? History { get; init; }
@@ -445,12 +467,17 @@ public sealed partial class HospitalSimulation
         Consults = _consults.Values.OrderBy(c => c.ClinicId, StringComparer.Ordinal).ToList(),
         BookedClinicDays = _bookedClinicDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         NextAppointmentId = _nextAppointmentId,
+        PlannedBookings = _plannedBookings.ToList(),
+        BookedPlannedDays = _bookedPlannedDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
+        NextPlannedId = _nextPlannedId,
         NextOutpatientId = _nextOutpatientId,
         Recovering = _recovering.Values.OrderBy(r => r.PatientId).ToList(),
         Babies = CaptureBabies(),
         NextBabyId = NextBabyId,
         Maternity = MaternityStats,
         History = HistoryStore.Capture(),
+        ResusTrolleys = SaveTrolleys(),
+        Arrests = _arrests.Where(a => a.IsActive).ToList(),
     };
 
     /// <summary>
@@ -680,8 +707,10 @@ public sealed partial class HospitalSimulation
             _recovering[recovery.PatientId] = recovery;
         }
 
+        RestorePlannedLists(state.PlannedBookings, state.BookedPlannedDays, state.NextPlannedId);
         RestoreBabies(state.Babies, state.NextBabyId, state.Maternity);
         RestoreHistory(state.History);
+        RestoreTrolleys(state.ResusTrolleys, state.Arrests);
     }
 
     // ------------------------------------------------------------------ patients
@@ -697,6 +726,7 @@ public sealed partial class HospitalSimulation
         Triage = p.Triage, TriageReason = p.TriageReason, TriagedAt = p.TriagedAt, KnownSymptoms = p.KnownSymptoms.ToList(),
         HistoryTaken = p.HistoryTaken, FirstSeenByDoctorAt = p.FirstSeenByDoctorAt, Investigations = p.Investigations.ToList(),
         WorkingDiagnosis = p.WorkingDiagnosis, TreatmentPlan = p.TreatmentPlan.ToList(), EffectiveTreatmentGiven = p.EffectiveTreatmentGiven, MonitorRed = p.MonitorRed, RedReviewed = p.RedReviewed,
+        ArrestStartedAt = p.ArrestStartedAt, ArrestCount = p.ArrestCount, StabilisedUntil = p.StabilisedUntil, PostArrestDeathAt = p.PostArrestDeathAt,
         Analgesia = p.Analgesia, CareSpaceId = p.CareSpaceId, Seat = p.Seat, BusyWithTaskId = p.BusyWithTaskId,
         Mobility = p.Mobility, PendingMove = p.PendingMove, PushedByStaffId = p.PushedByStaffId, QueuedSince = p.QueuedSince,
         TransferAmbulanceDueAt = p.TransferAmbulanceDueAt, CorridorSpot = p.CorridorSpot, CorridorSince = p.CorridorSince, BedIndex = p.BedIndex, ReservedWardId = p.ReservedWardId,
@@ -744,6 +774,9 @@ public sealed partial class HospitalSimulation
         p.EffectiveTreatmentGiven = s.EffectiveTreatmentGiven;
         p.MonitorRed = s.MonitorRed;
         p.RedReviewed = s.RedReviewed;
+        p.ArrestCount = s.ArrestCount;
+        p.StabilisedUntil = s.StabilisedUntil;
+        p.PostArrestDeathAt = s.PostArrestDeathAt;
         p.Analgesia = s.Analgesia;
         p.CareSpaceId = s.CareSpaceId;
         p.Seat = s.Seat;
@@ -884,9 +917,11 @@ public sealed partial class HospitalSimulation
                 ["ward_corrections"] = s.WardDiagnosesCorrected, ["deaths"] = s.Deaths, ["left_unseen"] = s.LeftWithoutBeingSeen,
                 ["diagnoses"] = s.DiagnosesMade, ["diagnoses_correct"] = s.DiagnosesCorrect, ["missed"] = s.MissedDiagnoses,
                 ["reputation_penalties"] = s.ReputationPenalties, ["investigation_cost"] = s.InvestigationCost, ["medication_cost"] = s.MedicationCost,
-                ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone,
+                ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone, ["planned_done"] = s.PlannedDone, ["planned_cancelled"] = s.PlannedCancelled,
                 ["minutes_in_department"] = s.MinutesInDepartmentTotal, ["seen_by_doctor"] = s.SeenByDoctorTotal,
                 ["minutes_to_doctor"] = s.MinutesToDoctorTotal, ["handovers"] = s.HandoversTotal, ["handover_minutes"] = s.HandoverMinutesTotal,
+                ["cardiac_arrests"] = s.CardiacArrests, ["arrests_rosc"] = s.ArrestsRosc, ["arrest_survivors"] = s.ArrestSurvivors,
+                ["seconds_to_cpr"] = s.SecondsToCprTotal, ["cpr_starts"] = s.CprStarts, ["seconds_to_shock"] = s.SecondsToShockTotal, ["first_shocks"] = s.FirstShocks,
             },
             TriagedTotal = new Dictionary<TriageCategory, int>(s.TriagedTotal),
             RecentTimeToDoctor = s.RecentTimeToDoctor.ToList(),
@@ -912,6 +947,8 @@ public sealed partial class HospitalSimulation
         s.WardDiagnosesCorrected = I("ward_corrections");
         s.ScansDone = I("scans");
         s.OperationsDone = I("operations");
+        s.PlannedDone = I("planned_done");
+        s.PlannedCancelled = I("planned_cancelled");
         s.Deaths = I("deaths");
         s.LeftWithoutBeingSeen = I("left_unseen");
         s.DiagnosesMade = I("diagnoses");
@@ -925,6 +962,13 @@ public sealed partial class HospitalSimulation
         s.MinutesToDoctorTotal = state.Counters.GetValueOrDefault("minutes_to_doctor");
         s.HandoversTotal = I("handovers");
         s.HandoverMinutesTotal = state.Counters.GetValueOrDefault("handover_minutes");
+        s.CardiacArrests = I("cardiac_arrests");
+        s.ArrestsRosc = I("arrests_rosc");
+        s.ArrestSurvivors = I("arrest_survivors");
+        s.SecondsToCprTotal = state.Counters.GetValueOrDefault("seconds_to_cpr");
+        s.CprStarts = I("cpr_starts");
+        s.SecondsToShockTotal = state.Counters.GetValueOrDefault("seconds_to_shock");
+        s.FirstShocks = I("first_shocks");
         foreach (var (category, count) in state.TriagedTotal)
         {
             s.TriagedTotal[category] = count;

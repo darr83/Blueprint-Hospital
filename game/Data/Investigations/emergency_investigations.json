@@ -50,6 +50,35 @@
     "summaries": [
      "Sinus tachycardia with left bundle branch block (old)."
     ]
+   },
+   {
+    "condition": "nstemi",
+    "probability": 0.3,
+    "summaries": [
+     "ST-segment depression in V4–V6 with T-wave inversion: possible NSTEMI.",
+     "Deep T-wave inversion across the anterior leads."
+    ]
+   },
+   {
+    "condition": "complete_heart_block",
+    "probability": 0.99,
+    "summaries": [
+     "Complete heart block: P waves and QRS complexes unrelated, ventricular rate 35."
+    ]
+   },
+   {
+    "condition": "pericarditis",
+    "probability": 0.8,
+    "summaries": [
+     "Widespread saddle-shaped ST elevation with PR depression: pericarditis."
+    ]
+   },
+   {
+    "condition": "panic_attack",
+    "probability": 0.02,
+    "summaries": [
+     "Sinus tachycardia 112, otherwise normal."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": true
@@ -115,6 +144,39 @@
     ],
     "summaries": [
      "Troponin {value} ng/L (mildly raised, rate-related)."
+    ]
+   },
+   {
+    "condition": "nstemi",
+    "probability": 0.97,
+    "value_range": [
+     45,
+     900
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (raised and rising)."
+    ]
+   },
+   {
+    "condition": "pericarditis",
+    "probability": 0.3,
+    "value_range": [
+     16,
+     60
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "complete_heart_block",
+    "probability": 0.2,
+    "value_range": [
+     15,
+     40
+    ],
+    "summaries": [
+     "Troponin {value} ng/L (mildly raised)."
     ]
    }
   ],
@@ -259,6 +321,94 @@
     "summaries": [
      "White cell count {value} x10^9/L (raised, stress response)."
     ]
+   },
+   {
+    "condition": "bacterial_meningitis",
+    "probability": 0.85,
+    "value_range": [
+     16,
+     30
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised, neutrophilia)."
+    ]
+   },
+   {
+    "condition": "septic_arthritis_knee",
+    "probability": 0.75,
+    "value_range": [
+     12.5,
+     20
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised)."
+    ]
+   },
+   {
+    "condition": "diverticulitis",
+    "probability": 0.8,
+    "value_range": [
+     12,
+     18
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (raised)."
+    ]
+   },
+   {
+    "condition": "ulcerative_colitis_flare",
+    "probability": 0.6,
+    "value_range": [
+     88,
+     112
+    ],
+    "summaries": [
+     "Haemoglobin {value} g/L (low); platelets raised."
+    ]
+   },
+   {
+    "condition": "large_bowel_obstruction",
+    "probability": 0.4,
+    "value_range": [
+     85,
+     110
+    ],
+    "summaries": [
+     "Haemoglobin {value} g/L (low: iron deficiency)."
+    ]
+   },
+   {
+    "condition": "epistaxis",
+    "probability": 0.2,
+    "value_range": [
+     105,
+     118
+    ],
+    "summaries": [
+     "Haemoglobin {value} g/L (slightly low)."
+    ]
+   },
+   {
+    "condition": "ovarian_torsion",
+    "probability": 0.4,
+    "value_range": [
+     11,
+     14
+    ],
+    "summaries": [
+     "White cell count {value} x10^9/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "tibial_shaft_fracture",
+    "probability": 0.3,
+    "value_range": [
+     105,
+     120
+    ],
+    "summaries": [
+     "Haemoglobin {value} g/L (dropped)."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -391,6 +541,94 @@
     "summaries": [
      "CRP {value} mg/L (raised)."
     ]
+   },
+   {
+    "condition": "bacterial_meningitis",
+    "probability": 0.9,
+    "value_range": [
+     100,
+     350
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "septic_arthritis_knee",
+    "probability": 0.9,
+    "value_range": [
+     80,
+     300
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "gout",
+    "probability": 0.6,
+    "value_range": [
+     20,
+     90
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "diverticulitis",
+    "probability": 0.9,
+    "value_range": [
+     50,
+     220
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "ulcerative_colitis_flare",
+    "probability": 0.85,
+    "value_range": [
+     40,
+     160
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "pericarditis",
+    "probability": 0.7,
+    "value_range": [
+     20,
+     90
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
+   },
+   {
+    "condition": "influenza",
+    "probability": 0.4,
+    "value_range": [
+     10,
+     50
+    ],
+    "summaries": [
+     "CRP {value} mg/L (mildly raised)."
+    ]
+   },
+   {
+    "condition": "pelvic_inflammatory_disease",
+    "probability": 0.7,
+    "value_range": [
+     25,
+     110
+    ],
+    "summaries": [
+     "CRP {value} mg/L (raised)."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -491,6 +729,57 @@
     "summaries": [
      "Creatinine mildly raised at {value} µmol/L."
     ]
+   },
+   {
+    "condition": "hyperemesis_gravidarum",
+    "probability": 0.6,
+    "value_range": [
+     7.8,
+     12
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised). Potassium 3.1 (low)."
+    ]
+   },
+   {
+    "condition": "decompensated_cirrhosis",
+    "probability": 0.6,
+    "value_range": [
+     7.8,
+     14
+    ],
+    "summaries": [
+     "Sodium 126 (low). Urea {value} mmol/L."
+    ]
+   },
+   {
+    "condition": "large_bowel_obstruction",
+    "probability": 0.5,
+    "value_range": [
+     8,
+     14
+    ],
+    "summaries": [
+     "Urea {value} mmol/L (raised, dehydrated)."
+    ]
+   },
+   {
+    "condition": "ulcerative_colitis_flare",
+    "probability": 0.4,
+    "value_range": [
+     7.8,
+     10
+    ],
+    "summaries": [
+     "Potassium 3.0 (low). Urea {value} mmol/L."
+    ]
+   },
+   {
+    "condition": "alcohol_withdrawal",
+    "probability": 0.3,
+    "summaries": [
+     "Urea 2.4 mmol/L (low). Magnesium 0.5 mmol/L (low)."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -520,6 +809,13 @@
    },
    {
     "condition": "threatened_miscarriage",
+    "probability": 0.99,
+    "summaries": [
+     "Urine hCG positive."
+    ]
+   },
+   {
+    "condition": "hyperemesis_gravidarum",
     "probability": 0.99,
     "summaries": [
      "Urine hCG positive."
@@ -575,6 +871,27 @@
     "probability": 0.95,
     "summaries": [
      "Glucose ++++ and ketones +++."
+    ]
+   },
+   {
+    "condition": "hyperemesis_gravidarum",
+    "probability": 0.9,
+    "summaries": [
+     "Ketones +++; no leucocytes or nitrites."
+    ]
+   },
+   {
+    "condition": "pelvic_inflammatory_disease",
+    "probability": 0.3,
+    "summaries": [
+     "Leucocytes +; nitrites negative."
+    ]
+   },
+   {
+    "condition": "febrile_convulsion",
+    "probability": 0.1,
+    "summaries": [
+     "Leucocytes ++ and nitrites positive."
     ]
    }
   ],
@@ -830,6 +1147,27 @@
     "summaries": [
      "ALT raised at 180 U/L (possible gallstone cause)."
     ]
+   },
+   {
+    "condition": "paracetamol_overdose",
+    "probability": 0.3,
+    "summaries": [
+     "ALT 240 U/L (raised): early liver injury."
+    ]
+   },
+   {
+    "condition": "alcohol_withdrawal",
+    "probability": 0.7,
+    "summaries": [
+     "GGT 410 U/L and ALT 88 U/L: alcohol-related liver injury."
+    ]
+   },
+   {
+    "condition": "decompensated_cirrhosis",
+    "probability": 0.97,
+    "summaries": [
+     "Bilirubin 96 µmol/L, albumin 22 g/L: a failing liver."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1075,6 +1413,13 @@
     "summaries": [
      "Free air under the right hemidiaphragm on the erect film: perforation."
     ]
+   },
+   {
+    "condition": "influenza",
+    "probability": 0.1,
+    "summaries": [
+     "Patchy shadowing in both lungs (viral)."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1116,6 +1461,35 @@
      "Displaced intracapsular fracture of the neck of femur.",
      "Intertrochanteric fracture of the femur."
     ]
+   },
+   {
+    "condition": "wrist_fracture",
+    "probability": 0.97,
+    "summaries": [
+     "Dorsally angled fracture of the distal radius (Colles' fracture).",
+     "Undisplaced buckle fracture of the distal radius."
+    ]
+   },
+   {
+    "condition": "shoulder_dislocation",
+    "probability": 0.97,
+    "summaries": [
+     "Anterior dislocation of the shoulder, no fracture."
+    ]
+   },
+   {
+    "condition": "tibial_shaft_fracture",
+    "probability": 0.99,
+    "summaries": [
+     "Displaced spiral fracture of the tibial shaft."
+    ]
+   },
+   {
+    "condition": "septic_arthritis_knee",
+    "probability": 0.2,
+    "summaries": [
+     "Joint effusion in the knee; no fracture."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1154,6 +1528,27 @@
     "probability": 0.55,
     "summaries": [
      "Early ischaemic change in the left middle cerebral artery territory. No haemorrhage."
+    ]
+   },
+   {
+    "condition": "minor_head_injury",
+    "probability": 0.01,
+    "summaries": [
+     "Small scalp swelling; no bleed or fracture."
+    ]
+   },
+   {
+    "condition": "bacterial_meningitis",
+    "probability": 0.05,
+    "summaries": [
+     "No mass; safe for lumbar puncture."
+    ]
+   },
+   {
+    "condition": "status_epilepticus",
+    "probability": 0.1,
+    "summaries": [
+     "Old scar in the right temporal lobe; no acute change."
     ]
    }
   ],
@@ -1248,6 +1643,20 @@
     "summaries": [
      "Loop of small bowel trapped in a right inguinal hernia, with poor enhancement."
     ]
+   },
+   {
+    "condition": "diverticulitis",
+    "probability": 0.92,
+    "summaries": [
+     "Thickened sigmoid colon with diverticula and fat stranding: diverticulitis, no abscess."
+    ]
+   },
+   {
+    "condition": "large_bowel_obstruction",
+    "probability": 0.95,
+    "summaries": [
+     "Tumour in the sigmoid colon with dilated bowel above it: large bowel obstruction."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1300,6 +1709,20 @@
     "probability": 0.35,
     "summaries": [
      "Dilated, strained right ventricle."
+    ]
+   },
+   {
+    "condition": "pericarditis",
+    "probability": 0.5,
+    "summaries": [
+     "Small pericardial effusion; heart pumps normally."
+    ]
+   },
+   {
+    "condition": "nstemi",
+    "probability": 0.5,
+    "summaries": [
+     "Mild regional wall motion abnormality in the lateral wall."
     ]
    }
   ],
@@ -1372,6 +1795,28 @@
     "summaries": [
      "Live pregnancy in the womb with a heartbeat; small bleed beside the sac."
     ]
+   },
+   {
+    "condition": "ovarian_torsion",
+    "probability": 0.85,
+    "summaries": [
+     "Enlarged, swollen right ovary with a 6 cm cyst and no blood flow: torsion."
+    ]
+   },
+   {
+    "condition": "pelvic_inflammatory_disease",
+    "probability": 0.2,
+    "summaries": [
+     "Thickened, fluid-filled tubes."
+    ]
+   },
+   {
+    "condition": "hyperemesis_gravidarum",
+    "probability": 0.9,
+    "summaries": [
+     "Live pregnancy in the womb, about 8 weeks.",
+     "Twin pregnancy in the womb, about 9 weeks."
+    ]
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1410,6 +1855,357 @@
     "probability": 0.5,
     "summaries": [
      "Inflamed lower gullet (oesophagitis)."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "paracetamol_level",
+  "name": "Paracetamol level",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 60,
+  "cost": 15,
+  "applies_to_sex": "any",
+  "unit": "mg/L",
+  "normal": {
+   "value_range": [
+    0,
+    5
+   ],
+   "summaries": [
+    "Paracetamol {value} mg/L (none detected)."
+   ]
+  },
+  "false_positive_rate": 0,
+  "abnormal": [
+   {
+    "condition": "paracetamol_overdose",
+    "probability": 0.92,
+    "value_range": [
+     110,
+     300
+    ],
+    "summaries": [
+     "Paracetamol {value} mg/L at 4 hours: above the treatment line."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "blood_cultures",
+  "name": "Blood cultures",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 360,
+  "cost": 25,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "No growth so far."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "Skin bacteria in one bottle only: probable contaminant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "bacterial_meningitis",
+    "probability": 0.6,
+    "summaries": [
+     "Gram-negative diplococci growing: Neisseria meningitidis."
+    ]
+   },
+   {
+    "condition": "septic_shock",
+    "probability": 0.6,
+    "summaries": [
+     "Gram-negative rods growing: E. coli."
+    ]
+   },
+   {
+    "condition": "septic_arthritis_knee",
+    "probability": 0.5,
+    "summaries": [
+     "Staphylococcus aureus growing in both bottles."
+    ]
+   },
+   {
+    "condition": "pyelonephritis",
+    "probability": 0.3,
+    "summaries": [
+     "E. coli growing, sensitive to gentamicin."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "clotting_screen",
+  "name": "Clotting screen",
+  "category": "blood",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 40,
+  "cost": 10,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "INR 1.0. Clotting normal."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "INR 1.3 (slightly raised)."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "paracetamol_overdose",
+    "probability": 0.3,
+    "summaries": [
+     "INR 1.6: early liver effect."
+    ]
+   },
+   {
+    "condition": "decompensated_cirrhosis",
+    "probability": 0.9,
+    "summaries": [
+     "INR 1.9: the liver isn't making clotting factors."
+    ]
+   },
+   {
+    "condition": "upper_gi_bleed",
+    "probability": 0.2,
+    "summaries": [
+     "INR 2.8 on warfarin."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "viral_swab",
+  "name": "Viral swab (flu and COVID-19)",
+  "category": "bedside",
+  "performed_by": "nurse",
+  "procedure_minutes": 5,
+  "turnaround_minutes": 45,
+  "cost": 30,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Influenza and COVID-19 not detected."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "summaries": [
+    "Weak positive for influenza A; repeat if in doubt."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "influenza",
+    "probability": 0.92,
+    "summaries": [
+     "Influenza A detected.",
+     "Influenza B detected."
+    ]
+   },
+   {
+    "condition": "bronchiolitis",
+    "probability": 0.1,
+    "summaries": [
+     "RSV detected."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "joint_aspiration",
+  "name": "Joint aspiration",
+  "category": "bedside",
+  "performed_by": "doctor",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 60,
+  "cost": 40,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Clear joint fluid, few white cells, no crystals."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "Slightly cloudy fluid; low white count."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "septic_arthritis_knee",
+    "probability": 0.9,
+    "summaries": [
+     "Pus from the joint, white cells 80,000, Gram-positive cocci seen."
+    ]
+   },
+   {
+    "condition": "gout",
+    "probability": 0.9,
+    "summaries": [
+     "Needle-shaped crystals under polarised light: gout."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "lumbar_puncture",
+  "name": "Lumbar puncture",
+  "category": "bedside",
+  "performed_by": "doctor",
+  "procedure_minutes": 30,
+  "turnaround_minutes": 90,
+  "cost": 60,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "Clear fluid, normal pressure, no white cells. Protein and glucose normal."
+   ]
+  },
+  "false_positive_rate": 0.02,
+  "false_positive": {
+   "summaries": [
+    "Slightly raised protein, no white cells."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "bacterial_meningitis",
+    "probability": 0.95,
+    "summaries": [
+     "Cloudy fluid, white cells 2,400 (mostly neutrophils), glucose low: bacterial meningitis."
+    ]
+   },
+   {
+    "condition": "subarachnoid_haemorrhage",
+    "probability": 0.8,
+    "summaries": [
+     "Yellow-stained fluid (xanthochromia): bleeding around the brain."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": true
+ },
+ {
+  "id": "ascitic_tap",
+  "name": "Ascitic tap",
+  "category": "bedside",
+  "performed_by": "doctor",
+  "procedure_minutes": 15,
+  "turnaround_minutes": 60,
+  "cost": 30,
+  "applies_to_sex": "any",
+  "normal": {
+   "summaries": [
+    "No fluid could be drawn."
+   ]
+  },
+  "false_positive_rate": 0,
+  "abnormal": [
+   {
+    "condition": "decompensated_cirrhosis",
+    "probability": 0.95,
+    "summaries": [
+     "Straw-coloured fluid, low protein, white cells 120: no infection."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "abdominal_xray",
+  "name": "Abdominal X-ray",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 10,
+  "turnaround_minutes": 30,
+  "cost": 35,
+  "applies_to_sex": "any",
+  "room": "x_ray",
+  "normal": {
+   "summaries": [
+    "Normal bowel gas pattern."
+   ]
+  },
+  "false_positive_rate": 0.04,
+  "false_positive": {
+   "summaries": [
+    "A few mildly dilated loops; probably not significant."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "large_bowel_obstruction",
+    "probability": 0.9,
+    "summaries": [
+     "Dilated large bowel down to the sigmoid colon: large bowel obstruction."
+    ]
+   },
+   {
+    "condition": "small_bowel_obstruction",
+    "probability": 0.75,
+    "summaries": [
+     "Dilated central loops of small bowel: small bowel obstruction."
+    ]
+   }
+  ],
+  "escalate_to_red_if_abnormal": false
+ },
+ {
+  "id": "flexible_sigmoidoscopy",
+  "name": "Flexible sigmoidoscopy",
+  "category": "imaging",
+  "performed_by": "nurse",
+  "procedure_minutes": 20,
+  "turnaround_minutes": 15,
+  "cost": 350,
+  "applies_to_sex": "any",
+  "room": "endoscopy",
+  "normal": {
+   "summaries": [
+    "Normal lining of the lower bowel."
+   ]
+  },
+  "false_positive_rate": 0.03,
+  "false_positive": {
+   "summaries": [
+    "A few small piles; otherwise normal."
+   ]
+  },
+  "abnormal": [
+   {
+    "condition": "ulcerative_colitis_flare",
+    "probability": 0.95,
+    "summaries": [
+     "Red, ulcerated, bleeding lining from the rectum upwards: severe ulcerative colitis."
+    ]
+   },
+   {
+    "condition": "diverticulitis",
+    "probability": 0.3,
+    "summaries": [
+     "Many diverticula in the sigmoid colon with some redness."
     ]
    }
   ],

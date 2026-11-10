@@ -63,6 +63,8 @@ public partial class SmokeTest : Node
         StatsWeek,
         Ward,
         WardBed,
+        CrashCall,
+        CrashPanelOpen,
         Transport,
         Imaging,
         Theatre,
@@ -75,6 +77,8 @@ public partial class SmokeTest : Node
         Vending,
         Toilets,
         ToiletsRotated,
+        Pharmacy,
+        MedicineDelivery,
         CriticalCare,
         UpperFloor,
         UpperFloorWalk,
@@ -417,6 +421,31 @@ public partial class SmokeTest : Node
             case Stage.WardBed when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("07b_ward_bed");
                 hospital.Hud.HideRightPanels();
+                StartCrashCall(hospital);
+                _frame = 0;
+                _stage = Stage.CrashCall;
+                break;
+
+            case Stage.CrashCall when scene is HospitalScene hospital && _frame == 5:
+                if (hospital.Session.Simulation.Arrests.FirstOrDefault() is { } shown && hospital.Session.Simulation.FindPatient(shown.PatientId) is { } arrested)
+                {
+                    hospital.Camera.SnapTo(IsoDraw.ToScreen(arrested.X, arrested.Y), 2.2f);
+                }
+
+                break;
+
+            case Stage.CrashCall when scene is HospitalScene hospital && _frame >= 10:
+                Check(hospital.Hud.Crash.Visible, "The crash call banner did not show.");
+                Screenshot("07c_crash_call");
+                hospital.Hud.Crash.Expanded = true;
+                _frame = 0;
+                _stage = Stage.CrashPanelOpen;
+                break;
+
+            case Stage.CrashPanelOpen when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07d_crash_team");
+                hospital.Hud.Crash.Expanded = false;
+                FinishCrashCall(hospital);
                 BuildImagingAndSendForScan(hospital);
                 _frame = 0;
                 _stage = Stage.Transport;
@@ -515,6 +544,20 @@ public partial class SmokeTest : Node
             case Stage.ToiletsRotated when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09j_toilets_rotated");
                 hospital.RotateView(2);
+                BuildPharmacy(hospital);
+                _frame = 0;
+                _stage = Stage.Pharmacy;
+                break;
+
+            case Stage.Pharmacy when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09m_pharmacy_collection");
+                FollowMedicineDelivery(hospital);
+                _frame = 0;
+                _stage = Stage.MedicineDelivery;
+                break;
+
+            case Stage.MedicineDelivery when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09n_porter_with_medicines");
                 BuildIntensiveCare(hospital);
                 _frame = 0;
                 _stage = Stage.CriticalCare;
@@ -982,6 +1025,90 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>
+    /// A pharmacy off a corridor near the west wing. Walk-in patients with cellulitis are sent home
+    /// with antibiotics, so they queue at the pharmacy on the way out; the clock runs until one is at the counter.
+    /// </summary>
+    private static void BuildPharmacy(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        sim.AdjustBalance(500_000);
+        // The first free 10 x 8 spot off a corridor, nearest the west wing.
+        var spot = Enumerable.Range(-60, 120).SelectMany(dy => Enumerable.Range(-45, 110).Select(dx => new Simulation.World.GridRect(b.X + dx, b.Y + dy, 10, 8)))
+            .OrderBy(r => Math.Abs(r.X - (b.X - 15)) + Math.Abs(r.Y - (b.Y + 5)))
+            .FirstOrDefault(r => sim.CheckRoom(sim.AutoPlan("pharmacy", r)).CanBuild);
+        Check(spot.Width > 0, "Found nowhere to build a pharmacy.");
+        var built = sim.BuildRoom(sim.AutoPlan("pharmacy", spot));
+        Check(built.CanBuild, "Pharmacy refused: " + string.Join("; ", built.Problems));
+        var pharmacy = sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Pharmacy).Single();
+        Check(pharmacy.QueueTiles.Count > 0, "The pharmacy has nowhere to queue.");
+        sim.HireStaff(Simulation.Staff.StaffRole.Pharmacist, pharmacy.Id, skill: 0.7);
+        Check(sim.HasPharmacy, "The pharmacy should be open once a pharmacist is hired.");
+
+        for (var i = 0; i < 10; i++)
+        {
+            sim.SpawnPatient(ArrivalMethod.WalkIn, "cellulitis");
+        }
+
+        var clock = hospital.Session.Clock;
+        var limit = clock.Now.AddHours(16);
+        bool Busy() => sim.PharmacyTrips.Any(t => t.Stage == Simulation.Simulation.PharmacyTripStage.BeingServed)
+                       && sim.PharmacyTrips.Any(t => t.Stage == Simulation.Simulation.PharmacyTripStage.Queueing);
+        while (clock.Now < limit && !Busy())
+        {
+            clock.Step();
+        }
+
+        if (!Busy())
+        {
+            // Nobody arrived together: settle for someone at the counter.
+            limit = clock.Now.AddHours(8);
+            while (clock.Now < limit && !sim.PharmacyTrips.Any(t => t.Stage == Simulation.Simulation.PharmacyTripStage.BeingServed))
+            {
+                clock.Step();
+            }
+        }
+
+        GD.Print($"[smoke] Pharmacy: {sim.PharmacyTrips.Count} people collecting prescriptions at {clock.Now:HH:mm}.");
+        Check(sim.PharmacyTrips.Count > 0, "Nobody came to collect a prescription.");
+        clock.SetSpeed(SimulationSpeed.Paused);
+        hospital.SetMode(GameMode.Play);
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(pharmacy.Rect.X + 5, pharmacy.Rect.Y + 5), 1.6f);
+    }
+
+    /// <summary>Runs the clock until a porter is carrying a ward patient's medicines, and looks at them.</summary>
+    private static void FollowMedicineDelivery(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var clock = hospital.Session.Clock;
+        var limit = clock.Now.AddHours(48);
+        Simulation.Staff.StaffMember? carrier = null;
+        while (clock.Now < limit && (carrier = sim.Staff.FirstOrDefault(sim.IsCarryingMedicines)) is null)
+        {
+            clock.Step();
+        }
+
+        GD.Print(carrier is null
+            ? "[smoke] No ward medicines were carried in 48 hours."
+            : $"[smoke] {carrier.Name} ({carrier.Role}) is carrying medicines to the ward at {clock.Now:HH:mm}.");
+        if (carrier is not null)
+        {
+            // Let them get out into the corridor with the bag.
+            var (fromX, fromY) = (carrier.X, carrier.Y);
+            var until = clock.Now.AddMinutes(3);
+            while (clock.Now < until && sim.IsCarryingMedicines(carrier) && Math.Abs(carrier.X - fromX) + Math.Abs(carrier.Y - fromY) < 8)
+            {
+                clock.Step();
+            }
+
+            hospital.Camera.SnapTo(IsoDraw.ToScreen(carrier.X, carrier.Y), 2.6f);
+        }
+
+        clock.SetSpeed(SimulationSpeed.Paused);
+    }
+
+    /// <summary>
     /// A new wing south of the ward, reached by corridors beside and below it, with a cafeteria and a vending point. A crowd of
     /// walk-in patients is brought in and the clock run until some of them are out getting food and drink.
     /// </summary>
@@ -1425,6 +1552,44 @@ public partial class SmokeTest : Node
             .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.World.HitTest(b.At) is null);
         hospital.ClickAt(bed.At);
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.AsBed, "Clicking an empty bed in play mode did not open it.");
+    }
+
+    /// <summary>A patient on the ward arrests: runs the clock until CPR is going and the resus trolley is at the bed.</summary>
+    private static void StartCrashCall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var patient = sim.Patients.First(p => p.Stage == Simulation.Patients.PatientStage.OnWard && p.IsAlive);
+        var arrest = sim.StartArrest(patient, "smoke test");
+        var clock = hospital.Session.Clock;
+        for (var i = 0; i < 20 * 60 && arrest.IsActive && (arrest.TrolleyArrivedAt is null || arrest.CprStartedAt is null); i++)
+        {
+            clock.Step();
+        }
+
+        // Hold the scene still for the screenshots (compressions still animate in real time).
+        clock.SetSpeed(SimulationSpeed.Paused);
+        Check(arrest.CrashCalled, "No crash call was put out.");
+        Check(arrest.CprStartedAt is not null || !arrest.IsActive, "Nobody started CPR.");
+        Check(sim.ResusTrolleys.Count > 0, "The ward has no resus trolley.");
+        var ward = sim.Wards.Single();
+        hospital.ClearSelectionForTest();
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(patient.X, patient.Y), 2.0f);
+        GD.Print($"[smoke] Crash call: CPR at {arrest.CprStartedAt}, trolley at {arrest.TrolleyArrivedAt}, team {arrest.Team.Count}, still going {arrest.IsActive} on {ward.Name}.");
+    }
+
+    /// <summary>Runs the clock until the arrest is over and the team have stood down.</summary>
+    private static void FinishCrashCall(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var clock = hospital.Session.Clock;
+        clock.SetSpeed(SimulationSpeed.VeryFast);
+        for (var i = 0; i < 60 * 60 && sim.Arrests.Any(a => a.IsActive); i++)
+        {
+            clock.Step();
+        }
+
+        Check(!sim.Arrests.Any(a => a.IsActive), "The arrest did not end within an hour.");
+        GD.Print($"[smoke] Crash call over: {sim.Arrests.Last().Outcome}; arrests {sim.Stats.CardiacArrests}, ROSC {sim.Stats.ArrestsRosc}.");
     }
 
     /// <summary>The build bar fits on screen and every room can be reached from it.</summary>

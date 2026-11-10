@@ -104,8 +104,8 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
 
     private ConditionDefinition PickCondition(ArrivalMethod? method)
     {
-        // Women in labour go to the maternity unit, not A&E.
-        var conditions = database.Conditions.Values.Where(c => !c.IsMaternity).OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+        // Women in labour go to the maternity unit, and planned patients are booked in: neither comes to A&E.
+        var conditions = database.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
         return method switch
         {
             ArrivalMethod.Ambulance => random.PickWeighted(conditions, c => c.Prevalence * c.AmbulanceProbability),

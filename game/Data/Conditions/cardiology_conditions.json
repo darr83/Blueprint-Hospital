@@ -206,5 +206,336 @@
     "recovery_per_hour": 0.4,
     "disposition": "discharge",
     "disposition_note": "Discharged with simple pain relief and safety-netting advice."
+  },
+  {
+    "id": "nstemi",
+    "name": "NSTEMI (heart attack)",
+    "department": "cardiology",
+    "description": "A heart attack where a coronary artery is narrowed but not fully blocked. The ECG may not show it; the troponin does. An angiogram and stent follow.",
+    "prevalence": 2.5,
+    "age_range": [
+      40,
+      95
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.55,
+    "crew_assessment": "chest pain, query heart attack",
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "radiating_pain",
+        "probability": 0.5
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.5
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        12
+      ],
+      "systolic_bp": [
+        142,
+        18
+      ],
+      "diastolic_bp": [
+        84,
+        10
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -40,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ecg",
+      "troponin"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "aspirin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "fondaparinux",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "clopidogrel",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "glyceryl_trinitrate",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.08,
+    "disposition": "surgery",
+    "disposition_note": "Cardiology agree: NSTEMI for coronary angiogram and stent.",
+    "operation": {
+      "name": "Coronary angiogram and stent",
+      "minutes": 60,
+      "room": "cath_lab"
+    },
+    "length_of_stay_hours": [
+      48,
+      96
+    ]
+  },
+  {
+    "id": "complete_heart_block",
+    "name": "Complete heart block",
+    "department": "cardiology",
+    "description": "The heart's electrical signal can't get from the top chambers to the bottom, so the pulse is very slow. Needs a pacemaker.",
+    "prevalence": 1,
+    "age_range": [
+      60,
+      95
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0.7,
+    "crew_assessment": "slow heart rate, collapse",
+    "presenting_complaint": "slow_pulse",
+    "symptoms": [
+      {
+        "symptom": "slow_pulse",
+        "probability": 1.0
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        36,
+        5
+      ],
+      "systolic_bp": [
+        102,
+        16
+      ],
+      "diastolic_bp": [
+        60,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.6,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": -8,
+      "systolic_bp": -40,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -5,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ecg",
+      "urea_electrolytes",
+      "troponin"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "atropine",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Cardiac monitoring and pacing pads",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.05,
+    "disposition": "surgery",
+    "disposition_note": "Cardiology agree: complete heart block needing a permanent pacemaker.",
+    "operation": {
+      "name": "Pacemaker insertion",
+      "minutes": 60,
+      "room": "cath_lab"
+    },
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
+  },
+  {
+    "id": "pericarditis",
+    "name": "Pericarditis",
+    "department": "cardiology",
+    "description": "Inflammation of the sac around the heart, often after a virus. Sharp chest pain that is better sitting forwards.",
+    "prevalence": 1.5,
+    "age_range": [
+      16,
+      60
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.2,
+    "crew_assessment": "chest pain, young adult",
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "pleuritic_chest_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.4
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        10
+      ],
+      "systolic_bp": [
+        124,
+        12
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.6,
+        0.4
+      ],
+      "pain_score": [
+        4,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.12,
+      0.25
+    ],
+    "deterioration_per_hour": 0.005,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "troponin",
+      "c_reactive_protein",
+      "echocardiogram"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ibuprofen",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "colchicine",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "omeprazole",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Pericarditis with a normal echo. Home with ibuprofen, colchicine and cardiology clinic follow-up."
   }
 ]
