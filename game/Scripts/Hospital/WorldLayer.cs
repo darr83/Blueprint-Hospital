@@ -471,7 +471,7 @@ public partial class WorldLayer : Node2D
                         AddBed(space.PatientSpot, false, () => space.OccupantId, blanket: Looks.MaternityBlanket);
                         break;
                     case FurnitureStyle.Bed when space.IsServiceRoom:
-                        AddTable(space, colour);
+                        AddTable(space, def.Id, colour);
                         break;
                     case FurnitureStyle.Bed when space.IsWard:
                         if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
@@ -496,7 +496,7 @@ public partial class WorldLayer : Node2D
                         CafeArt.Add(def.Id, space, item, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, (anchor, draw) => AddProp(anchor, draw));
                         break;
                     default:
-                        Block(item.ItemId, item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour);
+                        Block(item.ItemId, item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, FurnitureArt.FrontOf(space, item));
                         break;
                 }
             }
@@ -543,7 +543,7 @@ public partial class WorldLayer : Node2D
     }
 
     /// <summary>An imaging or operating table, with the patient lying on it during a scan or an operation.</summary>
-    private void AddTable(CareSpace space, Color colour)
+    private void AddTable(CareSpace space, string itemId, Color colour)
     {
         var spot = space.PatientSpot;
         var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
@@ -557,7 +557,7 @@ public partial class WorldLayer : Node2D
                 c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
             }
 
-            var lift = Figures.Table(c, cx, cy, colour);
+            var lift = TableArt.Draw(c, itemId, cx, cy, colour);
             if (patient is not null)
             {
                 Figures.Lying(c, cx, cy, Looks.Patient(patient), cover, lift, false, onChest: OnChest(patient));
@@ -705,7 +705,7 @@ public partial class WorldLayer : Node2D
     }
 
     /// <summary>A piece of furniture, split into one-tile slices along its length so each slice sorts correctly.</summary>
-    private void Block(string itemId, double x, double y, double w, double l, float height, Color colour)
+    private void Block(string itemId, double x, double y, double w, double l, float height, Color colour, Sides front = Sides.None)
     {
         var alongX = w >= l;
         var length = alongX ? w : l;
@@ -725,7 +725,7 @@ public partial class WorldLayer : Node2D
                 joined |= alongX ? Sides.East : Sides.South;
             }
 
-            AddProp(IsoDraw.ToScreen(sx + (sw / 2), sy + (sl / 2)), c => FurnitureArt.Slice(c, itemId, sx, sy, sw, sl, (x, y, w, l), height, colour, joined));
+            AddProp(IsoDraw.ToScreen(sx + (sw / 2), sy + (sl / 2)), c => FurnitureArt.Slice(c, itemId, sx, sy, sw, sl, (x, y, w, l), height, colour, joined, front));
         }
     }
 

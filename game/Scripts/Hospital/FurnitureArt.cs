@@ -10,7 +10,7 @@ namespace BlueprintHospital.Hospital;
 /// Long items are drawn as one-tile slices (so each slice sorts on its own); the slices share
 /// faces with their neighbours, which are left out so the item reads as one piece.
 /// </summary>
-public static class FurnitureArt
+public static partial class FurnitureArt
 {
     private enum Kind
     {
@@ -52,7 +52,7 @@ public static class FurnitureArt
     /// Draws one slice (sx, sy, sw, sl) of an item whose whole footprint is <paramref name="whole"/>.
     /// <paramref name="joined"/> lists the slice's sides that touch the next slice.
     /// </summary>
-    public static void Slice(CanvasItem c, string id, double sx, double sy, double sw, double sl, (double X, double Y, double W, double L) whole, float height, Color colour, Sides joined)
+    public static void Slice(CanvasItem c, string id, double sx, double sy, double sw, double sl, (double X, double Y, double W, double L) whole, float height, Color colour, Sides joined, Sides front = Sides.None)
     {
         if (EquipmentArt.Draws(id) || MaternityArt.Draws(id))
         {
@@ -70,6 +70,11 @@ public static class FurnitureArt
                 }
             }
 
+            return;
+        }
+
+        if (Fitted(c, id, sx, sy, sw, sl, whole, height, colour, joined, front))
+        {
             return;
         }
 

@@ -23,13 +23,14 @@ public static class Decorations
         OxygenPanel, CrashClock, BedBoard, Clock, Lightbox, Noticeboard, EcgPoster, BrainPoster, GutPoster,
         PastelPrint, BpCuff, DiabetesPoster, ClinicSign, PharmacySign, WarningLight, ApronRack, RadiationSign,
         ControlWindow, HeartPoster, Mirror, WardBoard, BonePoster, FireExtinguisher,
+        Welcome, EmergencyDirections, ToiletSign, AccessibleSign, FireExit, StaffOnly, NoSmoking, MenuBoard, VisitingTimes, Defibrillator, OutpatientsWelcome,
     }
 
     private enum Floor
     {
         Plant, WaterCooler, LeafletRack, Scales, SlingBox, AirwayBag, Bookshelf, Fridge, Skeleton, HeartModel,
         BrainModel, GutModel, PelvisModel, PrivacyScreen, Kiosk, FloorLamp, MannequinHead, ScopeCabinet,
-        BlanketStack, ScrubSink, PlasterShelf, Bucket, GymBall, Dumbbells, OxygenSpare,
+        BlanketStack, ScrubSink, PlasterShelf, Bucket, GymBall, Dumbbells, OxygenSpare, Bins,
     }
 
     private enum OnTop
@@ -44,7 +45,14 @@ public static class Decorations
 
     private static Recipe? RecipeFor(CareSpace space) => space.Kind switch
     {
-        CareSpaceKind.Waiting => new(new[] { Wall.Tv, Wall.HandWashPoster }, new[] { Floor.WaterCooler, Floor.LeafletRack, Floor.Plant, Floor.Plant }),
+        CareSpaceKind.Waiting => new(new[] { Wall.Welcome, Wall.Tv, Wall.EmergencyDirections, Wall.Defibrillator, Wall.HandWashPoster, Wall.NoSmoking }, new[] { Floor.WaterCooler, Floor.LeafletRack, Floor.Plant, Floor.Bins, Floor.Plant }),
+        CareSpaceKind.Cafeteria => new(new[] { Wall.MenuBoard, Wall.Clock, Wall.NoSmoking, Wall.Defibrillator }, new[] { Floor.Bins, Floor.Plant, Floor.Plant }),
+        CareSpaceKind.VendingPoint => new(new[] { Wall.HandWashPoster, Wall.NoSmoking }, new[] { Floor.Bins }),
+        CareSpaceKind.Toilets => new(new[] { Wall.ToiletSign, Wall.HandWashPoster }, NoFloors),
+        CareSpaceKind.AccessibleToilet => new(new[] { Wall.AccessibleSign }, NoFloors),
+        CareSpaceKind.StaffToilet => new(new[] { Wall.StaffOnly }, NoFloors),
+        CareSpaceKind.OutreachOffice => new(new[] { Wall.Noticeboard, Wall.Clock }, new[] { Floor.Bookshelf },
+            new[] { ("office_desk", new[] { OnTop.Computer, OnTop.Phone }) }),
         CareSpaceKind.Triage => new(new[] { Wall.HeightChart, Wall.PainPoster }, new[] { Floor.Scales }),
         CareSpaceKind.Minors => new(new[] { Wall.EyeChart, Wall.GelDispenser }, new[] { Floor.SlingBox }),
         CareSpaceKind.Majors => new(new[] { Wall.OxygenPanel, Wall.GloveDispenser, Wall.SharpsBin }, NoFloors),
@@ -53,7 +61,7 @@ public static class Decorations
             new[] { ("station_counter", new[] { OnTop.Computer, OnTop.Phone, OnTop.Folders }), ("office_desk", new[] { OnTop.Computer, OnTop.Folders }) }),
         CareSpaceKind.DoctorsOffice => new(new[] { Wall.Lightbox, Wall.Clock }, new[] { Floor.Bookshelf },
             new[] { ("office_desk", new[] { OnTop.Computer, OnTop.Computer, OnTop.Folders }) }),
-        CareSpaceKind.StaffRoom => new(new[] { Wall.Noticeboard, Wall.Clock }, new[] { Floor.Fridge, Floor.Plant },
+        CareSpaceKind.StaffRoom => new(new[] { Wall.Noticeboard, Wall.Clock, Wall.StaffOnly }, new[] { Floor.Fridge, Floor.Plant, Floor.Bins },
             new[] { ("kitchenette", new[] { OnTop.KettleMugs }) }),
         CareSpaceKind.Clinic => space.TemplateId switch
         {
@@ -67,9 +75,9 @@ public static class Decorations
             "antenatal_scan_room" => new(new[] { Wall.PastelPrint }, new[] { Floor.FloorLamp }, new[] { ("ultrasound_machine", new[] { OnTop.GelWarmer }) }),
             _ => new(new[] { Wall.HandWashPoster }, NoFloors, ClinicDesk()),
         },
-        CareSpaceKind.OutpatientReception => new(new[] { Wall.ClinicSign, Wall.HandWashPoster }, new[] { Floor.Kiosk, Floor.Plant },
+        CareSpaceKind.OutpatientReception => new(new[] { Wall.OutpatientsWelcome, Wall.ClinicSign, Wall.HandWashPoster, Wall.Defibrillator }, new[] { Floor.Kiosk, Floor.Plant, Floor.Bins },
             new[] { ("reception_desk", new[] { OnTop.Computer, OnTop.Phone }) }),
-        CareSpaceKind.XRay => new(new[] { Wall.WarningLight, Wall.ApronRack }, NoFloors),
+        CareSpaceKind.XRay => new(new[] { Wall.WarningLight, Wall.ApronRack, Wall.RadiationSign, Wall.Lightbox }, NoFloors),
         CareSpaceKind.CT => new(new[] { Wall.RadiationSign, Wall.ControlWindow }, NoFloors),
         CareSpaceKind.Ultrasound => new(new[] { Wall.PastelPrint }, new[] { Floor.FloorLamp }, new[] { ("ultrasound_machine", new[] { OnTop.GelWarmer }) }),
         CareSpaceKind.Echo => new(new[] { Wall.HeartPoster }, new[] { Floor.FloorLamp }, new[] { ("ultrasound_machine", new[] { OnTop.GelWarmer }) }),
@@ -77,12 +85,12 @@ public static class Decorations
         CareSpaceKind.CathLab => new(new[] { Wall.ApronRack, Wall.WarningLight }, NoFloors),
         CareSpaceKind.Endoscopy => new(new[] { Wall.GutPoster }, new[] { Floor.ScopeCabinet }),
         CareSpaceKind.EndoscopyRecovery => new(new[] { Wall.Clock }, new[] { Floor.BlanketStack }),
-        CareSpaceKind.Theatre => new(new[] { Wall.Clock }, new[] { Floor.ScrubSink }),
+        CareSpaceKind.Theatre => new(new[] { Wall.Clock, Wall.StaffOnly, Wall.Lightbox, Wall.GloveDispenser }, new[] { Floor.ScrubSink }),
         CareSpaceKind.DeliveryRoom => new(new[] { Wall.Clock, Wall.PastelPrint, Wall.GelDispenser, Wall.OxygenPanel }, new[] { Floor.BlanketStack, Floor.Plant }),
         CareSpaceKind.PlasterRoom => new(new[] { Wall.BonePoster }, new[] { Floor.PlasterShelf, Floor.Bucket }),
         CareSpaceKind.PhysioGym => new(new[] { Wall.Mirror, Wall.Mirror }, new[] { Floor.GymBall, Floor.Dumbbells, Floor.GymBall }),
-        CareSpaceKind.Pharmacy => new(new[] { Wall.PharmacySign }, NoFloors, new[] { ("pharmacy_counter", new[] { OnTop.PillTray, OnTop.Computer }) }),
-        CareSpaceKind.Ward => new(new[] { Wall.WardBoard, Wall.GelDispenser, WardPoster(space) }, new[] { Floor.Plant, WardExtra(space) }),
+        CareSpaceKind.Pharmacy => new(new[] { Wall.PharmacySign, Wall.StaffOnly, Wall.Clock }, NoFloors, new[] { ("pharmacy_counter", new[] { OnTop.PillTray, OnTop.Computer }) }),
+        CareSpaceKind.Ward => new(new[] { Wall.WardBoard, Wall.GelDispenser, Wall.VisitingTimes, WardPoster(space), Wall.Clock }, new[] { Floor.Plant, WardExtra(space) }),
         _ => null,
     };
 
@@ -260,7 +268,7 @@ public static class Decorations
             gx += tile.X == r.X ? 0.15 : tile.X == r.Right - 1 ? -0.15 : 0;
             gy += tile.Y == r.Y ? 0.15 : tile.Y == r.Bottom - 1 ? -0.15 : 0;
             var kind = floor;
-            var scale = kind is Floor.Plant or Floor.Skeleton or Floor.PrivacyScreen or Floor.FloorLamp or Floor.GymBall or Floor.Bucket or Floor.OxygenSpare ? FloorScale : 1.15f;
+            var scale = kind is Floor.Bins or Floor.Plant or Floor.Skeleton or Floor.PrivacyScreen or Floor.FloorLamp or Floor.GymBall or Floor.Bucket or Floor.OxygenSpare ? FloorScale : 1.15f;
             props.Add((IsoDraw.ToScreen(gx, gy), c => Scaled(c, IsoDraw.ToScreen(gx, gy), scale, () => DrawFloor(c, kind, gx, gy))));
         }
     }
@@ -401,9 +409,13 @@ public static class Decorations
 
     private static double WallWidth(Wall kind) => kind switch
     {
-        Wall.Clock or Wall.CrashClock or Wall.GelDispenser or Wall.SharpsBin or Wall.WarningLight or Wall.FireExtinguisher or Wall.BpCuff => 1.0,
+        Wall.Clock or Wall.CrashClock or Wall.GelDispenser or Wall.SharpsBin or Wall.FireExtinguisher or Wall.BpCuff => 1.0,
         Wall.Tv or Wall.BedBoard or Wall.WardBoard or Wall.Noticeboard or Wall.ControlWindow or Wall.Mirror => 3.2,
-        Wall.OxygenPanel or Wall.ApronRack or Wall.GloveDispenser or Wall.ClinicSign or Wall.PharmacySign => 2.0,
+        Wall.Defibrillator => 0.9,
+        Wall.ToiletSign or Wall.AccessibleSign => 1.6,
+        Wall.Welcome or Wall.OutpatientsWelcome => 3.4,
+        Wall.PharmacySign or Wall.EmergencyDirections or Wall.ClinicSign or Wall.VisitingTimes or Wall.HandWashPoster => 2.4,
+        Wall.OxygenPanel or Wall.ApronRack or Wall.GloveDispenser or Wall.FireExit or Wall.StaffOnly or Wall.NoSmoking or Wall.MenuBoard or Wall.RadiationSign or Wall.WarningLight => 2.0,
         _ => 1.7,
     };
 
@@ -418,7 +430,7 @@ public static class Decorations
                     continue;
                 }
 
-                var height = (float)(def.HeightM * IsoDraw.PixelsPerMetre);
+                var height = FurnitureArt.TopHeight(item.ItemId, (float)(def.HeightM * IsoDraw.PixelsPerMetre));
                 var alongX = item.Width >= item.Length;
                 var length = alongX ? item.Width : item.Length;
                 var anchor = new[]
@@ -469,6 +481,18 @@ public static class Decorations
                         if (Facing(rect, wallSide))
                         {
                             DrawWall(c, Wall.FireExtinguisher, (u, v) => WallPoint(rect, wallSide, 0.15, 0.85, u, v));
+                        }
+                    }));
+                }
+                else if (count % 9 == 5)
+                {
+                    var rect = new GridRect(inside.X, inside.Y, 1, 1);
+                    var wallSide = side;
+                    props.Add((new[] { InnerFace(rect, wallSide, -0.4, 0), InnerFace(rect, wallSide, 1.4, 0) }.MaxBy(p => p.Y) + new Vector2(0, 0.6f), c =>
+                    {
+                        if (Facing(rect, wallSide))
+                        {
+                            DrawWall(c, Wall.FireExit, (u, v) => WallPoint(rect, wallSide, -0.4, 1.4, u, v));
                         }
                     }));
                 }
@@ -541,6 +565,17 @@ public static class Decorations
         picture((u, v) => f(0.1f + (u * 0.8f), v0 + 0.04f + (v * (v1 - v0) * 0.72f)));
     }
 
+    /// <summary>Lays a flat sign on the wall between two heights (0 to 1 up the wall): <paramref name="draw"/> gets its width and height in pixels.</summary>
+    private static void Sign(CanvasItem c, Frame f, float v0, float v1, Action<float, float> draw)
+    {
+        var (a, b) = (f(0, v1), f(1, v1));
+        Flat.On(c, a, b - a, () => draw((b - a).Length(), (v1 - v0) * WorldLayer.WallHeight));
+    }
+
+    private static void PicturePoster(CanvasItem c, Frame f, string colour, string title, Pictogram icon, string ink) =>
+        Sign(c, (u, v) => f(0.08f + (u * 0.84f), v), 0.3f, 0.95f, (w, h) => Signs.Poster(c, w, h, new Color(colour), title,
+            r => Signs.Draw(c, icon, r.GetCenter().X, r.GetCenter().Y, Math.Min(r.Size.X, r.Size.Y) * 0.92f, new Color(ink), Colors.White)));
+
     private static void DrawWall(CanvasItem c, Wall kind, Frame f)
     {
         var red = new Color("#E53935");
@@ -559,15 +594,51 @@ public static class Decorations
                 break;
 
             case Wall.HandWashPoster:
-                Poster(c, f, blue, p =>
-                {
-                    c.DrawCircle(p(0.38f, 0.45f), 4f, new Color("#F1C7A5"));
-                    c.DrawCircle(p(0.62f, 0.45f), 4f, new Color("#F1C7A5"));
-                    foreach (var (u, v) in new[] { (0.3f, 0.8f), (0.5f, 0.9f), (0.7f, 0.78f) })
-                    {
-                        c.DrawCircle(p(u, v), 1.3f, new Color("#7FC6F2"));
-                    }
-                });
+                Sign(c, f, 0.52f, 0.84f, (w, h) => Signs.Notice(c, w, h, new Color("#00897B"), Pictogram.Drop, "Clean your hands", "Use the gel as you come in"));
+                break;
+
+            case Wall.Welcome:
+                Sign(c, f, 0.56f, 0.88f, (w, h) => Signs.Banner(c, w, h, new Color("#005EB8"), Pictogram.Info, "Emergency Department", "Please book in at reception"));
+                break;
+
+            case Wall.OutpatientsWelcome:
+                Sign(c, f, 0.56f, 0.88f, (w, h) => Signs.Banner(c, w, h, new Color("#005EB8"), Pictogram.Info, "Outpatients", "Please book in at reception"));
+                break;
+
+            case Wall.EmergencyDirections:
+                Sign(c, f, 0.3f, 0.92f, (w, h) => Signs.Directions(c, w, h, "Emergency", ("Triage", 3, Pictogram.Clipboard), ("Toilets", 0, Pictogram.Man), ("Cafe", 2, Pictogram.Cutlery)));
+                break;
+
+            case Wall.ToiletSign:
+                Sign(c, f, 0.45f, 0.9f, (w, h) => Signs.Toilets(c, w, h, Pictogram.Man, Pictogram.Woman));
+                break;
+
+            case Wall.AccessibleSign:
+                Sign(c, f, 0.45f, 0.9f, (w, h) => Signs.Toilets(c, w, h, Pictogram.Wheelchair, Pictogram.Baby));
+                break;
+
+            case Wall.FireExit:
+                Sign(c, f, 0.7f, 0.92f, (w, h) => Signs.FireExit(c, w, h, 0));
+                break;
+
+            case Wall.StaffOnly:
+                Sign(c, f, 0.6f, 0.83f, (w, h) => Signs.Prohibition(c, w, h, "STAFF ONLY", false));
+                break;
+
+            case Wall.NoSmoking:
+                Sign(c, f, 0.6f, 0.83f, (w, h) => Signs.Prohibition(c, w, h, "No smoking", true));
+                break;
+
+            case Wall.MenuBoard:
+                Sign(c, f, 0.28f, 0.94f, (w, h) => Signs.Menu(c, w, h));
+                break;
+
+            case Wall.VisitingTimes:
+                Sign(c, f, 0.52f, 0.84f, (w, h) => Signs.Notice(c, w, h, new Color("#1E88E5"), Pictogram.Chair, "Visiting times", "2 pm to 8 pm every day"));
+                break;
+
+            case Wall.Defibrillator:
+                Sign(c, f, 0.38f, 0.8f, (w, h) => Signs.Defibrillator(c, w, h));
                 break;
 
             case Wall.HeightChart:
@@ -705,37 +776,23 @@ public static class Decorations
                 break;
 
             case Wall.EcgPoster:
-                Poster(c, f, new Color("#AD1457"), p =>
-                {
-                    var trace = new[] { (0f, 0.5f), (0.3f, 0.5f), (0.38f, 0.42f), (0.45f, 0.95f), (0.52f, 0.2f), (0.58f, 0.5f), (0.75f, 0.5f), (0.82f, 0.62f), (0.9f, 0.5f), (1f, 0.5f) };
-                    c.DrawPolyline(trace.Select(t => p(t.Item1, t.Item2)).ToArray(), new Color("#E53935"), 1.2f, true);
-                });
+                PicturePoster(c, f, "#AD1457", "HEART RHYTHM", Pictogram.Pulse, "#E53935");
                 break;
 
             case Wall.HeartPoster:
-                Poster(c, f, new Color("#AD1457"), p => Heart(c, p(0.5f, 0.45f), 6.5f));
+                PicturePoster(c, f, "#AD1457", "YOUR HEART", Pictogram.Heart, "#D32F2F");
                 break;
 
             case Wall.BrainPoster:
-                Poster(c, f, new Color("#6A1B9A"), p => Brain(c, p(0.5f, 0.5f), 6.5f));
+                PicturePoster(c, f, "#6A1B9A", "THE BRAIN", Pictogram.Brain, "#F4A6B7");
                 break;
 
             case Wall.GutPoster:
-                Poster(c, f, new Color("#455A64"), p =>
-                {
-                    c.DrawPolyline(new[] { p(0.3f, 0.95f), p(0.35f, 0.7f), p(0.7f, 0.75f), p(0.7f, 0.25f), p(0.3f, 0.25f), p(0.3f, 0.55f), p(0.55f, 0.55f), p(0.55f, 0.1f) }, new Color("#E57373"), 2f, true);
-                });
+                PicturePoster(c, f, "#455A64", "DIGESTION", Pictogram.Scope, "#E57373");
                 break;
 
             case Wall.BonePoster:
-                Poster(c, f, new Color("#8D6E63"), p =>
-                {
-                    Line(c, (u, v) => p(u, v), 0.25f, 0.2f, 0.75f, 0.8f, new Color("#ECE7DA"), 2.2f);
-                    foreach (var (u, v) in new[] { (0.2f, 0.25f), (0.3f, 0.12f), (0.7f, 0.88f), (0.8f, 0.75f) })
-                    {
-                        c.DrawCircle(p(u, v), 1.7f, new Color("#ECE7DA"));
-                    }
-                });
+                PicturePoster(c, f, "#8D6E63", "BONES", Pictogram.Bone, "#B9A98C");
                 break;
 
             case Wall.PastelPrint:
@@ -759,33 +816,29 @@ public static class Decorations
                 break;
 
             case Wall.DiabetesPoster:
-                Poster(c, f, new Color("#1E88E5"), p =>
-                {
-                    c.DrawColoredPolygon(new[] { p(0.5f, 0.95f), p(0.68f, 0.5f), p(0.6f, 0.2f), p(0.4f, 0.2f), p(0.32f, 0.5f) }, new Color("#E53935"));
-                });
+                PicturePoster(c, f, "#1E88E5", "DIABETES", Pictogram.Drop, "#E53935");
                 break;
 
             case Wall.ClinicSign:
+                Sign(c, f, 0.3f, 0.92f, (w, h) => Signs.Directions(c, w, h, "Outpatients", ("Clinics", 0, Pictogram.Clipboard), ("X-ray", 3, Pictogram.Bone), ("Pharmacy", 2, Pictogram.Pill)));
+                break;
+
             case Wall.PharmacySign:
-                Quad(c, f, 0.02f, 0.55f, 0.98f, 0.95f, kind == Wall.PharmacySign ? new Color("#2E7D32") : blue);
-                c.DrawString(ThemeDB.FallbackFont, f(0.08f, 0.62f), kind == Wall.PharmacySign ? "Collect here" : "Clinics →", HorizontalAlignment.Left, -1, 6, Colors.White);
+                Sign(c, f, 0.56f, 0.88f, (w, h) => Signs.Banner(c, w, h, new Color("#1E8E3E"), Pictogram.Cross, "PHARMACY", "Collect prescriptions here"));
                 break;
 
             case Wall.WarningLight:
-                Quad(c, f, 0.1f, 0.72f, 0.9f, 0.97f, new Color("#2B3036"));
-                Quad(c, f, 0.15f, 0.75f, 0.85f, 0.94f, new Color("#FF5A4F"));
-                c.DrawString(ThemeDB.FallbackFont, f(0.2f, 0.78f), "X-RAY", HorizontalAlignment.Left, -1, 4, Colors.White);
+                Sign(c, f, 0.66f, 0.92f, (w, h) =>
+                {
+                    Flat.Round(c, w * 0.12f, 0, w * 0.76f, h, 2f, new Color("#2B3036"));
+                    Flat.Round(c, (w * 0.12f) + 1.5f, 1.5f, (w * 0.76f) - 3, h - 3, 1.5f, new Color("#FF5A4F"));
+                    Flat.Text(c, "X-RAY ON", w / 2, (h / 2) + 0.4f, 6, Colors.White);
+                    Flat.Text(c, "Do not enter", w / 2, (h / 2) + 6f, 4, new Color(1, 1, 1, 0.9f), false);
+                });
                 break;
 
             case Wall.RadiationSign:
-                Quad(c, f, 0.2f, 0.45f, 0.8f, 0.92f, new Color("#FFD600"));
-                c.DrawCircle(f(0.5f, 0.68f), 1.4f, Colors.Black);
-                for (var i = 0; i < 3; i++)
-                {
-                    var a = (i * Mathf.Tau / 3) - (Mathf.Pi / 2);
-                    c.DrawArc(f(0.5f, 0.68f), 3.6f, a - 0.5f, a + 0.5f, 6, Colors.Black, 2.2f);
-                }
-
+                Sign(c, f, 0.56f, 0.86f, (w, h) => Signs.Warning(c, w, h, Pictogram.Radiation, "X-RAYS", "Controlled area"));
                 break;
 
             case Wall.ControlWindow:
@@ -1061,6 +1114,22 @@ public static class Decorations
                     c.DrawLine(p + new Vector2(x - 2.5f, -12), p + new Vector2(x + 2.5f, -12), new Color("#B9C3CB"), 1.2f);
                     c.DrawCircle(p + new Vector2(x - 2.5f, -12), 1.8f, new Color(colour));
                     c.DrawCircle(p + new Vector2(x + 2.5f, -12), 1.8f, new Color(colour));
+                }
+
+                break;
+
+            case Floor.Bins:
+                // A pair of pedal bins: general waste (black lid) and recycling (green lid).
+                foreach (var (dx, lid, badge) in new[] { (-0.2, "#2B3036", "#9AA6B0"), (0.2, "#2E7D32", "#FFFFFF") })
+                {
+                    var q = IsoDraw.ToScreen(gx + dx, gy - dx);
+                    Shadow(c, q, 6);
+                    c.DrawColoredPolygon(new[] { q + new Vector2(-4.5f, 0), q + new Vector2(4.5f, 0), q + new Vector2(5.2f, -13), q + new Vector2(-5.2f, -13) }, new Color("#E4E9ED"));
+                    c.DrawColoredPolygon(new[] { q + new Vector2(1.5f, 0), q + new Vector2(4.5f, 0), q + new Vector2(5.2f, -13), q + new Vector2(2f, -13) }, new Color("#CBD4DB"));
+                    c.DrawColoredPolygon(IsoDraw.FloorEllipse(q + new Vector2(0, -13.5f), 5.6f, 12), new Color(lid));
+                    c.DrawRect(new Rect2(q + new Vector2(-2.2f, -9.5f), new Vector2(4.4f, 4.4f)), new Color(lid));
+                    c.DrawCircle(q + new Vector2(0, -7.3f), 1.3f, new Color(badge));
+                    c.DrawRect(new Rect2(q + new Vector2(-2, -1.2f), new Vector2(4, 1.2f)), new Color("#55616B"));
                 }
 
                 break;
