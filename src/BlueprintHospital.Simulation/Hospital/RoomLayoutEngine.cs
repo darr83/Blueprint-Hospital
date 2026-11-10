@@ -492,7 +492,45 @@ public static class RoomLayoutEngine
         {
             plan.TryPlaceAgainstWalls(item);
         }
+
+        if (template.Kind == CareSpaceKind.Pharmacy)
+        {
+            PharmacyCounter(plan, rowB);
+        }
     }
+
+    /// <summary>
+    /// A pharmacy serves people who come to collect a prescription: they sit across the bench from the
+    /// pharmacist, and anyone else waits on the free floor just inside the door.
+    /// </summary>
+    private static void PharmacyCounter(Plan plan, int rowB)
+    {
+        var f = plan.Frame;
+        var door = plan.DoorTile;
+        var across = f.Tile(2, rowB);
+        plan.PatientSpot = plan.Seats.Contains(across) && across != plan.StaffSpot
+            ? across
+            : plan.Seats.Where(s => s != plan.StaffSpot).OrderBy(s => Math.Abs(s.X - door.X) + Math.Abs(s.Y - door.Y)).FirstOrDefault(plan.StaffSpot);
+
+        var queue = new List<GridCoord>();
+        for (var u = 1; u <= f.W - 2; u++)
+        {
+            for (var v = 1; v <= f.D - 2; v++)
+            {
+                var tile = f.Tile(u, v);
+                if (!f.Rect.IsOnEdge(tile) && !plan.Seats.Contains(tile) && tile != plan.StaffSpot && tile != plan.PatientSpot
+                    && !plan.Items.Any(i => i.Overlaps(tile.X, tile.Y, 1, 1)))
+                {
+                    queue.Add(tile);
+                }
+            }
+        }
+
+        plan.Queue = queue.OrderBy(t => Math.Abs(t.X - door.X) + Math.Abs(t.Y - door.Y)).ThenBy(t => t.X).ThenBy(t => t.Y).Take(MaxPharmacyQueue).ToList();
+    }
+
+    /// <summary>The most people who queue inside a pharmacy (any more wait at the back of the queue too).</summary>
+    public const int MaxPharmacyQueue = 4;
 
     /// <summary>The most vending machines any room gets.</summary>
     public const int MaxVendingMachines = 4;

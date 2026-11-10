@@ -199,5 +199,437 @@
       "name": "Hip hemiarthroplasty",
       "minutes": 90
     }
+  },
+  {
+    "id": "wrist_fracture",
+    "name": "Wrist fracture",
+    "department": "trauma_orthopaedics",
+    "description": "A broken wrist (distal radius) from a fall on an outstretched hand. Common in older women and in children.",
+    "prevalence": 4,
+    "age_range": [
+      6,
+      95
+    ],
+    "female_fraction": 0.65,
+    "ambulance_probability": 0.1,
+    "crew_assessment": "fall, query wrist fracture",
+    "presenting_complaint": "wrist_deformity",
+    "symptoms": [
+      {
+        "symptom": "wrist_deformity",
+        "probability": 1.0
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.95
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.8
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        86,
+        10
+      ],
+      "systolic_bp": [
+        134,
+        14
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.2
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "codeine",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "entonox",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Below-elbow plaster backslab",
+        "performed_by": "nurse",
+        "minutes": 20,
+        "essential": true,
+        "room": "plaster_room"
+      }
+    ],
+    "recovery_per_hour": 0.4,
+    "disposition": "discharge",
+    "disposition_note": "Backslab on and pain controlled. Home with a fracture clinic appointment next week."
+  },
+  {
+    "id": "shoulder_dislocation",
+    "name": "Dislocated shoulder",
+    "department": "trauma_orthopaedics",
+    "description": "The ball of the shoulder has come out of its socket, usually forwards after a fall or sports injury. Put back in under sedation.",
+    "prevalence": 2,
+    "age_range": [
+      16,
+      80
+    ],
+    "female_fraction": 0.3,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "shoulder injury, query dislocation",
+    "presenting_complaint": "shoulder_deformity",
+    "symptoms": [
+      {
+        "symptom": "shoulder_deformity",
+        "probability": 1.0
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "numbness",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        10
+      ],
+      "systolic_bp": [
+        136,
+        12
+      ],
+      "diastolic_bp": [
+        82,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.25
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": 5,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "entonox",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "midazolam",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Shoulder reduction under sedation",
+        "performed_by": "doctor",
+        "minutes": 30,
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Collar and cuff sling",
+        "performed_by": "nurse",
+        "minutes": 5,
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Shoulder back in on the check X-ray. Home in a sling with fracture clinic follow-up.",
+    "observe_hours": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "tibial_shaft_fracture",
+    "name": "Tibial shaft fracture",
+    "department": "trauma_orthopaedics",
+    "description": "A broken shin bone from a high-energy injury such as a road accident or sports tackle. Fixed with a metal nail.",
+    "prevalence": 1,
+    "age_range": [
+      16,
+      75
+    ],
+    "female_fraction": 0.3,
+    "ambulance_probability": 0.75,
+    "crew_assessment": "lower leg injury, obvious deformity",
+    "presenting_complaint": "unable_to_weight_bear",
+    "symptoms": [
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 1.0
+      },
+      {
+        "symptom": "leg_deformity",
+        "probability": 0.9
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.9
+      },
+      {
+        "symptom": "bleeding_wound",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        102,
+        12
+      ],
+      "systolic_bp": [
+        132,
+        14
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.4
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -15,
+      "respiratory_rate": 4,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "entonox",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Long leg plaster backslab",
+        "performed_by": "nurse",
+        "minutes": 25,
+        "essential": true,
+        "room": "plaster_room"
+      }
+    ],
+    "recovery_per_hour": 0.05,
+    "disposition": "surgery",
+    "disposition_note": "Orthopaedic team agree: tibial fracture needing a nail.",
+    "operation": {
+      "name": "Intramedullary nailing of the tibia",
+      "minutes": 120
+    },
+    "needs_physio": true,
+    "length_of_stay_hours": [
+      72,
+      144
+    ]
+  },
+  {
+    "id": "septic_arthritis_knee",
+    "name": "Septic arthritis of the knee",
+    "department": "trauma_orthopaedics",
+    "description": "Infection inside the knee joint. It destroys the joint within days, so it needs antibiotics and a washout in theatre.",
+    "prevalence": 0.8,
+    "age_range": [
+      20,
+      90
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "hot swollen knee, unwell",
+    "presenting_complaint": "hot_swollen_joint",
+    "symptoms": [
+      {
+        "symptom": "hot_swollen_joint",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.7
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.95
+      },
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 0.8
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        124,
+        14
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        19,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        38.4,
+        0.5
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -40,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -3,
+      "temperature": 1
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "joint_aspiration",
+      "blood_cultures",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "flucloxacillin_iv",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.1,
+    "disposition": "surgery",
+    "disposition_note": "Orthopaedic team agree: infected knee needing a washout.",
+    "operation": {
+      "name": "Arthroscopic knee washout",
+      "minutes": 60
+    },
+    "length_of_stay_hours": [
+      96,
+      192
+    ]
   }
 ]

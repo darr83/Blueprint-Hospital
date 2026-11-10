@@ -4,7 +4,8 @@
     "name": "Sweating",
     "patient_description": "I'm cold and clammy and sweating.",
     "body_system": "general",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": []
   },
   {
     "id": "nausea",
@@ -18,21 +19,24 @@
     "name": "Pain radiating to arm or jaw",
     "patient_description": "The pain is going down my arm and into my jaw.",
     "body_system": "cardiovascular",
-    "is_red_flag": true
+    "is_red_flag": true,
+    "triage_investigations": []
   },
   {
     "id": "chest_wall_tenderness",
     "name": "Chest wall tenderness",
     "patient_description": "It hurts more when I press on my chest or twist.",
     "body_system": "musculoskeletal",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": []
   },
   {
     "id": "heartburn",
     "name": "Heartburn",
     "patient_description": "I've got a burning feeling behind my breastbone after eating.",
     "body_system": "gastrointestinal",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": []
   },
   {
     "id": "loss_of_appetite",
@@ -137,7 +141,8 @@
     "name": "Black tarry stools",
     "patient_description": "My stools have gone black and sticky.",
     "body_system": "gastrointestinal",
-    "is_red_flag": true
+    "is_red_flag": true,
+    "triage_investigations": []
   },
   {
     "id": "rash",
@@ -172,7 +177,8 @@
     "name": "Swollen calf",
     "patient_description": "One calf is swollen and tight.",
     "body_system": "musculoskeletal",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": []
   },
   {
     "id": "photophobia",
@@ -186,7 +192,8 @@
     "name": "Lower abdominal pain",
     "patient_description": "I've got cramping pain low down in my tummy.",
     "body_system": "gynaecological",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": []
   },
   {
     "id": "shoulder_tip_pain",
@@ -214,14 +221,18 @@
     "name": "Unable to bear weight",
     "patient_description": "I can't put any weight on it at all.",
     "body_system": "musculoskeletal",
-    "is_red_flag": false
+    "is_red_flag": false,
+    "triage_investigations": [
+      "limb_xray"
+    ]
   },
   {
     "id": "shortened_rotated_leg",
     "name": "Shortened, turned-out leg",
     "patient_description": "My leg looks shorter and my foot's turned out.",
     "body_system": "musculoskeletal",
-    "is_red_flag": true
+    "is_red_flag": true,
+    "triage_investigations": []
   },
   {
     "id": "thunderclap_headache",
@@ -320,5 +331,181 @@
     "patient_description": "My bump has gone hard and it hurts all the time, it doesn't ease off between contractions.",
     "body_system": "gynaecological",
     "is_red_flag": true
+  },
+  {
+    "id": "wrist_deformity",
+    "name": "Bent, swollen wrist",
+    "patient_description": "My wrist looks bent after I fell on it.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false,
+    "triage_investigations": [
+      "limb_xray"
+    ]
+  },
+  {
+    "id": "shoulder_deformity",
+    "name": "Shoulder out of place",
+    "patient_description": "My shoulder's popped out and I can't move my arm.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false,
+    "triage_investigations": [
+      "limb_xray"
+    ]
+  },
+  {
+    "id": "leg_deformity",
+    "name": "Bent lower leg",
+    "patient_description": "My leg's bent below the knee where it shouldn't be.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": true,
+    "triage_investigations": [
+      "limb_xray"
+    ]
+  },
+  {
+    "id": "head_injury",
+    "name": "Head injury",
+    "patient_description": "I banged my head.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "burn",
+    "name": "Burn",
+    "patient_description": "I burnt myself on the kettle.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "nosebleed",
+    "name": "Nosebleed",
+    "patient_description": "My nose won't stop bleeding.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "hot_swollen_joint",
+    "name": "Hot, swollen joint",
+    "patient_description": "My joint is hot and swollen and I can't bend it.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "panic_feeling",
+    "name": "Feeling of panic",
+    "patient_description": "I feel like I'm going to die and my fingers are tingling.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "barking_cough",
+    "name": "Barking cough",
+    "patient_description": "The cough sounds like a seal barking.",
+    "body_system": "respiratory",
+    "is_red_flag": false
+  },
+  {
+    "id": "stridor",
+    "name": "Noisy breathing in",
+    "patient_description": "There's a harsh noise when breathing in.",
+    "body_system": "respiratory",
+    "is_red_flag": true
+  },
+  {
+    "id": "poor_feeding",
+    "name": "Not feeding",
+    "patient_description": "The baby isn't feeding properly.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "febrile_fit",
+    "name": "Fit with a fever",
+    "patient_description": "My child had a fit and is burning up.",
+    "body_system": "neurological",
+    "is_red_flag": true,
+    "triage_investigations": [
+      "capillary_glucose"
+    ]
+  },
+  {
+    "id": "overdose",
+    "name": "Took an overdose",
+    "patient_description": "I've taken too many tablets.",
+    "body_system": "general",
+    "is_red_flag": true
+  },
+  {
+    "id": "hallucinations",
+    "name": "Seeing things",
+    "patient_description": "There are things crawling on the walls.",
+    "body_system": "neurological",
+    "is_red_flag": false
+  },
+  {
+    "id": "jaundice",
+    "name": "Yellow skin",
+    "patient_description": "My skin and the whites of my eyes have gone yellow.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "bloody_diarrhoea",
+    "name": "Bloody diarrhoea",
+    "patient_description": "I've got diarrhoea with blood in it, over and over.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "left_iliac_fossa_pain",
+    "name": "Left lower abdominal pain",
+    "patient_description": "It hurts low down on the left side of my tummy.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "testicular_pain",
+    "name": "Testicle pain",
+    "patient_description": "I've got a sudden, terrible pain in my testicle.",
+    "body_system": "general",
+    "is_red_flag": true
+  },
+  {
+    "id": "absolute_constipation",
+    "name": "Not opening bowels",
+    "patient_description": "I can't go to the toilet and I'm not even passing wind.",
+    "body_system": "gastrointestinal",
+    "is_red_flag": false
+  },
+  {
+    "id": "non_blanching_rash",
+    "name": "Rash that doesn't fade",
+    "patient_description": "There's a purple spotty rash that doesn't fade under a glass.",
+    "body_system": "skin",
+    "is_red_flag": true
+  },
+  {
+    "id": "slow_pulse",
+    "name": "Slow pulse",
+    "patient_description": "My heart feels slow and I keep nearly passing out.",
+    "body_system": "cardiovascular",
+    "is_red_flag": true,
+    "triage_investigations": [
+      "ecg"
+    ]
+  },
+  {
+    "id": "vaginal_discharge",
+    "name": "Vaginal discharge",
+    "patient_description": "I've got an unusual, smelly discharge.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
+  },
+  {
+    "id": "vulval_swelling",
+    "name": "Painful vulval swelling",
+    "patient_description": "There's a very painful lump down below.",
+    "body_system": "gynaecological",
+    "is_red_flag": false
   }
 ]

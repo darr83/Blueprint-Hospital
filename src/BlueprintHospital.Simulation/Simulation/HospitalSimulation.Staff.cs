@@ -118,6 +118,12 @@ public sealed partial class HospitalSimulation
                     band -= 50;
                 }
 
+                if (task.Kind == TaskKind.Surgery && patient.Condition.IsPlanned && patient.Triage != TriageCategory.Red)
+                {
+                    // Planned lists wait behind every emergency, however long they have waited.
+                    band = GreenRoutine - 160;
+                }
+
                 break;
         }
 
@@ -218,6 +224,11 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
+            if (ServePharmacyCounter(member))
+            {
+                continue;
+            }
+
             if (member.CurrentTaskId is { } taskId && _tasks.TryGetValue(taskId, out var task))
             {
                 ProgressTask(member, task, dt);
@@ -280,6 +291,13 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        if (best.Kind == TaskKind.DeliverMedicines)
+        {
+            // The patient isn't tied up while their medicines are on the way.
+            member.StatusText = $"Collecting medicines for {patient.FullName}";
+            return;
+        }
+
         if (best.Kind == TaskKind.CarryBaby)
         {
             // Mum isn't tied up while a nurse fetches (or brings back) her baby.
@@ -337,7 +355,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A nurse pushes a patient themselves when the move has waited too long for a porter.</summary>
     private bool NurseCanCover(ClinicalTask task, StaffMember member) =>
-        task.Kind == TaskKind.MovePatient && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseCoversPorterAfter;
+        task.Kind is TaskKind.MovePatient or TaskKind.DeliverMedicines && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseCoversPorterAfter;
 
     /// <summary>Goes to the staff room for a planned break, or (with none given) an extra break because they're worn out.</summary>
     private void TakeBreak(StaffMember member, PlannedBreak? planned = null)
@@ -377,7 +395,7 @@ public sealed partial class HospitalSimulation
             return patient.PendingMove is not null;
         }
 
-        if (task.Kind is TaskKind.StayWithPatient or TaskKind.CarryBaby)
+        if (task.Kind is TaskKind.StayWithPatient or TaskKind.CarryBaby or TaskKind.DeliverMedicines)
         {
             return true;
         }
@@ -498,6 +516,12 @@ public sealed partial class HospitalSimulation
         if (task.Kind == TaskKind.CarryBaby)
         {
             ProgressCarryBaby(member, task, patient);
+            return;
+        }
+
+        if (task.Kind == TaskKind.DeliverMedicines)
+        {
+            ProgressDeliverMedicines(member, task, patient);
             return;
         }
 

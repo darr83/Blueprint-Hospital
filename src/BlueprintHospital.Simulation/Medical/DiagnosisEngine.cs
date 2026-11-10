@@ -50,8 +50,9 @@ public sealed class DiagnosisEngine(GameDatabase database)
         var age = patient.Age;
 
         var scores = new List<(ConditionDefinition Condition, double LogScore)>();
-        // Labour and pregnancy emergencies are assessed by the maternity unit, never diagnosed in A&E.
-        foreach (var condition in database.Conditions.Values.Where(c => !c.IsMaternity).OrderBy(c => c.Id, StringComparer.Ordinal))
+        // Labour and pregnancy emergencies are assessed by the maternity unit, and planned procedures are
+        // booked in advance: neither is ever diagnosed in A&E.
+        foreach (var condition in database.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal))
         {
             var log = Math.Log(condition.Prevalence);
 

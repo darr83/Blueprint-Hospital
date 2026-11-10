@@ -19,6 +19,15 @@ public sealed class ClinicDefinition : IDataRecord
     /// <summary>Why patients are booked in, shown on the calendar.</summary>
     public IReadOnlyList<string> Reasons { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// Procedures done in the clinic (a smear test, a mole removal). Each has its own length and fee,
+    /// and takes as many slots as it needs.
+    /// </summary>
+    public IReadOnlyList<ClinicProcedure> Procedures { get; init; } = Array.Empty<ClinicProcedure>();
+
+    /// <summary>Share of booked appointments that are procedures rather than consultations.</summary>
+    public double ProcedureShare { get; init; }
+
     /// <summary>Only women are booked (gynaecology).</summary>
     public bool FemaleOnly { get; init; }
 
@@ -43,9 +52,34 @@ public sealed class ClinicDefinition : IDataRecord
             context.Error("clinician", "must be doctor, midwife, sonographer or nurse.");
         }
 
-        if (Reasons.Count == 0)
+        if (Reasons.Count == 0 && (Procedures.Count == 0 || ProcedureShare < 1))
         {
             context.Error("reasons", "list at least one reason for an appointment.");
         }
+
+        context.RequireRange("procedure_share", ProcedureShare, 0, 1);
+        if (ProcedureShare > 0 && Procedures.Count == 0)
+        {
+            context.Error("procedures", "list at least one procedure when procedure_share is above 0.");
+        }
+
+        for (var i = 0; i < Procedures.Count; i++)
+        {
+            context.RequireText($"procedures[{i}].name", Procedures[i].Name);
+            context.RequireRange($"procedures[{i}].minutes", Procedures[i].Minutes, 5, 180);
+            context.RequireRange($"procedures[{i}].tariff", Procedures[i].Tariff, 0, 100_000);
+        }
     }
+}
+
+/// <summary>A procedure done in a clinic room, with its own length and fee.</summary>
+public sealed class ClinicProcedure
+{
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>How long it takes, in minutes. It is booked into as many clinic slots as it needs.</summary>
+    public int Minutes { get; init; }
+
+    /// <summary>What the hospital is paid for it, in pounds.</summary>
+    public int Tariff { get; init; }
 }

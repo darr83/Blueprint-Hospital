@@ -36,6 +36,7 @@ public static class StatKeys
     public const string ArrestSecondsToShock = "arrests.seconds_to_shock";
     public const string ArrestFirstShocks = "arrests.first_shocks";
     public const string Scans = "services.scans";
+    public const string PrescriptionsCollected = "services.prescriptions";
     public const string Operations = "services.operations";
     public const string Births = "maternity.births";
     public const string Caesareans = "maternity.caesareans";

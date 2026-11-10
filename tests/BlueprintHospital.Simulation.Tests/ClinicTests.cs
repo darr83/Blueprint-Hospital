@@ -12,14 +12,20 @@ public class ClinicTests
     private static readonly GridRect B = StarterSite.MainBuildingFootprint;
 
     /// <summary>A west wing with a corridor, an Outpatients reception and a medical clinic south of it.</summary>
-    private static (SimulationHarness H, CareSpace Reception, CareSpace Clinic) Outpatients(bool staffed = true, int seed = 3, DateTime? start = null)
+    private static (SimulationHarness H, CareSpace Reception, CareSpace Clinic) Outpatients(bool staffed = true, int seed = 3, DateTime? start = null, string template = "medical_clinic")
     {
         var h = new SimulationHarness(seed, start: start);
         h.Sim.AdjustBalance(2_000_000);
+        var department = h.Sim.Database.RoomTemplates[template].Department;
+        if (!h.Sim.IsUnlocked(department))
+        {
+            Assert.True(h.Sim.UnlockDepartment(department).CanBuild);
+        }
+
         Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)).CanBuild);
         Assert.True(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 30, B.Y + 9, 34, 8), WallSide.South)).CanBuild);
         var reception = Build(h, "outpatient_reception", new GridRect(B.X - 30, B.Y + 17, 14, 10));
-        var clinic = Build(h, "medical_clinic", new GridRect(B.X - 14, B.Y + 17, 8, 7));
+        var clinic = Build(h, template, new GridRect(B.X - 14, B.Y + 17, 8, 7));
         if (staffed)
         {
             h.Sim.HireStaff(StaffRole.Receptionist, reception.Id, skill: 0.7);
@@ -52,6 +58,47 @@ public class ClinicTests
             Assert.True(a.Time.TimeOfDay is { TotalHours: >= 9 and < 12 } or { TotalHours: >= 13.5 and < 16.5 }, $"{a.Time} is outside clinic hours"));
         Assert.Contains(tomorrow, a => a.Time.TimeOfDay == TimeSpan.FromHours(9) || a.Time.TimeOfDay == TimeSpan.FromMinutes(9 * 60 + 20));
         Assert.Equal(today.Count, today.Select(a => a.Time).Distinct().Count());
+    }
+
+    [Fact]
+    public void Gynaecology_clinic_books_smear_tests_as_procedures_with_their_own_fee()
+    {
+        var (h, _, clinic) = Outpatients(template: "gynaecology_clinic");
+        h.RunFor(TimeSpan.FromSeconds(10));
+        var definition = h.Sim.ClinicOf(clinic)!;
+        Assert.Contains(definition.Procedures, p => p.Name.Contains("Smear test"));
+
+        var booked = h.Sim.CalendarFor(clinic.Id, h.Clock.Now.AddDays(1)).ToList();
+        Assert.Contains(booked, a => a.IsProcedure);
+        Assert.Contains(booked, a => !a.IsProcedure);
+        Assert.All(booked.Where(a => a.IsProcedure), a =>
+        {
+            var procedure = definition.Procedures.Single(p => p.Name == a.Reason);
+            Assert.Equal(procedure.Tariff, a.Tariff);
+            Assert.Equal(procedure.Minutes, a.Minutes);
+        });
+
+        // Appointments never overlap, however long the procedure.
+        var ordered = booked.OrderBy(a => a.Time).ToList();
+        for (var i = 1; i < ordered.Count; i++)
+        {
+            Assert.True(ordered[i].Time >= ordered[i - 1].Time.AddMinutes(Math.Max(ordered[i - 1].Minutes, definition.AppointmentMinutes)), $"{ordered[i - 1].Time:HH:mm} overlaps {ordered[i].Time:HH:mm}");
+        }
+    }
+
+    [Fact]
+    public void A_long_procedure_takes_several_slots_and_pays_its_own_fee()
+    {
+        var (h, _, clinic) = Outpatients(template: "gynae_exam_room", seed: 5);
+        h.RunUntil(() => h.Sim.Appointments.Any(a => a.Reason == "Outpatient hysteroscopy"), TimeSpan.FromDays(4), "a hysteroscopy to be booked");
+        var hysteroscopy = h.Sim.Appointments.First(a => a.Reason == "Outpatient hysteroscopy");
+        Assert.Equal(45, hysteroscopy.Minutes);
+        var day = h.Sim.CalendarFor(clinic.Id, hysteroscopy.Time.Date).ToList();
+        Assert.DoesNotContain(day, a => a.Time > hysteroscopy.Time && a.Time < hysteroscopy.Time.AddMinutes(60));
+
+        h.RunUntil(() => h.Sim.Appointments.Any(a => a.Status == AppointmentStatus.Seen && a.IsProcedure), TimeSpan.FromHours(30), "a procedure to be done");
+        var done = h.Sim.Appointments.First(a => a.Status == AppointmentStatus.Seen && a.IsProcedure);
+        Assert.Equal(h.Sim.ClinicOf(clinic)!.Procedures.Single(p => p.Name == done.Reason).Tariff, done.Tariff);
     }
 
     [Fact]

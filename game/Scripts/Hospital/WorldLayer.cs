@@ -977,7 +977,7 @@ public partial class WorldLayer : Node2D
 
                         // The crash team run: their legs go faster.
                         var pace = member.CrashPatientId is not null && member.IsMoving ? world.Time * 1.8 : world.Time;
-                        Figures.Standing(this, foot, look, pace, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member));
+                        Figures.Standing(this, foot, look, pace, member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member), medicineBag: world.Simulation.IsCarryingMedicines(member));
                     }
 
                     break;

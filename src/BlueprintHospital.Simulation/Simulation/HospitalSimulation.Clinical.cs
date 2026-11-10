@@ -145,10 +145,11 @@ public sealed partial class HospitalSimulation
         }
 
         // Nurse-initiated tests under triage protocol, e.g. an ECG within 10 minutes for chest pain.
+        // Only tests this hospital can do: an X-ray isn't requested when there is no staffed X-ray room.
         var protocol = patient.KnownSymptoms
             .SelectMany(s => Database.Symptoms[s].TriageInvestigations)
             .Distinct()
-            .Where(id => patient.Investigations.All(o => o.InvestigationId != id))
+            .Where(id => patient.Investigations.All(o => o.InvestigationId != id) && CanDo(Database.Investigations[id]))
             .ToList();
         if (protocol.Count > 0)
         {
@@ -423,6 +424,7 @@ public sealed partial class HospitalSimulation
         patient.Log(Now, $"Discharged by {nurse.Name}. {diagnosed.DispositionNote}");
         EndVisit(patient, PatientOutcome.Discharged);
         WalkTo(patient, WalkInSpawn);
+        OfferPrescription(patient);
 
         if (!correct)
         {

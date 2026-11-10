@@ -387,6 +387,14 @@ public sealed class PeopleState
 
     public int NextAppointmentId { get; init; }
 
+    /// <summary>Patients booked onto planned lists (absent in older saves).</summary>
+    public List<PlannedBooking>? PlannedBookings { get; init; }
+
+    /// <summary>Weekdays whose planned lists are already booked, as "yyyy-MM-dd".</summary>
+    public List<string>? BookedPlannedDays { get; init; }
+
+    public int NextPlannedId { get; init; }
+
     public int NextOutpatientId { get; init; }
 
     /// <summary>Patients coming round after endoscopy, and mothers having skin-to-skin after a birth.</summary>
@@ -459,6 +467,9 @@ public sealed partial class HospitalSimulation
         Consults = _consults.Values.OrderBy(c => c.ClinicId, StringComparer.Ordinal).ToList(),
         BookedClinicDays = _bookedClinicDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         NextAppointmentId = _nextAppointmentId,
+        PlannedBookings = _plannedBookings.ToList(),
+        BookedPlannedDays = _bookedPlannedDays.OrderBy(d => d, StringComparer.Ordinal).ToList(),
+        NextPlannedId = _nextPlannedId,
         NextOutpatientId = _nextOutpatientId,
         Recovering = _recovering.Values.OrderBy(r => r.PatientId).ToList(),
         Babies = CaptureBabies(),
@@ -687,6 +698,7 @@ public sealed partial class HospitalSimulation
             _recovering[recovery.PatientId] = recovery;
         }
 
+        RestorePlannedLists(state.PlannedBookings, state.BookedPlannedDays, state.NextPlannedId);
         RestoreBabies(state.Babies, state.NextBabyId, state.Maternity);
         RestoreHistory(state.History);
         RestoreTrolleys(state.ResusTrolleys, state.Arrests);
@@ -896,7 +908,7 @@ public sealed partial class HospitalSimulation
                 ["ward_corrections"] = s.WardDiagnosesCorrected, ["deaths"] = s.Deaths, ["left_unseen"] = s.LeftWithoutBeingSeen,
                 ["diagnoses"] = s.DiagnosesMade, ["diagnoses_correct"] = s.DiagnosesCorrect, ["missed"] = s.MissedDiagnoses,
                 ["reputation_penalties"] = s.ReputationPenalties, ["investigation_cost"] = s.InvestigationCost, ["medication_cost"] = s.MedicationCost,
-                ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone,
+                ["scans"] = s.ScansDone, ["operations"] = s.OperationsDone, ["planned_done"] = s.PlannedDone, ["planned_cancelled"] = s.PlannedCancelled,
                 ["minutes_in_department"] = s.MinutesInDepartmentTotal, ["seen_by_doctor"] = s.SeenByDoctorTotal,
                 ["minutes_to_doctor"] = s.MinutesToDoctorTotal, ["handovers"] = s.HandoversTotal, ["handover_minutes"] = s.HandoverMinutesTotal,
                 ["cardiac_arrests"] = s.CardiacArrests, ["arrests_rosc"] = s.ArrestsRosc, ["arrest_survivors"] = s.ArrestSurvivors,
@@ -926,6 +938,8 @@ public sealed partial class HospitalSimulation
         s.WardDiagnosesCorrected = I("ward_corrections");
         s.ScansDone = I("scans");
         s.OperationsDone = I("operations");
+        s.PlannedDone = I("planned_done");
+        s.PlannedCancelled = I("planned_cancelled");
         s.Deaths = I("deaths");
         s.LeftWithoutBeingSeen = I("left_unseen");
         s.DiagnosesMade = I("diagnoses");

@@ -49,6 +49,12 @@ public enum TaskKind
     /// mother; <see cref="ClinicalTask.Detail"/> is the baby's id (with ":mother" when going back to her).
     /// </summary>
     CarryBaby,
+
+    /// <summary>
+    /// A porter (or, without porters, a ward nurse) carries a ward patient's medicines to take home from
+    /// the pharmacy counter to their bed. <see cref="ClinicalTask.Detail"/> is the pharmacy's room id.
+    /// </summary>
+    DeliverMedicines,
 }
 
 /// <summary>
