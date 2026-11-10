@@ -118,6 +118,60 @@ public partial class MainMenu : Control
         empty.SetPressedNoSignal(false);
         empty.EmitSignal(BaseButton.SignalName.Toggled, false);
 
+        // How often patients already in a bed have a sudden emergency (a fall, sepsis, a heart attack...).
+        panel.Content.AddChild(new Control { CustomMinimumSize = new Vector2(0, 2) });
+        panel.Content.AddChild(UiStyle.Body("Emergencies for patients in a bed"));
+        var emergencies = WardEmergencyFrequency.Realistic;
+        var frequency = new HBoxContainer();
+        frequency.AddThemeConstantOverride("separation", 8);
+        var frequencyGroup = new ButtonGroup();
+        var frequencyNote = UiStyle.Body(string.Empty);
+        frequencyNote.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        frequencyNote.CustomMinimumSize = new Vector2(380, 0);
+        frequencyNote.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        void ShowNote() => frequencyNote.Text = emergencies switch
+        {
+            WardEmergencyFrequency.Off => "None: patients in bed only get better.",
+            WardEmergencyFrequency.Rare => "Now and then: about one every three days with 30 patients in bed.",
+            _ => "Like a real hospital: falls, sepsis, heart attacks and more, about one a day with 30 patients in bed.",
+        };
+        foreach (var (label, value) in new[] { ("Off", WardEmergencyFrequency.Off), ("Rare", WardEmergencyFrequency.Rare), ("Realistic", WardEmergencyFrequency.Realistic) })
+        {
+            var option = new Button
+            {
+                Text = label,
+                ToggleMode = true,
+                ButtonGroup = frequencyGroup,
+                ThemeTypeVariation = UiStyle.Secondary,
+                CustomMinimumSize = new Vector2(120, 34),
+                FocusMode = FocusModeEnum.None,
+            };
+            option.Toggled += on =>
+            {
+                if (on)
+                {
+                    emergencies = value;
+                    ShowNote();
+                }
+
+                var box = UiStyle.Box(on ? UiStyle.BlueTint : UiStyle.Surface, 8, on ? UiStyle.Blue : UiStyle.Border, 8);
+                foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+                {
+                    option.AddThemeStyleboxOverride(state, box);
+                }
+            };
+            frequency.AddChild(option);
+            option.ButtonPressed = value == WardEmergencyFrequency.Realistic;
+            if (value != WardEmergencyFrequency.Realistic)
+            {
+                option.EmitSignal(BaseButton.SignalName.Toggled, false);
+            }
+        }
+
+        panel.Content.AddChild(frequency);
+        panel.Content.AddChild(frequencyNote);
+        ShowNote();
+
         var unlimited = new CheckBox
         {
             Text = "Unlimited money: keep building and hiring when the balance goes into the red",
@@ -136,7 +190,7 @@ public partial class MainMenu : Control
 
         panel.Content.AddChild(unlimited);
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed);
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies);
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };

@@ -1,4 +1,6 @@
 using System.Globalization;
+using BlueprintHospital.Simulation.Data.Models;
+using BlueprintHospital.Simulation.Patients;
 
 namespace BlueprintHospital.Simulation.Simulation;
 
@@ -18,6 +20,7 @@ public sealed partial class HospitalSimulation
     public static readonly IReadOnlyList<string> CheatCommands = new[]
     {
         "money <amount>   add money to the balance (e.g. money 500000, money 2m, money -10k)",
+        "emergency [type] start a ward emergency for a patient in bed (types: fall, sepsis, heart_attack, stroke...)",
         "help             list the commands",
     };
 
@@ -51,9 +54,35 @@ public sealed partial class HospitalSimulation
                 var verb = amount > 0 ? "Added" : "Took away";
                 return new CheatResult(true, $"{verb} £{Math.Abs(amount):N0}. Balance is now £{Balance:N0}.");
 
+            case "emergency":
+                return CheatEmergency(words.Length > 1 ? words[1].ToLowerInvariant() : null);
+
             default:
                 return new CheatResult(false, $"Unknown command \"{words[0]}\". Type help for the list.");
         }
+    }
+
+    private CheatResult CheatEmergency(string? id)
+    {
+        InpatientEmergencyDefinition? emergency = null;
+        if (id is not null && !Database.Emergencies.TryGetValue(id, out emergency))
+        {
+            return new CheatResult(false, $"No emergency \"{id}\". Types: {string.Join(", ", Database.Emergencies.Keys)}.");
+        }
+
+        var patients = _patients.Values
+            .Where(p => p.IsAlive && p.Stage == PatientStage.OnWard && BedOf(p) is not null && p.Emergency is null && !p.InArrest && !p.IsMoving)
+            .Where(p => emergency is null || emergency.Requires.All(r => HasRisk(p, r)))
+            .ToList();
+        if (patients.Count == 0)
+        {
+            return new CheatResult(false, "Nobody in a ward bed can have that emergency right now.");
+        }
+
+        var patient = Random.Pick(patients);
+        emergency ??= Random.Pick(Database.Emergencies.Values.Where(e => e.Requires.All(r => HasRisk(patient, r))).ToList());
+        StartWardEmergency(patient, emergency);
+        return new CheatResult(true, $"{emergency.Name} for {patient.FullName}.");
     }
 
     /// <summary>Reads amounts like 500000, £500,000, 250k or 1.5m.</summary>

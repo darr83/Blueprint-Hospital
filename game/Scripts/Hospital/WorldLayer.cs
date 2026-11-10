@@ -201,6 +201,12 @@ public partial class WorldLayer : Node2D
     /// <summary>World position of an agent's feet, interpolated between simulation ticks.</summary>
     public Vector2 FootPosition(Agent agent)
     {
+        // On the floor beside their bed after a fall.
+        if (agent is Patient { OnFloorAfterFall: true } fallen && _sim.BedOf(fallen) is { } bed)
+        {
+            return IsoDraw.ToScreen(bed.StaffSpot.X + 0.5, bed.StaffSpot.Y + 0.5);
+        }
+
         var (x, y) = Interpolated(agent);
         if (IsSeated(agent))
         {
@@ -317,7 +323,7 @@ public partial class WorldLayer : Node2D
     /// <summary>Lying on the bed of a treatment space or a ward.</summary>
     public bool InBed(Patient patient)
     {
-        if (patient.IsMoving)
+        if (patient.IsMoving || patient.OnFloorAfterFall)
         {
             return false;
         }
@@ -689,6 +695,10 @@ public partial class WorldLayer : Node2D
             {
                 Figures.CrashMarker(c, IsoDraw.ToScreen(cx, cy), Time);
             }
+            else if (occupant is { Emergency: not null })
+            {
+                Figures.EmergencyMarker(c, IsoDraw.ToScreen(cx, cy), Time, 44, occupant.EmergencyTreated);
+            }
         }, animated: true);
     }
 
@@ -1041,6 +1051,14 @@ public partial class WorldLayer : Node2D
                     Figures.CrashMarker(this, foot, world.Time, 40);
                 }
 
+                return;
+            }
+
+            if (patient.OnFloorAfterFall && world.Simulation.BedOf(patient) is { } fallenFrom)
+            {
+                // Fallen beside their bed: lying on the floor until the team help them up.
+                Figures.LyingAlong(this, fallenFrom.StaffSpot.X + 0.5, fallenFrom.StaffSpot.Y + 0.5, (1, 0), look, look.Trousers, 0);
+                Figures.EmergencyMarker(this, foot, world.Time, 32, height: 100);
                 return;
             }
 

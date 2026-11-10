@@ -55,6 +55,12 @@ public enum TaskKind
     /// the pharmacy counter to their bed. <see cref="ClinicalTask.Detail"/> is the pharmacy's room id.
     /// </summary>
     DeliverMedicines,
+
+    /// <summary>A doctor (or nurse) reviews a patient in bed who has had a sudden emergency. <see cref="ClinicalTask.Detail"/> is the emergency id.</summary>
+    EmergencyReview,
+
+    /// <summary>The treatment for a ward emergency, at the bedside. <see cref="ClinicalTask.Detail"/> is the emergency id.</summary>
+    EmergencyTreatment,
 }
 
 /// <summary>

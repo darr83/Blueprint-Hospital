@@ -1,0 +1,215 @@
+// Sudden emergencies for patients already in a hospital bed. "per_day" is the chance per patient per day in
+// bed (Realistic setting) before the risks multiply it; with about 30 inpatients the hospital sees roughly one
+// a day. The ward team are called: a doctor (or nurse) reviews at the bedside, then the treatment goes in.
+// Untreated, the patient keeps getting worse and can go into cardiac arrest.
+[
+  {
+    "id": "cardiac_arrest",
+    "name": "Cardiac arrest",
+    "signs": "Found unresponsive and not breathing normally.",
+    "per_day": 0.0008,
+    "risks": [
+      { "risk": "heart_disease", "times": 2.5 },
+      { "risk": "elderly", "times": 1.5 },
+      { "risk": "critical_care", "times": 3 },
+      { "risk": "child", "times": 0.2 }
+    ],
+    "severity": 1.0,
+    "arrest_chance": 1.0,
+    "review": { "role": "doctor", "minutes": 10, "label": "Post-arrest review", "log": ["12-lead ECG and blood gas after the arrest."] },
+    "treatment": { "role": "nurse", "minutes": 10, "label": "Post-arrest care", "log": ["Oxygen, fluids and close monitoring after the arrest."] },
+    "care_level": 3
+  },
+  {
+    "id": "heart_attack",
+    "name": "Heart attack (STEMI)",
+    "signs": "Crushing central chest pain going into the left arm; grey and sweaty.",
+    "per_day": 0.0015,
+    "risks": [
+      { "risk": "heart_disease", "times": 4 },
+      { "risk": "diabetes", "times": 1.8 },
+      { "risk": "older", "times": 1.8 },
+      { "risk": "had_surgery", "times": 1.5 },
+      { "risk": "child", "times": 0 },
+      { "risk": "maternity", "times": 0.1 }
+    ],
+    "severity": 0.82,
+    "worsen_per_hour": 0.12,
+    "arrest_chance": 0.08,
+    "observations": { "heart_rate": 30, "systolic_bp": -25, "respiratory_rate": 6, "oxygen_saturation": -4 },
+    "review": { "role": "doctor", "minutes": 15, "label": "Chest pain review", "log": ["12-lead ECG: ST elevation in the inferior leads.", "Troponin sent: raised."] },
+    "treatment": { "role": "nurse", "minutes": 15, "label": "Aspirin, ticagrelor, GTN and morphine", "log": ["Aspirin 300 mg and ticagrelor 180 mg given, GTN spray and IV morphine for the pain."] },
+    "recovery_per_hour": 0.25,
+    "care_level": 2,
+    "better_with": "cath_lab",
+    "better_log": "Taken straight to the cath lab: the blocked artery was opened with a stent.",
+    "without_log": "No cath lab: given clot-busting drugs (thrombolysis) on the ward instead."
+  },
+  {
+    "id": "pulmonary_embolism",
+    "name": "Pulmonary embolism",
+    "signs": "Suddenly breathless with sharp chest pain on breathing in; oxygen levels dropping.",
+    "per_day": 0.002,
+    "risks": [
+      { "risk": "had_surgery", "times": 4 },
+      { "risk": "maternity", "times": 3 },
+      { "risk": "older", "times": 1.5 },
+      { "risk": "child", "times": 0.1 }
+    ],
+    "severity": 0.8,
+    "worsen_per_hour": 0.1,
+    "arrest_chance": 0.04,
+    "observations": { "heart_rate": 35, "systolic_bp": -15, "respiratory_rate": 10, "oxygen_saturation": -8 },
+    "review": { "role": "doctor", "minutes": 15, "label": "Breathlessness review", "log": ["ECG: sinus tachycardia.", "Blood gas: low oxygen.", "CT pulmonary angiogram: clot in both lungs."] },
+    "treatment": { "role": "nurse", "minutes": 10, "label": "Oxygen and anticoagulation", "log": ["High-flow oxygen; treatment-dose low molecular weight heparin started."] },
+    "recovery_per_hour": 0.2,
+    "better_with": "ct",
+    "better_log": "CT scan confirmed the clot quickly.",
+    "without_log": "No CT scanner: treated on suspicion until a scan can be arranged."
+  },
+  {
+    "id": "sepsis",
+    "name": "Sepsis (hospital-acquired pneumonia)",
+    "signs": "New fever and shivers, breathing fast, blood pressure falling.",
+    "per_day": 0.005,
+    "risks": [
+      { "risk": "elderly", "times": 2 },
+      { "risk": "had_surgery", "times": 1.8 },
+      { "risk": "critical_care", "times": 2.5 },
+      { "risk": "diabetes", "times": 1.4 }
+    ],
+    "severity": 0.78,
+    "worsen_per_hour": 0.07,
+    "arrest_chance": 0,
+    "observations": { "heart_rate": 30, "systolic_bp": -25, "respiratory_rate": 9, "oxygen_saturation": -5, "temperature": 2.2 },
+    "review": { "role": "doctor", "minutes": 15, "label": "Sepsis review", "log": ["Sepsis Six started.", "Lactate 4.1; blood cultures taken.", "Chest X-ray: new right lower lobe pneumonia."] },
+    "treatment": { "role": "nurse", "minutes": 20, "label": "IV antibiotics and fluids (Sepsis Six)", "log": ["IV piperacillin-tazobactam within the hour, 500 ml fluid bolus, oxygen; urine output monitored."] },
+    "recovery_per_hour": 0.12
+  },
+  {
+    "id": "fall",
+    "name": "Fall",
+    "signs": "Found on the floor beside the bed after trying to get up alone.",
+    "per_day": 0.008,
+    "risks": [
+      { "risk": "elderly", "times": 3 },
+      { "risk": "older", "times": 1.6 },
+      { "risk": "new_medicines", "times": 1.3 },
+      { "risk": "critical_care", "times": 0.1 },
+      { "risk": "child", "times": 0.3 }
+    ],
+    "severity": 0.45,
+    "worsen_per_hour": 0.05,
+    "can_be_fatal": false,
+    "observations": { "heart_rate": 12, "systolic_bp": 10 },
+    "fall": true,
+    "review": { "role": "doctor", "minutes": 15, "label": "Post-fall review", "log": ["Checked head to toe: bruised hip and elbow, no fracture.", "Lying and standing blood pressure; medicines reviewed."] },
+    "treatment": { "role": "nurse", "minutes": 15, "label": "Help back to bed after fall", "log": ["Helped back to bed with a hoist; falls bundle in place and bed alarm on."] },
+    "recovery_per_hour": 0.5,
+    "settled_severity": 0.35,
+    "better_with": "ct",
+    "better_log": "Hit their head: a CT head scan showed no bleed.",
+    "without_log": "Hit their head: neuro obs every 30 minutes as there is no CT scanner."
+  },
+  {
+    "id": "post_op_bleed",
+    "name": "Bleeding after surgery",
+    "signs": "The wound dressing is soaked through; pale, clammy and the pulse is racing.",
+    "per_day": 0.012,
+    "requires": ["had_surgery"],
+    "risks": [
+      { "risk": "elderly", "times": 1.4 },
+      { "risk": "first_two_days", "times": 3 }
+    ],
+    "severity": 0.82,
+    "worsen_per_hour": 0.14,
+    "arrest_chance": 0,
+    "observations": { "heart_rate": 40, "systolic_bp": -35, "respiratory_rate": 6 },
+    "review": { "role": "doctor", "minutes": 15, "label": "Post-op bleed review", "log": ["Haemoglobin dropped from 128 to 82.", "Major haemorrhage protocol called."] },
+    "treatment": { "role": "doctor", "minutes": 25, "label": "Blood transfusion and stop the bleeding", "log": ["Two units of blood and tranexamic acid given; the surgeons stopped the bleeding."] },
+    "recovery_per_hour": 0.2,
+    "care_level": 2,
+    "better_with": "theatre",
+    "better_log": "Back to theatre to tie off the bleeding vessel.",
+    "without_log": "No theatre free: pressure dressing and blood until it settled."
+  },
+  {
+    "id": "stroke",
+    "name": "Stroke",
+    "signs": "Sudden weakness down one side, the face drooping and the speech slurred.",
+    "per_day": 0.001,
+    "risks": [
+      { "risk": "older", "times": 2 },
+      { "risk": "heart_disease", "times": 2 },
+      { "risk": "had_surgery", "times": 1.5 },
+      { "risk": "neurology", "times": 3 },
+      { "risk": "child", "times": 0 }
+    ],
+    "severity": 0.78,
+    "worsen_per_hour": 0.08,
+    "arrest_chance": 0,
+    "observations": { "systolic_bp": 35, "respiratory_rate": 3, "confused": true },
+    "review": { "role": "doctor", "minutes": 20, "label": "Stroke review (FAST positive)", "log": ["FAST positive; NIHSS 9.", "Blood sugar normal."] },
+    "treatment": { "role": "doctor", "minutes": 20, "label": "Stroke treatment", "log": ["Swallow screen: nil by mouth; stroke team informed."] },
+    "recovery_per_hour": 0.12,
+    "better_with": "ct",
+    "better_log": "Urgent CT head: no bleed, so clot-busting treatment (thrombolysis) given.",
+    "without_log": "No CT scanner: thrombolysis isn't safe without a scan, so aspirin and supportive care."
+  },
+  {
+    "id": "hypoglycaemia",
+    "name": "Hypoglycaemia (low blood sugar)",
+    "signs": "Sweaty, shaky and confused; finger-prick sugar 2.1.",
+    "per_day": 0.02,
+    "requires": ["diabetes"],
+    "risks": [
+      { "risk": "elderly", "times": 1.5 },
+      { "risk": "new_medicines", "times": 1.3 }
+    ],
+    "severity": 0.72,
+    "worsen_per_hour": 0.2,
+    "can_be_fatal": false,
+    "observations": { "heart_rate": 25, "confused": true },
+    "review": { "role": "nurse", "minutes": 5, "label": "Low blood sugar check", "log": ["Capillary glucose 2.1 mmol/L."] },
+    "treatment": { "role": "nurse", "minutes": 10, "label": "Hypo treatment (glucose)", "log": ["Glucose gel then a sandwich; sugar back to 6.8 after 15 minutes. Insulin dose reviewed."] },
+    "recovery_per_hour": 1.0,
+    "settled_severity": 0.4
+  },
+  {
+    "id": "anaphylaxis",
+    "name": "Allergic reaction (anaphylaxis)",
+    "signs": "Swollen lips and tongue, wheeze and an itchy rash minutes after a new medicine.",
+    "per_day": 0.001,
+    "risks": [
+      { "risk": "new_medicines", "times": 3 },
+      { "risk": "known_allergy", "times": 2.5 }
+    ],
+    "severity": 0.85,
+    "worsen_per_hour": 0.5,
+    "arrest_chance": 0.02,
+    "observations": { "heart_rate": 40, "systolic_bp": -40, "respiratory_rate": 10, "oxygen_saturation": -7 },
+    "review": { "role": "doctor", "minutes": 5, "label": "Anaphylaxis review", "log": ["Anaphylaxis to the new antibiotic; it has been stopped and added to their allergies."] },
+    "treatment": { "role": "nurse", "minutes": 10, "label": "IM adrenaline and fluids", "log": ["Adrenaline 500 micrograms IM (repeated after 5 minutes), oxygen and a fluid bolus."] },
+    "recovery_per_hour": 0.6
+  },
+  {
+    "id": "delirium",
+    "name": "Delirium (acute confusion)",
+    "signs": "Suddenly confused and agitated, pulling at their cannula and trying to climb out of bed.",
+    "per_day": 0.006,
+    "risks": [
+      { "risk": "elderly", "times": 4 },
+      { "risk": "older", "times": 2 },
+      { "risk": "had_surgery", "times": 1.6 },
+      { "risk": "child", "times": 0.1 }
+    ],
+    "severity": 0.6,
+    "worsen_per_hour": 0.04,
+    "can_be_fatal": false,
+    "observations": { "heart_rate": 15, "confused": true },
+    "review": { "role": "doctor", "minutes": 15, "label": "Confusion review", "log": ["4AT score 8: delirium.", "Looked for causes: urine infection, constipation and pain."] },
+    "treatment": { "role": "nurse", "minutes": 20, "label": "Delirium care (reorientate, treat causes)", "log": ["Glasses and hearing aids in, family called, lights on in the day; laxatives and pain relief given."] },
+    "recovery_per_hour": 0.15,
+    "settled_severity": 0.4
+  }
+]

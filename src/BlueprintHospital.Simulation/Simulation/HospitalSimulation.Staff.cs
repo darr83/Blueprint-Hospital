@@ -99,7 +99,7 @@ public sealed partial class HospitalSimulation
             case TaskKind.Triage:
                 band = TriageBand;
                 break;
-            case TaskKind.StayWithPatient or TaskKind.RedReview:
+            case TaskKind.StayWithPatient or TaskKind.RedReview or TaskKind.EmergencyReview or TaskKind.EmergencyTreatment:
                 band = BedsideBand;
                 break;
             default:
