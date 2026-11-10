@@ -156,6 +156,13 @@ public static partial class FurnitureArt
                 }
 
                 return true;
+            case "resus_trolley":
+                if (IsFrontSlice(sx, sy, sw, sl, whole))
+                {
+                    ResusTrolley(c, whole.X, whole.Y, whole.W, whole.L, height, colour, front);
+                }
+
+                return true;
             case "hand_basin":
                 WashStation(c, sx, sy, sw, sl, whole, height, joined, front);
                 return true;
@@ -580,6 +587,115 @@ public static partial class FurnitureArt
     }
 
     // ------------------------------------------------------------------ plaster room
+
+    /// <summary>
+    /// The resuscitation ("crash") trolley: a red cabinet on castors with five labelled drawers and a
+    /// tamper tag, a grey top with a push handle, the defibrillator on top, an oxygen cylinder in a
+    /// bracket on one side and a check list on the other.
+    /// </summary>
+    private static void ResusTrolley(CanvasItem c, double x, double y, double w, double l, float height, Color colour, Sides front)
+    {
+        // Drawn slimmer and taller than its floor space, as a real crash trolley is.
+        const float wheels = 5f;
+        const float top = 2.5f;
+        (x, y, w, l) = (x + (w * 0.14), y + (l * 0.14), w * 0.72, l * 0.72);
+        height *= 1.3f;
+        var body = height - wheels - top;
+        if (front == Sides.None)
+        {
+            front = Sides.South;
+        }
+
+        var (cx, cy) = (x + (w / 2), y + (l / 2));
+        var shadow = new[] { IsoDraw.ToScreen(x, y), IsoDraw.ToScreen(x + w, y), IsoDraw.ToScreen(x + w, y + l), IsoDraw.ToScreen(x, y + l) };
+        c.DrawColoredPolygon(shadow.Select(p => p + new Vector2(3, 1.5f)).ToArray(), new Color(0, 0, 0, 0.12f));
+        foreach (var (px, py) in Corners((x, y, w, l), 0.12).OrderBy(p => IsoDraw.ToScreen(p.X, p.Y).Y))
+        {
+            var p = IsoDraw.ToScreen(px, py);
+            c.DrawLine(p + new Vector2(0, -wheels - 1), p + new Vector2(0, -2), Steel.Darkened(0.2f), 1.6f);
+            c.DrawCircle(p + new Vector2(0, -2f), 2.1f, new Color("#2B3036"));
+            c.DrawCircle(p + new Vector2(0, -2f), 0.8f, Steel);
+        }
+
+        // The push handle stands off the end opposite the drawers: drawn first when it is on the far side.
+        var back = IsoFace.Opposite(front);
+        var handle = Strip(x, y, w, l, back, -0.14, 0.04);
+        var handleBehind = IsoDraw.ToScreen(Mid(handle).X, Mid(handle).Y).Y < IsoDraw.ToScreen(cx, cy).Y;
+        void Handle()
+        {
+            var ends = back is Sides.North or Sides.South
+                ? (A: (X: handle.X + 0.12, Y: Mid(handle).Y), B: (X: handle.X + handle.W - 0.12, Y: Mid(handle).Y))
+                : (A: (X: Mid(handle).X, Y: handle.Y + 0.12), B: (X: Mid(handle).X, Y: handle.Y + handle.L - 0.12));
+            var grip = height - 1;
+            c.DrawPolyline(new[] { Up(ends.A.X, ends.A.Y, grip - 7), Up(ends.A.X, ends.A.Y, grip), Up(ends.B.X, ends.B.Y, grip), Up(ends.B.X, ends.B.Y, grip - 7) }, Steel.Darkened(0.25f), 1.8f, true);
+        }
+
+        if (handleBehind)
+        {
+            Handle();
+        }
+
+        IsoDraw.Prism(c, x, y, w, l, body, colour.Lightened(0.05f), colour, lift: wheels);
+        foreach (var face in IsoFace.Of(x, y, w, l, body, wheels))
+        {
+            if (face.Side == front)
+            {
+                face.Draw(c, (length, h) =>
+                {
+                    // Two shallow drawers over three deep ones, each with a handle and a coloured label.
+                    var heights = new[] { 0.14f, 0.14f, 0.24f, 0.24f, 0.24f };
+                    var at = 1f;
+                    for (var i = 0; i < heights.Length; i++)
+                    {
+                        var dh = heights[i] * (h - 2);
+                        Flat.Round(c, 1.5f, at, length - 3, dh - 1, 1f, colour.Lightened(0.14f));
+                        Flat.Rect(c, length * 0.34f, at + (dh * 0.5f) - 1f, length * 0.32f, 1.3f, Steel.Lightened(0.25f));
+                        Flat.Rect(c, 3f, at + 1f, 4.5f, Math.Min(2.4f, dh - 3), LabelColours[i]);
+                        at += dh;
+                    }
+
+                    // The yellow tamper tag across the top drawer.
+                    Flat.Rect(c, length - 5.5f, 0.4f, 2.2f, 4.6f, new Color("#FDD835"));
+                });
+            }
+            else if (face.Side == back)
+            {
+                // The check list in its clear pocket.
+                face.Draw(c, (length, h) =>
+                {
+                    Flat.Rect(c, (length / 2) - 5, 4, 10, 12, new Color("#F4F7F9"));
+                    Flat.Rect(c, (length / 2) - 2, 3, 4, 1.6f, Steel.Darkened(0.3f));
+                    for (var i = 0; i < 4; i++)
+                    {
+                        Flat.Rect(c, (length / 2) - 3.5f, 7 + (i * 2.2f), 7, 0.7f, new Color("#90A4AE"));
+                    }
+                });
+            }
+            else
+            {
+                // A side: the heart sign, and the oxygen cylinder strapped upright in its bracket.
+                face.Draw(c, (length, h) =>
+                {
+                    Flat.Round(c, length * 0.12f, 3, 9, 9, 1.5f, Colors.White);
+                    Signs.Draw(c, Pictogram.Heart, (length * 0.12f) + 4.5f, 7.5f, 7.5f, new Color("#D32F2F"), Colors.White);
+                });
+                var foot = face.P(0.74f, 0) + new Vector2(0, 2.5f - wheels);
+                c.DrawRect(new Rect2(foot + new Vector2(-3.2f, -1.5f), new Vector2(6.4f, 2.2f)), Steel.Darkened(0.35f));
+                Figures.RoundedRect(c, new Rect2(foot + new Vector2(-2.6f, -17f), new Vector2(5.2f, 16f)), 2.4f, new Color("#F4F7F9"));
+                c.DrawRect(new Rect2(foot + new Vector2(-2.6f, -8f), new Vector2(5.2f, 1.3f)), Steel.Darkened(0.3f));
+                c.DrawRect(new Rect2(foot + new Vector2(-1.3f, -19.5f), new Vector2(2.6f, 3f)), new Color("#2E7D32"));
+                c.DrawCircle(foot + new Vector2(0, -20.5f), 1.7f, new Color("#37474F"));
+            }
+        }
+
+        // The grey top with a raised rim.
+        IsoDraw.Prism(c, x - 0.04, y - 0.04, w + 0.08, l + 0.08, top, new Color("#D5DBE0"), new Color("#AEB8C0"), lift: wheels + body, rim: new Color("#EEF2F5"));
+        Defibrillator(c, cx, cy, height);
+        if (!handleBehind)
+        {
+            Handle();
+        }
+    }
 
     /// <summary>The plaster trolley: steel drawers on castors, the top set out with rolls of plaster, a bowl and shears.</summary>
     private static void PlasterTrolley(CanvasItem c, double sx, double sy, double sw, double sl, (double X, double Y, double W, double L) whole, float height, Color colour, Sides joined, Sides front)

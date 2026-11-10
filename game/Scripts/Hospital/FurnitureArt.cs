@@ -122,19 +122,6 @@ public static partial class FurnitureArt
                 return;
         }
 
-        if (id == "resus_trolley")
-        {
-            // Castors under the red drawers.
-            foreach (var (px, py) in Corners(whole, 0.1))
-            {
-                if (Inside(px, py, sx, sy, sw, sl))
-                {
-                    var p = IsoDraw.ToScreen(px, py);
-                    c.DrawCircle(p + new Vector2(0, -1.5f), 1.8f, new Color("#2B3036"));
-                }
-            }
-        }
-
         var kind = KindOf(id);
         IsoDraw.Prism(c, sx, sy, sw, sl, height, colour, face, joined, skirting: kind is Kind.Cupboard or Kind.Basin or Kind.Fridge ? colour.Darkened(0.45f) : null, skirtingHeight: 2, rim: rim);
         var line = colour.Darkened(0.4f);
@@ -199,11 +186,6 @@ public static partial class FurnitureArt
             var tap = IsoDraw.ToScreen(cx, cy) + top;
             c.DrawLine(tap, tap + new Vector2(0, -6), new Color("#9AA6B0"), 2f);
             c.DrawCircle(tap + new Vector2(0, -6), 1.6f, new Color("#B9C3CB"));
-        }
-
-        if (id == "resus_trolley" && IsFrontSlice(sx, sy, sw, sl, whole))
-        {
-            Defibrillator(c, whole.X + (whole.W / 2), whole.Y + (whole.L / 2), height);
         }
     }
 
