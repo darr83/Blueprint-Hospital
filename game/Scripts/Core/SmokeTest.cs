@@ -435,6 +435,8 @@ public partial class SmokeTest : Node
                 break;
 
             case Stage.CrashCall when scene is HospitalScene hospital && _frame >= 10:
+                // The banner only refreshes every 0.2 real seconds, and headless frames can be quicker than that.
+                hospital.Hud.Crash.Refresh();
                 Check(hospital.Hud.Crash.Visible, "The crash call banner did not show.");
                 Screenshot("07c_crash_call");
                 hospital.Hud.Crash.Expanded = true;
