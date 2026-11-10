@@ -487,7 +487,7 @@ public partial class WorldLayer : Node2D
     }
 
     /// <summary>The middle of whichever side of a footprint is nearest the viewer, so thin pieces sort right from every angle.</summary>
-    private static Vector2 FrontFace(double x, double y, double w, double l)
+    internal static Vector2 FrontFace(double x, double y, double w, double l)
     {
         var sides = new[]
         {

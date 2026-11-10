@@ -394,9 +394,7 @@ public static class Decorations
                 var centre = run.Start + (run.Length / 2.0);
                 var (t0, t1) = (centre - (width / 2), centre + (width / 2));
                 var wallSide = side;
-                // Sort after every wall piece the picture lies on, or the nearer pieces would paint over it.
-                var end = new[] { InnerFace(r, wallSide, t0, 0), InnerFace(r, wallSide, t1, 0) }.MaxBy(p => p.Y);
-                props.Add((end + new Vector2(0, 0.6f), c =>
+                props.Add((AfterWall(r, wallSide, t0, t1), c =>
                 {
                     if (Facing(r, wallSide))
                     {
@@ -476,7 +474,7 @@ public static class Decorations
                 {
                     var rect = new GridRect(inside.X, inside.Y, 1, 1);
                     var wallSide = side;
-                    props.Add((new[] { InnerFace(rect, wallSide, 0.15, 0), InnerFace(rect, wallSide, 0.85, 0) }.MaxBy(p => p.Y) + new Vector2(0, 0.6f), c =>
+                    props.Add((AfterWall(rect, wallSide, 0.15, 0.85), c =>
                     {
                         if (Facing(rect, wallSide))
                         {
@@ -488,7 +486,7 @@ public static class Decorations
                 {
                     var rect = new GridRect(inside.X, inside.Y, 1, 1);
                     var wallSide = side;
-                    props.Add((new[] { InnerFace(rect, wallSide, -0.4, 0), InnerFace(rect, wallSide, 1.4, 0) }.MaxBy(p => p.Y) + new Vector2(0, 0.6f), c =>
+                    props.Add((AfterWall(rect, wallSide, -0.4, 1.4), c =>
                     {
                         if (Facing(rect, wallSide))
                         {
@@ -520,6 +518,50 @@ public static class Decorations
             _ => (r.Right - Half, r.Y + t),
         };
         return IsoDraw.ToScreen(x, y) + new Vector2(0, -v);
+    }
+
+    /// <summary>
+    /// Where a picture lying on a wall between t0 and t1 tiles sorts: just after every wall piece and
+    /// corner post it covers, worked out the same way the walls themselves sort. Sorting by the
+    /// picture's own ends is not enough: the wall piece under one end can sort later than that end
+    /// and paint over it, cutting the sign off with a straight edge.
+    /// </summary>
+    private static Vector2 AfterWall(GridRect r, WallSide side, double t0, double t1)
+    {
+        // A footprint along the wall line, from a to a + length tiles along it.
+        (double X, double Y, double W, double L) Along(double a, double length) => side switch
+        {
+            WallSide.North => (r.X + a, r.Y - Half, length, Half * 2),
+            WallSide.South => (r.X + a, r.Bottom - Half, length, Half * 2),
+            WallSide.West => (r.X - Half, r.Y + a, Half * 2, length),
+            _ => (r.Right - Half, r.Y + a, Half * 2, length),
+        };
+
+        var best = new[] { InnerFace(r, side, t0, 0), InnerFace(r, side, t1, 0) }.MaxBy(p => p.Y);
+        void Consider((double X, double Y, double W, double L) f)
+        {
+            var key = WorldLayer.FrontFace(f.X, f.Y, f.W, f.L);
+            if (key.Y > best.Y)
+            {
+                best = key;
+            }
+        }
+
+        for (var k = (int)Math.Floor(t0) - 1; k <= (int)Math.Ceiling(t1) + 1; k++)
+        {
+            // The post at each tile corner, then the piece of wall between it and the next.
+            if (k + Half > t0 && k - Half < t1)
+            {
+                Consider(Along(k - Half, Half * 2));
+            }
+
+            if (k + 1 - Half > t0 && k + Half < t1)
+            {
+                Consider(Along(k + Half, 1 - (Half * 2)));
+            }
+        }
+
+        return best + new Vector2(0, 0.6f);
     }
 
     /// <summary>True when the inside of this wall faces the viewer in the current view angle.</summary>
