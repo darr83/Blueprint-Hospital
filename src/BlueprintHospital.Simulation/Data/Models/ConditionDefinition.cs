@@ -107,6 +107,34 @@ public sealed class MaternityDefinition
     }
 }
 
+/// <summary>
+/// A planned (elective) day-case procedure: booked onto a weekday list in theatre, the cath lab or the
+/// endoscopy room. The patient comes in to the day surgery unit in the morning, has the procedure when
+/// the room is free (emergencies go first) and goes home the same day. These never come through A&amp;E.
+/// </summary>
+public sealed class PlannedDefinition
+{
+    /// <summary>[fewest, most] patients booked each weekday for each room that can do it.</summary>
+    public int[] PerDay { get; init; } = { 1, 3 };
+
+    /// <summary>What the hospital is paid for the procedure, in pounds.</summary>
+    public int Tariff { get; init; }
+
+    internal void Validate(ValidationContext context, ConditionDefinition owner)
+    {
+        if (PerDay.Length != 2 || PerDay[0] < 0 || PerDay[1] > 20 || PerDay[0] > PerDay[1])
+        {
+            context.Error("planned.per_day", "must be [fewest, most] between 0 and 20.");
+        }
+
+        context.RequireRange("planned.tariff", Tariff, 0, 100_000);
+        if (owner.Disposition != Disposition.Surgery || owner.Operation is not { DayCase: true })
+        {
+            context.Error("planned", "planned procedures need disposition surgery and a day case operation.");
+        }
+    }
+}
+
 public sealed class SymptomChance
 {
     public string Symptom { get; init; } = string.Empty;
@@ -280,6 +308,12 @@ public sealed class ConditionDefinition : IDataRecord
     /// <summary>Women in labour come to the maternity unit, not A&amp;E.</summary>
     public bool IsMaternity => Maternity is not null;
 
+    /// <summary>Planned day-case procedures booked onto weekday lists. Null for everything else.</summary>
+    public PlannedDefinition? Planned { get; init; }
+
+    /// <summary>Booked onto a planned list: never comes through A&amp;E and is never diagnosed there.</summary>
+    public bool IsPlanned => Planned is not null;
+
     public double ChanceOf(string symptomId) =>
         Symptoms.FirstOrDefault(s => s.Symptom == symptomId)?.Probability ?? 0;
 
@@ -364,9 +398,14 @@ public sealed class ConditionDefinition : IDataRecord
             {
                 context.RequireText("operation.name", Operation.Name);
                 context.RequireRange("operation.minutes", Operation.Minutes, 10, 600);
-                if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab or CareSpaceKind.DeliveryRoom))
+                if (Operation.Room is not (CareSpaceKind.Theatre or CareSpaceKind.CathLab or CareSpaceKind.DeliveryRoom or CareSpaceKind.Endoscopy))
                 {
-                    context.Error("operation.room", "must be theatre, cath_lab or delivery_room.");
+                    context.Error("operation.room", "must be theatre, cath_lab, delivery_room or endoscopy.");
+                }
+
+                if (Operation.Room == CareSpaceKind.Endoscopy && Planned is null)
+                {
+                    context.Error("operation.room", "only planned procedures can use the endoscopy room.");
                 }
 
                 if (Operation.Room == CareSpaceKind.DeliveryRoom && Maternity is null)
@@ -382,6 +421,11 @@ public sealed class ConditionDefinition : IDataRecord
         }
 
         Maternity?.Validate(context, this);
+        Planned?.Validate(context, this);
+        if (Planned is not null && Maternity is not null)
+        {
+            context.Error("planned", "a condition can't be both planned and maternity.");
+        }
 
         if (LengthOfStayHours.Length != 2 || LengthOfStayHours[0] < 1 || LengthOfStayHours[1] < LengthOfStayHours[0] || LengthOfStayHours[1] > 24 * 60)
         {

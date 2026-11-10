@@ -543,6 +543,32 @@ examination room and fracture clinic). Specialty clinics need their department u
   long), in clinic, seen or did not attend. Click a patient's name to find them on the map. Clinic
   patients have a lilac ring.
 
+### Planned day lists
+
+Alongside the emergencies, the hospital runs **planned lists** on weekdays. Each morning it books
+patients for the day (arriving 07:30 to 13:00) for every list that can run:
+
+| Procedure | Department | Done in |
+|---|---|---|
+| Inguinal hernia repair, laparoscopic cholecystectomy | General Surgery | a theatre ticked for General Surgery |
+| Carpal tunnel release, knee arthroscopy | Trauma & Orthopaedics | a theatre ticked for T&O |
+| Hysteroscopy | Gynaecology | a theatre ticked for Gynaecology |
+| Coronary angiogram | Cardiology | the cath lab |
+| Gastroscopy (OGD), colonoscopy | Gastroenterology | the endoscopy room |
+
+- A list needs its department, a staffed room for it (a surgeon and an anaesthetist in theatre, a
+  cardiac physiologist in the cath lab, an endoscopist in the endoscopy room) and a **day surgery
+  unit**. More staffed rooms mean more patients per day.
+- Planned patients skip A&E: they walk straight onto the day surgery unit, go for their procedure
+  when the room is free, recover there for a few hours and go home. Each pays its own fee
+  (Operations in the finances).
+- **Emergencies come first.** Emergency patients take the theatre ahead of the list, and each day
+  surgery unit keeps a quarter of its beds (at least one) free for emergency day cases.
+- A planned patient is **cancelled** if there is no spare day surgery bed when they arrive, if the
+  room or its staff are lost, or if their procedure hasn't started by 18:00. Each cancellation costs
+  reputation and shows a notification.
+- The Clinics panel (C) shows the day's planned lists and what each closed list still needs.
+
 ### Starting a new game
 
 **New Game** asks how to start:
@@ -740,6 +766,10 @@ Add an entry to any file in `game/Data/Conditions/`. This is a complete example:
   Optional: `"ambulatory_hours": [4, 8]` for an `admit` condition that can be managed the same day in an
   ambulatory care unit, and `"needs_physio": true` for ward patients who need physiotherapy to get home.
   A treatment procedure can name `"room": "plaster_room"` to be done there by a plaster technician.
+- A **planned** procedure (see `Conditions/planned_procedures.json`) is a `surgery` condition with a
+  day-case `operation` and `"planned": { "per_day": [1, 3], "tariff": 2400 }`: patients are booked onto
+  weekday lists (`per_day` for each staffed room) and never come through A&E. Its operation `room` can
+  also be `endoscopy`.
 
 ### How to add an investigation
 

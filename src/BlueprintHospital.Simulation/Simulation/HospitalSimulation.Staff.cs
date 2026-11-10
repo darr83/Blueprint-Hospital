@@ -118,6 +118,12 @@ public sealed partial class HospitalSimulation
                     band -= 50;
                 }
 
+                if (task.Kind == TaskKind.Surgery && patient.Condition.IsPlanned && patient.Triage != TriageCategory.Red)
+                {
+                    // Planned lists wait behind every emergency, however long they have waited.
+                    band = GreenRoutine - 160;
+                }
+
                 break;
         }
 
