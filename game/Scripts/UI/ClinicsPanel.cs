@@ -118,8 +118,14 @@ public partial class ClinicsPanel : PanelContainer
         var clinics = _sim.ClinicRooms.OrderBy(c => c.Name, StringComparer.Ordinal).ToList();
         var receptions = _sim.SpacesOfKind(CareSpaceKind.OutpatientReception).ToList();
 
+        var date = _sim.Now.Date.AddDays(_dayOffset);
         if (clinics.Count == 0 && receptions.Count == 0)
         {
+            if (AppendPlannedLists(sb, date))
+            {
+                sb.Append('\n');
+            }
+
             sb.Append($"{Muted}No clinics yet.\n\nIn Build mode, open the Clinics tab and build an Outpatients reception and a clinic room. " +
                       "Then hire a doctor posted to the clinic and a receptionist posted to the reception. " +
                       "The clinic books its patients two days ahead, Monday to Friday, 09:00 to 12:00 and 13:30 to 16:30.[/color]");
@@ -153,7 +159,6 @@ public partial class ClinicsPanel : PanelContainer
             sb.Append($"[color={ClinicalText.AmberTextHex}]Not enough chairs: some patients are standing. Place chairs along the corridors near the clinics from Build mode.[/color]\n");
         }
 
-        var date = _sim.Now.Date.AddDays(_dayOffset);
         var dayName = _dayOffset == 0 ? "Today" : "Tomorrow";
         if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
         {
@@ -165,7 +170,67 @@ public partial class ClinicsPanel : PanelContainer
             AppendClinic(sb, clinic, date);
         }
 
+        if (sb.Length > 0)
+        {
+            sb.Append('\n');
+        }
+
+        AppendPlannedLists(sb, date);
         SetText(sb);
+    }
+
+    /// <summary>The day's planned lists (day-case operations, angiograms, endoscopy). False when there is nothing to show.</summary>
+    private bool AppendPlannedLists(StringBuilder sb, DateTime date)
+    {
+        var bookings = _sim.PlannedListFor(date).ToList();
+        if (!_sim.DaySurgeryUnits.Any() && bookings.Count == 0)
+        {
+            return false;
+        }
+
+        sb.Append("[b]Planned lists[/b]\n");
+        if (bookings.Count == 0)
+        {
+            var closed = _sim.PlannedProcedures
+                .Select(p => (Procedure: p, Problems: _sim.PlannedListProblems(p)))
+                .Where(p => p.Problems.Count > 0)
+                .ToList();
+            sb.Append(date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday
+                ? $"{Muted}No planned lists at weekends.[/color]\n"
+                : date > _sim.Now.Date
+                    ? $"{Muted}Booked on the morning, Monday to Friday, from 07:30.[/color]\n"
+                    : $"{Muted}No planned patients today.[/color]\n");
+            foreach (var group in closed.GroupBy(c => string.Join(" and ", c.Problems)))
+            {
+                sb.Append($"{Muted}{string.Join(", ", group.Select(g => g.Procedure.Name))}: needs {group.Key}.[/color]\n");
+            }
+
+            return true;
+        }
+
+        int Count(PlannedStatus status) => bookings.Count(b => b.Status == status);
+        sb.Append($"{Muted}{bookings.Count} booked · {Count(PlannedStatus.Done)} done · {Count(PlannedStatus.Cancelled)} cancelled[/color]\n");
+        sb.Append("[table=4]");
+        foreach (var b in bookings)
+        {
+            var name = b.PatientId is { } id && _sim.FindPatient(id) is { } patient
+                ? $"{patient.FullName} ({patient.Age}{(patient.Sex == Sex.Female ? "F" : "M")})"
+                : $"{Muted}Not yet arrived[/color]";
+            var procedure = _sim.Database.Conditions.TryGetValue(b.ConditionId, out var c) ? c.Name : b.ConditionId;
+            Cell(sb, $"{b.ArrivesAt:HH:mm}");
+            Cell(sb, name);
+            Cell(sb, $"{Muted}{procedure}[/color]");
+            Cell(sb, b.Status switch
+            {
+                PlannedStatus.Booked => $"{Muted}Booked[/color]",
+                PlannedStatus.Admitted => "[color=#1F5FBF]In[/color]",
+                PlannedStatus.Done => $"[color={ClinicalText.GreenHex}]Done[/color]",
+                _ => $"[color={ClinicalText.RedHex}]Cancelled[/color]",
+            }, right: true);
+        }
+
+        sb.Append("[/table]\n");
+        return true;
     }
 
     private void SetText(StringBuilder sb)

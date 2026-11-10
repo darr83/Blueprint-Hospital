@@ -214,8 +214,9 @@ public sealed partial class HospitalSimulation
         {
             PayForAttendance(patient);
         }
-        else
+        else if (!patient.Condition.IsPlanned)
         {
+            // Planned patients are paid for by the procedure itself.
             PayForAdmission(patient);
         }
 

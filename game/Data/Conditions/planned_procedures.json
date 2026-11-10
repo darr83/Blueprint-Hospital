@@ -1,0 +1,689 @@
+[
+  {
+    "id": "planned_hernia_repair",
+    "name": "Inguinal hernia (planned repair)",
+    "department": "general_surgery",
+    "description": "A groin hernia booked for a planned repair as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      85
+    ],
+    "female_fraction": 0.15,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "groin_lump",
+    "symptoms": [
+      {
+        "symptom": "groin_lump",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned inguinal hernia repair as a day case.",
+    "operation": {
+      "name": "Inguinal hernia repair",
+      "minutes": 60,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        2
+      ],
+      "tariff": 2400
+    }
+  },
+  {
+    "id": "planned_cholecystectomy",
+    "name": "Gallstones (planned gallbladder removal)",
+    "department": "general_surgery",
+    "description": "Gallstones that keep causing pain, booked for keyhole removal of the gallbladder.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      80
+    ],
+    "female_fraction": 0.7,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "right_upper_quadrant_pain",
+    "symptoms": [
+      {
+        "symptom": "right_upper_quadrant_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned laparoscopic cholecystectomy as a day case.",
+    "operation": {
+      "name": "Laparoscopic cholecystectomy",
+      "minutes": 90,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        2
+      ],
+      "tariff": 3200
+    }
+  },
+  {
+    "id": "planned_carpal_tunnel_release",
+    "name": "Carpal tunnel syndrome (planned release)",
+    "department": "trauma_orthopaedics",
+    "description": "A trapped nerve at the wrist causing numb fingers, booked for a quick release operation.",
+    "prevalence": 1,
+    "age_range": [
+      35,
+      85
+    ],
+    "female_fraction": 0.65,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "numbness",
+    "symptoms": [
+      {
+        "symptom": "numbness",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned carpal tunnel release as a day case.",
+    "operation": {
+      "name": "Carpal tunnel release",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        2
+      ],
+      "tariff": 1300
+    }
+  },
+  {
+    "id": "planned_knee_arthroscopy",
+    "name": "Knee problem (planned arthroscopy)",
+    "department": "trauma_orthopaedics",
+    "description": "A torn knee cartilage booked for a keyhole look and trim.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      65
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned knee arthroscopy as a day case.",
+    "operation": {
+      "name": "Knee arthroscopy",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        2
+      ],
+      "tariff": 1900
+    }
+  },
+  {
+    "id": "planned_hysteroscopy",
+    "name": "Heavy bleeding (planned hysteroscopy)",
+    "department": "gynaecology",
+    "description": "Heavy or irregular bleeding booked for a camera look inside the womb.",
+    "prevalence": 1,
+    "age_range": [
+      30,
+      75
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "vaginal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned hysteroscopy and biopsy as a day case.",
+    "operation": {
+      "name": "Hysteroscopy and biopsy",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        2
+      ],
+      "tariff": 1400
+    }
+  },
+  {
+    "id": "planned_coronary_angiogram",
+    "name": "Angina (planned angiogram)",
+    "department": "cardiology",
+    "description": "Chest pain on exertion booked for a planned coronary angiogram, with a stent if needed.",
+    "prevalence": 1,
+    "age_range": [
+      45,
+      85
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "chest_pain",
+    "symptoms": [
+      {
+        "symptom": "chest_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned planned coronary angiogram as a day case.",
+    "operation": {
+      "name": "Planned coronary angiogram",
+      "minutes": 45,
+      "day_case": true,
+      "room": "cath_lab"
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        3
+      ],
+      "tariff": 1800
+    }
+  },
+  {
+    "id": "planned_ogd",
+    "name": "Indigestion (planned OGD)",
+    "department": "gastroenterology",
+    "description": "Ongoing indigestion or trouble swallowing, booked for a camera test of the gullet and stomach.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      85
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "heartburn",
+    "symptoms": [
+      {
+        "symptom": "heartburn",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned planned OGD as a day case.",
+    "operation": {
+      "name": "Planned OGD",
+      "minutes": 20,
+      "day_case": true,
+      "room": "endoscopy"
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        2,
+        4
+      ],
+      "tariff": 650
+    }
+  },
+  {
+    "id": "planned_colonoscopy",
+    "name": "Bowel symptoms (planned colonoscopy)",
+    "department": "gastroenterology",
+    "description": "A change in bowel habit or bleeding, booked for a camera test of the large bowel.",
+    "prevalence": 1,
+    "age_range": [
+      40,
+      85
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "rectal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "rectal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned colonoscopy as a day case.",
+    "operation": {
+      "name": "Colonoscopy",
+      "minutes": 40,
+      "day_case": true,
+      "room": "endoscopy"
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        1,
+        3
+      ],
+      "tariff": 900
+    }
+  }
+]

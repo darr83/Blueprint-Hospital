@@ -44,6 +44,14 @@ public sealed partial class HospitalSimulation
         if (patient.Stage == PatientStage.OnWard)
         {
             // Already in a ward bed (e.g. back from theatre to the surgical assessment unit).
+            if (patient.DayCase && patient.CareLevel < 2 && patient.CareSpaceId is { } wardId && FindSpace(wardId) is { } ward && UnitOf(ward) == WardUnit.DaySurgery)
+            {
+                // A planned day case is already on the day surgery unit: a few hours there, then home.
+                patient.DischargeDueAt = StayOn(patient, diagnosed, WardUnit.DaySurgery, moved: false);
+                patient.Log(Now, note ?? diagnosed.DispositionNote);
+                return;
+            }
+
             patient.DischargeDueAt = null;
             RequestWardMove(patient, note ?? $"{diagnosed.DispositionNote} Needs {LevelName(patient.CareLevel)}.");
             return;

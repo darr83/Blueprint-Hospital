@@ -24,7 +24,7 @@ public class DiagnosisCoverageTests(ITestOutputHelper output)
         var now = new DateTime(2026, 1, 5, 10, 0, 0);
         var failures = new List<string>();
 
-        foreach (var condition in db.Conditions.Values.Where(c => !c.IsMaternity).OrderBy(c => c.Id, StringComparer.Ordinal))
+        foreach (var condition in db.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal))
         {
             const int patients = 80;
             var correct = 0;

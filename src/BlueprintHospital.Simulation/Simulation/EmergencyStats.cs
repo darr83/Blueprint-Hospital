@@ -71,6 +71,12 @@ public sealed class EmergencyStats
     /// <summary>Operations done in the hospital's theatres.</summary>
     public int OperationsDone { get; internal set; }
 
+    /// <summary>Planned day-case procedures done.</summary>
+    public int PlannedDone { get; internal set; }
+
+    /// <summary>Planned patients cancelled on the day.</summary>
+    public int PlannedCancelled { get; internal set; }
+
     /// <summary>Patients in A&amp;E waiting to go to theatre.</summary>
     public int AwaitingSurgery { get; internal set; }
 
