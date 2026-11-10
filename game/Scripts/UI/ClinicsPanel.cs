@@ -185,7 +185,13 @@ public partial class ClinicsPanel : PanelContainer
         sb.Append($"\n[b]{clinic.Name}[/b]");
         if (definition is not null)
         {
-            sb.Append($"{Muted}  {definition.AppointmentMinutes} min slots · £{definition.Tariff:N0} each[/color]");
+            sb.Append($"{Muted}  {definition.AppointmentMinutes} min slots · £{definition.Tariff:N0} each");
+            if (definition.Procedures.Count > 0)
+            {
+                sb.Append($" · procedures £{definition.Procedures.Min(p => p.Tariff):N0} to £{definition.Procedures.Max(p => p.Tariff):N0}");
+            }
+
+            sb.Append("[/color]");
         }
 
         sb.Append('\n');
@@ -232,7 +238,7 @@ public partial class ClinicsPanel : PanelContainer
 
             Cell(sb, $"{a.Time:HH:mm}");
             Cell(sb, name);
-            Cell(sb, $"{Muted}{a.Reason}[/color]");
+            Cell(sb, a.IsProcedure ? $"[color=#1F5FBF]Procedure:[/color] {Muted}{a.Reason} ({a.Minutes} min)[/color]" : $"{Muted}{a.Reason}[/color]");
             Cell(sb, Status(a), right: true);
         }
 

@@ -10,7 +10,11 @@
       "Follow-up after a ward stay",
       "Thyroid problem",
       "Anaemia",
-      "Weight loss"
+      "Weight loss",
+      "Follow-up after a fall",
+      "Gout review",
+      "Kidney disease review",
+      "Follow-up after alcohol withdrawal"
     ]
   },
   {
@@ -24,8 +28,29 @@
       "High blood pressure",
       "Follow-up after a heart attack",
       "Heart murmur",
-      "Atrial fibrillation review"
-    ]
+      "Atrial fibrillation review",
+      "Follow-up after a stent",
+      "Pericarditis follow-up",
+      "Blackouts"
+    ],
+    "procedures": [
+      {
+        "name": "Pacemaker check",
+        "minutes": 30,
+        "tariff": 260
+      },
+      {
+        "name": "24-hour heart monitor fitting",
+        "minutes": 20,
+        "tariff": 230
+      },
+      {
+        "name": "Exercise treadmill test",
+        "minutes": 40,
+        "tariff": 320
+      }
+    ],
+    "procedure_share": 0.3
   },
   {
     "id": "neurology_clinic",
@@ -38,8 +63,24 @@
       "Follow-up after a stroke",
       "Numbness and tingling",
       "Tremor",
-      "Blackouts"
-    ]
+      "Blackouts",
+      "TIA clinic (mini-stroke)",
+      "Bell's palsy follow-up",
+      "Follow-up after meningitis"
+    ],
+    "procedures": [
+      {
+        "name": "Botox injections for migraine",
+        "minutes": 30,
+        "tariff": 380
+      },
+      {
+        "name": "Nerve conduction study",
+        "minutes": 45,
+        "tariff": 420
+      }
+    ],
+    "procedure_share": 0.25
   },
   {
     "id": "gastro_clinic",
@@ -52,8 +93,18 @@
       "Abnormal liver tests",
       "Difficulty swallowing",
       "Change in bowel habit",
-      "Coeliac disease"
-    ]
+      "Coeliac disease",
+      "Liver clinic: cirrhosis review",
+      "Follow-up after a colitis flare"
+    ],
+    "procedures": [
+      {
+        "name": "Liver stiffness scan (FibroScan)",
+        "minutes": 20,
+        "tariff": 240
+      }
+    ],
+    "procedure_share": 0.2
   },
   {
     "id": "gynaecology_clinic",
@@ -65,21 +116,73 @@
       "Menopause symptoms",
       "Follow-up after surgery",
       "Endometriosis review",
-      "Postmenopausal bleeding"
+      "Postmenopausal bleeding",
+      "Abnormal smear result",
+      "Follow-up after pelvic infection",
+      "Ovarian cyst follow-up"
     ],
-    "female_only": true
+    "female_only": true,
+    "procedures": [
+      {
+        "name": "Smear test (cervical screening)",
+        "minutes": 20,
+        "tariff": 200
+      },
+      {
+        "name": "Ring pessary change",
+        "minutes": 20,
+        "tariff": 210
+      }
+    ],
+    "procedure_share": 0.4
   },
   {
     "id": "gynae_exam_room",
     "appointment_minutes": 30,
     "tariff": 260,
     "reasons": [
-      "Colposcopy",
-      "Coil fitting",
-      "Endometrial biopsy",
-      "Polyp removal"
+      "Results discussion",
+      "Follow-up after colposcopy"
     ],
-    "female_only": true
+    "female_only": true,
+    "procedures": [
+      {
+        "name": "Colposcopy",
+        "minutes": 30,
+        "tariff": 320
+      },
+      {
+        "name": "Colposcopy after an abnormal smear",
+        "minutes": 30,
+        "tariff": 320
+      },
+      {
+        "name": "Smear test (cervical screening)",
+        "minutes": 20,
+        "tariff": 200
+      },
+      {
+        "name": "Coil fitting",
+        "minutes": 30,
+        "tariff": 290
+      },
+      {
+        "name": "Endometrial biopsy",
+        "minutes": 30,
+        "tariff": 310
+      },
+      {
+        "name": "Polyp removal",
+        "minutes": 30,
+        "tariff": 360
+      },
+      {
+        "name": "Outpatient hysteroscopy",
+        "minutes": 45,
+        "tariff": 480
+      }
+    ],
+    "procedure_share": 0.85
   },
   {
     "id": "fracture_clinic",
@@ -88,11 +191,30 @@
     "reasons": [
       "Wrist fracture check",
       "Ankle fracture check",
-      "Cast change",
       "Follow-up after hip operation",
       "Shoulder fracture check",
-      "Finger injury"
-    ]
+      "Finger injury",
+      "Shoulder dislocation follow-up",
+      "Follow-up after a tibia operation"
+    ],
+    "procedures": [
+      {
+        "name": "Cast removal",
+        "minutes": 15,
+        "tariff": 170
+      },
+      {
+        "name": "Cast change",
+        "minutes": 30,
+        "tariff": 210
+      },
+      {
+        "name": "Steroid joint injection",
+        "minutes": 15,
+        "tariff": 220
+      }
+    ],
+    "procedure_share": 0.3
   },
   {
     "id": "surgical_clinic",
@@ -104,8 +226,30 @@
       "Gallstones",
       "Hernia",
       "Lump to check",
-      "Follow-up after bowel surgery"
-    ]
+      "Follow-up after bowel surgery",
+      "Follow-up after Hartmann's procedure",
+      "Stoma review",
+      "Diverticulitis follow-up",
+      "Follow-up after testicular surgery"
+    ],
+    "procedures": [
+      {
+        "name": "Mole removal",
+        "minutes": 40,
+        "tariff": 340
+      },
+      {
+        "name": "Skin lump removal",
+        "minutes": 40,
+        "tariff": 340
+      },
+      {
+        "name": "Ingrown toenail surgery",
+        "minutes": 40,
+        "tariff": 300
+      }
+    ],
+    "procedure_share": 0.25
   },
   {
     "id": "antenatal_clinic",

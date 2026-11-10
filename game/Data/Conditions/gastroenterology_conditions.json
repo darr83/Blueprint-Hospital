@@ -301,5 +301,222 @@
       48,
       120
     ]
+  },
+  {
+    "id": "decompensated_cirrhosis",
+    "name": "Liver cirrhosis with fluid",
+    "department": "gastroenterology",
+    "description": "A scarred liver that has stopped coping: yellow skin, a tummy swollen with fluid and confusion. The fluid is drained.",
+    "prevalence": 1,
+    "age_range": [
+      35,
+      85
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.4,
+    "crew_assessment": "jaundice and swollen abdomen",
+    "presenting_complaint": "abdominal_distension",
+    "symptoms": [
+      {
+        "symptom": "abdominal_distension",
+        "probability": 1.0
+      },
+      {
+        "symptom": "jaundice",
+        "probability": 0.8
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.3
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.4
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        10
+      ],
+      "systolic_bp": [
+        104,
+        12
+      ],
+      "diastolic_bp": [
+        62,
+        8
+      ],
+      "respiratory_rate": [
+        20,
+        2
+      ],
+      "oxygen_saturation": [
+        96,
+        1.2
+      ],
+      "temperature": [
+        37.1,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -3,
+      "temperature": 0.5
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "liver_function_tests",
+      "clotting_screen",
+      "ascitic_tap",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Ascitic drain",
+        "performed_by": "doctor",
+        "minutes": 30,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "human_albumin",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "pabrinex",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted for a large-volume ascitic drain with albumin and liver team review.",
+    "length_of_stay_hours": [
+      96,
+      240
+    ]
+  },
+  {
+    "id": "ulcerative_colitis_flare",
+    "name": "Ulcerative colitis flare",
+    "department": "gastroenterology",
+    "description": "A bad flare of inflammation in the bowel: bloody diarrhoea many times a day. Needs IV steroids.",
+    "prevalence": 1.2,
+    "age_range": [
+      16,
+      70
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "bloody diarrhoea, known colitis",
+    "presenting_complaint": "bloody_diarrhoea",
+    "symptoms": [
+      {
+        "symptom": "bloody_diarrhoea",
+        "probability": 1.0
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.8
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        11
+      ],
+      "systolic_bp": [
+        118,
+        12
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.7,
+        0.4
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.4
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -30,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -1,
+      "temperature": 0.6
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "flexible_sigmoidoscopy",
+      "full_blood_count",
+      "c_reactive_protein",
+      "urea_electrolytes"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "hydrocortisone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.04,
+    "disposition": "admit",
+    "disposition_note": "Acute severe colitis. Admitted for IV hydrocortisone and daily stool charts.",
+    "length_of_stay_hours": [
+      96,
+      192
+    ]
   }
 ]

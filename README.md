@@ -213,54 +213,88 @@ today, yesterday and the last week by category, and what the hospital costs to r
 
 ### Conditions
 
-The game has 43 conditions, each with its own symptoms, observations, tests, treatment and
-outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
+The game has 76 A&E conditions (plus the maternity ones), each with its own symptoms, observations,
+tests, treatment and outcome. Doctors only see what a real doctor would: symptoms, observations and test results.
+Children's illnesses (croup, bronchiolitis, febrile convulsion) are seen in A&E.
 
 | Condition | After A&E |
 |---|---|
-| Acute appendicitis | Operation, then admit |
-| Acute asthma | Discharge |
+| Acute appendicitis | Laparoscopic appendicectomy in the theatre, then admit |
+| Acute asthma | Discharge after observation |
 | Acute cholecystitis | Admit |
 | Acute heart failure | Admit |
 | Acute kidney injury | Admit |
-| Acute myocardial infarction | Transfer |
+| Acute myocardial infarction | Primary PCI in the cath lab (else transfer) |
 | Acute pancreatitis | Admit |
+| Alcohol withdrawal | Admit |
 | Allergic reaction (hives) | Discharge |
-| Anaphylaxis | Discharge |
+| Anaphylaxis | Discharge after observation |
 | Ankle fracture | Discharge |
 | Ankle sprain | Discharge |
 | Atrial fibrillation with fast heart rate | Admit |
+| Bacterial meningitis | Admit |
+| Bartholin's abscess | Day case: Marsupialisation of Bartholin's abscess, then home |
+| Bell's palsy | Discharge |
 | Biliary colic | Discharge |
+| Bronchiolitis | Discharge after observation |
 | Cellulitis | Discharge |
 | Community-acquired pneumonia | Admit |
+| Complete heart block | Pacemaker insertion in the cath lab, then admit |
 | COPD exacerbation | Admit |
+| Croup | Discharge after observation |
 | Deep vein thrombosis | Discharge |
 | Diabetic ketoacidosis | Admit |
-| Ectopic pregnancy | Operation, then admit |
-| Fractured neck of femur | Operation, then admit |
+| Dislocated shoulder | Discharge after observation |
+| Diverticulitis | Admit |
+| Ectopic pregnancy | Laparoscopic salpingectomy in the theatre, then admit |
+| Fall in an older person | Admit |
+| Febrile convulsion | Discharge after observation |
+| Flu | Discharge |
+| Fractured neck of femur | Hip hemiarthroplasty in the theatre, then admit |
 | Gastro-oesophageal reflux | Discharge |
 | Gastroenteritis | Discharge |
-| Hypoglycaemia | Discharge |
+| Gout | Discharge |
+| Hyperemesis gravidarum | Admit |
+| Hypoglycaemia | Discharge after observation |
+| Large bowel obstruction | Major operation (Hartmann's procedure), then HDU |
+| Liver cirrhosis with fluid | Admit |
+| Mechanical back pain | Discharge |
 | Migraine | Discharge |
+| Minor burn | Discharge |
+| Minor head injury | Discharge after observation |
 | Musculoskeletal chest pain | Discharge |
-| Perforated peptic ulcer | Major operation, then HDU |
-| Perianal abscess | Day case operation, then home |
+| Nosebleed | Discharge after observation |
+| NSTEMI (heart attack) | Coronary angiogram and stent in the cath lab, then admit |
+| Ovarian torsion | Laparoscopic ovarian detorsion in the theatre, then admit |
+| Panic attack | Discharge |
+| Paracetamol overdose | Admit |
+| Pelvic inflammatory disease | Discharge |
+| Perforated peptic ulcer | Major operation (Laparotomy and ulcer repair), then HDU |
+| Perianal abscess | Day case: Incision and drainage of abscess, then home |
+| Pericarditis | Discharge |
 | Pulmonary embolism | Admit |
 | Pyelonephritis | Admit |
 | Renal colic | Discharge |
-| Seizure in known epilepsy | Discharge |
+| Seizure in known epilepsy | Discharge after observation |
+| Septic arthritis of the knee | Arthroscopic knee washout in the theatre, then admit |
 | Septic shock | Intensive care |
 | Simple laceration | Discharge |
 | Small bowel obstruction | Admit |
-| Strangulated inguinal hernia | Operation, then admit |
+| Status epilepticus | Intensive care |
+| Strangulated inguinal hernia | Emergency hernia repair in the theatre, then admit |
 | Stroke | Admit |
 | Subarachnoid haemorrhage | Transfer |
 | Supraventricular tachycardia | Discharge |
+| Testicular torsion | Day case: Scrotal exploration and fixation, then home |
 | Threatened miscarriage | Discharge |
+| TIA (mini-stroke) | Discharge |
+| Tibial shaft fracture | Intramedullary nailing of the tibia in the theatre, then admit |
 | Tonsillitis | Discharge |
+| Ulcerative colitis flare | Admit |
 | Upper gastrointestinal bleed | Admit |
 | Urinary tract infection | Discharge |
-| Vasovagal syncope (faint) | Discharge |
+| Vasovagal syncope (faint) | Discharge after observation |
+| Wrist fracture | Discharge |
 
 "Admit" goes to a ward bed when there is one, otherwise to another hospital. "Operation" goes to
 theatre and then a ward bed; without a theatre the patient is transferred. "Transfer" goes to a
@@ -502,6 +536,9 @@ examination room and fracture clinic). Specialty clinics need their department u
   placed in the corridors** (£120 each; doorways must stay clear). With no free chair they stand.
 - The clinic doctor calls each patient in at their appointment time, sees them, and they go home.
   The hospital is paid per patient seen (Clinics in the finances).
+- Some appointments are **procedures** (a smear test, colposcopy, coil fitting, mole removal, cast
+  change, pacemaker check). Each has its own length and fee; a long one takes as many slots as it
+  needs. The Clinics panel marks them "Procedure".
 - Open **Clinics** (C) to see each clinic's calendar: who is booked, arriving, waiting (and for how
   long), in clinic, seen or did not attend. Click a patient's name to find them on the map. Clinic
   patients have a lilac ring.
@@ -771,7 +808,8 @@ withhold it if they match. Patient allergies come from `game/Data/PatientBackgro
 
 - `Clinics/` has one entry per clinic room template (`id` matches the template): `appointment_minutes`,
   `tariff` (paid per patient seen), the `reasons` patients are booked for, and `female_only` for
-  gynaecology. Loading checks every clinic room template has an entry.
+  gynaecology. Optional `procedures` (each with `name`, `minutes` and `tariff`) and `procedure_share`
+  (the share of booked appointments that are procedures) add outpatient procedures. Loading checks every clinic room template has an entry.
 
 ### Room templates and furniture
 
