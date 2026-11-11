@@ -32,60 +32,23 @@ public static class Carriers3D
     // ------------------------------------------------------------------ hospital bed
 
     /// <summary>
-    /// A hospital bed, about 0.8 m by 2.1 m (1.6 by 4.2 tiles): castors, a dark chassis, the frame, a
-    /// blue mattress with a fitted sheet, the head and foot boards (the obs chart on the foot board),
-    /// half-length cot sides at the head, a handset and a pillow. An empty bed has a folded blanket at the foot.
+    /// A hospital bed, about 0.8 m by 2.1 m (1.6 by 4.2 tiles), from the Blender model "bed": castors, the
+    /// chassis, a blue mattress with a fitted sheet, moulded head and foot boards with the obs chart,
+    /// tube side rails, a handset and a pillow. A <paramref name="made"/> bed has its blanket on.
     /// </summary>
     public static float Bed(MeshBatch b, bool made)
     {
-        const float deck = 12f;
-        const float top = 18f;
-        foreach (var (x, z) in new[] { (-0.65f, -1.9f), (0.65f, -1.9f), (-0.65f, 1.9f), (0.65f, 1.9f) })
-        {
-            Castor(b, x, z);
-        }
-
-        b.Box(new Vector3(0, H(5.5f), 0), new Vector3(0.9f, H(5), 3.4f), new Color("#6F7B85"));
-        b.Box(new Vector3(0, H(deck - 2), 0), new Vector3(1.6f, H(4), 4.2f), new Color("#B7C2CB"));
-        b.Box(new Vector3(0, H(deck + 2.6f), 0), new Vector3(1.48f, H(5.2f), 4.08f), new Color("#4F7BA8"));
-        b.Box(new Vector3(0, H(top - 1.1f), 0), new Vector3(1.5f, H(2.2f), 4.1f), Sheet);
-
-        // Head board (taller) and foot board, with the skirting band and the obs chart.
-        var board = new Color("#8FA6BA");
-        b.Box(new Vector3(0, H(13), -2.1f + 0.11f), new Vector3(1.7f, H(26), 0.22f), board);
-        b.Box(new Vector3(0, H(2.5f), -2.1f + 0.11f), new Vector3(1.71f, H(5), 0.225f), new Color("#5E7285"));
-        b.Box(new Vector3(0, H(8), 2.1f - 0.11f), new Vector3(1.7f, H(16), 0.22f), board);
-        b.Box(new Vector3(0, H(2.5f), 2.1f - 0.11f), new Vector3(1.71f, H(5), 0.225f), new Color("#5E7285"));
-        b.Box(new Vector3(0, H(26.2f), -2.1f + 0.11f), new Vector3(1.72f, H(0.8f), 0.24f), new Color("#B9C9D6"));
-        b.Box(new Vector3(0, H(16.2f), 2.1f - 0.11f), new Vector3(1.72f, H(0.8f), 0.24f), new Color("#B9C9D6"));
-        b.Box(new Vector3(0, H(9.5f), 2.1f + 0.005f), new Vector3(0.36f, H(9), 0.02f), new Color("#F7F4E8"));
-        b.Box(new Vector3(0, H(11), 2.1f + 0.016f), new Vector3(0.24f, H(0.8f), 0.01f), new Color("#6D8BA5"));
-
-        // Cot sides along the head half, two bars on posts, with the handset on one.
-        foreach (var side in new[] { -1f, 1f })
-        {
-            var x = side * 0.79f;
-            foreach (var z in new[] { -1.5f, -0.1f })
-            {
-                Bar(b, new Vector3(x, H(deck), z), new Vector3(x, H(top + 7), z), 0.022f, new Color("#AEB9C2"));
-            }
-
-            b.Box(new Vector3(x, H(top + 7), -0.8f), new Vector3(0.05f, H(2), 1.8f), new Color("#E3E9EE"));
-            b.Box(new Vector3(x, H(top + 2.2f), -0.8f), new Vector3(0.05f, H(1.5f), 1.6f), new Color("#D5DDE3"));
-        }
-
-        b.Box(new Vector3(0.83f, H(top + 3), -0.8f), new Vector3(0.04f, H(6), 0.08f), new Color("#5A6670"));
-        b.Ball(new Vector3(0.855f, H(top + 4), -0.8f), new Vector3(0.02f, 0.03f, 0.03f), new Color("#3EE07A"), small: true);
-
-        // The pillow at the head, and on an empty bed a folded blanket at the foot.
-        b.Ball(new Vector3(0, H(top + 2.5f), -1.45f), new Vector3(1.1f, H(5.5f), 0.78f), Colors.White);
+        b.Model("bed");
         if (made)
         {
-            b.Box(new Vector3(0, H(top + 1.5f), 1.45f), new Vector3(1.3f, H(3), 0.7f), new Color("#BFD3E6"));
+            BedMade(b);
         }
 
-        return H(top);
+        return H(18);
     }
+
+    /// <summary>The blanket and turned-down sheet of a made-up, empty bed.</summary>
+    public static void BedMade(MeshBatch b) => b.Model("bed", "Made");
 
     // ------------------------------------------------------------------ tables and couches
 
@@ -216,78 +179,21 @@ public static class Carriers3D
     // ------------------------------------------------------------------ trolleys and stretchers
 
     /// <summary>
-    /// An A&amp;E trolley: castors, a dark base on two hydraulic columns with an oxygen cylinder in the
-    /// tray, a steel frame, a blue mattress with a white sheet, side rails up, a push bar at the head
-    /// and a folded drip pole. +z is the way it is pushed (feet first).
+    /// An A&amp;E trolley, from the Blender model "trolley": castors, a dark base with an oxygen cylinder,
+    /// a blue mattress with a white sheet, side rails up, a push bar at the head and a drip pole.
+    /// +z is the way it is pushed (feet first).
     /// </summary>
     public static float Trolley(MeshBatch b)
     {
-        const float frame = 13f;
-        foreach (var (x, z) in new[] { (-0.5f, -1.6f), (0.5f, -1.6f), (-0.5f, 1.6f), (0.5f, 1.6f) })
-        {
-            Castor(b, x, z);
-        }
-
-        b.Box(new Vector3(0, H(5), 0), new Vector3(1.2f, H(4), 3.5f), new Color("#4E5A64"));
-        b.Rod(new Vector3(0, H(8.5f), 0.6f), new Vector3(0, H(8.5f), 1.5f), 0.12f, Colors.White, small: true);
-        foreach (var z in new[] { -0.9f, 0.9f })
-        {
-            b.Box(new Vector3(0, H(8), z), new Vector3(0.28f, H(4), 0.28f), new Color("#7F8A93"));
-        }
-
-        b.Box(new Vector3(0, H(frame - 2), 0), new Vector3(1.4f, H(2), 4.0f), Steel);
-        b.Box(new Vector3(0, H(frame + 1), 0), new Vector3(1.24f, H(4), 3.84f), new Color("#3E6A96"));
-        b.Box(new Vector3(0, H(frame + 2.6f), 0), new Vector3(1.25f, H(1), 3.85f), Sheet);
-        foreach (var side in new[] { -1f, 1f })
-        {
-            var x = side * 0.74f;
-            foreach (var z in new[] { -1.3f, 0f, 1.3f })
-            {
-                Bar(b, new Vector3(x, H(frame - 1), z), new Vector3(x, H(frame + 7), z), 0.018f, new Color("#8C979F"));
-            }
-
-            Bar(b, new Vector3(x, H(frame + 7), -1.5f), new Vector3(x, H(frame + 7), 1.5f), 0.028f, Steel);
-            Bar(b, new Vector3(x, H(frame + 3.5f), -1.5f), new Vector3(x, H(frame + 3.5f), 1.5f), 0.02f, Steel);
-        }
-
-        foreach (var side in new[] { -1f, 1f })
-        {
-            Bar(b, new Vector3(side * 0.62f, H(frame), -2.1f), new Vector3(side * 0.62f, H(frame + 12), -2.1f), 0.025f, new Color("#7F8A93"));
-        }
-
-        Bar(b, new Vector3(-0.64f, H(frame + 12), -2.1f), new Vector3(0.64f, H(frame + 12), -2.1f), 0.045f, new Color("#4A545D"));
-        Bar(b, new Vector3(0.7f, H(frame), -1.95f), new Vector3(0.7f, H(frame + 26), -1.95f), 0.018f, Steel);
-        Bar(b, new Vector3(0.6f, H(frame + 26), -1.95f), new Vector3(0.8f, H(frame + 26), -1.95f), 0.018f, Steel);
-        return H(frame + 3);
+        b.Model("trolley");
+        return H(16);
     }
 
-    /// <summary>The ambulance crew's stretcher: a scissor undercarriage, a black mattress and a yellow head bar.</summary>
+    /// <summary>The ambulance crew's stretcher, from the Blender model "stretcher": a scissor undercarriage, a black mattress and a yellow head bar.</summary>
     public static float Stretcher(MeshBatch b)
     {
-        const float frame = 14f;
-        var steel = new Color("#C3CBD2");
-        foreach (var (x, z) in new[] { (-0.55f, -1.7f), (0.55f, -1.7f), (-0.55f, 1.7f), (0.55f, 1.7f) })
-        {
-            Castor(b, x, z);
-        }
-
-        b.Box(new Vector3(0, H(4), 0), new Vector3(1.2f, H(2), 3.6f), new Color("#7F8A93"));
-        foreach (var side in new[] { -0.55f, 0.55f })
-        {
-            Bar(b, new Vector3(side, H(4), -1.4f), new Vector3(side, H(frame - 2), 1.4f), 0.03f, steel);
-            Bar(b, new Vector3(side, H(4), 1.4f), new Vector3(side, H(frame - 2), -1.4f), 0.03f, steel);
-        }
-
-        b.Box(new Vector3(0, H(frame - 1), 0), new Vector3(1.32f, H(2), 4.0f), steel);
-        b.Box(new Vector3(0, H(frame + 1.5f), 0), new Vector3(1.2f, H(3), 3.84f), new Color("#2E3338"));
-        foreach (var side in new[] { -0.55f, 0.55f })
-        {
-            Bar(b, new Vector3(side, H(frame), -1.9f), new Vector3(side, H(frame + 3), -2.15f), 0.022f, steel);
-            Bar(b, new Vector3(side * 1.27f, H(frame + 3), -1.4f), new Vector3(side * 1.27f, H(frame + 3), 1.4f), 0.022f, steel);
-        }
-
-        Bar(b, new Vector3(-0.62f, H(frame + 3), -2.15f), new Vector3(0.62f, H(frame + 3), -2.15f), 0.045f, new Color("#F2C230"));
-        return H(frame + 2);
+        b.Model("stretcher");
+        return H(16);
     }
 
     /// <summary>The stretcher's two safety straps, buckled over the blanket.</summary>
@@ -313,50 +219,25 @@ public static class Carriers3D
     /// One big wheel of a wheelchair, built round its own hub so it can turn as the chair is pushed:
     /// the tyre, the spokes and the push rim.
     /// </summary>
-    public static void WheelchairWheel(MeshBatch b, float side)
-    {
-        var sideways = new Basis(Vector3.Forward, Mathf.Pi / 2);
-        var r = Person3D.V(8.4f);
-        b.Ring(Vector3.Zero, Person3D.V(9.2f), Tyre, sideways, 1.4f);
-        b.Cylinder(Vector3.Zero, r, 0.012f, r, new Color("#B8C2CA"), sideways);
-        for (var i = 0; i < 6; i++)
-        {
-            var a = i * Mathf.Pi / 3;
-            var end = new Vector3(0, Mathf.Sin(a) * r * 0.95f, Mathf.Cos(a) * r * 0.95f);
-            b.Rod(new Vector3(side * 0.012f, 0, 0) - end, new Vector3(side * 0.012f, 0, 0) + end, 0.008f, new Color("#4A555E"), small: true);
-        }
-
-        b.Ring(new Vector3(side * 0.035f, 0, 0), Person3D.V(7.6f), new Color("#C9D2D9"), sideways, 0.6f);
-        b.Cylinder(Vector3.Zero, 0.03f, 0.06f, 0.03f, new Color("#C9D2D9"), sideways);
-    }
+    public static void WheelchairWheel(MeshBatch b, float side) =>
+        b.Model("wheelchair", "Wheel", new Transform3D(new Basis(Vector3.Up, side < 0 ? Mathf.Pi : 0), Vector3.Zero));
 
     public static void Wheelchair(MeshBatch b, float scale = 1f, bool wheels = true)
     {
-        var frame = new Color("#8C979F");
-        var seat = new Color("#2B4A6B");
-        var seatTop = Person3D.V(13) * scale;
-        foreach (var side in new[] { -1f, 1f })
+        // The model is made in world units round the seated figure (see tools/Blender/models/wheelchair.py).
+        b.Model("wheelchair", "Frame", Transform3D.Identity);
+        b.Model("wheelchair", "Seat", new Transform3D(Basis.Identity, new Vector3(0, Person3D.V(13) * (scale - 1), 0)));
+        if (!wheels)
         {
-            if (wheels)
-            {
-                var at = b.Frame;
-                b.Frame = at * new Transform3D(Basis.Identity, WheelchairHub(side));
-                WheelchairWheel(b, side);
-                b.Frame = at;
-            }
-
-            // Frame up to the push handles, armrest, front castor and footplate.
-            var x = side * W(9.5f);
-            Bar(b, new Vector3(x, Person3D.V(8), -0.18f), new Vector3(x, Person3D.V(44), -0.2f), 0.018f, frame);
-            Bar(b, new Vector3(x, Person3D.V(44), -0.2f), new Vector3(x, Person3D.V(44), -0.3f), 0.024f, Figures.Shoes);
-            Bar(b, new Vector3(side * W(10.5f), seatTop, 0.05f), new Vector3(side * W(10.5f), Person3D.V(24), 0.05f), 0.016f, frame);
-            b.Box(new Vector3(side * W(10.5f), Person3D.V(25), 0.03f), new Vector3(0.06f, Person3D.V(2), 0.28f), Figures.Shoes);
-            Bar(b, new Vector3(x, seatTop, 0.12f), new Vector3(side * 0.16f, Person3D.V(3), 0.34f), 0.016f, frame);
-            Castor(b, side * 0.16f, 0.36f);
-            b.Box(new Vector3(side * 0.09f, Person3D.V(2.5f), 0.42f), new Vector3(0.15f, 0.015f, 0.12f), new Color("#3A4148"));
+            return;
         }
 
-        b.Box(new Vector3(0, seatTop - Person3D.V(1.2f), 0.06f), new Vector3(W(20), Person3D.V(2.4f), 0.4f), seat);
-        b.Box(new Vector3(0, Person3D.V(29), -0.19f), new Vector3(W(19), Person3D.V(24), 0.03f), seat);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var at = b.Frame;
+            b.Frame = at * new Transform3D(Basis.Identity, WheelchairHub(side));
+            WheelchairWheel(b, side);
+            b.Frame = at;
+        }
     }
 }

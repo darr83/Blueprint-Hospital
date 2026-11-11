@@ -51,13 +51,9 @@ public static class Lying3D
         // The blanket tucked in down the sides of the mattress, with the body's rise and the feet under it.
         var edge = U(-0.6);
         const float end = 1.82f;
-        b.Box(new Vector3(0, V(0.4f), (edge + end) / 2), new Vector3(1.32f, V(2.8f), end - edge), blanket);
-        foreach (var side in new[] { -1f, 1f })
-        {
-            b.Box(new Vector3(side * 0.67f, -V(1.6f), (edge + end) / 2), new Vector3(0.035f, V(6.8f), end - edge), blanket.Darkened(0.12f));
-        }
-
-        b.Box(new Vector3(0, -V(1.6f), end + 0.015f), new Vector3(1.37f, V(6.8f), 0.035f), blanket.Darkened(0.12f));
+        // One soft-edged cover over the mattress and down its sides, a darker band where it is tucked in.
+        b.Shape("cover", new Vector3(0, -V(1.6f), (edge + end + 0.03f) / 2), new Vector3(1.4f, V(6.9f), end + 0.03f - edge), blanket);
+        b.Shape("cover", new Vector3(0, -V(3.6f), (edge + end + 0.035f) / 2), new Vector3(1.42f, V(2.6f), end + 0.035f - edge + 0.01f), blanket.Darkened(0.12f));
         b.Ball(new Vector3(0, V(1.5f), U(0.45)), new Vector3(0.94f * sz, V(5.4f), 2.3f * sz), blanket.Lightened(0.08f));
         foreach (var side in new[] { -1f, 1f })
         {
@@ -70,7 +66,7 @@ public static class Lying3D
         }
 
         // The white top sheet turned down over the blanket at the chest.
-        b.Box(new Vector3(0, V(2.0f), edge + 0.09f), new Vector3(1.34f, V(1.4f), 0.26f), Sheet);
+        b.Shape("cover", new Vector3(0, V(0.2f), edge + 0.09f), new Vector3(1.43f, V(5.4f), 0.3f), Sheet);
 
         // Arms on top of the covers, sleeves to the elbow.
         void Arm(float side, (double Along, double Across, float H)[] path, bool banded)

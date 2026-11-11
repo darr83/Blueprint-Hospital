@@ -1,6 +1,9 @@
-"""A ward bed, 0.8 m by 2.1 m, made up and empty: castors, chassis and lifting column, moulded head
+"""A ward bed, 0.8 m by 2.1 m: castors, chassis and lifting column, moulded head
 and foot boards, split tube side rails, a handset, the chart on the foot board, a puffy pillow and
-a blanket that hangs over the sides with the sheet turned down. Head at +Y."""
+a blanket that hangs over the sides with the sheet turned down. Head at +Y.
+
+The blanket and turned-down sheet are the part "Made", shown only on an empty bed: a patient brings
+their own covers. Heights follow the game's beds (28 px a metre: the sheet's top is 18 px up)."""
 import math
 
 import bmesh
@@ -15,7 +18,7 @@ TOP = 0.48  # the platform under the mattress; the sheet's top is 0.16 above it
 
 
 def build():
-    frame = mat("Frame", "#DDE3E8", 0.45)
+    frame = mat("Frame", "#C5D2DD", 0.45)
     dark = mat("FrameDark", "#7C8A96", 0.4)
     accent = mat("Accent", "#2C6FAE", 0.4)
     chrome = mat("Chrome", "#C9D2DA", 0.3, metal=0.35)
@@ -62,7 +65,7 @@ def build():
     cube("HandsetKeys", (W / 2 + 0.072, 0.55, top + 0.2), (0.004, 0.04, 0.07), accent, smooth=False)
 
     # Pillow: puffed in the middle, pinched at the corners, tipped up against the head board.
-    cy, cz = L / 2 - 0.24, top + 0.22
+    cy, cz = L / 2 - 0.3, top + 0.235
     p = cube("Pillow", (0, cy, cz), (W * 0.66, 0.36, 0.11), pillow)
     bm = bmesh.new()
     bm.from_mesh(p.data)
@@ -76,7 +79,7 @@ def build():
     finish(p, pillow, subdiv=1)
 
     # Blanket: dropped onto the bed so it hangs and folds at the sides, with the sheet turned down over it.
-    cover = drape("Blanket", (0, -0.2, top + 0.32), (W + 0.5, L * 0.7), (22, 34), blanket, onto=[soft, top_sheet, boards[1], p])
+    cover = drape("Blanket", (0, -0.2, top + 0.32), (W + 0.5, L * 0.7), (22, 34), blanket, onto=[soft, top_sheet, boards[1], p], part="Made")
     turn = cover.copy()
     turn.data = cover.data.copy()
     turn.modifiers.clear()
@@ -92,4 +95,4 @@ def build():
     bm.to_mesh(turn.data)
     bm.free()
     turn.modifiers.new("Solid", "SOLIDIFY").thickness = 0.01
-    finish(turn, sheet)
+    finish(turn, sheet, part="Made")

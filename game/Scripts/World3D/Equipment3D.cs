@@ -256,23 +256,11 @@ public static partial class Furnish3D
     /// <summary>A cot: a clear plastic tub on a wheeled trolley with a shelf. Returns the mattress height.</summary>
     public static float Cot(MeshBatch b, MeshBatch glass, float w, float d, float h)
     {
-        Castors(b, w, d);
-        foreach (var x in new[] { -1f, 1f })
-        {
-            Bar(b, new Vector3(x * ((w / 2) - 0.06f), H(4), -(d / 2) + 0.1f), new Vector3(x * ((w / 2) - 0.06f), h * 0.62f, -(d / 2) + 0.1f), 0.022f, Chrome);
-            Bar(b, new Vector3(x * ((w / 2) - 0.06f), H(4), (d / 2) - 0.1f), new Vector3(x * ((w / 2) - 0.06f), h * 0.62f, (d / 2) - 0.1f), 0.022f, Chrome);
-        }
-
-        Blk(b, 0, 0, w - 0.08f, d - 0.1f, H(8), H(1), new Color("#B0BEC5"));
-        Blk(b, 0, 0, w - 0.06f, d - 0.06f, h * 0.62f, H(1.5f), Chrome);
-        var mattress = h * 0.62f + H(3);
-        Blk(b, 0, 0, w - 0.14f, d - 0.14f, h * 0.62f + H(1.5f), H(1.5f), new Color("#E3F2FD"));
-        var tub = new Color("#DDEFFA", 0.5f);
-        glass.Box(new Vector3(-(w / 2) + 0.06f, (h * 0.62f) + ((h * 0.38f) / 2), 0), new Vector3(0.02f, h * 0.38f, d - 0.06f), tub);
-        glass.Box(new Vector3((w / 2) - 0.06f, (h * 0.62f) + ((h * 0.38f) / 2), 0), new Vector3(0.02f, h * 0.38f, d - 0.06f), tub);
-        glass.Box(new Vector3(0, (h * 0.62f) + ((h * 0.38f) / 2), -(d / 2) + 0.04f), new Vector3(w - 0.12f, h * 0.38f, 0.02f), tub);
-        glass.Box(new Vector3(0, (h * 0.62f) + ((h * 0.38f) / 2), (d / 2) - 0.04f), new Vector3(w - 0.12f, h * 0.38f, 0.02f), tub);
-        return mattress;
+        // The Blender model "cot" is 0.5 m by 0.8 m and 0.9 m tall, stretched to this cot's footprint.
+        var fit = new Transform3D(Basis.FromScale(new Vector3(w / 0.5f, h / 0.9f, d / 0.8f)), Vector3.Zero);
+        b.Model("cot", "Main", fit);
+        glass.Model("cot", "Glass", fit, new Color("#DDEFFA", 0.5f));
+        return (h * 0.62f) + H(3);
     }
 
     /// <summary>An incubator: a cabinet on wheels, a clear hood with port holes, a display. Returns the mattress height.</summary>

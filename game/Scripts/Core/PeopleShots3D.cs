@@ -100,6 +100,9 @@ public partial class PeopleShots3D : Node
             views.Add(("close_back", 2, Pose.Standing, Centre.X - 9 + (2 * 1.6) - 0.6, Centre.Y + 9 - (2 * 1.6) - 0.6, 3f));
             views.Add(("close_seated", 0, Pose.Seated, Centre.X - 9 + (2 * 1.6) + 0.6, Centre.Y + 9 - (2 * 1.6) + 0.6, 3f));
             views.Add(("close_beds", 0, Pose.Standing, Centre.X + 6.5, Centre.Y + 12.5, 2.2f));
+            views.Add(("close_beds2", 0, Pose.Standing, Centre.X + 14.2, Centre.Y + 3.8, 2.2f));
+            views.Add(("close_beds3", 0, Pose.Standing, Centre.X + 26.5, Centre.Y - 8.5, 2.2f));
+            views.Add(("close_beds4", 1, Pose.Standing, Centre.X + 26.5, Centre.Y - 8.5, 2.2f));
         }
 
         var index = _shot / 2;
@@ -171,7 +174,7 @@ public partial class PeopleShots3D : Node
         // A row of beds, tables and trolleys with patients on them.
         var patient = Looks.Preview(77, Sex.Female, 58);
         var child = Looks.Preview(78, Sex.Male, 7);
-        var kinds = new[] { "bed", "bed_empty", "trolley", "stretcher", "floor", "xray_table", "ct_table", "operating_table", "cath_lab_table", "treatment_couch", "wheelchair" };
+        var kinds = new[] { "bed", "bed_empty", "trolley", "stretcher", "floor", "xray_table", "ct_table", "operating_table", "cath_lab_table", "treatment_couch", "wheelchair", "cot" };
         for (var i = 0; i < kinds.Length; i++)
         {
             var holder = new Node3D { Position = Kit3D.At(Centre.X - 6 + (i * 2.6) + 9, Centre.Y + 6 - (i * 2.6) + 9) };
@@ -183,12 +186,19 @@ public partial class PeopleShots3D : Node
                 "trolley" => Carriers3D.Trolley(b),
                 "stretcher" => Carriers3D.Stretcher(b),
                 "floor" => 0f,
-                "wheelchair" => -1f,
+                "wheelchair" or "cot" => -1f,
                 var id => Carriers3D.Table(b, id, new Color("#7FA7C4")),
             };
             if (kinds[i] == "stretcher")
             {
                 Carriers3D.Straps(b, top);
+            }
+
+            if (kinds[i] == "cot")
+            {
+                var glass = new MeshBatch();
+                Furnish3D.Cot(b, glass, 1.0f, 1.6f, Kit3D.M(0.9));
+                glass.AddTo(holder, alpha: true, shadow: false);
             }
 
             if (kinds[i] == "wheelchair")
