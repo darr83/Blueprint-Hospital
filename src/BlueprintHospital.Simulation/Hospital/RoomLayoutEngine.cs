@@ -107,6 +107,9 @@ public static class RoomLayoutEngine
             case RoomLayoutKind.Toilets:
                 Toilets(plan, template);
                 break;
+            case RoomLayoutKind.Cleaning:
+                Cleaning(plan, template);
+                break;
             case RoomLayoutKind.Lift:
             case RoomLayoutKind.Stairs:
                 // Nothing to furnish: people stand in the middle to ride the lift or start up the stairs.
@@ -671,6 +674,71 @@ public static class RoomLayoutEngine
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A cleaning room: the cleaners' sink in a back corner, shelves of supplies along the rest of the back
+    /// wall, a rack of brushes and mops on a side wall and a mop bucket on the floor. Cleaners collect their
+    /// kit standing on the free floor in front of the shelves (the staff spot).
+    /// </summary>
+    private static void Cleaning(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+        var db = plan.Database;
+        var sinkW = db.Furniture.TryGetValue("cleaners_sink", out var sink) ? sink.WidthM / Units.MetresPerTile : 1.2;
+        var placedSink = template.Furniture.Contains("cleaners_sink") && plan.TryPlaceLocal("cleaners_sink", 0.3, 0.3);
+        if (template.Furniture.Contains("cleaning_shelves") && !plan.TryPlaceLocal("cleaning_shelves", placedSink ? 0.5 + sinkW : 0.3, 0.3))
+        {
+            plan.TryPlaceAgainstWalls("cleaning_shelves");
+        }
+
+        if (template.Furniture.Contains("broom_rack"))
+        {
+            var placed = false;
+            for (var v = 1.6; !placed && v < f.D - 1; v += 0.5)
+            {
+                placed = plan.TryPlaceLocal("broom_rack", 0.25, v, turned: true) || plan.TryPlaceLocal("broom_rack", f.W - 0.55, v, turned: true);
+            }
+
+            if (!placed)
+            {
+                plan.TryPlaceAgainstWalls("broom_rack");
+            }
+        }
+
+        if (template.Furniture.Contains("mop_bucket"))
+        {
+            var w = db.Furniture.TryGetValue("mop_bucket", out var bucket) ? bucket.WidthM / Units.MetresPerTile : 0.9;
+            var placed = false;
+            for (var v = 1.3; !placed && v < f.D - 1; v += 0.4)
+            {
+                placed = plan.TryPlaceLocal("mop_bucket", f.W - 0.3 - w, v) || plan.TryPlaceLocal("mop_bucket", 0.4, v);
+            }
+
+            if (!placed)
+            {
+                plan.TryPlaceAgainstWalls("mop_bucket");
+            }
+        }
+
+        // Where cleaners stand to collect and put back their kit: the free tile nearest the back wall.
+        var spot = f.Tile(f.W / 2, Math.Min(2, f.D - 2));
+        var found = false;
+        for (var v = 1; !found && v <= f.D - 2; v++)
+        {
+            for (var u = 1; !found && u <= f.W - 2; u++)
+            {
+                var tile = f.Tile(u, v);
+                if (!plan.Items.Any(i => i.Overlaps(tile.X, tile.Y, 1, 1)))
+                {
+                    spot = tile;
+                    found = true;
+                }
+            }
+        }
+
+        plan.StaffSpot = plan.PatientSpot = spot;
+        plan.Reserve(spot);
     }
 
     /// <summary>The most cubicles one toilet block gets.</summary>

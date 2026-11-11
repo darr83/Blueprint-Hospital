@@ -89,6 +89,12 @@ public enum Act
 
     /// <summary>A physio walking alongside a patient, an arm out ready to steady them.</summary>
     Support,
+
+    /// <summary>A cleaner mopping the floor, the mop swinging side to side, with a wet floor sign out.</summary>
+    Mop,
+
+    /// <summary>A cleaner sweeping with a wide brush, pushing it out and drawing it back.</summary>
+    Sweep,
 }
 
 /// <summary>
@@ -133,6 +139,11 @@ public static class Activity3D
             var mate = world.IsSeated(member) && sim.Staff.Any(o => o != member && o.Activity == StaffActivity.OnBreak && world.IsSeated(o) && Math.Abs(o.X - member.X) + Math.Abs(o.Y - member.Y) < 4);
             var habit = Habit(member.Id, time, 8);
             return (!world.IsSeated(member) ? Act.None : mate && habit < 0.45 ? Act.Talk : habit < 0.85 ? Act.Tea : Act.None, null);
+        }
+
+        if (member.Role == StaffRole.Cleaner && sim.CleanerJobOf(member) is { Stage: CleanerStage.Cleaning, HasKit: true } job)
+        {
+            return (job.Mopping ? Act.Mop : Act.Sweep, null);
         }
 
         if (member.Activity == StaffActivity.Idle)

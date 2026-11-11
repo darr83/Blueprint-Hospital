@@ -43,6 +43,9 @@ public enum StaffRole
 
     /// <summary>Delivers babies in the delivery room, looks after mothers and babies on the maternity wards and runs antenatal clinics.</summary>
     Midwife,
+
+    /// <summary>Keeps the hospital clean: mops up spills and sweeps and mops the floors, with kit from the cleaning room.</summary>
+    Cleaner,
 }
 
 public enum StaffActivity

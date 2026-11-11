@@ -465,6 +465,19 @@ public sealed partial class HospitalSimulation
                 var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
                 return seats.Count > 0 ? seats[seats.Count - 1 - (index % seats.Count)] : WaitingPlace(5 + index);
             }
+            case StaffRole.Cleaner:
+            {
+                // Free cleaners wait in the cleaning room; without one, in the staff room or the corridor.
+                if (CleaningRooms.FirstOrDefault() is { } cupboard)
+                {
+                    return cupboard.StaffSpot;
+                }
+
+                var index = Math.Max(0, _staff.Where(s => s.Role == StaffRole.Cleaner).ToList().IndexOf(member));
+                var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
+                return seats.Count > 0 ? seats[index % seats.Count] : WaitingPlace(9 + index);
+            }
+
             default:
                 return BaseSeat(member, CareSpaceKind.NursesStation);
         }

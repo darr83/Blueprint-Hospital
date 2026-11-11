@@ -177,6 +177,11 @@ public sealed partial class HospitalSimulation
 
             if (UpdateDuty(member))
             {
+                if (!member.IsOnDuty)
+                {
+                    StopCleaning(member);
+                }
+
                 continue;
             }
 
@@ -216,6 +221,11 @@ public sealed partial class HospitalSimulation
                 }
 
                 member.PagedUntil = null;
+            }
+
+            if (UpdateCleaner(member))
+            {
+                continue;
             }
 
             if (IsClinicStaff(member))

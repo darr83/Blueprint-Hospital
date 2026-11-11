@@ -264,6 +264,7 @@ public sealed partial class HospitalSimulation
     private void GoBack(RefreshmentTrip trip)
     {
         _trips.Remove(trip.Person);
+        MaybeSpillDrink(trip.Person.Tile);
         switch (trip.Person)
         {
             case Patient p:

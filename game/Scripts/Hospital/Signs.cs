@@ -85,6 +85,7 @@ public static class Signs
         CareSpaceKind.Toilets => Pictogram.Man,
         CareSpaceKind.AccessibleToilet => Pictogram.Wheelchair,
         CareSpaceKind.StaffToilet => Pictogram.Staff,
+        CareSpaceKind.CleaningRoom => Pictogram.Drop,
         CareSpaceKind.Lift => Pictogram.Lift,
         CareSpaceKind.Stairs => Pictogram.Stairs,
         CareSpaceKind.DeliveryRoom => Pictogram.Baby,

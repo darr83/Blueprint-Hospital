@@ -24,8 +24,28 @@ public enum ToiletStage
     Washing,
 }
 
-/// <summary>A wet patch on the floor where someone couldn't get to a toilet in time. The cleaners mop it up after a while.</summary>
-public sealed record FloorAccident(GridCoord Tile, DateTime Until);
+/// <summary>What was spilt on the floor.</summary>
+public enum SpillKind
+{
+    /// <summary>Someone couldn't get to a toilet in time.</summary>
+    Accident,
+
+    /// <summary>A dropped drink from the cafe or a vending machine.</summary>
+    Drink,
+}
+
+/// <summary>
+/// A wet patch on the floor: a toilet accident or a dropped drink. A cleaner mops it up; if nobody does,
+/// it dries up on its own at <see cref="Until"/>. Compared by reference, so two spills on one tile stay apart.
+/// </summary>
+public sealed class FloorAccident(GridCoord tile, DateTime until, SpillKind kind = SpillKind.Accident)
+{
+    public GridCoord Tile { get; } = tile;
+
+    public DateTime Until { get; } = until;
+
+    public SpillKind Kind { get; } = kind;
+}
 
 /// <summary>A trip to the toilet by a waiting patient, an outpatient or a member of staff on a break.</summary>
 public sealed class ToiletTrip
@@ -80,9 +100,6 @@ public sealed partial class HospitalSimulation
     /// <summary>Patients younger than this count as children.</summary>
     public const int ChildAge = 12;
 
-    /// <summary>How long a wet patch stays before the cleaners have mopped it up.</summary>
-    public static readonly TimeSpan AccidentCleanedAfter = TimeSpan.FromMinutes(30);
-
     /// <summary>On average, an eligible waiting patient needs the toilet about once in this many minutes.</summary>
     private const double ToiletEveryMinutes = 120;
 
@@ -116,7 +133,12 @@ public sealed partial class HospitalSimulation
     public static double AccidentChanceFor(int age) => age < ChildAge ? AccidentChance * ChildAccidentMultiplier : AccidentChance;
 
     /// <summary>Leaves a wet patch on a tile, as an accident would (for tests and screenshots).</summary>
-    public void SpillForTest(GridCoord tile) => _accidents.Add(new FloorAccident(tile, Now + AccidentCleanedAfter));
+    public FloorAccident SpillForTest(GridCoord tile, SpillKind kind = SpillKind.Accident)
+    {
+        var spill = new FloorAccident(tile, Now + SpillDriesAfter, kind);
+        _accidents.Add(spill);
+        return spill;
+    }
 
     /// <summary>The toilet trip a person is on, if any.</summary>
     public ToiletTrip? ToiletTripOf(Agent person) => _toiletTrips.GetValueOrDefault(person);
@@ -258,7 +280,7 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        _accidents.Add(new FloorAccident(patient.Tile, Now + AccidentCleanedAfter));
+        _accidents.Add(new FloorAccident(patient.Tile, Now + SpillDriesAfter));
         Tally(StatKeys.ToiletAccidents);
         patient.Log(Now, "Couldn't get to a toilet in time and had an accident.", important: true);
         var why = HasPublicToilets ? "the toilets were too busy" : "the hospital has no toilets";

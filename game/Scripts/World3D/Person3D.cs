@@ -20,6 +20,15 @@ public enum Pose
 /// crowded department stays cheap to draw; arms and legs swing as they walk, bend as they sit.
 /// Proportions follow the 2D figures pixel for pixel, so the two styles read the same.
 /// </summary>
+/// <summary>A cleaner's kit, drawn with them: pushing the bucket, or mopping or sweeping with the bucket beside them.</summary>
+public enum CleanKit
+{
+    None,
+    Pushing,
+    Mopping,
+    Sweeping,
+}
+
 public partial class Person3D : Node3D
 {
     private static readonly Color Ink = new("#1D2B36");
@@ -53,6 +62,13 @@ public partial class Person3D : Node3D
     private Node3D? _tray;
     private Node3D? _ambuBag;
     private Node3D? _roll;
+    private Node3D? _kit;
+    private Node3D _bucket = null!;
+    private Node3D _mopHead = null!;
+    private Node3D _mopHandle = null!;
+    private Node3D _brushHead = null!;
+    private Node3D _brushHandle = null!;
+    private Node3D _wetSign = null!;
 
     public PersonLook Look { get; private set; } = null!;
 
@@ -856,6 +872,26 @@ public partial class Person3D : Node3D
                 left = new Vector3(-0.75f, 0, -0.25f);
                 right = new Vector3(-0.55f, 0, -0.1f);
                 break;
+            case Act.Mop:
+            {
+                // Both hands on the handle, swinging the mop from side to side in front of them.
+                var m = S(2.2f);
+                lean = 0.16f;
+                left = new Vector3(-0.95f, 0, 0.25f - (0.22f * m));
+                right = new Vector3(-0.7f, 0, -0.2f - (0.22f * m));
+                break;
+            }
+
+            case Act.Sweep:
+            {
+                // Push the brush out, draw it back.
+                var p = S(3f);
+                lean = 0.12f + (0.06f * p);
+                left = new Vector3(-0.9f - (0.25f * p), 0, 0.2f);
+                right = new Vector3(-0.65f - (0.25f * p), 0, -0.15f);
+                break;
+            }
+
             case Act.WashHands:
                 lean = 0.18f;
                 left = new Vector3(-0.95f + (0.06f * S(10)), 0, 0.42f);
@@ -957,6 +993,133 @@ public partial class Person3D : Node3D
         {
             Hide(_roll);
         }
+    }
+
+    /// <summary>
+    /// A cleaner's kit: the yellow mop bucket on castors, the mop and the wide brush. Pushing, the bucket
+    /// rolls in front of them with the mop in the wringer and the brush in the caddy; mopping or sweeping,
+    /// the bucket stands beside them (with a wet floor sign out while they mop). Call after <see cref="SetAct"/>.
+    /// </summary>
+    public void Clean(CleanKit kit, double t)
+    {
+        if (kit == CleanKit.None)
+        {
+            Hide(_kit);
+            return;
+        }
+
+        _kit ??= BuildKit();
+        _kit.Visible = true;
+        var f = (float)t;
+        var hands = new Vector3(0, V(29), W(9));
+        var bucket = kit == CleanKit.Pushing ? new Vector3(0, 0, 0.5f) : new Vector3(0.42f, 0, 0.16f);
+        _bucket.Position = bucket;
+        _wetSign.Visible = kit == CleanKit.Mopping;
+
+        // The tools when they're in the bucket: the mop in the wringer, the brush upside down in the caddy.
+        var mopInBucket = (Head: bucket + new Vector3(0, V(5), 0), Top: bucket + new Vector3(0, V(40), -0.12f));
+        var brushInBucket = (Bottom: bucket + new Vector3(W(6), V(6), -0.1f), Top: bucket + new Vector3(W(7), V(38), -0.14f));
+
+        switch (kit)
+        {
+            case CleanKit.Pushing:
+                // Pushing the bucket along by the mop handle.
+                _armL.Rotation = new Vector3(-0.85f, 0, 0.22f);
+                _armR.Rotation = new Vector3(-0.8f, 0, -0.22f);
+                Tool(_mopHead, _mopHandle, mopInBucket.Head, hands + new Vector3(0, 0, 0.02f), headUp: false);
+                Tool(_brushHead, _brushHandle, brushInBucket.Bottom, brushInBucket.Top, headUp: true);
+                break;
+            case CleanKit.Mopping:
+            {
+                var m = Mathf.Sin((f * 2.2f) + 0f);
+                var head = new Vector3(-0.22f * m, 0, 0.55f + (0.05f * Mathf.Cos(f * 4.4f)));
+                Tool(_mopHead, _mopHandle, head + new Vector3(0, V(1.5f), 0), hands + new Vector3(-0.06f * m, 0, 0), headUp: false);
+                Tool(_brushHead, _brushHandle, brushInBucket.Bottom, brushInBucket.Top, headUp: true);
+                break;
+            }
+
+            default:
+            {
+                var p = Mathf.Sin(f * 3f);
+                var head = new Vector3(0, 0, 0.58f + (0.14f * p));
+                Tool(_brushHead, _brushHandle, head + new Vector3(0, V(2.5f), 0), hands + new Vector3(0, 0, 0.06f * p), headUp: false);
+                Tool(_mopHead, _mopHandle, mopInBucket.Head, mopInBucket.Top, headUp: false);
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs a tool's handle from <paramref name="bottom"/> up to <paramref name="top"/>, with its head at the
+    /// bottom (in use) or upside down at the top (stood in the bucket's caddy).
+    /// </summary>
+    private static void Tool(Node3D headNode, Node3D handle, Vector3 bottom, Vector3 top, bool headUp)
+    {
+        var span = top - bottom;
+        var dir = span.Normalized();
+        handle.Position = bottom;
+        handle.Quaternion = dir.IsEqualApprox(Vector3.Up) ? Quaternion.Identity : new Quaternion(Vector3.Up, dir);
+        handle.Scale = new Vector3(1, span.Length(), 1);
+        headNode.Position = headUp ? top : bottom;
+        headNode.Rotation = headUp ? new Vector3(Mathf.Pi, 0, 0) : Vector3.Zero;
+    }
+
+    private Node3D BuildKit()
+    {
+        var kit = new Node3D { Name = "CleaningKit" };
+        AddChild(kit);
+
+        Node3D Part(string name, Action<MeshBatch> build)
+        {
+            var node = new Node3D { Name = name };
+            var b = new MeshBatch();
+            build(b);
+            b.AddTo(node);
+            kit.AddChild(node);
+            return node;
+        }
+
+        var yellow = new Color("#FBC02D");
+        _bucket = Part("Bucket", b =>
+        {
+            b.Box(new Vector3(0, V(7), 0), new Vector3(W(13), V(10), W(10)), yellow);
+            b.Box(new Vector3(0, V(12.1f), W(1.5f)), new Vector3(W(11), V(0.3f), W(6)), new Color("#6E8C99"));
+            b.Box(new Vector3(0, V(14), -W(3)), new Vector3(W(12), V(4.5f), W(3.5f)), new Color("#7D8790"));
+            b.Box(new Vector3(0, V(16.6f), -W(3)), new Vector3(W(3), V(1), W(5)), new Color("#C62828"));
+            b.Rod(new Vector3(-W(6.5f), V(12), W(5)), new Vector3(W(6.5f), V(12), W(5)), 0.012f, new Color("#E0A800"), small: true);
+            foreach (var (x, z) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+            {
+                b.Ball(new Vector3(x * W(5.5f), V(1.2f), z * W(4)), new Vector3(W(2.4f), V(2.4f), W(2.4f)), new Color("#2B2F33"), small: true);
+            }
+
+            // The yellow wet floor sign, folded on the side, and a spray bottle in the caddy.
+            b.Box(new Vector3(-W(7.2f), V(9), 0), new Vector3(W(0.8f), V(13), W(7)), yellow.Lightened(0.1f));
+            b.Cylinder(new Vector3(W(5), V(14), W(3.5f)), W(1.3f), V(5), W(1.3f), new Color("#1E88E5"));
+        });
+        _mopHead = Part("MopHead", b =>
+        {
+            b.Ball(new Vector3(0, V(0.8f), 0), new Vector3(W(10), V(2.6f), W(7)), new Color("#ECEFF1"));
+            b.Box(new Vector3(0, V(2.4f), 0), new Vector3(W(3.5f), V(1.8f), W(3)), new Color("#1E88E5"));
+        });
+        _mopHandle = Part("MopHandle", b => b.Rod(Vector3.Zero, Vector3.Up, W(0.9f), new Color("#3F7FD9"), small: true));
+        _brushHead = Part("BrushHead", b =>
+        {
+            b.Box(new Vector3(0, V(0.8f), 0), new Vector3(W(16), V(1.6f), W(2.4f)), new Color("#37474F"));
+            b.Box(new Vector3(0, V(2.2f), 0), new Vector3(W(16), V(1.4f), W(2.8f)), new Color("#8D6E4E"));
+        });
+        _brushHandle = Part("BrushHandle", b => b.Rod(Vector3.Zero, Vector3.Up, W(0.9f), new Color("#C62828"), small: true));
+        _wetSign = Part("WetFloorSign", b =>
+        {
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var tilt = new Basis(Vector3.Right, -side * 0.24f);
+                b.Box(new Vector3(0, V(9), side * W(2.2f)), new Vector3(W(9), V(18), W(0.6f)), tilt, new Color("#FDD835"));
+                b.Box(new Vector3(0, V(11), side * W(2.6f)), new Vector3(W(5), V(5), W(0.2f)), tilt, new Color("#1D2B36"));
+            }
+        });
+        _wetSign.Position = new Vector3(-0.5f, 0, 0.3f);
+        _wetSign.Rotation = new Vector3(0, 0.5f, 0);
+        return kit;
     }
 
     /// <summary>A baby in their arms is rocked gently while they stand or sit.</summary>

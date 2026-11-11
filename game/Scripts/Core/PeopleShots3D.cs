@@ -47,7 +47,7 @@ public partial class PeopleShots3D : Node
         ("Surgeon", StaffRole.Surgeon, "Consultant"), ("Anaesthetist", StaffRole.Anaesthetist, "Consultant"), ("Endoscopist", StaffRole.Endoscopist, "Endoscopist"),
         ("Radiographer", StaffRole.Radiographer, "Radiographer"), ("Sonographer", StaffRole.Sonographer, "Sonographer"), ("Cardiac phys.", StaffRole.CardiacPhysiologist, "Cardiac physiologist"),
         ("Neurophys.", StaffRole.Neurophysiologist, "Neurophysiologist"), ("Pharmacist", StaffRole.Pharmacist, "Pharmacist"), ("Physio", StaffRole.Physiotherapist, "Physiotherapist"),
-        ("Plaster tech", StaffRole.PlasterTechnician, "Plaster technician"), ("Porter", StaffRole.Porter, "Porter"), ("Reception", StaffRole.Receptionist, "Receptionist"),
+        ("Plaster tech", StaffRole.PlasterTechnician, "Plaster technician"), ("Porter", StaffRole.Porter, "Porter"), ("Reception", StaffRole.Receptionist, "Receptionist"), ("Cleaner", StaffRole.Cleaner, "Cleaner"),
     };
 
     public override void _Process(double delta)

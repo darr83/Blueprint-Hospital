@@ -47,6 +47,7 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.Toilets] = new Color("#DCE8EC"),
         [CareSpaceKind.AccessibleToilet] = new Color("#D9E6EE"),
         [CareSpaceKind.StaffToilet] = new Color("#E0E6EA"),
+        [CareSpaceKind.CleaningRoom] = new Color("#DDE5DA"),
         [CareSpaceKind.Lift] = new Color("#C9CFD5"),
         [CareSpaceKind.Stairs] = new Color("#D8D4CC"),
         [CareSpaceKind.DeliveryRoom] = new Color("#F2DDE8"),

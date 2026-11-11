@@ -46,7 +46,7 @@
         { "id": "pharmacy", "label": "Pharmacy", "name": "Pharmacy", "department": "pharmacy", "colour": "#9CCC65", "glyph": "pharmacy",
           "items": ["pharmacy"] },
         { "id": "facilities", "label": "Facilities", "name": "Facilities", "department": "facilities", "colour": "#FFCA28", "glyph": "facilities", "catch_all": true,
-          "items": ["cafeteria", "vending_point", "public_toilets", "accessible_toilet", "staff_toilet", "staff_room"] }
+          "items": ["cafeteria", "vending_point", "public_toilets", "accessible_toilet", "staff_toilet", "staff_room", "cleaning_room"] }
       ]
     }
   ]
