@@ -1103,8 +1103,10 @@ public partial class SmokeTest : Node
 
         GD.Print($"[smoke] Toilets: {block.ToiletSpots.Count} cubicles, {block.SinkSpots.Count} basins; {sim.ToiletTrips.Count} people at the toilets at {clock.Now:HH:mm}.");
         Check(sim.ToiletTrips.Count > 0, "Nobody went to the toilets in ten hours.");
-        sim.SpillForTest(new Simulation.World.GridCoord(b.X - 37, b.Y + 33));
-        Check(sim.FloorAccidents.Count == 1, "The wet patch wasn't left on the floor.");
+        // (A real accident or dropped drink may already be on the floor by now: count from there.)
+        var wetBefore = sim.FloorAccidents.Count;
+        var wet = sim.SpillForTest(new Simulation.World.GridCoord(b.X - 37, b.Y + 33));
+        Check(sim.FloorAccidents.Count == wetBefore + 1 && sim.FloorAccidents.Contains(wet), "The wet patch wasn't left on the floor.");
         clock.SetSpeed(SimulationSpeed.Paused);
         hospital.SetMode(GameMode.Play);
         hospital.ClearSelectionForTest();

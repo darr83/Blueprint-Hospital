@@ -174,6 +174,7 @@ public partial class PeopleShots3D : Node
             {
                 Carriers3D.Wheelchair(b);
                 var sitter = Person3D.Build(patient);
+                sitter.Seat = Person3D.SeatShape.Wheelchair(sitter.Look.Scale);
                 sitter.SetPose(Pose.Seated, 0);
                 holder.AddChild(sitter);
             }

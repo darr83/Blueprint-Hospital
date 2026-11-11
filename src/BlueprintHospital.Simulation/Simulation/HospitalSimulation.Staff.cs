@@ -379,7 +379,7 @@ public sealed partial class HospitalSimulation
 
         planned.TakenAt = Now;
         var seats = SpacesOfKind(CareSpaceKind.StaffRoom).SelectMany(s => s.Seats).ToList();
-        var seat = seats.Count > 0 ? seats[(member.Id - 1) % seats.Count] : HomeTile(member);
+        var seat = seats.Count > 0 ? FreeSpot(member, seats[(member.Id - 1) % seats.Count]) : HomeTile(member);
         member.Activity = StaffActivity.WalkingToBreak;
         member.BreakEndsAt = Now + TimeSpan.FromMinutes(planned.Minutes);
         member.StatusText = planned.IsMeal ? $"Meal break · back at {member.BreakEndsAt:HH:mm}" : $"Tea break · back at {member.BreakEndsAt:HH:mm}";
@@ -480,20 +480,19 @@ public sealed partial class HospitalSimulation
 
     private GridCoord BesideTile(GridCoord target)
     {
-        foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1) })
-        {
-            var t = new GridCoord(target.X + dx, target.Y + dy);
-            if (Nav.CanStep(target, t))
-            {
-                return t;
-            }
-        }
-
-        return target;
+        // Standing beside someone, not on the chair next to theirs (where someone else may be sitting).
+        var steps = new[] { (1, 0), (0, 1), (-1, 0), (0, -1) }
+            .Select(d => new GridCoord(target.X + d.Item1, target.Y + d.Item2))
+            .Where(t => Nav.CanStep(target, t))
+            .ToList();
+        return steps.Cast<GridCoord?>().FirstOrDefault(t => !IsSeat(t!.Value)) ?? steps.Cast<GridCoord?>().FirstOrDefault() ?? target;
     }
 
-    /// <summary>A triage room no nurse is using.</summary>
-    private CareSpace? FreeTriageRoom() => SpacesOfKind(CareSpaceKind.Triage).FirstOrDefault(t => t.ReservedByStaffId is null);
+    /// <summary>
+    /// A triage room no nurse is using, with nobody still in its chair (someone triaged who needs a wheelchair
+    /// waits there for the porter, and the next patient isn't sat on top of them).
+    /// </summary>
+    private CareSpace? FreeTriageRoom() => SpacesOfKind(CareSpaceKind.Triage).FirstOrDefault(t => t.ReservedByStaffId is null && !SomeoneLyingOn(t.PatientSpot));
 
     private GridCoord PatientPositionFor(ClinicalTask task, Patient patient) => task.Kind switch
     {

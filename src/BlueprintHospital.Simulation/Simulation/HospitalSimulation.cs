@@ -444,7 +444,10 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    internal GridCoord HomeTile(StaffMember member)
+    /// <summary>Where a free staff member waits between tasks: their usual spot, or the nearest free one when someone is already there.</summary>
+    public GridCoord HomeTile(StaffMember member) => FreeSpot(member, UsualHome(member));
+
+    private GridCoord UsualHome(StaffMember member)
     {
         if (member.BaseRoomId is { } roomId && FindSpace(roomId) is { } room)
         {

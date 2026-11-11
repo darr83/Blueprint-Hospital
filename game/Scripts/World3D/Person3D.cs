@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BlueprintHospital.Hospital;
 using Godot;
 
@@ -42,12 +43,14 @@ public partial class Person3D : Node3D
     private Node3D _thighR = null!;
     private Node3D _kneeL = null!;
     private Node3D _kneeR = null!;
+    private readonly List<LegParts> _legs = new();
+    private float _kneeDrop;
+    private float _ankle;
     private Node3D? _baby;
     private Node3D? _bag;
     private BabyLook? _babyLook;
 
     private float _hipY;
-    private float _seatDrop;
     private float _armLength;
     private Node3D? _clipboard;
     private Node3D? _phone;
@@ -102,7 +105,6 @@ public partial class Person3D : Node3D
         var headR = W(7.5f * look.HeadScale);
         var stoop = look.Stoop ? 0.18f : 0f;
         var depth = W(13 * s) * (look.Belly ? 1.25f : 1f) * (0.85f + (0.15f * look.Build));
-        _seatDrop = _hipY - V(15);
 
         _body = new Node3D { Name = "Body" };
         AddChild(_body);
@@ -475,27 +477,84 @@ public partial class Person3D : Node3D
         return pivot;
     }
 
+    /// <summary>
+    /// One leg's parts. The thigh and shin meshes hang under their own holders, so sitting can stretch them
+    /// along their length (the figures' legs are short and stylised: drawn true, they would stop half way down
+    /// a chair) without squashing the knee and foot hung below them.
+    /// </summary>
+    private sealed record LegParts(Node3D ThighMesh, Node3D Knee, Node3D ShinMesh, Node3D Foot);
+
     private (Node3D Thigh, Node3D Knee) Leg(float x, float radius, Color thighColour, Color shinColour, Color shoes, Color? hem)
     {
         var thigh = new Node3D { Position = new Vector3(x, _hipY, 0) };
         _body.AddChild(thigh);
         var kneeDrop = _hipY * 0.5f;
+        _kneeDrop = kneeDrop;
+        var thighMesh = new Node3D { Name = "ThighMesh" };
+        thigh.AddChild(thighMesh);
         var tb = new MeshBatch();
         tb.Capsule(Vector3.Zero, new Vector3(0, -kneeDrop, 0), radius * 1.05f, thighColour);
-        tb.AddTo(thigh);
+        tb.AddTo(thighMesh);
         var knee = new Node3D { Position = new Vector3(0, -kneeDrop, 0) };
         thigh.AddChild(knee);
+        var shinMesh = new Node3D { Name = "ShinMesh" };
+        knee.AddChild(shinMesh);
         var sb = new MeshBatch();
         var ankle = -(_hipY - kneeDrop) + V(2.4f);
+        _ankle = ankle;
         sb.Capsule(Vector3.Zero, new Vector3(0, ankle, 0), radius, shinColour);
         if (hem is { } h)
         {
             sb.Cylinder(new Vector3(0, ankle + V(1.2f), 0), radius * 1.08f, V(0.8f), radius * 1.08f, h);
         }
 
-        sb.Ball(new Vector3(0, ankle - V(1.2f), W(1.8f)), new Vector3(radius * 2.3f, V(3.4f), radius * 3.4f), shoes, small: true);
-        sb.AddTo(knee);
+        sb.AddTo(shinMesh);
+        var foot = new Node3D { Name = "Foot", Position = new Vector3(0, ankle, 0) };
+        knee.AddChild(foot);
+        var fb = new MeshBatch();
+        fb.Ball(new Vector3(0, -V(1.2f), W(1.8f)), new Vector3(radius * 2.3f, V(3.4f), radius * 3.4f), shoes, small: true);
+        fb.AddTo(foot);
+        _legs.Add(new LegParts(thighMesh, knee, shinMesh, foot));
         return (thigh, knee);
+    }
+
+    /// <summary>
+    /// What the person is sitting on, in their own frame (they face +z): how high the seat's top is, how far
+    /// back their hips go, and where the front edge of the seat is. An ordinary chair unless told otherwise.
+    /// </summary>
+    public readonly record struct SeatShape(float Top, float HipZ, float FrontZ)
+    {
+        /// <summary>Any chair: the seat's top 14 px up, hips back against the backrest, knees at the front edge.</summary>
+        public static SeatShape Chair => new(Kit3D.H(14), -0.13f, 0.33f);
+
+        /// <summary>A wheelchair (see <see cref="Carriers3D.Wheelchair"/>), made smaller for a child.</summary>
+        public static SeatShape Wheelchair(float scale) => new(Kit3D.H(13) * Mathf.Clamp(scale, 0.6f, 1f), -0.06f, 0.24f);
+
+        /// <summary>Perched on the side of a bed, feet towards the floor.</summary>
+        public static SeatShape BedSide => new(Kit3D.H(18), -0.06f, 0.14f);
+    }
+
+    /// <summary>The seat they sit on when <see cref="SetPose"/> is given <see cref="Pose.Seated"/>.</summary>
+    public SeatShape Seat { get; set; } = SeatShape.Chair;
+
+    /// <summary>
+    /// Sets the legs' lengths: true to life standing, stretched to fit the seat when sitting, so the thighs lie
+    /// along it to its front edge and the feet reach the floor. Children's legs keep the same proportions, so
+    /// their knees stop short of the edge and their feet swing clear of the floor.
+    /// </summary>
+    private void FitLegs(bool seated, float hip)
+    {
+        var adultThigh = V(19) * 0.5f;
+        var adultShin = V(19) - adultThigh - V(2.4f);
+        var thigh = seated ? Mathf.Clamp((Seat.FrontZ - Seat.HipZ) / adultThigh, 1f, 2.2f) : 1f;
+        var shin = seated ? Mathf.Clamp((hip - V(2.9f)) / adultShin, 1f, 2.2f) : 1f;
+        foreach (var leg in _legs)
+        {
+            leg.ThighMesh.Scale = new Vector3(1, thigh, 1);
+            leg.Knee.Position = new Vector3(0, -_kneeDrop * thigh, 0);
+            leg.ShinMesh.Scale = new Vector3(1, shin, 1);
+            leg.Foot.Position = new Vector3(0, _ankle * shin, 0);
+        }
     }
 
     /// <summary>Shows (or clears) the baby in their arms.</summary>
@@ -578,7 +637,10 @@ public partial class Person3D : Node3D
         var holding = _baby is not null;
         var swing = pose == Pose.Walking ? (float)Math.Sin(stride) * 0.55f : 0f;
         var bob = pose == Pose.Walking ? -(float)Math.Abs(Math.Cos(stride)) * V(1.1f) : 0f;
-        _body.Position = new Vector3(0, (pose == Pose.Seated ? -_seatDrop : 0) + bob, 0);
+        // Sitting: hips down on the seat and back against the backrest, the bottom just sinking into the cushion.
+        var seatedHip = Seat.Top + V((4.5f * Look.Scale) - 1.5f);
+        _body.Position = pose == Pose.Seated ? new Vector3(0, seatedHip - _hipY, Seat.HipZ) : new Vector3(0, bob, 0);
+        FitLegs(pose == Pose.Seated, seatedHip);
         var stoop = Look.Stoop ? 0.18f : 0f;
         _body.Rotation = new Vector3(pose == Pose.Cpr ? 0.45f : stoop, 0, 0);
 
