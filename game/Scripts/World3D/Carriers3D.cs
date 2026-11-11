@@ -91,25 +91,8 @@ public static class Carriers3D
 
     private static float XRay(MeshBatch b)
     {
-        const float top = 22f;
-        var white = new Color("#EEF2F5");
-        b.Box(new Vector3(0, H(8.25f), 0), new Vector3(1.32f, H(16.5f), 3.2f), white);
-        b.Box(new Vector3(0, H(1.5f), 0), new Vector3(1.33f, H(3), 3.21f), Dark);
-        foreach (var side in new[] { -1f, 1f })
-        {
-            // The film tray in the side, and a control strip.
-            b.Box(new Vector3(side * 0.665f, H(11), 0), new Vector3(0.02f, H(5), 1.6f), Dark);
-            b.Box(new Vector3(side * 0.67f, H(11), -1.2f), new Vector3(0.02f, H(3), 0.3f), new Color("#7FA7C4"));
-        }
-
-        b.Box(new Vector3(0, H(20.25f), 0), new Vector3(1.6f, H(3.5f), 4.1f), white);
-        b.Box(new Vector3(0, H(top + 0.1f), 0), new Vector3(1.24f, H(0.3f), 3.76f), new Color("#4E5B67"));
-        foreach (var side in new[] { -1f, 1f })
-        {
-            Bar(b, new Vector3(side * 0.82f, H(top + 1.5f), -1.6f), new Vector3(side * 0.82f, H(top + 1.5f), 1.6f), 0.025f, new Color("#AEB8C1"));
-        }
-
-        return H(top);
+        b.Model(Furnish3D.Equipment3D, "xray_table", Transform3D.Identity);
+        return H(22);
     }
 
     private static float Ct(MeshBatch b, Color colour)
@@ -120,47 +103,21 @@ public static class Carriers3D
 
     private static float CtBase(MeshBatch b, Color colour)
     {
-        const float top = 21f;
-        b.Box(new Vector3(0, H(7.75f), 0.7f), new Vector3(1.12f, H(15.5f), 2.6f), colour);
-        b.Box(new Vector3(0, H(1.5f), 0.7f), new Vector3(1.13f, H(3), 2.61f), Dark);
-        b.Box(new Vector3(0, H(7), 0.7f), new Vector3(1.14f, H(1.3f), 2.4f), new Color("#7FA7C4"));
-        b.Box(new Vector3(0, H(16), 0.7f), new Vector3(1.0f, H(2), 2.5f), colour.Darkened(0.12f));
-        return H(21f);
+        b.Model(Furnish3D.Equipment3D, "ct_base", Transform3D.Identity, colour);
+        return H(21);
     }
 
     /// <summary>The CT table's top, which slides into the scanner and back: drawn on its own so it can move.</summary>
     public static float CtTop(MeshBatch b, Color colour)
     {
-        const float top = 21f;
-        b.Box(new Vector3(0, H(19), 0), new Vector3(1.28f, H(4), 4.1f), colour.Lightened(0.05f));
-        b.Box(new Vector3(0, H(top + 0.1f), 0), new Vector3(0.94f, H(0.3f), 3.9f), new Color("#7FA7C4"));
-        foreach (var side in new[] { -1f, 1f })
-        {
-            b.Box(new Vector3(side * 0.39f, H(top + 1.5f), -1.7f), new Vector3(0.14f, H(3), 0.5f), new Color("#56616B"));
-        }
-
-        return H(top);
+        b.Model(Furnish3D.Equipment3D, "ct_top", Transform3D.Identity, colour);
+        return H(21);
     }
 
     private static float Operating(MeshBatch b, Color colour)
     {
-        const float top = 23f;
-        var pad = colour.Darkened(0.35f);
-        b.Box(new Vector3(0, H(1.75f), 0.1f), new Vector3(1.2f, H(3.5f), 2.2f), new Color("#56616B"));
-        b.Box(new Vector3(0, H(10.5f), 0.05f), new Vector3(0.72f, H(14), 1.1f), new Color("#C3CCD3"));
-        b.Box(new Vector3(0, H(18.1f), 0), new Vector3(1.12f, H(1.8f), 3.7f), new Color("#AEB8C1"));
-        foreach (var (from, to, half) in new[] { (-2.05f, -1.5f, 0.45f), (-1.42f, -0.2f, 0.62f), (-0.12f, 0.7f, 0.62f), (0.78f, 2.05f, 0.62f) })
-        {
-            b.Box(new Vector3(0, H(21), (from + to) / 2), new Vector3(2 * half, H(4), to - from), pad.Lightened(0.08f));
-        }
-
-        b.Box(new Vector3(1.095f, H(21.25f), -1.0f), new Vector3(0.95f, H(2.5f), 0.38f), pad.Lightened(0.08f));
-        foreach (var side in new[] { -1f, 1f })
-        {
-            Bar(b, new Vector3(side * 0.66f, H(20), -1.4f), new Vector3(side * 0.66f, H(20), 2.05f), 0.025f, new Color("#C9D2D9"));
-        }
-
-        return H(top);
+        b.Model(Furnish3D.Equipment3D, "operating_table", Transform3D.Identity, colour.Darkened(0.35f).Lightened(0.08f));
+        return H(23);
     }
 
     private static float CathLab(MeshBatch b)

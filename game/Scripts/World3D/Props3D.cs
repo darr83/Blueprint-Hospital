@@ -400,16 +400,8 @@ public static class Props3D
     /// <summary>Two theatre lamps on a ceiling arm over the table; origin on the floor below.</summary>
     public static void SurgicalLights(MeshBatch b, MeshBatch glow)
     {
-        var arm = new Color("#9AA6B0");
-        var top = H(118);
-        b.Rod(new Vector3(0, top, 0), new Vector3(0, H(96), 0), 0.05f, arm);
-        foreach (var (x, z) in new[] { (-0.55f, 0.2f), (0.5f, -0.15f) })
-        {
-            var lamp = new Vector3(x, H(84), z);
-            b.Capsule(new Vector3(0, H(96), 0), lamp + new Vector3(0, H(8), 0), 0.035f, arm);
-            b.Ball(lamp + new Vector3(0, H(3), 0), new Vector3(0.62f, H(7), 0.62f), new Color("#D7DEE3"));
-            glow.Cylinder(lamp, 0.24f, 0.02f, 0.24f, new Color("#FFF8D6"));
-        }
+        b.Model(Furnish3D.Equipment3D, "surgical_lights", Transform3D.Identity);
+        glow.Model(Furnish3D.Equipment3D, "surgical_glow", Transform3D.Identity);
     }
 
     /// <summary>The cath lab's bank of four screens on a ceiling arm, facing +z.</summary>

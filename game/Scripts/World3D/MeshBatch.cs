@@ -81,6 +81,13 @@ public sealed class MeshBatch
         return true;
     }
 
+    /// <summary>
+    /// A part of a kit made in world units (see tools/Blender/models/equipment_kit.py), stretched from the
+    /// size it was made at (<paramref name="made"/>: across, tall, deep) to <paramref name="size"/>.
+    /// </summary>
+    public bool Kit(string kit, string part, Vector3 made, Vector3 size, Color? tint = null) =>
+        Model(kit, part, new Transform3D(Basis.FromScale(size / made), Vector3.Zero), tint);
+
     private void Surfaces(ModelParts.Surface[] surfaces, Transform3D xf, Color colour)
     {
         xf = Frame * xf;
@@ -88,7 +95,7 @@ public sealed class MeshBatch
         foreach (var surface in surfaces)
         {
             var start = _vertices.Count;
-            var paint = surface.Fixed ?? colour;
+            var paint = surface.Paint(colour);
             for (var k = 0; k < surface.Vertices.Length; k++)
             {
                 _vertices.Add(xf * surface.Vertices[k]);

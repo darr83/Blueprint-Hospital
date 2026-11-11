@@ -170,32 +170,12 @@ public static partial class Furnish3D
         Blk(b, 0, c.Z + (Mathf.Cos(-Mathf.Pi * 0.55f) * r * 0.9f), 0.3f, 0.3f, c.Y - r - H(2), H(6), new Color("#5C6670"));
     }
 
-    private static void XRayTube(MeshBatch b, float h, Color colour)
-    {
-        Blk(b, 0, -0.15f, 0.5f, 0.3f, 0, H(3), Plinth);
-        Blk(b, 0, -0.18f, 0.16f, 0.14f, H(3), h - H(3), colour.Darkened(0.05f));
-        Blk(b, 0, 0.1f, 0.12f, 0.6f, h * 0.7f, H(3), colour);
-        b.Cylinder(new Vector3(0, h * 0.7f + H(1), 0.45f), 0.11f, 0.4f, 0.11f, new Color("#ECEFF1"), new Basis(Vector3.Forward, Mathf.Pi / 2));
-        Blk(b, 0, 0.45f, 0.24f, 0.24f, h * 0.7f - H(6), H(5), new Color("#4A545D"));
-        b.Cylinder(new Vector3(0, h * 0.7f - H(6.2f), 0.45f), 0.07f, 0.01f, 0.07f, new Color("#FFF59D"));
-    }
+    private static void XRayTube(MeshBatch b, float h, Color colour) =>
+        b.Kit(Equipment3D, "xray_tube", new Vector3(1, Kit3D.M(2.1), 1), new Vector3(1, h, 1), colour);
 
-    private static void CtGantry(MeshBatch b, float w, float d, float h, Color colour)
-    {
-        // A deep white ring with the bore open on both faces, an LED ring and a small control panel.
-        var cy = h * 0.55f;
-        var bore = Math.Min(w, h) * 0.24f;
-        Blk(b, 0, 0, w * 0.9f, d, 0, H(3), Plinth);
-        b.Box(new Vector3(0, cy, 0), new Vector3(w * 0.92f, h * 0.9f, d), colour);
-        b.Ball(new Vector3(0, cy + (h * 0.42f), 0), new Vector3(w * 0.92f, h * 0.2f, d), colour);
-        foreach (var side in new[] { -1f, 1f })
-        {
-            b.Cylinder(new Vector3(0, cy, side * ((d / 2) + 0.003f)), bore, 0.01f, bore, new Color("#3A434B"), new Basis(Vector3.Right, Mathf.Pi / 2));
-            b.Ring(new Vector3(0, cy, side * ((d / 2) + 0.012f)), bore * 1.2f, new Color("#4FC3F7"), new Basis(Vector3.Right, Mathf.Pi / 2), 0.3f);
-        }
-
-        Blk(b, w * 0.3f, (d / 2) + 0.01f, 0.2f, 0.02f, cy + (h * 0.2f), H(4), new Color("#37474F"));
-    }
+    /// <summary>A deep white ring with the bore open right through, an LED ring on each face and a small control panel.</summary>
+    private static void CtGantry(MeshBatch b, float w, float d, float h, Color colour) =>
+        b.Kit(Equipment3D, "ct_gantry", new Vector3(4.0f, Kit3D.M(1.9), 1.4f), new Vector3(w, h, d), colour);
 
     private static void LeadScreen(MeshBatch b, MeshBatch glass, float w, float d, float h, Color colour)
     {
