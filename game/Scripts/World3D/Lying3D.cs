@@ -147,7 +147,6 @@ public static class Lying3D
         var head = new Vector3(0, V(4.5f) + (r * 0.8f), U(-1.5));
         b.Capsule(new Vector3(0, V(3), U(-1.2)), head + new Vector3(0, -r * 0.4f, r * 0.5f), W(2.6f) * sz, skin.Darkened(0.06f));
         b.Frame = new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), head);
-        b.Ball(Vector3.Zero, new Vector3(r * 2, r * 2.05f, r * 1.95f), skin);
         Person3D.Head(b, look, Vector3.Zero, r, asleep: !awake);
         b.Frame = Transform3D.Identity;
         b.AddTo(node);

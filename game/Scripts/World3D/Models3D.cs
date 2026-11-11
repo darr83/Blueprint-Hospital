@@ -18,6 +18,9 @@ public static class Models3D
     /// <summary>The most triangles any one model may have, so a full ward stays cheap to draw.</summary>
     public const int TriangleLimit = 6000;
 
+    /// <summary>A kit is a sheet of parts that code assembles (people), never placed whole, so the limit does not apply to it.</summary>
+    public static bool IsKit(string name) => name.EndsWith("_kit", System.StringComparison.Ordinal);
+
     /// <summary>World units per metre: two tiles across the floor, the game's height scale upwards.</summary>
     public static Vector3 MetreScale => new(2f, Kit3D.M(1), 2f);
 
