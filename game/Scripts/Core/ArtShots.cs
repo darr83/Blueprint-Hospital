@@ -48,10 +48,7 @@ public partial class ArtShots : Node
                     cursor.Visible = false;
                 }
 
-                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-3d") >= 0)
-                {
-                    h.Set3D(true);
-                }
+                h.Set3D(Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-3d") >= 0);
 
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
                 {

@@ -178,6 +178,10 @@ public partial class SmokeTest : Node
             case Stage.WaitForHospital when scene is HospitalScene hospital && hospital.IsNodeReady():
                 Check(hospital.Session.Site.Buildings.Count == 1, "Starter building missing.");
                 Check(hospital.Camera.IsCurrent(), "Camera is not active.");
+                Check(hospital.Is3D && hospital.View3D.Visible, "The hospital did not open in 3D.");
+
+                // The checks below still look at the 2D layers; the 3D world has its own stage further on.
+                hospital.Set3D(false);
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 GD.Print("[smoke] Hospital scene loaded.");
                 FitOutWaitingRoom(hospital);
@@ -461,6 +465,9 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.People.Count > 0, "Nobody is standing in the 3D world.");
                 Check(hospital.View3D.Beds.Count > 0, "The 3D world has no beds.");
                 Check(hospital.View3D.Furniture.Count > 0, "The 3D world has no furniture.");
+                Check(hospital.View3D.Decor.WallArtCount > 0, "The 3D world has no pictures on the walls.");
+                Check(hospital.View3D.Decor.BoardCount > 0, "The 3D world has no name boards over the doors.");
+                Check(hospital.View3D.Decor.PropCount > 0, "The 3D world has no plants or props.");
                 hospital.RotateView(1);
                 hospital.ToggleWalls();
                 _frame = 0;

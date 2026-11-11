@@ -111,7 +111,7 @@ public partial class HospitalScene : Node2D
         _plan = new PlanLayer { Name = "Plan", Visible = false };
         AddChild(_plan);
         _plan.Initialise(_world);
-        Set3D(false);
+        Set3D(true);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);

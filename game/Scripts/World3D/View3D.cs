@@ -38,6 +38,7 @@ public partial class View3D : Node3D
     private Agents3D _agents = null!;
     private Beds3D _beds = null!;
     private Furniture3D _furniture = null!;
+    private Decor3D _decor = null!;
 
     private int _rotation = -1;
     private int _floor = -1;
@@ -120,6 +121,10 @@ public partial class View3D : Node3D
         _root.AddChild(_furniture);
         _furniture.Initialise(this);
 
+        _decor = new Decor3D { Name = "Decor" };
+        _root.AddChild(_decor);
+        _decor.Initialise(this);
+
         _beds = new Beds3D { Name = "Beds" };
         _root.AddChild(_beds);
         _beds.Initialise(this);
@@ -134,6 +139,8 @@ public partial class View3D : Node3D
     public Beds3D Beds => _beds;
 
     public Furniture3D Furniture => _furniture;
+
+    public Decor3D Decor => _decor;
 
     /// <summary>Shows or hides the 3D world (and its camera).</summary>
     public void SetShown(bool on)
@@ -190,13 +197,46 @@ public partial class View3D : Node3D
             _walls.Rebuild();
             _beds.Rebuild();
             _furniture.Rebuild();
+            _decor.Rebuild(_walls.Cutaway);
         }
+
+        Daylight();
 
         _walls.Animate();
         _beds.Sync();
         _furniture.Sync();
+        _decor.Sync();
         _agents.Sync(delta);
         PlaceCamera();
+    }
+
+    private static readonly Color DaySun = new("#FFF6E8");
+    private static readonly Color DawnSun = new("#FFC98A");
+    private static readonly Color NightSun = new("#8FA6D8");
+    private static readonly Color DayAmbient = new("#DCE6F0");
+    private static readonly Color NightAmbient = new("#B8C4E0");
+    private static readonly Color DayGround = new(0.16f, 0.19f, 0.17f);
+    private static readonly Color NightGround = new(0.06f, 0.08f, 0.12f);
+
+    /// <summary>
+    /// Follows the hospital clock: warm low sun morning and evening, a cool moonlit night. Inside stays
+    /// well lit (the wards never go dark), so the night only dims and cools the light a little.
+    /// </summary>
+    private void Daylight()
+    {
+        var hour = _sim.Now.TimeOfDay.TotalHours;
+
+        // 0 at night, 1 in the day, easing across dawn (6 to 8) and dusk (19 to 21).
+        var day = (float)Math.Clamp(Math.Min((hour - 6) / 2, (21 - hour) / 2), 0, 1);
+        day = day * day * (3 - (2 * day));
+        var low = 1 - Math.Abs((day * 2) - 1);
+        var sun = NightSun.Lerp(DaySun, day).Lerp(DawnSun, low * 0.6f);
+        _sun.LightColor = sun;
+        _sun.LightEnergy = Mathf.Lerp(0.3f, 0.72f, day);
+        var env = _environment.Environment;
+        env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day);
+        env.AmbientLightEnergy = Mathf.Lerp(0.42f, 0.5f, day);
+        env.BackgroundColor = NightGround.Lerp(DayGround, day);
     }
 
     /// <summary>The view's quarter turn about the middle of the site, as a 3D transform of grid space.</summary>
