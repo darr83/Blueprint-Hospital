@@ -36,6 +36,7 @@ public partial class HospitalScene : Node2D
     private DepartmentRenderer _department = null!;
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
+    private PlanLayer _plan = null!;
     private RouteLayer _routes = null!;
     private TileCursor _cursor = null!;
     private BuildTool _build = null!;
@@ -96,6 +97,12 @@ public partial class HospitalScene : Node2D
         _world = new WorldLayer { Name = "World" };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
+
+        // The 2D plan view (V): walls, furniture and everyone as circles, seen from above. Hidden until turned on.
+        IsoDraw.SetPlan(false);
+        _plan = new PlanLayer { Name = "Plan", Visible = false };
+        AddChild(_plan);
+        _plan.Initialise(_world);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -183,6 +190,7 @@ public partial class HospitalScene : Node2D
         _hud.StaffInfo.FocusRequested += m => FocusOn(m);
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
         _hud.RotateRequested += RotateView;
+        _hud.PlanToggled += TogglePlanView;
         _hud.FloorStepRequested += step => ShowFloor(ViewFloor + step);
         _hud.AddFloorRequested += () =>
         {
@@ -380,6 +388,9 @@ public partial class HospitalScene : Node2D
             case Key.R:
                 ToggleRoutes();
                 break;
+            case Key.V:
+                TogglePlanView();
+                break;
             case Key.Q:
                 RotateView(-1);
                 break;
@@ -407,7 +418,7 @@ public partial class HospitalScene : Node2D
     {
         if (Mode == GameMode.Play)
         {
-            switch (_world.HitTest(world))
+            switch (IsoDraw.Plan ? _plan.HitTest(world) : _world.HitTest(world))
             {
                 case Patient patient:
                     SelectPatient(patient);
@@ -581,7 +592,7 @@ public partial class HospitalScene : Node2D
     public CameraState CaptureCamera()
     {
         var state = _camera.CaptureState();
-        if (IsoDraw.Rotation == 0)
+        if (IsoDraw.Rotation == 0 && !IsoDraw.Plan)
         {
             return state;
         }
@@ -601,6 +612,33 @@ public partial class HospitalScene : Node2D
         _world.RebuildStatic();
         _camera.Bounds = SiteBounds();
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
+    }
+
+    /// <summary>True while the flat 2D plan view is showing instead of the isometric view.</summary>
+    public bool PlanView => IsoDraw.Plan;
+
+    /// <summary>Switches between the isometric view and the flat 2D plan (V or the 2D button), keeping the same spot in the middle of the screen.</summary>
+    public void TogglePlanView() => SetPlanView(!IsoDraw.Plan);
+
+    public void SetPlanView(bool on)
+    {
+        if (on == IsoDraw.Plan)
+        {
+            return;
+        }
+
+        var state = _camera.CaptureState();
+        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
+        IsoDraw.SetPlan(on);
+        _world.Visible = !on;
+        _overlay.Visible = !on;
+        _plan.Visible = on;
+        _site.Rebuild();
+        _department.QueueRedraw();
+        _world.RebuildStatic();
+        _camera.Bounds = SiteBounds();
+        _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
+        _hud.SetPlanShown(on, _session.Simulation);
     }
 
     /// <summary>The floor in view (0 = ground).</summary>

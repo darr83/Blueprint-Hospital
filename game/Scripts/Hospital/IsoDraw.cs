@@ -48,6 +48,17 @@ public static class IsoDraw
 
     public static void SetViewFloor(int floor) => ViewFloor = Math.Max(0, floor);
 
+    /// <summary>Screen pixels per tile in the flat 2D plan view.</summary>
+    public const float PlanTile = 32f;
+
+    /// <summary>
+    /// True while the 2D plan view is on (V): the grid is drawn straight down from above instead of
+    /// isometric, so every floor, cursor, route and highlight that goes through this class lines up.
+    /// </summary>
+    public static bool Plan { get; private set; }
+
+    public static void SetPlan(bool on) => Plan = on;
+
     /// <summary>Which floor a grid position is on.</summary>
     public static int FloorOf(double y) => _floorStride <= 0 || y < _floorStride ? 0 : (int)(y / _floorStride);
 
@@ -58,12 +69,17 @@ public static class IsoDraw
     public static Vector2 ToScreenGround(double x, double y)
     {
         var (rx, ry) = Rotate(x, y);
-        return new((float)((rx - ry) * 32), (float)((rx + ry) * 16));
+        return Plan ? new((float)(rx * PlanTile), (float)(ry * PlanTile)) : new((float)((rx - ry) * 32), (float)((rx + ry) * 16));
     }
 
     /// <summary>The ground-floor (site) grid point under a screen position.</summary>
     public static (double X, double Y) ScreenToGroundGrid(Vector2 screen)
     {
+        if (Plan)
+        {
+            return Unrotate(screen.X / PlanTile, screen.Y / PlanTile);
+        }
+
         var (a, b) = (screen.X / 32.0, screen.Y / 16.0);
         return Unrotate((a + b) / 2, (b - a) / 2);
     }
