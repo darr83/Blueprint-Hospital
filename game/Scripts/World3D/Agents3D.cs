@@ -31,7 +31,7 @@ public partial class Agents3D : Node3D
     public int Count => _views.Count;
 
     /// <summary>The animation clock, in real seconds; it stands still while the game is paused.</summary>
-    public double AnimTime { get; private set; }
+    public double AnimTime { get; internal set; }
 
     private Dictionary<int, ClinicalTask> _tasks = new();
 
@@ -93,6 +93,16 @@ public partial class Agents3D : Node3D
         private MeshInstance3D? _ring;
         private (Color Colour, float Radius)? _ringKey;
         private float _yaw = float.NaN;
+
+        /// <summary>Just short of a drip stand, on the side they come from, facing it.</summary>
+        private static (double X, double Y, double FaceX, double FaceY) StandSpot((double X, double Y) stand, double x, double y)
+        {
+            var (dx, dy) = (x - stand.X, y - stand.Y);
+            var d = Math.Max(0.01, Math.Sqrt((dx * dx) + (dy * dy)));
+            return (stand.X + (dx / d * 0.75), stand.Y + (dy / d * 0.75), -dx, -dy);
+        }
+
+        private (double X, double Y) _shift;
         private Node3D? _lying;
         private object? _lyingKey;
         private Node3D? _chair;
@@ -119,9 +129,11 @@ public partial class Agents3D : Node3D
                 return;
             }
 
+            // A ward patient out of bed for physio is drawn on their feet beside it.
+            var physio = _agent is Patient pp ? Activity3D.PhysioWalk(pp, world, sim, _owner.AnimTime) : null;
             var visible = world.OnViewFloor(_agent) && _agent switch
             {
-                Patient p => world.IsOnMap(p) && !world.InBed(p),
+                Patient p => world.IsOnMap(p) && (!world.InBed(p) || physio is not null),
                 _ => true,
             } && sim.ToiletTripOf(_agent)?.Stage != Simulation.Simulation.ToiletStage.Using;
             Node.Visible = visible;
@@ -143,7 +155,12 @@ public partial class Agents3D : Node3D
                 return;
             }
 
-            if (_agent is Patient lyingPatient && LyingDown(world, sim, lyingPatient, look))
+            if (physio is { Frame: true } && !look.Frame)
+            {
+                look = look with { Frame = true };
+            }
+
+            if (_agent is Patient lyingPatient && physio is null && LyingDown(world, sim, lyingPatient, look))
             {
                 if (_person is not null)
                 {
@@ -225,11 +242,91 @@ public partial class Agents3D : Node3D
                 pose = visit.Walking ? Pose.Walking : Pose.Standing;
             }
 
+            // A pharmacist goes to the shelves for the box and back to count the tablets out.
+            if (_agent is StaffMember pharmacist && Activity3D.PharmacyVisit(pharmacist, world, sim, _owner._tasks, _owner.AnimTime) is { } round)
+            {
+                (x, y) = round.At;
+                (act, faceTo) = (round.Act, null);
+                facing = round.Facing;
+                pose = round.Walking ? Pose.Walking : Pose.Standing;
+            }
+
+            // Checking in: step along the counter to the check-in screen, and back again after. Putting up a
+            // drip: step round to the drip stand.
+            {
+                var kiosk = act == Act.CheckIn ? _owner._view.Life.KioskNear(x, y, 3)
+                    : act == Act.HangDrip && _agent is StaffMember dripper && Activity3D.DripStandFor(dripper, sim, _owner._tasks) is { } stand
+                        ? StandSpot(stand, x - _shift.X, y - _shift.Y)
+                        : null;
+                var goal = kiosk is { } k ? (X: k.X - x, Y: k.Y - y) : (X: 0.0, Y: 0.0);
+                var (gx, gy) = (goal.X - _shift.X, goal.Y - _shift.Y);
+                var gap = Math.Sqrt((gx * gx) + (gy * gy));
+                if (gap > 0.04 || _shift != (0, 0))
+                {
+                    var stepLen = Math.Min(gap, 1.6 * delta);
+                    _shift = gap < 1e-6 ? goal : (_shift.X + (gx / gap * stepLen), _shift.Y + (gy / gap * stepLen));
+                    if (gap > 0.04 && !_agent.IsMoving)
+                    {
+                        (act, faceTo) = (Act.None, null);
+                        facing = (gx, gy);
+                        pose = Pose.Walking;
+                    }
+
+                    if (!_agent.IsMoving)
+                    {
+                        (x, y) = (x + _shift.X, y + _shift.Y);
+                        if (gap <= 0.04 && kiosk is { } at)
+                        {
+                            facing = (at.FaceX, at.FaceY);
+                            faceTo = null;
+                        }
+                    }
+                    else
+                    {
+                        _shift = (0, 0);
+                    }
+                }
+            }
+
+            // The anaesthetist works from the head of the table, by their machine.
+            if (act == Act.Bag && _agent is StaffMember gas && Activity3D.AnaesthetistSpot(gas, sim, _owner._tasks) is { } head)
+            {
+                (x, y) = head.At;
+                facing = head.Facing;
+                faceTo = null;
+            }
+
+            // A plaster technician works right beside the couch, at the limb.
+            if (act == Act.Wrap && _agent is StaffMember tech && Activity3D.PlasterSpot(tech, world, sim, _owner._tasks) is { } spot)
+            {
+                (x, y) = spot.At;
+                facing = spot.Facing;
+                faceTo = null;
+            }
+
+            // Physio on the ward: the patient walks up and down beside their bed with the physio alongside.
+            if (physio is not null)
+            {
+                (x, y) = physio.At;
+                (act, faceTo) = (Act.None, null);
+                facing = physio.Facing;
+                pose = physio.Walking ? Pose.Walking : Pose.Standing;
+                seated = physio.Seated;
+            }
+            else if (_agent is StaffMember helper && Activity3D.PhysioHelping(helper, world, sim, _owner.AnimTime) is { } step)
+            {
+                (x, y) = step.Helper;
+                (act, faceTo) = (step.Walking ? Act.Support : Act.Talk, null);
+                facing = step.Walking ? step.Facing : (step.At.X - step.Helper.X, step.At.Y - step.Helper.Y);
+                pose = step.Walking ? Pose.Walking : Pose.Standing;
+            }
+
             Wheelchair(inChair, look.Scale);
+            TurnWheels(x, y);
             if (seated)
             {
                 pose = Pose.Seated;
-                facing = world.IsSeated(_agent) ? Facing(world.SeatFacing(_agent)) : facing;
+                facing = world.IsSeated(_agent) && physio is null ? Facing(world.SeatFacing(_agent)) : facing;
             }
 
             Node.Position = Kit3D.At(x, y);
@@ -258,6 +355,12 @@ public partial class Agents3D : Node3D
             _person.CarryBag(bag);
             var walking = pose == Pose.Walking;
             var stride = (world.StrideTime(_agent, walking) * 9) + (_agent.Id * 7);
+            if (walking && !_agent.IsMoving)
+            {
+                // Walking where only the drawing moves (a round to the shelves, physio): step in time with the clock.
+                stride = (t * 6.5) + (_agent.Id * 7);
+            }
+
             _person.SetPose(pose, stride);
             _person.SetAct(act, pose, t);
             _person.Modulate(_agent is Patient { IsAlive: false });
@@ -343,6 +446,10 @@ public partial class Agents3D : Node3D
             (_lying, _lyingKey) = (null, null);
         }
 
+        private Node3D[] _wheels = Array.Empty<Node3D>();
+        private (double X, double Y)? _lastAt;
+        private float _wheelTurn;
+
         /// <summary>Shows (or takes away) the wheelchair round a seated patient.</summary>
         private void Wheelchair(bool on, float scale)
         {
@@ -355,14 +462,44 @@ public partial class Agents3D : Node3D
             {
                 _chair!.QueueFree();
                 _chair = null;
+                _wheels = Array.Empty<Node3D>();
                 return;
             }
 
             _chair = new Node3D { Name = "Wheelchair" };
             var b = new MeshBatch();
-            Carriers3D.Wheelchair(b, Mathf.Clamp(scale, 0.6f, 1f));
+            Carriers3D.Wheelchair(b, Mathf.Clamp(scale, 0.6f, 1f), wheels: false);
             b.AddTo(_chair);
+            _wheels = new[] { -1f, 1f }.Select(side =>
+            {
+                var wheel = new Node3D { Name = side < 0 ? "WheelL" : "WheelR", Position = Carriers3D.WheelchairHub(side) };
+                var wb = new MeshBatch();
+                Carriers3D.WheelchairWheel(wb, side);
+                wb.AddTo(wheel);
+                _chair.AddChild(wheel);
+                return wheel;
+            }).ToArray();
             Node.AddChild(_chair);
+        }
+
+        /// <summary>Rolls the wheelchair's wheels round by however far it has gone since the last frame.</summary>
+        private void TurnWheels(double x, double y)
+        {
+            if (_lastAt is { } last && _wheels.Length > 0)
+            {
+                var moved = (float)Math.Sqrt(Math.Pow(x - last.X, 2) + Math.Pow(y - last.Y, 2));
+                if (moved < 1f)
+                {
+                    _wheelTurn += moved / Person3D.V(9.2f);
+                }
+
+                foreach (var wheel in _wheels)
+                {
+                    wheel.Rotation = new Vector3(_wheelTurn, 0, 0);
+                }
+            }
+
+            _lastAt = (x, y);
         }
 
         private void SetAlert(AlertKind? kind, float radius, float height)

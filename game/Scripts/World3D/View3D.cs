@@ -39,6 +39,7 @@ public partial class View3D : Node3D
     private Beds3D _beds = null!;
     private Furniture3D _furniture = null!;
     private Decor3D _decor = null!;
+    private Life3D _life = null!;
 
     private int _rotation = -1;
     private int _floor = -1;
@@ -125,6 +126,10 @@ public partial class View3D : Node3D
         _root.AddChild(_decor);
         _decor.Initialise(this);
 
+        _life = new Life3D { Name = "Life" };
+        _root.AddChild(_life);
+        _life.Initialise(this);
+
         _beds = new Beds3D { Name = "Beds" };
         _root.AddChild(_beds);
         _beds.Initialise(this);
@@ -141,6 +146,11 @@ public partial class View3D : Node3D
     public Furniture3D Furniture => _furniture;
 
     public Decor3D Decor => _decor;
+
+    public Life3D Life => _life;
+
+    /// <summary>How far into the night it is: 0 by day, 1 at night, easing across dawn and dusk.</summary>
+    public float Night { get; private set; }
 
     /// <summary>Shows or hides the 3D world (and its camera).</summary>
     public void SetShown(bool on)
@@ -198,15 +208,17 @@ public partial class View3D : Node3D
             _beds.Rebuild();
             _furniture.Rebuild();
             _decor.Rebuild(_walls.Cutaway);
+            _life.Rebuild();
         }
 
         Daylight();
 
-        _walls.Animate();
+        _walls.Animate(delta);
         _beds.Sync(delta);
         _furniture.Sync();
         _decor.Sync();
         _agents.Sync(delta);
+        _life.Sync();
         PlaceCamera();
     }
 
@@ -229,13 +241,14 @@ public partial class View3D : Node3D
         // 0 at night, 1 in the day, easing across dawn (6 to 8) and dusk (19 to 21).
         var day = (float)Math.Clamp(Math.Min((hour - 6) / 2, (21 - hour) / 2), 0, 1);
         day = day * day * (3 - (2 * day));
+        Night = 1 - day;
         var low = 1 - Math.Abs((day * 2) - 1);
         var sun = NightSun.Lerp(DaySun, day).Lerp(DawnSun, low * 0.6f);
         _sun.LightColor = sun;
-        _sun.LightEnergy = Mathf.Lerp(0.3f, 0.72f, day);
+        _sun.LightEnergy = Mathf.Lerp(0.24f, 0.72f, day);
         var env = _environment.Environment;
         env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day);
-        env.AmbientLightEnergy = Mathf.Lerp(0.42f, 0.5f, day);
+        env.AmbientLightEnergy = Mathf.Lerp(0.38f, 0.5f, day);
         env.BackgroundColor = NightGround.Lerp(DayGround, day);
     }
 

@@ -41,6 +41,45 @@ public partial class AnimShots : Node
         ("night", null, (s, a) => a is Patient p && (s.Now.Hour >= 22 || s.Now.Hour < 5) && !p.IsMoving && p.Stage is PatientStage.InTreatmentSpace or PatientStage.OnWard && p.BusyWithTaskId is null, 2.4f, 90, Array.Empty<string>()),
     };
 
+    /// <summary>Batch 4 (run with --anim-set=4): wards, getting around, front of house, specialist rooms, the night.</summary>
+    private static readonly (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Scenes4 =
+    {
+        ("lunch", null, (s, a) => a is Patient p && OnWardBed(p) && s.Now.TimeOfDay.TotalHours is >= 12.3 and < 13.1 && WardCount(s, p) >= 3, 2.2f, 90, new[] { "ischaemic_stroke" }),
+        ("inbed", null, (s, a) => a is Patient p && OnWardBed(p) && s.Now.Hour is >= 14 and < 17 && WardCount(s, p) >= 4, 2.2f, 90, new[] { "ischaemic_stroke" }),
+        ("drip", Act.HangDrip, (_, a) => a is StaffMember, 2.4f, 90, new[] { "ischaemic_stroke", "acute_appendicitis" }),
+        ("callbell", null, (s, a) => a is Patient { Maternity: false, BusyWithTaskId: null } p && OnWardBed(p) && Activity3D.PhysioWalk(p, World!, s, 0) is null && s.Now.Hour is >= 8 and < 21 && s.Tasks.Any(t => !t.Started && t.PatientId == p.Id && t.Role == StaffRole.Nurse && t.Kind is TaskKind.Observations or TaskKind.GiveMedication
+            && (t.AssignedStaffId is not { } who || s.Staff.FirstOrDefault(m => m.Id == who) is not { } n || Math.Abs(n.X - p.X) + Math.Abs(n.Y - p.Y) > 12)), 2.6f, 60, new[] { "ischaemic_stroke" }),
+        ("physio", null, (s, a) => a is Patient p && Activity3D.PhysioWalk(p, World!, s, 0) is not null, 2.6f, 180, new[] { "ischaemic_stroke" }),
+        ("wheelchair", null, (_, a) => a is Patient p && p.IsMoving && World!.InWheelchair(p), 2.8f, 60, Array.Empty<string>()),
+        ("entrance", null, (s, a) => a is not StaffMember && a.IsMoving && NearEntrance(s, a) && s.Now.Hour is >= 8 and < 19
+            && a.RemainingPath.Any(t => !s.Site.Buildings.Any(b => b.Areas.Any(r => r.Contains(t)))), 2.2f, 120, Array.Empty<string>()),
+        ("lift", null, (s, a) => a.IsMoving && s.Spaces.FirstOrDefault(r => r.Kind == CareSpaceKind.Lift && s.FloorOf(r) == 0) is { } lift && !lift.Rect.Contains(a.Tile)
+            && RoomSigns.DoorMiddle(lift) is var (dx, dy) && Math.Abs(a.X + 0.5 - dx) + Math.Abs(a.Y + 0.5 - dy) is > 2.5 and < 6
+            && a.RemainingPath.Any(t => lift.Rect.Contains(t)), 2.4f, 90, new[] { "acute_appendicitis" }),
+        ("phone", Act.PhoneCall, (s, a) => a is StaffMember { Role: StaffRole.Receptionist, IsMoving: false } && s.Spaces.Any(r => r.Rect.Contains(a.Tile) && r.Furniture.Any(f => f.ItemId == "reception_desk")), 3.0f, 75, Array.Empty<string>()),
+        ("checkin", Act.CheckIn, (_, a) => a is not StaffMember, 3.0f, 90, Array.Empty<string>()),
+        ("pharmacy", null, (s, a) => a is StaffMember m && Activity3D.PharmacyVisit(m, World!, s, s.Tasks.Where(t => t.Started).ToDictionary(t => t.Id), 0) is not null, 2.8f, 180, Array.Empty<string>()),
+        ("theatre", Act.Bag, (_, a) => a is StaffMember, 3.2f, 120, new[] { "acute_appendicitis" }),
+        ("plaster", Act.Wrap, (_, a) => a is StaffMember, 2.8f, 150, new[] { "ankle_fracture", "wrist_fracture" }),
+        ("maternity", null, (s, a) => a is Patient { Maternity: true, Stage: PatientStage.OnWard } p && World!.BabiesWith(p).Length > 0 && World.InBed(p), 2.4f, 90, new[] { "established_labour" }),
+        ("night4", null, (s, a) => a is Patient p && OnWardBed(p) && s.Now.Hour is >= 23 or < 4 && WardCount(s, p) >= 3, 1.8f, 45, new[] { "ischaemic_stroke" }),
+    };
+
+    private static WorldLayer? World;
+
+    private static bool OnWardBed(Patient p) => p.Stage == PatientStage.OnWard && !p.IsMoving && World!.InBed(p)
+        && World.Simulation.Spaces.FirstOrDefault(r => r.Rect.Contains(p.Tile)) is { IsWard: true };
+
+    private static int WardCount(HospitalSimulation s, Patient p) =>
+        s.Patients.Count(o => o.Stage == PatientStage.OnWard && o.CareSpaceId == p.CareSpaceId && !o.IsMoving);
+
+    private static bool NearEntrance(HospitalSimulation s, Agent a) =>
+        s.Site.Buildings.SelectMany(b => b.Entrances).Any(e => !e.IsAmbulanceEntrance && Math.Abs(a.X - e.Tile.X - (e.WidthTiles / 2.0)) < 3 && Math.Abs(a.Y - e.Tile.Y) is > 2.5 and < 6);
+
+    private static bool Set4 => OS.GetCmdlineUserArgs().Contains("--anim-set=4");
+
+    private static (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Active => Set4 ? Scenes4 : Scenes;
+
     public static bool Begin()
     {
         foreach (var arg in OS.GetCmdlineUserArgs())
@@ -89,7 +128,8 @@ public partial class AnimShots : Node
 
         var sim = _hospital.Session.Simulation;
         var clock = _hospital.Session.Clock;
-        if (_scene >= Scenes.Length)
+        var scenes = Active;
+        if (_scene >= scenes.Length)
         {
             GD.Print("[anim] Done.");
             GetTree().Quit(0);
@@ -97,18 +137,18 @@ public partial class AnimShots : Node
         }
 
         var only = OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--anim-scenes=", StringComparison.Ordinal))?["--anim-scenes=".Length..].Split(',');
-        if (only is not null && !only.Contains(Scenes[_scene].Name))
+        if (only is not null && !only.Contains(scenes[_scene].Name))
         {
             _scene++;
             return;
         }
 
-        var scene = Scenes[_scene];
+        var scene = scenes[_scene];
         if (_captured < 0)
         {
             // Run the game on (fast, unseen) until the scene happens, with new arrivals to keep it busy.
             clock.SetSpeed(SimulationSpeed.Paused);
-            if (_settle == 0 && _scene == 3)
+            if (_settle == 0 && _scene == 3 && !Set4)
             {
                 // Enough doctors and nurses now that the queue has had time to build for the vending machine.
                 for (var i = 0; i < 3; i++)
@@ -134,7 +174,24 @@ public partial class AnimShots : Node
                 }
             }
 
-            if (_settle % 25 == 0)
+            if (Set4 && _settle % 40 == 0 && scene.Name is "checkin" or "pharmacy" or "entrance" or "wheelchair")
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    sim.SpawnPatient(ArrivalMethod.WalkIn);
+                }
+            }
+
+            if (Set4 && _settle % 25 == 0 && sim.Patients.Count() < 40)
+            {
+                // Only the patients this scene needs, so A&E keeps moving.
+                foreach (var condition in scene.Conditions)
+                {
+                    sim.SpawnPatient(condition is "ankle_fracture" or "wrist_fracture" ? ArrivalMethod.WalkIn : ArrivalMethod.Ambulance, condition);
+                }
+            }
+
+            if (!Set4 && _settle % 25 == 0)
             {
                 for (var i = 0; i < 4; i++)
                 {
@@ -153,7 +210,10 @@ public partial class AnimShots : Node
                 }
 
                 tasks = sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
-                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act is null || Activity3D.For(a, _hospital.World, sim, tasks, 0).Act == scene.Act));
+
+                // Moments that come and go on the animation clock (a phone call): wind that on too while we look.
+                _hospital.View3D.People.AnimTime += 7.3;
+                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act is null || (Activity3D.For(a, _hospital.World, sim, tasks, _hospital.View3D.People.AnimTime).Act == scene.Act && Activity3D.For(a, _hospital.World, sim, tasks, _hospital.View3D.People.AnimTime + 3).Act == scene.Act)));
                 if (_subject is not null)
                 {
                     break;
@@ -168,7 +228,7 @@ public partial class AnimShots : Node
 
             if (_subject is null)
             {
-                if (_settle > (scene.Name is "vending" or "waiting" ? 30 : 200))
+                if (_settle > (scene.Name is "vending" or "waiting" ? 30 : Set4 ? 400 : 200))
                 {
                     GD.Print($"[anim] Gave up waiting for {scene.Name}. Patients: {string.Join(", ", sim.Patients.GroupBy(p => p.Stage).Select(g => $"{g.Key} {g.Count()}"))}; seated {Everyone(sim).Count(a => _hospital.World.IsSeated(a))}; trips {sim.RefreshmentTrips.Count}; vending rooms {sim.RefreshmentRooms.Count()}; {sim.Now:HH:mm}");
                     (_scene, _settle) = (_scene + 1, 0);
@@ -186,9 +246,36 @@ public partial class AnimShots : Node
                 (fx, fy) = ((fx + face.X) / 2, (fy + face.Y) / 2);
             }
 
-            if (scene.Name is "xray" or "ct" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
+            if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
             {
                 (fx, fy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0) - 1);
+            }
+
+            if (scene.Name is "pharmacy")
+            {
+                // From the other side, so the shelves don't stand between the camera and the pharmacist.
+                _hospital.RotateView(2 - IsoDraw.Rotation);
+            }
+
+            if (scene.Name is "lift" && sim.Spaces.FirstOrDefault(r => r.Kind == CareSpaceKind.Lift && sim.FloorOf(r) == 0) is { } lift)
+            {
+                // Face the lift doors: turn the view so their wall is towards the camera.
+                (fx, fy) = RoomSigns.DoorMiddle(lift);
+                var side = lift.Doors[0].Side;
+                _hospital.RotateView((side is Simulation.World.WallSide.North or Simulation.World.WallSide.West ? 2 : 0) - IsoDraw.Rotation);
+                GD.Print($"[anim] lift door on the {side} side at {fx:0.0},{fy:0.0}");
+            }
+
+            if (scene.Name is "physio" && _subject is Patient walker && Activity3D.PhysioWalk(walker, _hospital.World, sim, 0) is { } walk)
+            {
+                (fx, fy) = (walk.At.X, walk.At.Y + (sim.BedOf(walker)?.HeadSouth == true ? -1.1 : 1.1));
+            }
+
+            // Lift and entrance doors only show with the walls up; everything else is filmed cut away.
+            var wallsUp = scene.Name is "lift" or "entrance";
+            if (wallsUp == _hospital.View3D.Cutaway)
+            {
+                _hospital.ToggleWalls();
             }
 
             _hospital.Camera.SnapTo(IsoDraw.ToScreen(fx, fy) + new Vector2(0, -18), scene.Zoom);
@@ -198,6 +285,13 @@ public partial class AnimShots : Node
         }
 
         // Let the camera settle for a few frames, then save one frame each frame.
+        if (scene.Name is "wheelchair" && _subject is not null && _settle > 0)
+        {
+            // Moving subjects: keep them in the middle of the shot.
+            var (sx, sy) = _hospital.World.Interpolated(_subject);
+            _hospital.Camera.SnapTo(IsoDraw.ToScreen(sx, sy) + new Vector2(0, -18), scene.Zoom);
+        }
+
         if (_settle++ < 8)
         {
             return;
@@ -221,6 +315,13 @@ public partial class AnimShots : Node
     private static void Build(HospitalScene h)
     {
         var sim = h.Session.Simulation;
+        World = h.World;
+        if (Set4)
+        {
+            Build4(h);
+            return;
+        }
+
         sim.AdjustBalance(10_000_000);
         foreach (var dept in sim.Database.Departments.Keys)
         {
@@ -267,6 +368,106 @@ public partial class AnimShots : Node
         for (var i = 0; i < 24; i++)
         {
             sim.SpawnPatient(i % 6 == 0 ? ArrivalMethod.Ambulance : ArrivalMethod.WalkIn);
+        }
+    }
+
+    /// <summary>
+    /// Batch 4's hospital: on top of the starter A&amp;E, a north wing (stroke unit, physio gym, plaster room,
+    /// theatre, pharmacy), a west wing (outpatient reception and clinic, a delivery room and the mother and
+    /// baby ward), and a first floor with a surgical ward reached by a lift. Everything staffed as recommended.
+    /// </summary>
+    private static void Build4(HospitalScene h)
+    {
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(30_000_000);
+        foreach (var dept in sim.Database.Departments.Keys)
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        static Simulation.World.GridRect R(int x, int y, int w, int l) => new(x, y, w, l);
+        Report("north wing", sim.ExtendBuilding(R(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new RoomPlan("corridor", R(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new RoomPlan("corridor", R(44, 13, 56, 5), Simulation.World.WallSide.South)));
+        foreach (var (template, rect) in new[]
+                 {
+                     ("stroke_unit", R(44, 18, 16, 11)), ("physio_gym", R(60, 18, 12, 10)), ("plaster_room", R(72, 18, 9, 8)),
+                     ("operating_theatre", R(81, 18, 12, 12)), ("pharmacy", R(93, 18, 7, 7)),
+                     ("xray_room", R(44, 2, 11, 11)), ("staff_room", R(55, 5, 10, 8)),
+                 })
+        {
+            Report(template, sim.BuildRoom(sim.AutoPlan(template, rect)));
+        }
+
+        Report("west wing", sim.ExtendBuilding(R(0, 30, 40, 34)));
+        Report("west corridor", sim.BuildRoom(new RoomPlan("corridor", R(0, 40, 44, 6), Simulation.World.WallSide.South)));
+        foreach (var (template, rect) in new[]
+                 {
+                     ("outpatient_reception", R(2, 32, 10, 8)), ("medical_clinic", R(12, 32, 8, 8)), ("delivery_room", R(28, 31, 11, 9)),
+                     ("mother_baby_ward", R(2, 46, 25, 11)), ("waiting_room", R(20, 32, 8, 8)),
+                 })
+        {
+            Report(template, sim.BuildRoom(sim.AutoPlan(template, rect)));
+        }
+
+        // Upstairs: a surgical ward, reached by a lift from the A&E corridor.
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        Report("first floor", sim.AddFloor());
+        Report("lift", sim.BuildRoom(sim.AutoPlan("lift", R(b.X + 48, b.Y + 17, 5, 6))));
+        Report("upstairs corridor", sim.BuildRoom(new RoomPlan("corridor", sim.Site.OnFloor(R(b.X + 4, b.Y + 9, 56, 8), 1), Simulation.World.WallSide.South)));
+        Report("surgical ward", sim.BuildRoom(sim.AutoPlan("surgical_ward", sim.Site.OnFloor(R(b.X + 20, b.Y + 17, 16, 10), 1))));
+
+        var placed = 0;
+        foreach (var room in sim.Spaces.Where(s => s.Kind == CareSpaceKind.Waiting).ToList())
+        {
+            var r = room.Rect;
+            foreach (var (y, facing) in new[] { (r.Y + 1, Simulation.World.WallSide.South), (r.Y + 3, Simulation.World.WallSide.North), (r.Bottom - 2, Simulation.World.WallSide.North) })
+            {
+                for (var x = r.X + 1; x < r.Right - 1; x++)
+                {
+                    if (sim.PlaceChair(new Simulation.World.GridCoord(x, y), facing, "#2E7D9A").CanBuild)
+                    {
+                        placed++;
+                    }
+                }
+            }
+        }
+
+        GD.Print($"[anim] Placed {placed} chairs.");
+        foreach (var need in sim.RecommendedStaffing())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                sim.HireStaff(need.Role, need.RoomId, skill: 0.8, shift: need.Shift);
+            }
+        }
+
+        // Theatres aren't shared by default: open this one to every surgical department.
+        foreach (var theatre in sim.Spaces.Where(r => r.Kind == CareSpaceKind.Theatre && sim.FixedTheatreDepartments(r).Count == 0).ToList())
+        {
+            foreach (var dept in sim.SurgicalDepartments)
+            {
+                sim.SetTheatreAccess(theatre.Id, dept.Id, true);
+            }
+        }
+
+        for (var i = 0; i < 6; i++)
+        {
+            sim.HireStaff(StaffRole.Doctor);
+            sim.HireStaff(StaffRole.Nurse);
+            sim.HireStaff(StaffRole.Doctor, shift: StaffShift.Night);
+            sim.HireStaff(StaffRole.Nurse, shift: StaffShift.Night);
+            sim.HireStaff(StaffRole.Porter, shift: i % 2 == 0 ? StaffShift.Day : StaffShift.Night);
+        }
+
+        foreach (var condition in new[] { "ischaemic_stroke", "ischaemic_stroke", "ischaemic_stroke", "acute_appendicitis", "ankle_fracture", "established_labour", "established_labour" })
+        {
+            sim.SpawnPatient(condition is "ankle_fracture" ? ArrivalMethod.WalkIn : ArrivalMethod.Ambulance, condition);
+        }
+
+        for (var i = 0; i < 12; i++)
+        {
+            sim.SpawnPatient(i % 4 == 0 ? ArrivalMethod.Ambulance : ArrivalMethod.WalkIn);
         }
     }
 

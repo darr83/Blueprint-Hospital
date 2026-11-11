@@ -47,6 +47,12 @@ public partial class Person3D : Node3D
     private Node3D? _can;
     private Node3D? _pot;
     private Node3D? _keypad;
+    private Node3D? _handset;
+    private Node3D? _dripBag;
+    private Node3D? _box;
+    private Node3D? _tray;
+    private Node3D? _ambuBag;
+    private Node3D? _roll;
 
     public PersonLook Look { get; private set; } = null!;
 
@@ -619,7 +625,8 @@ public partial class Person3D : Node3D
         var seated = pose == Pose.Seated;
         var f = (float)t;
         Show(act);
-        if (act == Act.None || pose is Pose.Walking or Pose.Cpr)
+        Rock(pose != Pose.Walking, f);
+        if (act == Act.None || pose == Pose.Cpr || (pose == Pose.Walking && act != Act.Support))
         {
             return;
         }
@@ -775,6 +782,80 @@ public partial class Person3D : Node3D
                 }
 
                 break;
+            case Act.HangDrip:
+            {
+                // Both hands up at the hook, hanging the new bag, then a check of the drip rate.
+                var up = Mathf.PosMod(f, 6f) < 4f;
+                left = up ? new Vector3(-2.65f, 0, 0.2f) : new Vector3(-1.1f, 0, 0.3f);
+                right = up ? new Vector3(-2.8f + (0.06f * S(3)), 0, -0.2f) : new Vector3(-1.25f + (0.05f * S(4)), 0, -0.2f);
+                _dripBag = Prop(_dripBag, _armR, DripBag);
+                _dripBag.Visible = up;
+                break;
+            }
+
+            case Act.PhoneCall:
+                // The handset at the ear; the other hand jots on a pad.
+                right = new Vector3(-2.75f, 0, 0.55f);
+                left = new Vector3(-0.95f + (0.04f * S(12)), 0, 0.3f + (0.03f * S(7)));
+                lean = seated ? 0f : 0.06f;
+                _handset = Prop(_handset, _armR, Handset);
+                break;
+            case Act.CheckIn:
+            {
+                // Tapping their details into the screen on the counter (which lights up as they tap; see Life3D).
+                right = new Vector3(-1.2f + (0.12f * Mathf.Max(0, S(7))), 0, -0.2f);
+                left = new Vector3(-0.1f, 0, 0.06f);
+                lean = 0.08f;
+                break;
+            }
+
+            case Act.Reach:
+            {
+                // Up to the shelf, then down again with the box.
+                var cycle = Mathf.PosMod(f, 2.5f);
+                var got = cycle > 1.2f;
+                right = got ? new Vector3(-1.35f, 0, -0.15f) : new Vector3(-2.7f, 0, -0.1f);
+                left = got ? new Vector3(-1.2f, 0, 0.3f) : new Vector3(-0.4f, 0, 0.06f);
+                _box = Prop(_box, _armR, Box);
+                _box.Visible = got;
+                break;
+            }
+
+            case Act.Count:
+                // Tray in one hand, the other sliding tablets along it in fives.
+                lean = 0.22f;
+                left = new Vector3(-1.0f, 0, 0.32f);
+                right = new Vector3(-1.08f + (0.05f * Mathf.Abs(S(5))), 0, -0.12f + (0.12f * S(2.5f)));
+                _tray = Prop(_tray, _armL, PillTray);
+                break;
+            case Act.Bag:
+            {
+                // One hand holding the mask on, the other squeezing the bag every few seconds.
+                var squeeze = Mathf.Max(0, S(1.6f));
+                lean = 0.16f;
+                left = new Vector3(-1.2f, 0, 0.35f);
+                right = new Vector3(-0.95f - (0.08f * squeeze), 0, -0.2f);
+                _ambuBag = Prop(_ambuBag, _armR, AmbuBag);
+                _ambuBag.Scale = new Vector3(1 - (0.3f * squeeze), 1, 1 - (0.3f * squeeze));
+                break;
+            }
+
+            case Act.Wrap:
+            {
+                // Round and round the limb with the roll of plaster.
+                var a = f * 4f;
+                lean = 0.26f;
+                left = new Vector3(-1.0f + (0.18f * Mathf.Sin(a)), 0, 0.3f + (0.14f * Mathf.Cos(a)));
+                right = new Vector3(-1.0f - (0.18f * Mathf.Sin(a)), 0, -0.3f + (0.14f * Mathf.Cos(a)));
+                _roll = Prop(_roll, _armR, Roll);
+                break;
+            }
+
+            case Act.Support:
+                // An arm out towards the patient, ready to steady them.
+                left = new Vector3(-0.75f, 0, -0.25f);
+                right = new Vector3(-0.55f, 0, -0.1f);
+                break;
             case Act.WashHands:
                 lean = 0.18f;
                 left = new Vector3(-0.95f + (0.06f * S(10)), 0, 0.42f);
@@ -846,6 +927,51 @@ public partial class Person3D : Node3D
         {
             _pot = Prop(_pot, _armR, Pot);
         }
+
+        if (act != Act.PhoneCall)
+        {
+            Hide(_handset);
+        }
+
+        if (act != Act.HangDrip)
+        {
+            Hide(_dripBag);
+        }
+
+        if (act != Act.Reach)
+        {
+            Hide(_box);
+        }
+
+        if (act != Act.Count)
+        {
+            Hide(_tray);
+        }
+
+        if (act != Act.Bag)
+        {
+            Hide(_ambuBag);
+        }
+
+        if (act != Act.Wrap)
+        {
+            Hide(_roll);
+        }
+    }
+
+    /// <summary>A baby in their arms is rocked gently while they stand or sit.</summary>
+    private void Rock(bool still, float t)
+    {
+        if (_baby is null)
+        {
+            return;
+        }
+
+        var sway = still ? 0.2f * Mathf.Sin(t * 1.9f) : 0f;
+        _baby.Rotation = new Vector3(0, 0, (Mathf.Pi / 2) + sway);
+        _baby.Position = new Vector3(sway * W(4), _hipY + V(12), W(9));
+        _armL.Rotation = new Vector3(-0.95f, 0, -0.35f + (sway * 0.5f));
+        _armR.Rotation = new Vector3(-0.95f, 0, 0.35f + (sway * 0.5f));
     }
 
     private static void Hide(Node3D? prop)
@@ -920,6 +1046,42 @@ public partial class Person3D : Node3D
     {
         b.Cylinder(new Vector3(0, -W(1.5f), W(2)), W(1.6f), W(5), W(1.6f), new Color("#D93A30"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
         b.Cylinder(new Vector3(0, -W(1.5f), W(4.6f)), W(1.5f), W(0.3f), W(1.5f), new Color("#C9D2D9"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+    }
+
+    private static void Handset(MeshBatch b)
+    {
+        b.Pill(new Vector3(0, -W(1), W(1.5f)), new Vector3(W(2.4f), W(8), W(2.2f)), new Color("#2B2F33"));
+    }
+
+    private static void DripBag(MeshBatch b)
+    {
+        b.Box(new Vector3(0, -W(2), W(2.5f)), new Vector3(W(5), W(7), W(1.8f)), new Color("#E3F2FD"));
+        b.Box(new Vector3(0, -W(1.5f), W(3.5f)), new Vector3(W(3), W(2), W(0.2f)), new Color("#1E88E5"));
+    }
+
+    private static void Box(MeshBatch b)
+    {
+        b.Box(new Vector3(0, -W(1.5f), W(2.5f)), new Vector3(W(6), W(3.5f), W(3)), Colors.White);
+        b.Box(new Vector3(0, -W(1.5f), W(4.05f)), new Vector3(W(6.1f), W(1.2f), W(0.2f)), new Color("#00897B"));
+    }
+
+    private static void PillTray(MeshBatch b)
+    {
+        b.Box(new Vector3(W(3), -W(1), W(1.6f)), new Vector3(W(8), W(5), W(0.5f)), new Color("#ECEFF1"));
+        for (var i = 0; i < 4; i++)
+        {
+            b.Ball(new Vector3(W(0.5f + (i * 1.6f)), -W(1), W(2.1f)), new Vector3(W(1), W(1), W(0.6f)), new Color("#F06292"), small: true);
+        }
+    }
+
+    private static void AmbuBag(MeshBatch b)
+    {
+        b.Ball(new Vector3(0, -W(4), W(1.5f)), new Vector3(W(5), W(8), W(5)), new Color("#2E7D9A"));
+    }
+
+    private static void Roll(MeshBatch b)
+    {
+        b.Cylinder(new Vector3(0, -W(1), W(2)), W(1.8f), W(4.5f), W(1.8f), new Color("#F5F5F0"), Basis.FromEuler(new Vector3(0, 0, Mathf.Pi / 2)));
     }
 
     private static void Pot(MeshBatch b)
