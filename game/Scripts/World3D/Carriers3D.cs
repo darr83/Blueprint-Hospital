@@ -94,6 +94,7 @@ public static class Carriers3D
     {
         "xray_table" => XRay(b),
         "ct_table" => Ct(b, colour),
+        "ct_base" => CtBase(b, colour),
         "operating_table" => Operating(b, colour),
         "cath_lab_table" => CathLab(b),
         _ => Couch(b, colour),
@@ -150,10 +151,24 @@ public static class Carriers3D
 
     private static float Ct(MeshBatch b, Color colour)
     {
+        CtBase(b, colour);
+        return CtTop(b, colour);
+    }
+
+    private static float CtBase(MeshBatch b, Color colour)
+    {
         const float top = 21f;
         b.Box(new Vector3(0, H(7.75f), 0.7f), new Vector3(1.12f, H(15.5f), 2.6f), colour);
         b.Box(new Vector3(0, H(1.5f), 0.7f), new Vector3(1.13f, H(3), 2.61f), Dark);
         b.Box(new Vector3(0, H(7), 0.7f), new Vector3(1.14f, H(1.3f), 2.4f), new Color("#7FA7C4"));
+        b.Box(new Vector3(0, H(16), 0.7f), new Vector3(1.0f, H(2), 2.5f), colour.Darkened(0.12f));
+        return H(21f);
+    }
+
+    /// <summary>The CT table's top, which slides into the scanner and back: drawn on its own so it can move.</summary>
+    public static float CtTop(MeshBatch b, Color colour)
+    {
+        const float top = 21f;
         b.Box(new Vector3(0, H(19), 0), new Vector3(1.28f, H(4), 4.1f), colour.Lightened(0.05f));
         b.Box(new Vector3(0, H(top + 0.1f), 0), new Vector3(0.94f, H(0.3f), 3.9f), new Color("#7FA7C4"));
         foreach (var side in new[] { -1f, 1f })

@@ -39,6 +39,13 @@ public partial class Person3D : Node3D
 
     private float _hipY;
     private float _seatDrop;
+    private float _armLength;
+    private Node3D? _clipboard;
+    private Node3D? _phone;
+    private Node3D? _magazine;
+    private Node3D? _cup;
+    private Node3D? _can;
+    private Node3D? _pot;
 
     public PersonLook Look { get; private set; } = null!;
 
@@ -208,6 +215,7 @@ public partial class Person3D : Node3D
         var hands = look.Gloves ?? look.Skin;
         var sleeves = look.Jacket ?? (look.Kind is TopKind.Dress or TopKind.Tee or TopKind.Polo or TopKind.Scrubs or TopKind.Tunic && !look.LongSleeves ? (Color?)null : look.Top);
         var armLength = shY - _hipY + V(2);
+        _armLength = armLength;
         _armL = Arm(-1, shW + (armR * 0.7f), shY - V(1), armLength, armR, look.Jacket ?? look.Top, sleeves, look.Skin, hands);
         _armR = Arm(1, shW + (armR * 0.7f), shY - V(1), armLength, armR, look.Jacket ?? look.Top, sleeves, look.Skin, hands);
 
@@ -598,6 +606,303 @@ public partial class Person3D : Node3D
         }
 
         _ = lean;
+    }
+
+    /// <summary>
+    /// Animates what they are doing with their hands on top of the pose set by <see cref="SetPose"/>:
+    /// examining, typing, pressing vending machine buttons, reading, and so on (see <see cref="Act"/>).
+    /// <paramref name="t"/> is the animation clock in seconds; each person runs it from their own offset.
+    /// </summary>
+    public void SetAct(Act act, Pose pose, double t)
+    {
+        var seated = pose == Pose.Seated;
+        var f = (float)t;
+        Show(act);
+        if (act == Act.None || pose is Pose.Walking or Pose.Cpr)
+        {
+            return;
+        }
+
+        var lean = 0f;
+        float S(float speed, float phase = 0) => Mathf.Sin((f * speed) + phase);
+
+        // Arm rotations: x below zero swings the arm forward (-pi/2 points it straight ahead);
+        // z turns it in across the body (positive for the left arm, negative for the right).
+        Vector3 left;
+        Vector3 right;
+        switch (act)
+        {
+            case Act.Examine:
+            {
+                // Lean in and listen for five seconds, then stand up and jot a note.
+                var cycle = Mathf.PosMod(f, 7f);
+                if (cycle < 5f)
+                {
+                    lean = 0.26f;
+                    right = new Vector3(-1.15f + (0.08f * S(1.3f)), 0, -0.22f + (0.06f * S(0.9f, 1)));
+                    left = new Vector3(-0.55f, 0, 0.05f);
+                    Hide(_clipboard);
+                }
+                else
+                {
+                    lean = 0.05f;
+                    left = new Vector3(-1.05f, 0, 0.35f);
+                    right = new Vector3(-1.0f + (0.05f * S(14)), 0, -0.25f + (0.04f * S(9)));
+                    _clipboard = Prop(_clipboard, _armL, Clipboard);
+                }
+
+                break;
+            }
+
+            case Act.Observations:
+                // BP cuff: one hand on the patient's arm squeezing the bulb, the chart in the other.
+                left = new Vector3(-1.0f, 0, 0.35f);
+                right = new Vector3(-1.05f + (0.07f * Mathf.Abs(S(5))), 0, -0.12f);
+                lean = 0.08f;
+                break;
+            case Act.Bloods:
+                lean = 0.34f;
+                left = new Vector3(-0.85f, 0, 0.3f);
+                right = new Vector3(-0.92f + (0.05f * S(2.2f)), 0, -0.32f);
+                break;
+            case Act.Medicine:
+            {
+                // Hold out the pot, then a step back.
+                var reach = 0.5f + (0.5f * S(0.9f));
+                right = new Vector3(-0.8f - (0.6f * reach), 0, -0.1f);
+                left = new Vector3(-0.15f, 0, 0.06f);
+                lean = 0.1f * reach;
+                break;
+            }
+
+            case Act.Typing:
+                left = new Vector3(-1.05f + (0.06f * Mathf.Max(0, S(11))), 0, 0.28f);
+                right = new Vector3(-1.05f + (0.06f * Mathf.Max(0, S(11, 2.2f))), 0, -0.28f);
+                lean = 0.1f;
+                break;
+            case Act.Operate:
+                lean = 0.3f;
+                left = new Vector3(-0.95f + (0.07f * S(3.1f)), 0, 0.38f + (0.05f * S(2.3f)));
+                right = new Vector3(-0.95f + (0.07f * S(2.7f, 1.4f)), 0, -0.38f + (0.05f * S(1.9f, 0.4f)));
+                break;
+            case Act.Talk:
+                right = new Vector3(-0.55f + (0.3f * S(2.1f)), 0, -0.2f + (0.15f * S(1.3f)));
+                left = new Vector3(-0.35f + (0.22f * S(1.7f, 1.2f)), 0, 0.15f);
+                break;
+            case Act.Exercise:
+            {
+                var up = 0.5f - (0.5f * Mathf.Cos(f * 1.8f));
+                left = new Vector3(-0.2f - (2.6f * up), 0, -0.15f);
+                right = new Vector3(-0.2f - (2.6f * up), 0, 0.15f);
+                break;
+            }
+
+            case Act.VendPress:
+            {
+                // Studying the choices, then tapping in the number.
+                var cycle = Mathf.PosMod(f, 4f);
+                right = cycle < 1.5f
+                    ? new Vector3(-0.35f, 0, -0.05f)
+                    : new Vector3(-1.55f + (0.14f * Mathf.Max(0, S(9))), 0, -0.18f);
+                left = cycle < 1.5f ? new Vector3(-1.2f, 0, 0.55f) : new Vector3(-0.1f, 0, 0.06f);
+                break;
+            }
+
+            case Act.VendCollect:
+            {
+                // Bend down to the tray at the bottom, and come up with a can.
+                var down = Mathf.PosMod(f, 3f) < 1.8f;
+                lean = down ? 0.55f : 0.1f;
+                right = down ? new Vector3(-0.55f, 0, -0.1f) : new Vector3(-1.2f, 0, -0.25f);
+                left = new Vector3(-0.1f, 0, 0.06f);
+                if (!down)
+                {
+                    _can = Prop(_can, _armR, Can);
+                }
+                else
+                {
+                    Hide(_can);
+                }
+
+                break;
+            }
+
+            case Act.Eat:
+            case Act.Tea:
+            {
+                // The cup on the table (or in the lap), lifted for a sip every few seconds.
+                var cycle = Mathf.PosMod(f, act == Act.Tea ? 6f : 4.5f);
+                var sip = cycle < 1.4f ? Mathf.Sin(cycle / 1.4f * Mathf.Pi) : 0f;
+                right = new Vector3(-0.9f - (1.35f * sip), 0, -0.25f - (0.35f * sip));
+                left = seated ? new Vector3(-0.75f, 0, 0.2f) : new Vector3(-0.1f, 0, 0.06f);
+                _cup = Prop(_cup, _armR, Cup);
+                break;
+            }
+
+            case Act.Phone:
+                left = new Vector3(-1.0f, 0, 0.42f);
+                right = new Vector3(-1.05f + (0.05f * Mathf.Max(0, S(6))), 0, -0.4f);
+                lean = seated ? 0f : 0.08f;
+                _phone = Prop(_phone, _armR, Phone);
+                break;
+            case Act.Read:
+            {
+                left = new Vector3(-0.95f, 0, 0.32f);
+                var flip = Mathf.PosMod(f, 8f) > 7.2f;
+                right = flip ? new Vector3(-1.25f, 0, -0.05f) : new Vector3(-0.95f, 0, -0.32f);
+                _magazine = Prop(_magazine, _armL, Magazine);
+                break;
+            }
+
+            case Act.Watch:
+            {
+                var look = Mathf.PosMod(f, 6f) < 1.6f;
+                left = look ? new Vector3(-1.45f, 0, 0.7f) : seated ? new Vector3(-0.35f, 0, 0.05f) : new Vector3(-0.05f, 0, 0.06f);
+                right = seated ? new Vector3(-0.35f, 0, -0.05f) : new Vector3(-0.05f, 0, -0.06f);
+                break;
+            }
+
+            case Act.Fidget:
+                left = new Vector3(-0.35f, 0, 0.05f);
+                right = new Vector3(-0.35f, 0, -0.05f);
+                if (seated)
+                {
+                    _kneeL.Rotation = new Vector3((Mathf.Pi / 2) + (0.4f * S(5)), 0, 0);
+                    _kneeR.Rotation = new Vector3((Mathf.Pi / 2) - (0.4f * S(5)), 0, 0);
+                }
+
+                break;
+            case Act.WashHands:
+                lean = 0.18f;
+                left = new Vector3(-0.95f + (0.06f * S(10)), 0, 0.42f);
+                right = new Vector3(-0.95f - (0.06f * S(10)), 0, -0.42f);
+                break;
+            default:
+                return;
+        }
+
+        if (_baby is null)
+        {
+            _armL.Rotation = left;
+            _armR.Rotation = right;
+        }
+
+        if (!seated && lean != 0)
+        {
+            // Bend at the hips: the body tips forward, the legs stay upright under it.
+            _body.Rotation = new Vector3((Look.Stoop ? 0.18f : 0f) + lean, 0, 0);
+            _thighL.Rotation = new Vector3(-lean, 0, 0);
+            _thighR.Rotation = new Vector3(-lean, 0, 0);
+            _kneeL.Rotation = _kneeR.Rotation = Vector3.Zero;
+        }
+    }
+
+    /// <summary>Hides the props that don't belong to <paramref name="act"/>.</summary>
+    private void Show(Act act)
+    {
+        if (act != Act.Examine)
+        {
+            Hide(_clipboard);
+        }
+
+        if (act is not Act.Observations)
+        {
+            Hide(_pot);
+        }
+        else
+        {
+            _clipboard = Prop(_clipboard, _armL, Clipboard);
+        }
+
+        if (act != Act.Phone)
+        {
+            Hide(_phone);
+        }
+
+        if (act != Act.Read)
+        {
+            Hide(_magazine);
+        }
+
+        if (act is not (Act.Eat or Act.Tea))
+        {
+            Hide(_cup);
+        }
+
+        if (act != Act.VendCollect)
+        {
+            Hide(_can);
+        }
+
+        if (act == Act.Medicine)
+        {
+            _pot = Prop(_pot, _armR, Pot);
+        }
+    }
+
+    private static void Hide(Node3D? prop)
+    {
+        if (prop is not null)
+        {
+            prop.Visible = false;
+        }
+    }
+
+    /// <summary>Shows a prop in a hand, building it the first time it is needed.</summary>
+    private Node3D Prop(Node3D? existing, Node3D arm, Action<MeshBatch> build)
+    {
+        if (existing is not null)
+        {
+            existing.Visible = true;
+            return existing;
+        }
+
+        var node = new Node3D { Name = build.Method.Name, Position = new Vector3(0, -_armLength, 0) };
+        var b = new MeshBatch();
+        build(b);
+        b.AddTo(node);
+        arm.AddChild(node);
+        return node;
+    }
+
+    // Props, drawn at the hand. In the hand's frame -y runs on down the arm and +z is the back of the
+    // hand (up, when the arm is held out in front).
+
+    private static void Clipboard(MeshBatch b)
+    {
+        b.Box(new Vector3(0, -W(4), W(1.5f)), new Vector3(W(9), W(12), W(0.8f)), new Color("#8D6E4E"));
+        b.Box(new Vector3(0, -W(4), W(2.1f)), new Vector3(W(7.6f), W(10.5f), W(0.3f)), Colors.White);
+        b.Box(new Vector3(0, W(1.6f), W(2.2f)), new Vector3(W(3.5f), W(1.2f), W(0.6f)), new Color("#AEB9C2"));
+    }
+
+    private static void Phone(MeshBatch b)
+    {
+        b.Box(new Vector3(-W(1.5f), -W(2.5f), W(1.6f)), new Vector3(W(3.4f), W(6.2f), W(0.6f)), new Color("#22262B"));
+        b.Box(new Vector3(-W(1.5f), -W(2.5f), W(1.95f)), new Vector3(W(2.8f), W(5.2f), W(0.1f)), new Color("#7FC4F0"));
+    }
+
+    private static void Magazine(MeshBatch b)
+    {
+        b.Box(new Vector3(W(4.5f), -W(3), W(1.5f)), new Vector3(W(12), W(8), W(0.5f)), new Color("#E8564A"));
+        b.Box(new Vector3(W(4.5f), -W(3), W(1.8f)), new Vector3(W(11), W(7), W(0.2f)), new Color("#FBF7EC"));
+        b.Box(new Vector3(W(4.5f), -W(3), W(1.95f)), new Vector3(W(0.4f), W(7), W(0.2f)), new Color("#C9C2B0"));
+    }
+
+    private static void Cup(MeshBatch b)
+    {
+        b.Cylinder(new Vector3(0, -W(1.5f), W(2)), W(1.8f), W(4), W(1.8f), new Color("#F4F1EA"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+        b.Cylinder(new Vector3(0, -W(1.5f), W(4.1f)), W(1.5f), W(0.3f), W(1.5f), new Color("#6B4226"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+    }
+
+    private static void Can(MeshBatch b)
+    {
+        b.Cylinder(new Vector3(0, -W(1.5f), W(2)), W(1.6f), W(5), W(1.6f), new Color("#D93A30"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+        b.Cylinder(new Vector3(0, -W(1.5f), W(4.6f)), W(1.5f), W(0.3f), W(1.5f), new Color("#C9D2D9"), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+    }
+
+    private static void Pot(MeshBatch b)
+    {
+        b.Cylinder(new Vector3(0, -W(1.5f), W(1.6f)), W(1.4f), W(2.4f), W(1.1f), Colors.White, Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)), cone: true);
     }
 }
 
