@@ -12,8 +12,25 @@ namespace BlueprintHospital.World3D;
 /// </summary>
 public static class ModelParts
 {
-    /// <summary>One surface of a part: its triangles, and its own colour when it is not tinted.</summary>
-    public sealed record Surface(Vector3[] Vertices, Vector3[] Normals, int[] Indices, Color? Fixed);
+    /// <summary>
+    /// One surface of a part: its triangles, and its own colour when it is not tinted. A tinted surface's
+    /// <paramref name="Shade"/> darkens (below zero) or lightens the game's colour, for "TintDark" and "TintLight".
+    /// </summary>
+    public sealed record Surface(Vector3[] Vertices, Vector3[] Normals, int[] Indices, Color? Fixed, float Shade = 0)
+    {
+        /// <summary>The colour this surface is painted when the game asks for <paramref name="tint"/>.</summary>
+        public Color Paint(Color tint)
+        {
+            if (Fixed is { } own)
+            {
+                return own;
+            }
+
+            var shaded = Shade < 0 ? tint.Darkened(-Shade) : Shade > 0 ? tint.Lightened(Shade) : tint;
+            shaded.A = tint.A;
+            return shaded;
+        }
+    }
 
     private static readonly Dictionary<string, Dictionary<string, Surface[]>> Models = new(StringComparer.Ordinal);
 
@@ -68,7 +85,8 @@ public static class ModelParts
                     arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array().Select(v => xf * v).ToArray(),
                     arrays[(int)Mesh.ArrayType.Normal].AsVector3Array().Select(n => (normalBasis * n).Normalized()).ToArray(),
                     arrays[(int)Mesh.ArrayType.Index].AsInt32Array(),
-                    tinted ? null : material!.AlbedoColor));
+                    tinted ? null : material!.AlbedoColor,
+                    !tinted || material is null ? 0 : material.ResourceName.StartsWith("TintDark", StringComparison.Ordinal) ? -0.14f : material.ResourceName.StartsWith("TintLight", StringComparison.Ordinal) ? 0.22f : 0));
             }
 
             parts[instance.Name.ToString()] = surfaces.ToArray();

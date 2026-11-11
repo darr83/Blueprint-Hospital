@@ -24,6 +24,9 @@ public static partial class Furnish3D
         new("#E57373"), new("#64B5F6"), new("#FFF176"), new("#81C784"), new("#BA68C8"), new("#FFB74D"), new("#F5F5F5"),
     };
 
+    /// <summary>The Blender-made kit of key equipment (tools/Blender/models/equipment_kit.py), in world units.</summary>
+    internal const string Equipment3D = "equipment_kit";
+
     private static float H(double px) => Kit3D.H(px);
 
     /// <summary>A box by its footprint middle (x, z), size, bottom height and height.</summary>
@@ -348,19 +351,8 @@ public static partial class Furnish3D
     }
 
     /// <summary>The resus trolley: red drawers, the defibrillator on top, the push handle at the back.</summary>
-    public static void ResusTrolley(MeshBatch b, float w, float d, float h, Color colour)
-    {
-        Drawers(b, w, d, h, colour, plaster: false);
-        Blk(b, 0, -0.06f, w * 0.7f, d * 0.6f, h, H(5), new Color("#5A6670"));
-        Blk(b, 0, -0.06f, w * 0.22f, 0.06f, h + H(5), H(2), new Color("#F9C22E"));
-        ScreenAt(b, new Vector3(0, h + H(3), (d * 0.24f) - 0.03f), w * 0.4f, H(3.5f), new Color("#173326"));
-        foreach (var side in new[] { -1f, 1f })
-        {
-            Bar(b, new Vector3(side * ((w / 2) - 0.05f), h - H(6), -(d / 2) - 0.02f), new Vector3(side * ((w / 2) - 0.05f), h + H(4), -(d / 2) - 0.08f), 0.02f, Chrome);
-        }
-
-        Bar(b, new Vector3(-(w / 2) + 0.05f, h + H(4), -(d / 2) - 0.08f), new Vector3((w / 2) - 0.05f, h + H(4), -(d / 2) - 0.08f), 0.025f, Chrome);
-    }
+    public static void ResusTrolley(MeshBatch b, float w, float d, float h, Color colour) =>
+        b.Kit(Equipment3D, "resus_trolley", new Vector3(1.2f, Kit3D.M(1.0), 1.4f), new Vector3(w, h, d), colour);
 
     private static void Shelves(MeshBatch b, float w, float d, float h, Color colour, int seed)
     {
@@ -422,14 +414,10 @@ public static partial class Furnish3D
 
     private static void DripStand(MeshBatch b, MeshBatch glass, float h)
     {
-        Spokes(b, 0.22f, Chrome);
-        Bar(b, new Vector3(0, H(4), 0), new Vector3(0, h, 0), 0.018f, Chrome);
-        Bar(b, new Vector3(-0.14f, h - H(1), 0), new Vector3(0.14f, h - H(1), 0), 0.014f, Chrome);
-
-        // A bag of fluid with its giving set looping down.
-        glass.Box(new Vector3(0.12f, h - H(7), 0), new Vector3(0.12f, H(10), 0.05f), new Color("#E3F2FD", 0.75f));
-        Blk(b, 0.12f, 0, 0.08f, 0.01f, h - H(6), H(2.5f), new Color("#1E88E5"));
-        Bar(b, new Vector3(0.12f, h - H(12), 0), new Vector3(0.05f, h * 0.4f, 0.06f), 0.006f, new Color("#E0F2F1"));
+        var made = new Vector3(1, Kit3D.M(1.8), 1);
+        var size = new Vector3(1, h, 1);
+        b.Kit(Equipment3D, "drip_stand", made, size);
+        glass.Kit(Equipment3D, "drip_bag", made, size, new Color("#E3F2FD", 0.75f));
     }
 
     private static void OxygenCylinder(MeshBatch b, float h)
@@ -496,13 +484,7 @@ public static partial class Furnish3D
     }
 
     /// <summary>An obs monitor's stand: a five-spoke wheeled base, the pole and a basket. Its screen floats above, drawn with the overlays.</summary>
-    private static void MonitorStand(MeshBatch b)
-    {
-        Spokes(b, 0.2f, new Color("#5A6670"));
-        Bar(b, new Vector3(0, H(4), 0), new Vector3(0, H(52), 0), 0.025f, new Color("#AEB9C2"));
-        Blk(b, 0, 0.06f, 0.24f, 0.14f, H(28), H(4), new Color("#7D8995"));
-        Blk(b, 0, 0, 0.3f, 0.12f, H(48), H(4), new Color("#4A545D"));
-    }
+    private static void MonitorStand(MeshBatch b) => b.Model(Equipment3D, "monitor_stand", Transform3D.Identity);
 
     // ------------------------------------------------------------------ chairs
 
