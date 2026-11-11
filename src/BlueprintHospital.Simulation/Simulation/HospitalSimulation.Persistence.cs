@@ -916,8 +916,14 @@ public sealed partial class HospitalSimulation
         switch (ambulance.State)
         {
             case AmbulanceState.Driving when ambulance.BaySlot is { } slot:
+                DriveToBay(ambulance, slot);
+                break;
+            case AmbulanceState.AtBay when ambulance.BaySlot is { } slot:
+                // Parked in its bay, nose out (older saves parked it elsewhere).
                 var parking = AmbulanceParkingTiles[slot];
-                ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, parking.Y), parking }));
+                var rear = AmbulanceBayPatientTiles[slot];
+                ambulance.FollowAt(parking.X + 0.5, parking.Y + 0.5, (Math.Sign(rear.X - parking.X), Math.Sign(rear.Y - parking.Y)));
+                ambulance.Reversing = true;
                 break;
             case AmbulanceState.Driving:
                 RouteAmbulanceToBay(ambulance);

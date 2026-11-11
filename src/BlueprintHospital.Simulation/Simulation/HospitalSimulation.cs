@@ -97,11 +97,17 @@ public sealed partial class HospitalSimulation
         var entrance = building.Entrances.First(e => !e.IsAmbulanceEntrance);
         WalkInSpawn = new GridCoord(entrance.Tile.X + 4, building.Footprint.Bottom + 16);
         var ambulanceEntrance = building.Entrances.First(e => e.IsAmbulanceEntrance);
-        AmbulanceBayPatientTiles = Enumerable.Range(0, 4)
-            .Select(i => new GridCoord(building.Footprint.Right + 2, ambulanceEntrance.Tile.Y - 4 + (i * 4)))
+        // The bays sit side by side along the wall, centred on the ambulance entrance. An ambulance
+        // reverses in so its back doors face the building; the crew unload the stretcher onto the path.
+        var door = ambulanceEntrance.Tile.Y + (ambulanceEntrance.WidthTiles / 2);
+        var baysTop = door - (StarterSite.AmbulanceBays * StarterSite.BayWidth / 2);
+        AmbulanceBays = Enumerable.Range(0, StarterSite.AmbulanceBays)
+            .Select(i => new GridRect(building.Footprint.Right + StarterSite.BayOffset, baysTop + (i * StarterSite.BayWidth), StarterSite.BayLength, StarterSite.BayWidth))
             .ToArray();
-        AmbulanceParkingTiles = AmbulanceBayPatientTiles.Select(t => new GridCoord(t.X + 6, t.Y)).ToArray();
-        AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + 19, site.Length - 1);
+        AmbulanceBayPatientTiles = AmbulanceBays.Select(b => new GridCoord(b.X - 1, b.Y + (b.Length / 2))).ToArray();
+        AmbulanceParkingTiles = AmbulanceBays.Select(b => new GridCoord(b.X + (b.Width / 2), b.Y + (b.Length / 2))).ToArray();
+        AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + StarterSite.RoadOffset + 5, site.Length - 1);
+        _bayOrder = Enumerable.Range(0, AmbulanceBays.Count).OrderBy(i => Math.Abs(AmbulanceParkingTiles[i].Y + 0.5 - door)).ThenBy(i => i).ToArray();
 
         UnlimitedMoney = _options.UnlimitedMoney;
         WardEmergencies = _options.WardEmergencies;
@@ -156,7 +162,14 @@ public sealed partial class HospitalSimulation
 
     public IReadOnlyList<GridCoord> AmbulanceBayPatientTiles { get; }
 
+    /// <summary>Where each ambulance parks: the centre of its bay.</summary>
     public IReadOnlyList<GridCoord> AmbulanceParkingTiles { get; }
+
+    /// <summary>The marked ambulance bays, one per parking slot.</summary>
+    public IReadOnlyList<GridRect> AmbulanceBays { get; }
+
+    // Bay slots in the order ambulances take them: nearest the doors first.
+    private readonly int[] _bayOrder;
 
     public GridCoord AmbulanceRoadEntry { get; }
 

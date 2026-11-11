@@ -17,8 +17,8 @@ public partial class Ambulance3D : Node3D
 {
     private const string MeshPath = "res://Art/Vehicles/ambulance.obj";
 
-    // The simulation places an ambulance by its front; the model is centred on the vehicle.
-    private const double FrontToCentre = 2.9;
+    // How fast the body swings round to a new heading (radians per second of real time).
+    private const float TurnRate = 5f;
 
     private static Mesh? _mesh;
     private static readonly StandardMaterial3D LightOn = new()
@@ -35,6 +35,7 @@ public partial class Ambulance3D : Node3D
     private int _right = -1;
     private int _lit = -1;
     private float _yaw = float.NaN;
+    private double _lastTime = double.NaN;
 
     public static Ambulance3D Make(Node3D parent)
     {
@@ -77,12 +78,19 @@ public partial class Ambulance3D : Node3D
 
     public void Sync(WorldLayer world, HospitalSimulation sim, AmbulanceVehicle ambulance)
     {
+        // The simulation places an ambulance by its centre, which is where the model's origin is.
+        // Its nose points along its heading: backwards while it reverses into a bay and once parked.
         var (x, y) = world.Interpolated(ambulance);
-        var (dx, dy) = ambulance.Facing;
+        var (dx, dy) = ambulance.Heading;
         var len = Math.Sqrt((dx * dx) + (dy * dy));
         var (fx, fy) = len < 1e-6 ? (1.0, 0.0) : (dx / len, dy / len);
-        Position = Kit3D.At(x - (fx * FrontToCentre), y - (fy * FrontToCentre));
-        _yaw = Kit3D.Yaw(fx, fy);
+        Position = Kit3D.At(x, y);
+
+        // Swing round to a new heading over a moment rather than snapping, so it turns into the bay.
+        var target = Kit3D.Yaw(fx, fy);
+        var step = double.IsNaN(_lastTime) ? 0 : Math.Clamp(world.Time - _lastTime, 0, 0.25);
+        _lastTime = world.Time;
+        _yaw = float.IsNaN(_yaw) ? target : _yaw + Math.Clamp(Mathf.Wrap(target - _yaw, -Mathf.Pi, Mathf.Pi), -(float)(TurnRate * step), (float)(TurnRate * step));
         Rotation = new Vector3(0, _yaw, 0);
         _callSign.Text = ambulance.CallSign;
 

@@ -41,6 +41,18 @@ public sealed class AmbulanceVehicle : Agent
 
     public int? BaySlot { get; set; }
 
+    /// <summary>
+    /// True while backing into its bay and while parked there: the vehicle moves (or last moved)
+    /// tail first, so its nose points the opposite way to <see cref="Agent.Facing"/>.
+    /// </summary>
+    public bool Reversing { get; set; }
+
+    /// <summary>Which way the front of the ambulance points.</summary>
+    public (double X, double Y) Heading => Reversing ? (-Facing.X, -Facing.Y) : Facing;
+
+    /// <summary>Length of the vehicle, in tiles (5.8 m).</summary>
+    public const double LengthTiles = 11.6;
+
     public DateTime? ArrivedAtBayAt { get; set; }
 
     /// <summary>For arrivals: when the patient was handed over and the crew could leave.</summary>

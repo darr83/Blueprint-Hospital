@@ -31,10 +31,27 @@ public sealed partial class HospitalSimulation
         return ambulance;
     }
 
-    private void RouteAmbulanceToBay(AmbulanceVehicle ambulance)
+    /// <summary>A free bay, nearest the doors first, or -1 when every bay is taken.</summary>
+    private int FreeBaySlot()
     {
         var used = _ambulances.Where(a => a.BaySlot.HasValue && a.State != AmbulanceState.Gone).Select(a => a.BaySlot!.Value).ToHashSet();
-        var slot = Enumerable.Range(0, AmbulanceParkingTiles.Count).FirstOrDefault(i => !used.Contains(i), -1);
+        return _bayOrder.FirstOrDefault(i => !used.Contains(i), -1);
+    }
+
+    /// <summary>
+    /// Where the <paramref name="place"/>th ambulance in the queue waits: in line on the side road, south of
+    /// the bays, one vehicle length plus a gap apart.
+    /// </summary>
+    private GridCoord QueueSpot(int place)
+    {
+        var first = AmbulanceBays.Max(b => b.Bottom) + (int)Math.Ceiling(AmbulanceVehicle.LengthTiles / 2) + 3;
+        var y = first + (place * ((int)Math.Ceiling(AmbulanceVehicle.LengthTiles) + 2));
+        return new GridCoord(AmbulanceRoadEntry.X, Math.Min(y, AmbulanceRoadEntry.Y));
+    }
+
+    private void RouteAmbulanceToBay(AmbulanceVehicle ambulance)
+    {
+        var slot = FreeBaySlot();
         if (slot < 0)
         {
             ambulance.State = AmbulanceState.WaitingForBay;
@@ -45,16 +62,35 @@ public sealed partial class HospitalSimulation
                 AddTask(TaskKind.EscortToTransfer, StaffRole.Nurse, leaving, 10, "Hand over to transfer crew");
             }
 
-            var queueIndex = _ambulances.Count(a => a.State == AmbulanceState.WaitingForBay) - 1;
-            var waitTile = new GridCoord(AmbulanceRoadEntry.X, AmbulanceParkingTiles[^1].Y + 8 + (queueIndex * 6));
-            ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { waitTile }));
+            // Join the back of the queue on the road.
+            var place = _ambulances.Count(a => a.State == AmbulanceState.WaitingForBay && a != ambulance && a.Id < ambulance.Id);
+            ambulance.Reversing = false;
+            ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { QueueSpot(place) }));
             return;
         }
 
         ambulance.BaySlot = slot;
         ambulance.State = AmbulanceState.Driving;
+        DriveToBay(ambulance, slot);
+    }
+
+    /// <summary>
+    /// Drives up the side road to the bay, stops level with it, then backs in so the rear doors face the
+    /// building (the reversing leg starts in <see cref="UpdateAmbulances"/> once the first leg is done).
+    /// </summary>
+    private void DriveToBay(AmbulanceVehicle ambulance, int slot)
+    {
         var parking = AmbulanceParkingTiles[slot];
-        ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, parking.Y), parking }));
+        if (ambulance.Tile.Y == parking.Y && ambulance.Tile.X <= AmbulanceRoadEntry.X)
+        {
+            // Already lined up with the bay: back straight in.
+            ambulance.Reversing = true;
+            ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { parking }));
+            return;
+        }
+
+        ambulance.Reversing = false;
+        ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, ambulance.Tile.Y), new GridCoord(AmbulanceRoadEntry.X, parking.Y) }));
     }
 
     private static List<GridCoord> StraightRoute(GridCoord from, IEnumerable<GridCoord> waypoints)
@@ -75,12 +111,29 @@ public sealed partial class HospitalSimulation
 
     private void UpdateAmbulances()
     {
+        // The queue moves up in arrival order: the first ambulance waiting takes the next free bay.
+        var place = 0;
+        foreach (var ambulance in _ambulances.Where(a => a.State == AmbulanceState.WaitingForBay).OrderBy(a => a.Id).ToList())
+        {
+            if (FreeBaySlot() >= 0)
+            {
+                RouteAmbulanceToBay(ambulance);
+                continue;
+            }
+
+            var spot = QueueSpot(place++);
+            if ((ambulance.Destination ?? ambulance.Tile) != spot)
+            {
+                ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { spot }));
+            }
+        }
+
         foreach (var ambulance in _ambulances)
         {
             switch (ambulance.State)
             {
-                case AmbulanceState.WaitingForBay when !ambulance.IsMoving:
-                    RouteAmbulanceToBay(ambulance);
+                case AmbulanceState.Driving when !ambulance.IsMoving && ambulance.BaySlot is { } slot && ambulance.Tile != AmbulanceParkingTiles[slot]:
+                    DriveToBay(ambulance, slot);
                     break;
 
                 case AmbulanceState.Driving when !ambulance.IsMoving && ambulance.BaySlot is { } slot:
@@ -129,6 +182,7 @@ public sealed partial class HospitalSimulation
     {
         ambulance.State = AmbulanceState.Departing;
         ambulance.BaySlot = null;
+        ambulance.Reversing = false;
         ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, ambulance.Tile.Y), new GridCoord(AmbulanceRoadEntry.X, 0) }));
     }
 
