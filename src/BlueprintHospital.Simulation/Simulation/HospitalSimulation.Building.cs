@@ -275,6 +275,11 @@ public sealed partial class HospitalSimulation
             return new BuildCheck(0, new[] { $"Unknown room type '{plan.TemplateId}'." });
         }
 
+        if (!IsRoomUnlocked(template.Id))
+        {
+            return new BuildCheck(0, new[] { $"{template.Name} unlocks at level {LevelOfRoom(template.Id)}." });
+        }
+
         if (template.IsShaft)
         {
             return CheckShaft(template, plan, replacingId);

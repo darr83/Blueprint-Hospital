@@ -58,7 +58,7 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin())
+        else if (!BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this))
         {
             ArtShots.Begin(this);
         }
@@ -76,10 +76,11 @@ public partial class MainMenu : Control
         panel.Content.AddChild(UiStyle.Body("How do you want to start?"));
 
         var start = StartingHospital.SmallEmergency;
+        var type = GameType.Career;
         var choices = new VBoxContainer();
         choices.AddThemeConstantOverride("separation", 8);
         var group = new ButtonGroup();
-        Button Choice(string title, string detail, StartingHospital value)
+        Button Choice(string title, string detail, StartingHospital value, GameType gameType = GameType.Sandbox)
         {
             var button = new Button
             {
@@ -97,6 +98,7 @@ public partial class MainMenu : Control
                 if (on)
                 {
                     start = value;
+                    type = gameType;
                 }
 
                 // The chosen card is tinted blue.
@@ -109,14 +111,19 @@ public partial class MainMenu : Control
             return button;
         }
 
-        var small = Choice("Small A&E with a team", "Cubicles, resus, triage, offices and 9 staff. Patients start arriving straight away.", StartingHospital.SmallEmergency);
-        var empty = Choice("Empty building", "Just the building, roads and a waiting room, with more money. Build and hire everything; A&E opens when it has a triage room, a cubicle, a nurse and a doctor.", StartingHospital.EmptyBuilding);
+        var career = Choice("Career (recommended)", "Start at level 1 as a small walk-in centre with a team. Meet each level's goals to unlock more rooms, staff, patients and departments.", StartingHospital.SmallEmergency, GameType.Career);
+        var small = Choice("Sandbox: small A&E with a team", "Everything unlocked. Cubicles, resus, triage, offices and 9 staff. Patients start arriving straight away.", StartingHospital.SmallEmergency);
+        var empty = Choice("Sandbox: empty building", "Everything unlocked. Just the building and roads, with more money. Build and hire everything; A&E opens when it has a waiting room, a triage room, a cubicle, a nurse and a doctor.", StartingHospital.EmptyBuilding);
+        choices.AddChild(career);
         choices.AddChild(small);
         choices.AddChild(empty);
         panel.Content.AddChild(choices);
-        small.ButtonPressed = true;
-        empty.SetPressedNoSignal(false);
-        empty.EmitSignal(BaseButton.SignalName.Toggled, false);
+        career.ButtonPressed = true;
+        foreach (var other in new[] { small, empty })
+        {
+            other.SetPressedNoSignal(false);
+            other.EmitSignal(BaseButton.SignalName.Toggled, false);
+        }
 
         // How often patients already in a bed have a sudden emergency (a fall, sepsis, a heart attack...).
         panel.Content.AddChild(new Control { CustomMinimumSize = new Vector2(0, 2) });
@@ -190,7 +197,7 @@ public partial class MainMenu : Control
 
         panel.Content.AddChild(unlimited);
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies);
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies, type);
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };

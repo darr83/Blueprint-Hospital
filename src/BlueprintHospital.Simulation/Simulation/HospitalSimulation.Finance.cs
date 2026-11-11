@@ -42,6 +42,9 @@ public enum MoneyCategory
 
     /// <summary>Prescription charges paid by working-age patients collecting medicines from the pharmacy.</summary>
     Prescriptions,
+
+    /// <summary>Grants paid for reaching a new Career level.</summary>
+    Grants,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

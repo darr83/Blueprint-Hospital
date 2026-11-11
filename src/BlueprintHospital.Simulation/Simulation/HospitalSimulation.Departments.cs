@@ -28,7 +28,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Departments open from the start: A&amp;E, any department with no opening cost, and the shared services.</summary>
     private void UnlockStartingDepartments()
     {
-        foreach (var d in Database.Departments.Values.Where(d => d.StartsUnlocked || d.IsSharedService || d.OpeningCost == 0))
+        foreach (var d in Database.Departments.Values.Where(d => (d.StartsUnlocked || d.IsSharedService || d.OpeningCost == 0) && IsDepartmentAvailable(d.Id)))
         {
             _unlockedDepartments.Add(d.Id);
         }
@@ -46,6 +46,10 @@ public sealed partial class HospitalSimulation
         if (IsUnlocked(departmentId))
         {
             problems.Add($"{department.Name} is already unlocked.");
+        }
+        else if (!IsDepartmentAvailable(departmentId))
+        {
+            problems.Add($"{department.Name} can be opened from level {LevelOfDepartment(departmentId)}.");
         }
         else if (!CanAfford(department.OpeningCost))
         {

@@ -21,6 +21,7 @@ public sealed class GameDatabase
     public const string RoomTemplatesFolder = "RoomTemplates";
     public const string ClinicsFolder = "Clinics";
     public const string EmergenciesFolder = "Emergencies";
+    public const string LevelsFolder = "Levels";
 
     private GameDatabase()
     {
@@ -52,6 +53,9 @@ public sealed class GameDatabase
     /// <summary>Sudden emergencies for patients already in a bed (heart attack, fall, bleed after surgery...).</summary>
     public IReadOnlyDictionary<string, InpatientEmergencyDefinition> Emergencies { get; private init; } = null!;
 
+    /// <summary>Career levels, lowest first. Empty if the data has none (then only Sandbox games can be played).</summary>
+    public IReadOnlyList<LevelDefinition> Levels { get; private init; } = Array.Empty<LevelDefinition>();
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -75,6 +79,7 @@ public sealed class GameDatabase
             RoomTemplates = RecordLoader.LoadFolder<RoomTemplate>(source, RoomTemplatesFolder, errors),
             Clinics = RecordLoader.LoadFolder<ClinicDefinition>(source, ClinicsFolder, errors),
             Emergencies = RecordLoader.LoadFolder<InpatientEmergencyDefinition>(source, EmergenciesFolder, errors),
+            Levels = RecordLoader.LoadFolder<LevelDefinition>(source, LevelsFolder, errors).Values.OrderBy(l => l.Number).ToList(),
         };
 
         db.CheckDatabaseRules(errors);
@@ -104,6 +109,8 @@ public sealed class GameDatabase
                         : $"exactly one department must have starts_unlocked set to true; found {string.Join(", ", starting)}."));
             }
         }
+
+        CheckLevels(errors);
 
         foreach (var template in RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Clinic && !Clinics.ContainsKey(t.Id)))
         {
@@ -222,4 +229,45 @@ public sealed class GameDatabase
         Furniture = (furniture ?? Array.Empty<FurnitureDefinition>()).ToDictionary(r => r.Id),
         RoomTemplates = (roomTemplates ?? Array.Empty<RoomTemplate>()).ToDictionary(r => r.Id),
     };
+
+    /// <summary>Levels are numbered 1, 2, 3... and only refer to rooms and departments that exist.</summary>
+    private void CheckLevels(List<DataValidationError> errors)
+    {
+        for (var i = 0; i < Levels.Count; i++)
+        {
+            if (Levels[i].Number != i + 1)
+            {
+                errors.Add(new DataValidationError(LevelsFolder, Levels[i].Id, "number", $"levels must be numbered 1, 2, 3... with no gaps or repeats; expected {i + 1}, found {Levels[i].Number}."));
+            }
+        }
+
+        foreach (var level in Levels)
+        {
+            void Unknown(string field, string kind, string id) =>
+                errors.Add(new DataValidationError(LevelsFolder, level.Id, field, $"refers to unknown {kind} '{id}'."));
+
+            foreach (var d in level.Departments.Where(d => !Departments.ContainsKey(d)))
+            {
+                Unknown("departments", "department", d);
+            }
+
+            foreach (var r in level.Rooms.Where(r => !RoomTemplates.ContainsKey(r) && !BuildMenu.SpecialItems.Contains(r) && r != BuildMenu.Decorate))
+            {
+                Unknown("rooms", "room", r);
+            }
+
+            foreach (var goal in level.Goals)
+            {
+                if (goal.Room is { } room && !RoomTemplates.ContainsKey(room))
+                {
+                    Unknown("goals", "room", room);
+                }
+
+                foreach (var d in goal.Departments.Where(d => !Departments.ContainsKey(d)))
+                {
+                    Unknown("goals", "department", d);
+                }
+            }
+        }
+    }
 }

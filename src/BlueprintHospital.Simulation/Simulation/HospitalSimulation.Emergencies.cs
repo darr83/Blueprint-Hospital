@@ -103,7 +103,7 @@ public sealed partial class HospitalSimulation
             CallEmergencyTeam(patient);
         }
 
-        if (WardEmergencies == WardEmergencyFrequency.Off || Database.Emergencies.Count == 0)
+        if (WardEmergencies == WardEmergencyFrequency.Off || Database.Emergencies.Count == 0 || !IsFeatureOn(LevelFeatures.WardEmergencies))
         {
             return;
         }

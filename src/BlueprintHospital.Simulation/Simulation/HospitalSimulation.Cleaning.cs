@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Staff;
@@ -83,7 +84,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Someone heading back from the cafe or a vending machine now and then drops their drink.</summary>
     private void MaybeSpillDrink(GridCoord tile)
     {
-        if (CleaningRandom.Chance(DrinkSpillChance) && !_accidents.Any(a => a.Tile == tile))
+        if (IsFeatureOn(LevelFeatures.Spills) && CleaningRandom.Chance(DrinkSpillChance) && !_accidents.Any(a => a.Tile == tile))
         {
             _accidents.Add(new FloorAccident(tile, Now + SpillDriesAfter, SpillKind.Drink));
         }

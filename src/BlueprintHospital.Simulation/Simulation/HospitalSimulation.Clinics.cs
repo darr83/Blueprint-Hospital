@@ -122,6 +122,11 @@ public sealed partial class HospitalSimulation
     /// <summary>Fills each running clinic's calendar for today and tomorrow, once per day.</summary>
     private void BookClinics()
     {
+        if (!IsFeatureOn(LevelFeatures.Clinics))
+        {
+            return;
+        }
+
         foreach (var clinic in ClinicRooms)
         {
             if (ClinicOf(clinic) is not { } definition || !IsClinicRunning(clinic))

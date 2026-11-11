@@ -34,6 +34,9 @@ public sealed class SimulationOptions
 
     /// <summary>How often patients already in a bed have sudden emergencies (tests leave them off unless they ask).</summary>
     public WardEmergencyFrequency WardEmergencies { get; init; } = WardEmergencyFrequency.Off;
+
+    /// <summary>Sandbox (everything open) or Career (unlocked level by level).</summary>
+    public GameType Type { get; init; } = GameType.Sandbox;
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -90,7 +93,7 @@ public sealed partial class HospitalSimulation
             DecorateNewRoom(space);
         }
 
-        _generator = new PatientGenerator(database, Random);
+        _generator = new PatientGenerator(database, Random) { Allows = CanArriveAtThisLevel };
         _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);
 
@@ -111,8 +114,14 @@ public sealed partial class HospitalSimulation
 
         UnlimitedMoney = _options.UnlimitedMoney;
         WardEmergencies = _options.WardEmergencies;
+        Type = _options.Type;
         UnlockStartingDepartments();
-        if (_options.Start == StartingHospital.EmptyBuilding)
+        StartProgression(_options.Type);
+        if (IsCareer)
+        {
+            SetUpWalkInCentre();
+        }
+        else if (_options.Start == StartingHospital.EmptyBuilding)
         {
             ClearToEmptyBuilding();
         }
@@ -250,6 +259,7 @@ public sealed partial class HospitalSimulation
         RemoveDepartedPatients();
         Stats.Update(this);
         UpdateHistory();
+        UpdateProgression();
     }
 
     // ---------------------------------------------------------------- arrivals
@@ -261,11 +271,11 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var expected = _arrivalProfile.RateAt(Now) * _options.ArrivalRateMultiplier * dt / 3600.0;
+        var expected = _arrivalProfile.RateAt(Now) * _options.ArrivalRateMultiplier * LevelArrivalRate * dt / 3600.0;
         var count = Random.Poisson(expected);
         for (var i = 0; i < count; i++)
         {
-            var patient = _generator.Generate(Now);
+            var patient = _generator.Generate(Now, IsFeatureOn(LevelFeatures.Ambulances) ? null : ArrivalMethod.WalkIn);
             if (NeedsPreAlert(patient))
             {
                 PreAlert(patient);

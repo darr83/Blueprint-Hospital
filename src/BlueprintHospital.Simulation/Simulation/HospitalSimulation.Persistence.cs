@@ -430,6 +430,9 @@ public sealed class PeopleState
 
     /// <summary>The Stats screen's figures (absent in older saves).</summary>
     public StatsHistoryState? History { get; init; }
+
+    /// <summary>Career level and goal progress (absent from Sandbox games and older saves).</summary>
+    public ProgressionState? Progression { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -494,6 +497,7 @@ public sealed partial class HospitalSimulation
         History = HistoryStore.Capture(),
         ResusTrolleys = SaveTrolleys(),
         Arrests = _arrests.Where(a => a.IsActive).ToList(),
+        Progression = CaptureProgression(),
     };
 
     /// <summary>
@@ -604,6 +608,7 @@ public sealed partial class HospitalSimulation
         _candidates.AddRange(state.Candidates.Where(c => Enum.IsDefined(c.Role)));
         _candidatesDate = state.CandidatesDate;
         _nextCandidateId = Math.Max(state.NextCandidateId, _candidates.Count == 0 ? 1 : _candidates.Max(c => c.Id) + 1);
+        RestoreProgression(state.Progression);
         if (state.UnlockedDepartments is { } unlocked)
         {
             _unlockedDepartments.Clear();
