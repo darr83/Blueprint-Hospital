@@ -62,7 +62,28 @@ public sealed class MeshBatch
             return;
         }
 
-        var xf = Frame * new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(size), centre);
+        Surfaces(surfaces, new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(size), centre), colour);
+    }
+
+    /// <summary>
+    /// One part of a Blender-made model (see <see cref="ModelParts"/>) merged into this mesh. Models are
+    /// in metres, so by default the part is sized for the world (<see cref="Models3D.MetreScale"/>) at this
+    /// frame's origin. Surfaces made to be tinted take <paramref name="tint"/>. False if there is no such part.
+    /// </summary>
+    public bool Model(string model, string part = "Main", Transform3D? xf = null, Color? tint = null)
+    {
+        if (ModelParts.Part(model, part) is not { } surfaces)
+        {
+            return false;
+        }
+
+        Surfaces(surfaces, xf ?? new Transform3D(Basis.FromScale(Models3D.MetreScale), Vector3.Zero), tint ?? Colors.White);
+        return true;
+    }
+
+    private void Surfaces(ModelParts.Surface[] surfaces, Transform3D xf, Color colour)
+    {
+        xf = Frame * xf;
         var normalBasis = xf.Basis.Inverse().Transposed();
         foreach (var surface in surfaces)
         {

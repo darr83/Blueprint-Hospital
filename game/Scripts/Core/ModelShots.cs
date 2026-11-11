@@ -90,26 +90,15 @@ public partial class ModelShots : Node
     private void Build(HospitalScene h)
     {
         var root = h.View3D.Root;
-        var names = Models3D.All();
+        // Models run up the screen's right-hand diagonal, three tiles apart; part kits are left out.
+        var names = Models3D.All().Where(n => !Models3D.IsKit(n)).ToList();
         _count = names.Count;
-
-        // Models run up the screen's right-hand diagonal, three tiles apart, the code bed last.
-        for (var i = 0; i <= names.Count; i++)
+        for (var i = 0; i < names.Count; i++)
         {
             var holder = new Node3D { Position = Kit3D.At(Centre.X + (i * 3), Centre.Y - (i * 3)) };
-            if (i < names.Count)
-            {
-                var model = Models3D.Make(names[i])!;
-                holder.AddChild(model);
-                GD.Print($"[models] {names[i]}: {Models3D.Triangles(model)} triangles");
-            }
-            else
-            {
-                var b = new MeshBatch();
-                Carriers3D.Bed(b, true);
-                b.AddTo(holder);
-            }
-
+            var model = Models3D.Make(names[i])!;
+            holder.AddChild(model);
+            GD.Print($"[models] {names[i]}: {Models3D.Triangles(model)} triangles");
             root.AddChild(holder);
         }
 

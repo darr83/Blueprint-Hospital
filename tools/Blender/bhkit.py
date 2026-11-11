@@ -88,6 +88,22 @@ def cyl(name, loc, radius, depth, material, rot=(0, 0, 0), verts=16, scale=(1, 1
     return finish(o, material, **kw)
 
 
+def torus(name, loc, major, minor, material, rot=(0, 0, 0), seg=20, sides=8, **kw):
+    """A ring lying flat (round Z) unless turned: tyres and push rims."""
+    bpy.ops.mesh.primitive_torus_add(location=loc, rotation=rot, major_radius=major, minor_radius=minor, major_segments=seg, minor_segments=sides)
+    o = bpy.context.active_object
+    o.name = name
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    return finish(o, material, **kw)
+
+
+def castor(name, x, y, radius, chrome, rubber, stem=0.1):
+    """A swivel castor standing on the floor under (x, y), its fork reaching up to `stem`."""
+    cyl(f"{name}Fork", (x, y, (stem + radius) / 2 + 0.01), 0.016, stem - radius, chrome, verts=8)
+    cyl(f"{name}Wheel", (x, y + 0.015, radius), radius, radius * 0.8, rubber, rot=(0, math.pi / 2, 0), verts=12)
+    cyl(f"{name}Hub", (x, y + 0.015, radius), radius * 0.45, radius * 0.9, chrome, rot=(0, math.pi / 2, 0), verts=8)
+
+
 def tube(name, points, radius, material, sides=1, **kw):
     """A round tube along a line of points: rails, lanyards, a smile."""
     cu = bpy.data.curves.new(name, "CURVE")

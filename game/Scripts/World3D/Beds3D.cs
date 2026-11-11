@@ -214,9 +214,9 @@ public partial class Beds3D : Node3D
             frame.AddTo(_node);
             if (!_table)
             {
-                // The folded blanket at the foot of an empty bed.
+                // An empty bed is made up, with its blanket on.
                 var made = new MeshBatch();
-                made.Box(new Vector3(0, _mattress + Kit3D.H(1.5f), 1.45f), new Vector3(1.3f, Kit3D.H(3), 0.7f), new Color("#BFD3E6"));
+                Carriers3D.BedMade(made);
                 _made = made.AddTo(_node);
             }
         }

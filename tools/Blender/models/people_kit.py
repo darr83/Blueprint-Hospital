@@ -15,7 +15,7 @@ import random
 import bmesh
 import bpy
 
-from bhkit import finish, lathe, mat, sphere, tube
+from bhkit import cube, finish, lathe, mat, sphere, tube
 
 BUDGET = 30000  # the whole kit; a person uses a few hundred triangles of each part
 
@@ -178,3 +178,6 @@ def build():
     _shell(long_hair, 0.06)
     _lumpy("Afro", 0.5, 0.045, tint, "hair_afro", 5)
     _lumpy("Curl", 0.5, 0.1, tint, "hair_curl", 7, subdivisions=1)
+
+    # Bedclothes for someone lying down: a soft-edged slab the game stretches into a blanket or a sheet.
+    cube("Cover", (0, 0, 0), (1, 1, 1), tint, part="cover", bevel=0.14, bevel_segments=3)
