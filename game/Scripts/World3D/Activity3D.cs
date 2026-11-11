@@ -105,7 +105,15 @@ public static class Activity3D
     {
         if (member.Activity == StaffActivity.OnBreak)
         {
-            return (world.IsSeated(member) && Habit(member.Id, time, 26) < 0.6 ? Act.Tea : Act.None, null);
+            // Tea, and a chat with whoever else is on their break.
+            var mate = world.IsSeated(member) && sim.Staff.Any(o => o != member && o.Activity == StaffActivity.OnBreak && world.IsSeated(o) && Math.Abs(o.X - member.X) + Math.Abs(o.Y - member.Y) < 4);
+            var habit = Habit(member.Id, time, 8);
+            return (!world.IsSeated(member) ? Act.None : mate && habit < 0.45 ? Act.Talk : habit < 0.85 ? Act.Tea : Act.None, null);
+        }
+
+        if (member.Activity == StaffActivity.Idle)
+        {
+            return Idle(member, world, sim, time);
         }
 
         var taskId = member.CurrentTaskId ?? member.AssistingTaskId;
@@ -148,6 +156,44 @@ public static class Activity3D
         }
 
         return (act, face);
+    }
+
+    /// <summary>
+    /// Between jobs: a chat with a colleague standing nearby, or catching up on notes at the desk or nurses'
+    /// station they're beside; otherwise just standing ready.
+    /// </summary>
+    private static (Act, (double, double)?) Idle(StaffMember member, WorldLayer world, HospitalSimulation sim, double time)
+    {
+        if (world.IsSeated(member))
+        {
+            return (Habit(member.Id, time, 15) < 0.5 ? Act.Typing : Act.None, null);
+        }
+
+        var colleague = sim.Staff
+            .Where(o => o != member && o.Activity == StaffActivity.Idle && !o.IsMoving && o.IsInBuilding)
+            .Select(o => (Other: o, D: Math.Abs(o.X - member.X) + Math.Abs(o.Y - member.Y)))
+            .Where(o => o.D is > 0.5 and < 4.5)
+            .OrderBy(o => o.D)
+            .Select(o => o.Other)
+            .FirstOrDefault();
+        if (colleague is not null)
+        {
+            // Take turns talking: one gestures while the other listens.
+            var talking = (int)Math.Floor((time + (Math.Min(member.Id, colleague.Id) * 1.7)) / 3) % 2 == (member.Id < colleague.Id ? 0 : 1);
+            var (cx, cy) = world.Interpolated(colleague);
+            return (talking ? Act.Talk : Act.None, (cx, cy));
+        }
+
+        if (DeskAhead(member, world, sim) is { } desk)
+        {
+            var (x, y) = world.Interpolated(member);
+            if (Math.Abs(desk.Item1 - x) + Math.Abs(desk.Item2 - y) < 2)
+            {
+                return (Habit(member.Id, time, 12) < 0.65 ? Act.Typing : Act.None, desk);
+            }
+        }
+
+        return (Act.None, null);
     }
 
     private static (Act, (double, double)?) ForVisitor(Agent person, WorldLayer world, HospitalSimulation sim, double time)
@@ -199,6 +245,66 @@ public static class Activity3D
             < 0.62 => (Act.Read, null),
             < 0.72 => (Act.Watch, null),
             _ => (Act.None, null),
+        };
+    }
+
+    /// <summary>How long one round of a scan takes on screen (seconds): position, step behind the screen, expose, come back.</summary>
+    public const double ScanCycle = 12;
+
+    /// <summary>Where a scan is in its round, 0 to <see cref="ScanCycle"/>; each scan runs from its own start.</summary>
+    public static double ScanPhase(double time, int taskId) => (time + (taskId * 2.3)) % ScanCycle;
+
+    /// <summary>During this part of the round the X-ray is taken, or the CT table is in the scanner.</summary>
+    public static bool Exposing(double phase, bool ct) => ct ? phase is >= 6.6 and < 8.6 : phase is >= 6.8 and < 8.0;
+
+    /// <summary>
+    /// A radiographer's round during an X-ray or CT: line the patient up at the table, walk round behind the
+    /// lead screen and take the picture at the console, then walk back. Returns null when they aren't scanning
+    /// (or the room has no lead screen). Only where they are drawn changes; the simulation keeps them at the table.
+    /// </summary>
+    public static (Act Act, (double X, double Y) At, (double X, double Y) Facing, bool Walking)? ScanVisit(StaffMember member, WorldLayer world, HospitalSimulation sim, IReadOnlyDictionary<int, ClinicalTask> tasks, double time)
+    {
+        if (member.IsMoving || member.CurrentTaskId is not { } id || !tasks.TryGetValue(id, out var task) || task.Kind != TaskKind.Imaging
+            || task.SpaceId is not { } roomId || sim.FindSpace(roomId) is not { } room
+            || sim.FindPatient(task.PatientId) is not { IsMoving: false } patient || patient.Tile != room.PatientSpot
+            || room.Furniture.FirstOrDefault(f => f.ItemId == "lead_screen") is not { } screen)
+        {
+            return null;
+        }
+
+        var table = (X: room.PatientSpot.X + 0.5, Y: room.PatientSpot.Y + 0.5);
+        var chest = (X: table.X, Y: table.Y - 0.75);
+        var start = world.Interpolated(member);
+
+        // Behind the screen: on its far side from the table, kept inside the room.
+        var (sx, sy) = (screen.CentreX - table.X, screen.CentreY - table.Y);
+        var len = Math.Max(0.01, Math.Sqrt((sx * sx) + (sy * sy)));
+        var r = room.Rect;
+        var behind = (
+            X: Math.Clamp(screen.CentreX + (sx / len * 1.1), r.X + 0.6, r.Right - 0.6),
+            Y: Math.Clamp(screen.CentreY + (sy / len * 1.1), r.Y + 0.6, r.Bottom - 0.6));
+
+        static (double, double) Towards((double X, double Y) from, (double X, double Y) to)
+        {
+            var (dx, dy) = (to.X - from.X, to.Y - from.Y);
+            var d = Math.Sqrt((dx * dx) + (dy * dy));
+            return d < 1e-6 ? (0, 1) : (dx / d, dy / d);
+        }
+
+        static (double, double) Lerp((double X, double Y) a, (double X, double Y) b, double u)
+        {
+            u = u * u * (3 - (2 * u));
+            return (a.X + ((b.X - a.X) * u), a.Y + ((b.Y - a.Y) * u));
+        }
+
+        var phase = ScanPhase(time, task.Id);
+        return phase switch
+        {
+            < 3.5 => (Act.Bloods, start, Towards(start, chest), false),
+            < 5.5 => (Act.None, Lerp(start, behind, (phase - 3.5) / 2), Towards(start, behind), true),
+            < 9 => (Act.Typing, behind, Towards(behind, (screen.CentreX, screen.CentreY)), false),
+            < 11 => (Act.None, Lerp(behind, start, (phase - 9) / 2), Towards(behind, start), true),
+            _ => (Act.Talk, start, Towards(start, chest), false),
         };
     }
 
