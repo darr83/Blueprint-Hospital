@@ -22,6 +22,7 @@ public partial class RecruitmentPanel : PanelContainer
     private string _needsSignature = string.Empty;
     private string _candidatesSignature = string.Empty;
     private double _refresh;
+    private Button _hireTeam = null!;
 
     public void Initialise(HospitalSimulation simulation)
     {
@@ -41,7 +42,7 @@ public partial class RecruitmentPanel : PanelContainer
         title.AddThemeFontSizeOverride("font_size", 22);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         titles.AddChild(title);
-        titles.AddChild(UiStyle.Caption($"New candidates, every kind of staff, arrive every {HospitalSimulation.CandidatesEveryHours} hours", 13));
+        titles.AddChild(UiStyle.Caption($"New candidates arrive every {HospitalSimulation.CandidatesEveryHours} hours", 13));
         header.AddChild(titles);
         var close = UiStyle.SecondaryButton("✕", () => Visible = false);
         close.TooltipText = "Close (Esc)";
@@ -59,6 +60,11 @@ public partial class RecruitmentPanel : PanelContainer
         body.AddChild(HudWidgets.Section("Recommended team"));
         _needsSummary.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         body.AddChild(_needsSummary);
+        _hireTeam = UiStyle.Button("Hire minimum team", HireTeam);
+        _hireTeam.TooltipText = "Fill every empty post in the recommended team with the cheapest candidate of that kind";
+        _hireTeam.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+        _hireTeam.FocusMode = FocusModeEnum.None;
+        body.AddChild(_hireTeam);
         _needs.AddThemeConstantOverride("separation", 4);
         body.AddChild(_needs);
 
@@ -92,8 +98,19 @@ public partial class RecruitmentPanel : PanelContainer
         RefreshCandidates();
     }
 
+    /// <summary>Hires the cheapest candidate for each empty post, then refreshes the lists.</summary>
+    public void HireTeam()
+    {
+        _sim.HireForShortages();
+        _needsSignature = _candidatesSignature = string.Empty;
+        Refresh();
+    }
+
     private void RefreshNeeds()
     {
+        var hireable = _sim.ShortagesHireable();
+        _hireTeam.Disabled = hireable == 0;
+        _hireTeam.Text = hireable == 0 ? "Hire minimum team" : $"Hire minimum team ({hireable})";
         var needs = _sim.RecommendedStaffing();
         var signature = string.Join("|", needs.Select(n => $"{n.Place}{n.Role}{n.Shift}{n.Have}/{n.Recommended}"));
         if (signature == _needsSignature)

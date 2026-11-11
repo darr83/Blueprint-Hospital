@@ -153,7 +153,7 @@ public sealed partial class HospitalSimulation
 
     private void GenerateMaternityArrivals(double dt)
     {
-        if (MaternityArrivals is not { } profile || !IsMaternityOpen)
+        if (MaternityArrivals is not { } profile || !IsMaternityOpen || !IsFeatureOn(LevelFeatures.Maternity))
         {
             return;
         }

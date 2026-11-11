@@ -12,7 +12,7 @@ public class ProgressionTests
     private static readonly GridRect B = StarterSite.MainBuildingFootprint;
 
     private static SimulationHarness Career(int seed = 1234, bool arrivals = false, double arrivalMultiplier = 1.0) =>
-        new(seed: seed, arrivals: arrivals, arrivalMultiplier: arrivalMultiplier, mode: GameMode.Career);
+        new(seed: seed, arrivals: arrivals, arrivalMultiplier: arrivalMultiplier, type: GameType.Career);
 
     [Fact]
     public void Ten_levels_unlock_every_room_staff_role_and_department_between_them()
@@ -151,13 +151,21 @@ public class ProgressionTests
     [Fact]
     public void Meeting_every_goal_moves_up_a_level_and_pays_its_grant()
     {
-        var h = Career(seed: 3, arrivals: true, arrivalMultiplier: 0.5);
-        h.StaffToRecommended();
+        var h = Career(seed: 3, arrivals: true);
+
+        // Like a player would: two more cubicles where majors and resus will go later, and two more nurses.
+        Assert.True(h.Sim.BuildRoom(h.Sim.AutoPlan("minors_cubicle", new GridRect(B.X + 28, B.Y, 8, 9))).CanBuild);
+        Assert.True(h.Sim.BuildRoom(h.Sim.AutoPlan("minors_cubicle", new GridRect(B.X + 36, B.Y, 8, 9))).CanBuild);
+        foreach (var nurse in h.Sim.Candidates.Where(c => c.Role == StaffRole.Nurse).Take(2).ToList())
+        {
+            Assert.NotNull(h.Sim.Hire(nurse.Id, null));
+        }
+
         var reached = new List<LevelDefinition>();
         h.Events.Subscribe<LevelReached>(e => reached.Add(e.Level));
 
         h.RunFor(TimeSpan.FromDays(3));
-        Assert.True(h.Sim.Level >= 2, "Still on level 1: " + string.Join("; ", h.Sim.Goals.Select(g => $"{g.Goal.Text}: {g.Detail}")) + " " + string.Join(",", h.Sim.Accounts.Select(d => d.Net)));
+        Assert.True(h.Sim.Level >= 2, "Still on level 1: " + string.Join("; ", h.Sim.Goals.Select(g => $"{g.Goal.Text}: {g.Detail}")));
 
         Assert.Equal(2, Assert.Single(reached).Number);
         Assert.Equal(h.Database.Levels[1].Grant, h.Sim.Today[MoneyCategory.Grants] + h.Sim.Accounts.Where(d => d != h.Sim.Today).Sum(d => d[MoneyCategory.Grants]));
@@ -195,5 +203,106 @@ public class ProgressionTests
         career.Sim.RestorePeople(sandbox.Sim.CapturePeople());
         Assert.False(career.Sim.IsCareer);
         Assert.Equal(0, career.Sim.Level);
+    }
+}
+
+public class CareerGatingTests
+{
+    private static SimulationHarness Career(int seed = 1234, bool arrivals = false, double arrivalMultiplier = 1.0) =>
+        new(seed: seed, arrivals: arrivals, arrivalMultiplier: arrivalMultiplier, type: GameType.Career);
+
+    private static readonly GridRect B = StarterSite.MainBuildingFootprint;
+
+    [Fact]
+    public void A_career_starts_as_a_staffed_walk_in_centre_that_is_open_to_patients()
+    {
+        var h = Career();
+
+        Assert.True(h.Sim.IsEmergencyOpen, string.Join(", ", h.Sim.ClosedReasons));
+        Assert.All(h.Sim.Spaces, s => Assert.True(h.Sim.IsRoomUnlocked(s.TemplateId), s.TemplateId));
+        Assert.DoesNotContain(h.Sim.Spaces, s => s.TemplateId is "resus_bay" or "majors_cubicle");
+        Assert.Contains(h.Sim.Spaces, s => s.TemplateId == "waiting_room");
+        Assert.Equal(8, h.Sim.Staff.Count);
+        Assert.All(h.Sim.Staff, m => Assert.True(h.Sim.IsRoleUnlocked(m.Role)));
+    }
+
+    [Fact]
+    public void Locked_rooms_floors_trolleys_and_departments_cannot_be_built()
+    {
+        var h = Career();
+        h.Sim.AdjustBalance(5_000_000);
+        Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)).CanBuild);
+
+        var resus = h.Sim.CheckRoom(h.Sim.AutoPlan("resus_bay", new GridRect(B.X - 30, B.Y + 17, 12, 9)));
+        Assert.Contains("unlocks at level 3", Assert.Single(resus.Problems));
+        Assert.Contains(h.Sim.CheckAddFloor().Problems, p => p.Contains("level 6"));
+        Assert.Contains(h.Sim.CheckUnlock("cardiology").Problems, p => p.Contains("level 8"));
+        Assert.False(h.Sim.IsUnlocked("general_medicine"));
+        Assert.False(h.Sim.IsUnlocked("pharmacy"));
+
+        h.Sim.SetLevel(3);
+        Assert.DoesNotContain(h.Sim.CheckRoom(h.Sim.AutoPlan("resus_bay", new GridRect(B.X - 30, B.Y + 17, 12, 9))).Problems, p => p.Contains("level"));
+    }
+
+    [Fact]
+    public void Candidates_are_only_the_staff_unlocked_so_far()
+    {
+        var h = Career();
+        Assert.True(h.Sim.Candidates.Count >= HospitalSimulation.MinimumCandidates);
+        Assert.All(h.Sim.Candidates, c => Assert.Contains(c.Role, new[] { StaffRole.Receptionist, StaffRole.Nurse, StaffRole.Doctor }));
+        Assert.DoesNotContain(h.Sim.Candidates, c => c.Grade is "Registrar" or "Consultant" or "Band 7 nurse");
+        Assert.All(h.Sim.RecommendedStaffing(), n => Assert.True(h.Sim.IsRoleUnlocked(n.Role)));
+
+        h.Sim.SetLevel(2);
+        Assert.Contains(h.Sim.Candidates, c => c.Role == StaffRole.Porter);
+    }
+
+    [Fact]
+    public void Early_levels_only_get_walk_in_patients_with_a_and_e_conditions_who_are_not_very_ill()
+    {
+        var h = Career(seed: 11, arrivals: true, arrivalMultiplier: 3);
+        var arrived = new List<Patients.Patient>();
+        h.Events.Subscribe<PatientArrived>(e => arrived.Add(e.Patient));
+        h.RunFor(TimeSpan.FromHours(10));
+
+        Assert.NotEmpty(arrived);
+        foreach (var p in arrived)
+        {
+            var condition = p.Condition;
+            Assert.Equal(Patients.ArrivalMethod.WalkIn, p.ArrivalMethod);
+            Assert.Equal("emergency", condition.Department);
+            Assert.True(condition.InitialSeverity[1] <= HospitalSimulation.MaxSeverityBeforeRedPatients, condition.Id);
+        }
+    }
+
+    [Fact]
+    public void A_sandbox_game_still_gets_every_kind_of_patient()
+    {
+        var h = new SimulationHarness(seed: 11, arrivals: true, arrivalMultiplier: 3);
+        var arrived = new List<Patients.Patient>();
+        h.Events.Subscribe<PatientArrived>(e => arrived.Add(e.Patient));
+        h.RunFor(TimeSpan.FromHours(10));
+
+        Assert.Contains(arrived, p => p.ArrivalMethod == Patients.ArrivalMethod.Ambulance);
+        Assert.Contains(arrived, p => p.Condition.Department != "emergency");
+    }
+}
+
+public class HireForShortagesTests
+{
+    [Fact]
+    public void Hire_minimum_team_fills_empty_posts_from_the_list()
+    {
+        var h = new SimulationHarness(type: GameType.Career);
+        var before = h.Sim.RecommendedStaffing().Sum(n => n.Short);
+        Assert.True(before > 0);
+        var expected = h.Sim.ShortagesHireable();
+        Assert.True(expected > 0);
+
+        var hired = h.Sim.HireForShortages();
+
+        Assert.Equal(expected, hired.Count);
+        Assert.True(h.Sim.RecommendedStaffing().Sum(n => n.Short) < before);
+        Assert.Equal(hired.Count, (int)h.Sim.History.Total(StatsPeriod.AllTime, h.Sim.Now, StatKeys.Hired));
     }
 }

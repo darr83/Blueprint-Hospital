@@ -131,7 +131,7 @@ public sealed partial class HospitalSimulation
     /// Clinics and Outpatients reception only need a day team. The player is free to ignore it.
     /// </summary>
     public IReadOnlyList<StaffingNeed> RecommendedStaffing() =>
-        RecommendedForShift(StaffShift.Day).Concat(RecommendedForShift(StaffShift.Night).Where(n => !IsDayOnly(n.RoomId))).ToList();
+        RecommendedForShift(StaffShift.Day).Concat(RecommendedForShift(StaffShift.Night).Where(n => !IsDayOnly(n.RoomId))).Where(n => IsRoleUnlocked(n.Role)).ToList();
 
     private bool IsDayOnly(string? roomId) =>
         roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception };
@@ -230,17 +230,44 @@ public sealed partial class HospitalSimulation
         _candidates.Clear();
         _candidatesDate = arrived;
 
-        // One of every kind of staff, whether or not there is a room for them yet.
-        foreach (var role in RecruitableRoles)
+        // One of every kind of staff, whether or not there is a room for them yet (in a Career game, every kind unlocked so far).
+        var roles = RecruitableRoles.Where(IsRoleUnlocked).ToList();
+        foreach (var role in roles)
         {
-            _candidates.Add(MakeCandidate(PickGrade(StaffGrades.For(role).ToList())));
+            _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(role))));
         }
 
         // Then a second choice for the kinds of staff the hospital is short of.
-        var short_ = RecommendedStaffing().Where(n => n.Short > 0).Select(n => n.Role).Distinct();
+        var short_ = RecommendedStaffing().Where(n => n.Short > 0 && IsRoleUnlocked(n.Role)).Select(n => n.Role).Distinct();
         foreach (var role in short_.Take(ExtraCandidatesForShortages))
         {
-            _candidates.Add(MakeCandidate(PickGrade(StaffGrades.For(role).ToList())));
+            _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(role))));
+        }
+
+        // A Career hospital with only a few kinds of staff still gets a decent list to choose from.
+        while (IsCareer && roles.Count > 0 && _candidates.Count < MinimumCandidates)
+        {
+            _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(roles[RecruitRandom.Range(0, roles.Count - 1)]))));
+        }
+    }
+
+    /// <summary>The fewest candidates in each list of a Career game.</summary>
+    public const int MinimumCandidates = 8;
+
+    /// <summary>The grades of a role that can be hired now (in a Career game, those unlocked so far).</summary>
+    private List<StaffGrades.Grade> GradesOpenFor(StaffRole role)
+    {
+        var grades = StaffGrades.For(role).ToList();
+        var open = grades.Where(IsGradeUnlocked).ToList();
+        return open.Count > 0 ? open : grades.Take(1).ToList();
+    }
+
+    /// <summary>A new level brings a fresh list straight away, so newly unlocked staff can be hired.</summary>
+    private void RefreshCandidatesForNewLevel()
+    {
+        if (_candidatesDate is { } date)
+        {
+            RefreshCandidates(date);
         }
     }
 
@@ -291,6 +318,45 @@ public sealed partial class HospitalSimulation
     }
 
     // ---------------------------------------------------------------- hiring and letting go
+
+    /// <summary>
+    /// "Hire minimum team": fills each post the recommended staffing says is empty with the cheapest
+    /// candidate of that kind on the current list. Returns who was hired; posts with no candidate stay empty.
+    /// </summary>
+    public IReadOnlyList<StaffMember> HireForShortages()
+    {
+        var hired = new List<StaffMember>();
+        foreach (var need in RecommendedStaffing().Where(n => n.Short > 0).ToList())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                if (_candidates.Where(c => c.Role == need.Role).OrderBy(c => c.Salary).FirstOrDefault() is not { } candidate
+                    || Hire(candidate.Id, need.RoomId, need.Shift) is not { } member)
+                {
+                    break;
+                }
+
+                hired.Add(member);
+            }
+        }
+
+        return hired;
+    }
+
+    /// <summary>How many posts "Hire minimum team" could fill from the current list.</summary>
+    public int ShortagesHireable()
+    {
+        var left = _candidates.GroupBy(c => c.Role).ToDictionary(g => g.Key, g => g.Count());
+        var n = 0;
+        foreach (var need in RecommendedStaffing().Where(n => n.Short > 0))
+        {
+            var take = Math.Min(need.Short, left.GetValueOrDefault(need.Role));
+            left[need.Role] = left.GetValueOrDefault(need.Role) - take;
+            n += take;
+        }
+
+        return n;
+    }
 
     /// <summary>
     /// Takes on a candidate, based at <paramref name="roomId"/> (null for A&amp;E or the whole hospital), on

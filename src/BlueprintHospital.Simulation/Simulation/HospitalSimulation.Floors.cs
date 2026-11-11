@@ -72,7 +72,11 @@ public sealed partial class HospitalSimulation
     {
         var problems = new List<string>();
         var cost = NextFloorCost();
-        if (Site.FloorCount > SiteMap.MaxUpperFloors)
+        if (!IsRoomUnlocked(Data.BuildMenu.AddFloor))
+        {
+            problems.Add($"Upper floors unlock at level {LevelOfRoom(Data.BuildMenu.AddFloor)}.");
+        }
+        else if (Site.FloorCount > SiteMap.MaxUpperFloors)
         {
             problems.Add($"The building can be at most {SiteMap.MaxUpperFloors + 1} floors high.");
         }

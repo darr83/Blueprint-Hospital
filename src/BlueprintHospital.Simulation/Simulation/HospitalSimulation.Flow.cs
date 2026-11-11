@@ -170,7 +170,11 @@ public sealed partial class HospitalSimulation
                 }
                 else if (!stabilised)
                 {
-                    patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
+                    // Before a Career hospital reaches the crash team's level, nobody gets ill enough for their heart
+                // to stop; before it takes red patients, nobody waiting gets that ill either.
+                var fatal = condition.CanBeFatal && IsFeatureOn(LevelFeatures.Arrests);
+                var worst = fatal ? 1.0 : IsFeatureOn(LevelFeatures.RedPatients) ? 0.9 : MaxSeverityBeforeRedPatients + 0.1;
+                patient.Severity = Math.Max(patient.Severity, Math.Min(worst, patient.Severity + (condition.DeteriorationPerHour * support * hours)));
                 }
             }
             else if (patient.EffectiveTreatmentGiven)

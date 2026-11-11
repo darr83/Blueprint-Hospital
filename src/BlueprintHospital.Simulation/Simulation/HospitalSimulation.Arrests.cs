@@ -1023,7 +1023,11 @@ public sealed partial class HospitalSimulation
     public BuildCheck CheckResusTrolley(GridCoord tile, ResusTrolley? moving = null)
     {
         var problems = new List<string>();
-        if (TrolleyProblem(tile, moving) is { } problem)
+        if (moving is null && !IsRoomUnlocked(Data.BuildMenu.ResusTrolleys))
+        {
+            problems.Add($"Resus trolleys unlock at level {LevelOfRoom(Data.BuildMenu.ResusTrolleys)}.");
+        }
+        else if (TrolleyProblem(tile, moving) is { } problem)
         {
             problems.Add(problem);
         }

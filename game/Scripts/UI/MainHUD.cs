@@ -206,6 +206,9 @@ public partial class MainHUD : CanvasLayer
 
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
+    /// <summary>The Career level badge in the top bar and its goals card (Career games only).</summary>
+    public LevelBadge Level { get; } = new();
+
     /// <summary>The outpatient clinics' calendars.</summary>
     public ClinicsPanel Clinics { get; } = new() { Name = "Clinics", Visible = false };
 
@@ -356,6 +359,10 @@ public partial class MainHUD : CanvasLayer
         AddChild(root);
 
         Feed.Initialise(session.Simulation, session.Events);
+        var buildMenu = BuildMenu.Load(new BlueprintHospital.Core.GodotDataSource(), session.Simulation.Database);
+        Level.Initialise(session.Simulation, session.Events, buildMenu);
+        Level.ShowMeRequested += ShowBuildIcon;
+        Level.PopupRequested += popup => root.AddChild(popup);
         root.AddChild(BuildTag());
         root.AddChild(BuildTopBar());
         root.AddChild(BuildNav());
@@ -423,8 +430,14 @@ public partial class MainHUD : CanvasLayer
         root.AddChild(StatsScreen);
 
         // The build bar and its pop-ups sit above the panels.
-        Build.Initialise(sim, tool, BuildMenu.Load(new BlueprintHospital.Core.GodotDataSource(), sim.Database));
+        Build.Initialise(sim, tool, buildMenu);
         root.AddChild(Build);
+
+        // The goals card drops down from the level badge, over the map.
+        if (sim.IsCareer)
+        {
+            root.AddChild(Level.Card);
+        }
 
         // The crash call banner hangs under the middle of the top bar.
         Crash.Initialise(sim);
@@ -526,6 +539,13 @@ public partial class MainHUD : CanvasLayer
 
     // ---------------------------------------------------------------- top bar
 
+    /// <summary>Switches to Build mode and opens one build bar icon ("Show me" on a goal or a new level).</summary>
+    public void ShowBuildIcon(string iconId)
+    {
+        ModeRequested?.Invoke(BlueprintHospital.Hospital.GameMode.Build);
+        Build.Open(iconId);
+    }
+
     private Control BuildTopBar()
     {
         var bar = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Stop };
@@ -590,6 +610,10 @@ public partial class MainHUD : CanvasLayer
         clock.AddChild(clockRow);
         row.AddChild(clock);
         row.AddChild(BuildModeSwitch());
+        if (_session.Simulation.IsCareer)
+        {
+            row.AddChild(Level);
+        }
 
         // The latest notification fills the gap; hovering drops down the last five.
         Feed.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;

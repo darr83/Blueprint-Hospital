@@ -188,6 +188,15 @@ public partial class BuildBar : Control
             }
 
             RefreshTiles();
+            RefreshIconVisibility();
+            if (_sim.Level != _shownLevel)
+            {
+                _shownLevel = _sim.Level;
+                if (_popup.Visible)
+                {
+                    RebuildPopup();
+                }
+            }
         }
 
         PlacePopup();
@@ -245,7 +254,43 @@ public partial class BuildBar : Control
         }
     }
 
-    public bool IsLocked(BuildMenuIcon icon) => icon.Department is { } d && !_sim.IsUnlocked(d);
+    private int _shownLevel = -1;
+
+    public bool IsLocked(BuildMenuIcon icon) => icon.Department is { } d && (!_sim.IsUnlocked(d) || !_sim.IsDepartmentAvailable(d));
+
+    /// <summary>The Career level an icon's department can be opened from (0 if it has none, or in Sandbox).</summary>
+    public int LevelOf(BuildMenuIcon icon) => _sim.IsCareer && icon.Department is { } d ? _sim.LevelOfDepartment(d) : 0;
+
+    /// <summary>In a Career game, icons and rooms more than one level away are hidden to keep the bar short.</summary>
+    private bool IsFarOff(int level) => _sim.IsCareer && level > _sim.Level + 1;
+
+    /// <summary>The Career level a room or build item unlocks at, if it is still locked (else 0).</summary>
+    private int LockedUntil(string item) => _sim.IsRoomUnlocked(item) ? 0 : _sim.LevelOfRoom(item);
+
+    /// <summary>The items an icon pops up: in a Career game, those unlocked and those of the next level.</summary>
+    private List<string> ShownItems(BuildMenuIcon icon) => icon.Items.Where(i => !IsFarOff(_sim.IsCareer ? _sim.LevelOfRoom(i) : 0)).ToList();
+
+    /// <summary>Hides far-off icons, and shows the rest (called as the level changes).</summary>
+    private void RefreshIconVisibility()
+    {
+        foreach (var icon in Menu.Icons)
+        {
+            if (_icons.TryGetValue(icon.Id, out var button))
+            {
+                var show = !IsFarOff(LevelOf(icon));
+                if (button.Visible != show)
+                {
+                    button.Visible = show;
+                    if (!show && OpenIcon == icon.Id)
+                    {
+                        ClosePopup();
+                    }
+                }
+
+                button.TooltipText = IsLocked(icon) && LevelOf(icon) > _sim.Level ? $"{icon.Name}: unlocks at level {LevelOf(icon)}" : icon.Name;
+            }
+        }
+    }
 
     // ------------------------------------------------------------------ pop-up
 
@@ -287,7 +332,8 @@ public partial class BuildBar : Control
         name.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(name);
         var decorating = icon.Id == BuildMenu.Decorate;
-        var count = new Label { Text = decorating ? "Floors and walls" : $"{icon.Items.Count} to build", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var items = ShownItems(icon);
+        var count = new Label { Text = decorating ? "Floors and walls" : $"{items.Count(i => LockedUntil(i) == 0)} to build", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter };
         count.AddThemeFontSizeOverride("font_size", 13);
         count.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         header.AddChild(count);
@@ -311,7 +357,21 @@ public partial class BuildBar : Control
         header.AddChild(close);
         _popupBody.AddChild(header);
 
-        if (locked && _sim.Database.Departments.TryGetValue(icon.Department!, out var department))
+        if (locked && _sim.Database.Departments.TryGetValue(icon.Department!, out var department) && !_sim.IsDepartmentAvailable(department.Id))
+        {
+            var banner = new PanelContainer();
+            var bannerBox = UiStyle.Box(UiStyle.AmberTint, 10, UiStyle.AmberBorder);
+            bannerBox.ContentMarginLeft = bannerBox.ContentMarginRight = 12;
+            bannerBox.ContentMarginTop = bannerBox.ContentMarginBottom = 8;
+            banner.AddThemeStyleboxOverride("panel", bannerBox);
+            var cost = department.OpeningCost == 0 ? "It opens for free." : $"Then it can be opened for £{department.OpeningCost:N0}.";
+            var text = new Label { Text = $"{department.Name} unlocks at level {LevelOf(icon)}. {cost}", VerticalAlignment = VerticalAlignment.Center };
+            text.AddThemeColorOverride("font_color", UiStyle.AmberText);
+            text.AddThemeFontSizeOverride("font_size", 14);
+            banner.AddChild(text);
+            _popupBody.AddChild(banner);
+        }
+        else if (locked && _sim.Database.Departments.TryGetValue(icon.Department!, out department))
         {
             var banner = new PanelContainer();
             var bannerBox = UiStyle.Box(UiStyle.AmberTint, 10, UiStyle.AmberBorder);
@@ -345,10 +405,10 @@ public partial class BuildBar : Control
 
         // A long row wraps onto a second line so the pop-up stays on screen.
         const int perRow = 12;
-        var tiles = new HFlowContainer { CustomMinimumSize = new Vector2(Math.Min(icon.Items.Count, perRow) * (TileWidth + 8), 0) };
+        var tiles = new HFlowContainer { CustomMinimumSize = new Vector2(Math.Min(items.Count, perRow) * (TileWidth + 8), 0) };
         tiles.AddThemeConstantOverride("h_separation", 8);
         tiles.AddThemeConstantOverride("v_separation", 8);
-        foreach (var item in icon.Items)
+        foreach (var item in items)
         {
             var tile = Tile(icon, item);
             _tiles[item] = tile;
@@ -460,6 +520,23 @@ public partial class BuildBar : Control
         column.AddChild(label);
         tile.AddChild(column);
 
+        // Rooms of the next Career level carry a padlock tag.
+        if (LockedUntil(item) is > 0 and var unlocksAt)
+        {
+            var tag = new Label { Text = $"LEVEL {unlocksAt}", MouseFilter = MouseFilterEnum.Ignore };
+            tag.AddThemeFontSizeOverride("font_size", 9);
+            tag.AddThemeColorOverride("font_color", UiStyle.AmberText);
+            var chip = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+            var box = UiStyle.Box(UiStyle.AmberTint, 4);
+            box.ContentMarginLeft = box.ContentMarginRight = 4;
+            chip.AddThemeStyleboxOverride("panel", box);
+            chip.AddChild(tag);
+            chip.SetAnchorsPreset(LayoutPreset.TopLeft);
+            chip.OffsetLeft = 5;
+            chip.OffsetTop = 5;
+            tile.AddChild(chip);
+        }
+
         // Rooms that sit under more than one department are tagged.
         if (icon.Department is not null && Menu.IconsWith(item).Count(i => i.Department is not null) > 1)
         {
@@ -510,7 +587,7 @@ public partial class BuildBar : Control
     }
 
     private bool Available(string item) =>
-        !_sim.Database.RoomTemplates.TryGetValue(item, out var template) || template.IsCorridor || _sim.IsUnlocked(template.Department);
+        LockedUntil(item) == 0 && (!_sim.Database.RoomTemplates.TryGetValue(item, out var template) || template.IsCorridor || _sim.IsUnlocked(template.Department));
 
     /// <summary>Picks a tile in the open pop-up as if clicked (for the smoke test).</summary>
     public void Choose(string item) => Pick(item);
@@ -518,6 +595,16 @@ public partial class BuildBar : Control
     private void Pick(string item)
     {
         _flash = null;
+        if (LockedUntil(item) is > 0 and var level)
+        {
+            _tool.Cancel();
+            _selectedItem = null;
+            _flash = $"[color=#8A5300]{ItemName(item)} unlocks at level {level}. Meet your goals in the level badge to get there.[/color]";
+            RefreshTiles();
+            RefreshStatus();
+            return;
+        }
+
         if (!Available(item))
         {
             var template = _sim.Database.RoomTemplates[item];
@@ -825,7 +912,11 @@ public partial class BuildBar : Control
                     lines.Add($"{muted}Shared by[/color]  {string.Join(", ", users)}");
                 }
 
-                if (!_sim.IsUnlocked(t.Department))
+                if (LockedUntil(item) is > 0 and var unlocks)
+                {
+                    lines.Add($"[color=#8A5300]Unlocks at level {unlocks}.[/color]");
+                }
+                else if (!_sim.IsUnlocked(t.Department))
                 {
                     lines.Add($"[color=#8A5300]Part of {_sim.DepartmentName(t.Department)}, which isn't open yet.[/color]");
                 }

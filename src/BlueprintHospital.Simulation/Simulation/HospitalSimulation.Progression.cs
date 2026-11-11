@@ -5,7 +5,7 @@ using BlueprintHospital.Simulation.Staff;
 namespace BlueprintHospital.Simulation.Simulation;
 
 /// <summary>How a game is played: everything open from the start, or unlocked level by level.</summary>
-public enum GameMode
+public enum GameType
 {
     /// <summary>Every department, room, staff type and feature is open from the start.</summary>
     Sandbox,
@@ -26,7 +26,7 @@ public sealed record GoalProgress(LevelGoal Goal, double Current, double Progres
 /// <summary>Saved Career progress (absent from Sandbox games and older saves).</summary>
 public sealed class ProgressionState
 {
-    public GameMode Mode { get; init; }
+    public GameType Type { get; init; }
 
     public int Level { get; init; }
 
@@ -52,10 +52,10 @@ public sealed partial class HospitalSimulation
     private DateTime _nextProgressCheck;
 
     /// <summary>Sandbox or Career.</summary>
-    public GameMode Mode { get; private set; }
+    public GameType Type { get; private set; }
 
     /// <summary>True when this is a Career game (and the game data has levels).</summary>
-    public bool IsCareer => Mode == GameMode.Career && Database.Levels.Count > 0;
+    public bool IsCareer => Type == GameType.Career && Database.Levels.Count > 0;
 
     /// <summary>The Career level reached, from 1. 0 in a Sandbox game.</summary>
     public int Level { get; private set; }
@@ -109,15 +109,29 @@ public sealed partial class HospitalSimulation
     /// <summary>Whether a part of the game is switched on: always in Sandbox; from its level in Career. A feature no level lists is always on.</summary>
     public bool IsFeatureOn(string feature) => !IsCareer || LevelOfFeature(feature) <= Level;
 
+    /// <summary>How busy A&amp;E is at this level, as a share of a full hospital's arrivals (1 in Sandbox).</summary>
+    public double LevelArrivalRate => CurrentLevel?.ArrivalRate ?? 1;
+
+    /// <summary>The worst a patient can start before red patients are unlocked.</summary>
+    public const double MaxSeverityBeforeRedPatients = 0.4;
+
+    /// <summary>
+    /// Whether patients with a condition come in at this level: only conditions of departments the
+    /// hospital can open, and no one who starts very ill until red patients are unlocked.
+    /// </summary>
+    private bool CanArriveAtThisLevel(ConditionDefinition condition) =>
+        !IsCareer || (IsDepartmentAvailable(condition.Department)
+                      && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients));
+
     private int FirstLevel(Func<LevelDefinition, bool> unlocks) =>
         Database.Levels.FirstOrDefault(unlocks)?.Number ?? 0;
 
     // ---------------------------------------------------------------- levelling up
 
     /// <summary>Sets the game's mode when it is created. Career games start on level 1.</summary>
-    private void StartProgression(GameMode mode)
+    private void StartProgression(GameType type)
     {
-        Mode = mode;
+        Type = type;
         if (IsCareer)
         {
             EnterLevel(1, grant: false);
@@ -157,8 +171,8 @@ public sealed partial class HospitalSimulation
         _profitableDaysThisLevel = 0;
         _progressDay = Now.Date;
 
-        // Departments with no opening cost open as soon as their level is reached.
-        foreach (var d in level.Departments.Where(d => Database.Departments.TryGetValue(d, out var def) && def.OpeningCost == 0))
+        // Departments with no opening cost open as soon as their level is reached (or skipped past, with the cheat).
+        foreach (var d in Database.Levels.Take(number).SelectMany(l => l.Departments).Where(d => Database.Departments.TryGetValue(d, out var def) && def.OpeningCost == 0))
         {
             _unlockedDepartments.Add(d);
         }
@@ -172,6 +186,7 @@ public sealed partial class HospitalSimulation
 
             var money = level.Grant > 0 ? $" Grant of £{level.Grant:N0} received." : string.Empty;
             Notifications.Add(Now, NotificationLevel.Info, $"Level {level.Number} reached: {level.Name}.{money} {level.Description}");
+            RefreshCandidatesForNewLevel();
             Events.Publish(new LevelReached(level));
         }
     }
@@ -185,6 +200,7 @@ public sealed partial class HospitalSimulation
         }
 
         EnterLevel(number, grant: false);
+        RefreshCandidatesForNewLevel();
         Events.Publish(new LevelReached(CurrentLevel!));
     }
 
@@ -293,9 +309,9 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- saving
 
-    private ProgressionState? CaptureProgression() => Mode == GameMode.Sandbox ? null : new ProgressionState
+    private ProgressionState? CaptureProgression() => Type == GameType.Sandbox ? null : new ProgressionState
     {
-        Mode = Mode,
+        Type = Type,
         Level = Level,
         Baselines = new Dictionary<string, double>(_levelBaselines),
         ProfitableDays = _profitableDaysThisLevel,
@@ -305,7 +321,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Puts back Career progress; a save without any is a Sandbox game.</summary>
     private void RestoreProgression(ProgressionState? state)
     {
-        Mode = state?.Mode ?? GameMode.Sandbox;
+        Type = state?.Type ?? GameType.Sandbox;
         Level = IsCareer ? Math.Clamp(state!.Level, 1, Database.Levels.Count) : 0;
         _levelBaselines.Clear();
         if (state is not null)

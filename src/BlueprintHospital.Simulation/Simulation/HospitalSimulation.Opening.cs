@@ -61,6 +61,37 @@ public sealed partial class HospitalSimulation
         Notifications.Add(Now, NotificationLevel.Info, "An empty hospital. A&E opens to patients once it has " + Join(ClosedReasons) + ".");
     }
 
+    /// <summary>
+    /// A Career game's start: the starter A&amp;E without the rooms level 1 hasn't unlocked (majors and
+    /// resus), a ready-made waiting room, and a small team of a receptionist, two nurses and a doctor
+    /// on each shift, so patients can start coming straight away.
+    /// </summary>
+    private void SetUpWalkInCentre()
+    {
+        foreach (var space in _spaces.Values.Where(s => !IsRoomUnlocked(s.TemplateId)).ToList())
+        {
+            _spaces.Remove(space.Id);
+        }
+
+        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        BuildStarterWaitingRoom();
+        foreach (var shift in new[] { CurrentShift, CurrentShift == StaffShift.Day ? StaffShift.Night : StaffShift.Day })
+        {
+            HireStaff(StaffRole.Receptionist, skill: 0.5, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.65, shift: shift);
+            HireStaff(StaffRole.Nurse, skill: 0.55, shift: shift);
+            HireStaff(StaffRole.Doctor, skill: 0.65, shift: shift);
+        }
+
+        foreach (var member in _staff)
+        {
+            member.PlaceAt(HomeTile(member));
+        }
+
+        var level = CurrentLevel!;
+        Notifications.Add(Now, NotificationLevel.Info, $"Level 1: {level.Name}. {level.Description} Your goals are in the level badge at the top.");
+    }
+
     /// <summary>Tells the player when A&amp;E opens or has to close.</summary>
     private void AnnounceOpening()
     {

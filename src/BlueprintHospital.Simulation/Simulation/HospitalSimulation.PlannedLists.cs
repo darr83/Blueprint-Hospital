@@ -126,7 +126,7 @@ public sealed partial class HospitalSimulation
     private void BookPlannedLists()
     {
         var date = Now.Date;
-        if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || Now.TimeOfDay >= PlannedLastArrival)
+        if (!IsFeatureOn(LevelFeatures.PlannedLists) || date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || Now.TimeOfDay >= PlannedLastArrival)
         {
             return;
         }

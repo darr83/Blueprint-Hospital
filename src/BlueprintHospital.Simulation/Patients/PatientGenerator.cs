@@ -15,6 +15,9 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
 
     public int NextId => _nextId;
 
+    /// <summary>Which conditions may come in (a Career hospital only gets patients it can look after). All, if not set.</summary>
+    public Func<ConditionDefinition, bool>? Allows { get; set; }
+
     /// <summary>Lets loaded games continue numbering where they left off.</summary>
     public void SetNextId(int next) => _nextId = Math.Max(_nextId, next);
 
@@ -106,6 +109,11 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
     {
         // Women in labour go to the maternity unit, and planned patients are booked in: neither comes to A&E.
         var conditions = database.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+        if (Allows is { } allows && conditions.Where(allows).ToList() is { Count: > 0 } allowed)
+        {
+            conditions = allowed;
+        }
+
         return method switch
         {
             ArrivalMethod.Ambulance => random.PickWeighted(conditions, c => c.Prevalence * c.AmbulanceProbability),

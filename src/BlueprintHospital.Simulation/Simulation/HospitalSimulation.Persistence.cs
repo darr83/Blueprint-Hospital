@@ -608,6 +608,7 @@ public sealed partial class HospitalSimulation
         _candidates.AddRange(state.Candidates.Where(c => Enum.IsDefined(c.Role)));
         _candidatesDate = state.CandidatesDate;
         _nextCandidateId = Math.Max(state.NextCandidateId, _candidates.Count == 0 ? 1 : _candidates.Max(c => c.Id) + 1);
+        RestoreProgression(state.Progression);
         if (state.UnlockedDepartments is { } unlocked)
         {
             _unlockedDepartments.Clear();
@@ -635,7 +636,6 @@ public sealed partial class HospitalSimulation
         }
 
         RestoreDecor(state.Decor, state.DecorDefaults);
-        RestoreProgression(state.Progression);
 
         // A saved game can't carry on the old random sequence, so start a new one.
         Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));
