@@ -1,0 +1,2 @@
+# Blender as a Python module (no Blender install needed). Needs Python 3.13.
+bpy==5.1.2
