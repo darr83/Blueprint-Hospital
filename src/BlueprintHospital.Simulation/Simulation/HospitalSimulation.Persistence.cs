@@ -430,6 +430,9 @@ public sealed class PeopleState
 
     /// <summary>The Stats screen's figures (absent in older saves).</summary>
     public StatsHistoryState? History { get; init; }
+
+    /// <summary>Career level and goal progress (absent from Sandbox games and older saves).</summary>
+    public ProgressionState? Progression { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -494,6 +497,7 @@ public sealed partial class HospitalSimulation
         History = HistoryStore.Capture(),
         ResusTrolleys = SaveTrolleys(),
         Arrests = _arrests.Where(a => a.IsActive).ToList(),
+        Progression = CaptureProgression(),
     };
 
     /// <summary>
@@ -631,6 +635,7 @@ public sealed partial class HospitalSimulation
         }
 
         RestoreDecor(state.Decor, state.DecorDefaults);
+        RestoreProgression(state.Progression);
 
         // A saved game can't carry on the old random sequence, so start a new one.
         Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));

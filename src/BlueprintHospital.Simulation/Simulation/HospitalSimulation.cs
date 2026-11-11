@@ -34,6 +34,9 @@ public sealed class SimulationOptions
 
     /// <summary>How often patients already in a bed have sudden emergencies (tests leave them off unless they ask).</summary>
     public WardEmergencyFrequency WardEmergencies { get; init; } = WardEmergencyFrequency.Off;
+
+    /// <summary>Sandbox (everything open) or Career (unlocked level by level).</summary>
+    public GameMode Mode { get; init; } = GameMode.Sandbox;
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -106,6 +109,7 @@ public sealed partial class HospitalSimulation
         UnlimitedMoney = _options.UnlimitedMoney;
         WardEmergencies = _options.WardEmergencies;
         UnlockStartingDepartments();
+        StartProgression(_options.Mode);
         if (_options.Start == StartingHospital.EmptyBuilding)
         {
             ClearToEmptyBuilding();
@@ -237,6 +241,7 @@ public sealed partial class HospitalSimulation
         RemoveDepartedPatients();
         Stats.Update(this);
         UpdateHistory();
+        UpdateProgression();
     }
 
     // ---------------------------------------------------------------- arrivals

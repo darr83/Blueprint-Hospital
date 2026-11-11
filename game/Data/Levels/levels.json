@@ -1,0 +1,184 @@
+// Career levels. Each level adds rooms, staff, departments and features to the ones before it.
+// A level's goals are what the player must do on it to reach the next level. Grants are paid on
+// reaching the level. Rooms also take build bar items: extend_building, add_floor, corridor,
+// waiting_chairs, waiting_desk, waiting_doors, resus_trolleys, lift, stairs and decorate.
+// Goal stats are the Stats screen's keys, e.g. ae.departed, ae.within_4h, services.scans.
+[
+  {
+    "id": "level_1",
+    "number": 1,
+    "name": "Walk-in centre",
+    "description": "A small A&E for people who walk in. Get patients triaged, seen and home within four hours.",
+    "grant": 0,
+    "arrival_rate": 0.35,
+    "departments": ["emergency", "facilities"],
+    "rooms": ["extend_building", "corridor", "decorate", "waiting_room", "waiting_desk", "waiting_doors", "waiting_chairs",
+              "triage_room", "minors_cubicle", "nurses_station", "staff_room", "public_toilets", "vending_point"],
+    "staff": ["receptionist", "nurse", "doctor"],
+    "grades": ["Band 5 nurse", "Band 6 nurse", "Junior Doctor", "Doctor"],
+    "features": [],
+    "goals": [
+      { "type": "count", "text": "Treat 20 A&E patients", "stat": "ae.departed", "target": 20 },
+      { "type": "share_at_least", "text": "80% leave A&E within 4 hours", "stat": "ae.within_4h", "of": ["ae.departed"], "target": 0.8, "min_count": 20 },
+      { "type": "profitable_days", "text": "Finish a day in profit", "target": 1 }
+    ]
+  },
+  {
+    "id": "level_2",
+    "number": 2,
+    "name": "Emergency department",
+    "description": "Ambulances now bring patients in. Build majors cubicles and an X-ray room, and hire porters to move patients.",
+    "grant": 100000,
+    "arrival_rate": 0.55,
+    "departments": ["radiology"],
+    "rooms": ["majors_cubicle", "xray_room", "emergency_ward", "doctors_office", "accessible_toilet", "staff_toilet"],
+    "staff": ["radiographer", "healthcare_assistant", "porter"],
+    "grades": ["Band 7 nurse"],
+    "features": ["ambulances"],
+    "goals": [
+      { "type": "count", "text": "Treat 50 A&E patients", "stat": "ae.departed", "target": 50 },
+      { "type": "average_at_most", "text": "Ambulance handovers average 30 minutes or less", "stat": "ae.handover_minutes", "of": ["ae.handovers"], "target": 30, "min_count": 10 },
+      { "type": "count", "text": "Do 10 X-rays or scans", "stat": "services.scans", "target": 10 }
+    ]
+  },
+  {
+    "id": "level_3",
+    "number": 3,
+    "name": "Resus",
+    "description": "The sickest patients now come to you. Build a resus bay, keep a resus trolley ready, and hire a cleaner.",
+    "grant": 150000,
+    "arrival_rate": 0.7,
+    "departments": [],
+    "rooms": ["resus_bay", "resus_trolleys", "cleaning_room"],
+    "staff": ["cleaner"],
+    "grades": ["Registrar"],
+    "features": ["red_patients", "arrests", "spills"],
+    "goals": [
+      { "type": "count", "text": "Care for 5 red patients", "stat": "ae.triaged.red", "target": 5 },
+      { "type": "share_at_least", "text": "85% leave A&E within 4 hours", "stat": "ae.within_4h", "of": ["ae.departed"], "target": 0.85, "min_count": 40 },
+      { "type": "rooms", "text": "Build a cleaning room", "room": "cleaning_room", "target": 1 }
+    ]
+  },
+  {
+    "id": "level_4",
+    "number": 4,
+    "name": "Acute Medicine",
+    "description": "Your hospital can admit patients. Open Acute Medicine, build a medical ward and a pharmacy.",
+    "grant": 200000,
+    "arrival_rate": 0.8,
+    "departments": ["general_medicine", "pharmacy"],
+    "rooms": ["acute_medical_unit", "medical_ward", "ambulatory_care_unit", "pharmacy", "cafeteria"],
+    "staff": ["pharmacist"],
+    "grades": ["Band 8 nurse"],
+    "features": ["ward_emergencies"],
+    "goals": [
+      { "type": "departments_open", "text": "Open Acute Medicine", "departments": ["general_medicine"], "target": 1 },
+      { "type": "count", "text": "Admit 30 patients from A&E", "stat": "ae.admitted", "target": 30 },
+      { "type": "count", "text": "Send 25 patients home from the wards", "stat": "ward.discharges", "target": 25 }
+    ]
+  },
+  {
+    "id": "level_5",
+    "number": 5,
+    "name": "General Surgery",
+    "description": "Surgeons and theatres arrive. Open General Surgery, build an operating theatre and a CT scanner.",
+    "grant": 250000,
+    "arrival_rate": 0.9,
+    "departments": ["general_surgery", "theatres"],
+    "rooms": ["operating_theatre", "surgical_assessment_unit", "surgical_ward", "ct_scanner"],
+    "staff": ["surgeon", "anaesthetist"],
+    "grades": ["Consultant"],
+    "features": [],
+    "goals": [
+      { "type": "departments_open", "text": "Open General Surgery", "departments": ["general_surgery"], "target": 1 },
+      { "type": "count", "text": "Do 15 operations", "stat": "services.operations", "target": 15 },
+      { "type": "count", "text": "Do 30 X-rays or scans", "stat": "services.scans", "target": 30 }
+    ]
+  },
+  {
+    "id": "level_6",
+    "number": 6,
+    "name": "Outpatients",
+    "description": "Booked clinics and planned operations start, and you can build upwards with lifts and stairs.",
+    "grant": 250000,
+    "arrival_rate": 1.0,
+    "departments": ["outpatients"],
+    "rooms": ["outpatient_reception", "medical_clinic", "surgical_clinic", "day_surgery_unit", "add_floor", "lift", "stairs"],
+    "staff": [],
+    "grades": ["Band 9 nurse"],
+    "features": ["clinics", "planned_lists"],
+    "goals": [
+      { "type": "count", "text": "See 40 patients in clinic", "stat": "clinics.seen", "target": 40 },
+      { "type": "floors", "text": "Build a first floor", "target": 2 }
+    ]
+  },
+  {
+    "id": "level_7",
+    "number": 7,
+    "name": "Critical Care",
+    "description": "Open intensive care and high dependency beds for the sickest patients.",
+    "grant": 300000,
+    "arrival_rate": 1.0,
+    "departments": ["critical_care"],
+    "rooms": ["intensive_care_unit", "high_dependency_unit", "outreach_office"],
+    "staff": ["outreach_nurse"],
+    "grades": [],
+    "features": [],
+    "goals": [
+      { "type": "departments_open", "text": "Open Critical Care", "departments": ["critical_care"], "target": 1 },
+      { "type": "rooms", "text": "Build a high dependency unit", "room": "high_dependency_unit", "target": 1 },
+      { "type": "count", "text": "Admit 60 patients from A&E", "stat": "ae.admitted", "target": 60 }
+    ]
+  },
+  {
+    "id": "level_8",
+    "number": 8,
+    "name": "Bones and hearts",
+    "description": "Trauma and Orthopaedics and Cardiology can open: fracture clinics, plaster, physio and the cath lab.",
+    "grant": 300000,
+    "arrival_rate": 1.0,
+    "departments": ["trauma_orthopaedics", "cardiology"],
+    "rooms": ["fracture_clinic", "plaster_room", "physio_gym", "orthopaedic_ward",
+              "cardiology_clinic", "echo_room", "cath_lab", "coronary_care_unit", "cardiology_ward"],
+    "staff": ["plaster_technician", "physiotherapist", "cardiac_physiologist"],
+    "grades": [],
+    "features": [],
+    "goals": [
+      { "type": "departments_open", "text": "Open Trauma and Orthopaedics or Cardiology", "departments": ["trauma_orthopaedics", "cardiology"], "target": 1 },
+      { "type": "count", "text": "Send 60 patients home from the wards", "stat": "ward.discharges", "target": 60 }
+    ]
+  },
+  {
+    "id": "level_9",
+    "number": 9,
+    "name": "Brain, gut and women's health",
+    "description": "Neurology, Gastroenterology and Gynaecology can open.",
+    "grant": 300000,
+    "arrival_rate": 1.0,
+    "departments": ["neurology", "gastroenterology", "gynaecology"],
+    "rooms": ["neurology_clinic", "eeg_room", "stroke_unit", "neurology_ward",
+              "gastro_clinic", "endoscopy_room", "endoscopy_recovery", "gastro_ward",
+              "gynaecology_clinic", "gynae_exam_room", "early_pregnancy_unit", "gynaecology_ward"],
+    "staff": ["neurophysiologist", "endoscopist", "sonographer"],
+    "grades": [],
+    "features": [],
+    "goals": [
+      { "type": "departments_open", "text": "Open two of Neurology, Gastroenterology and Gynaecology", "departments": ["neurology", "gastroenterology", "gynaecology"], "target": 2 },
+      { "type": "share_at_least", "text": "Keep 90% of patients who need a bed in your hospital", "stat": "ae.admitted", "of": ["ae.admitted", "ae.transferred"], "target": 0.9, "min_count": 30 }
+    ]
+  },
+  {
+    "id": "level_10",
+    "number": 10,
+    "name": "Major hospital",
+    "description": "Maternity can open, and everything is unlocked. Keep your hospital running well.",
+    "grant": 300000,
+    "arrival_rate": 1.0,
+    "departments": ["maternity"],
+    "rooms": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre"],
+    "staff": ["midwife"],
+    "grades": [],
+    "features": ["maternity"],
+    "goals": []
+  }
+]

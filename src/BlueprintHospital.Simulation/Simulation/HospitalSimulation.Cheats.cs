@@ -21,6 +21,7 @@ public sealed partial class HospitalSimulation
     {
         "money <amount>   add money to the balance (e.g. money 500000, money 2m, money -10k)",
         "emergency [type] start a ward emergency for a patient in bed (types: fall, sepsis, heart_attack, stroke...)",
+        "level <number>   jump to a Career level (e.g. level 4)",
         "help             list the commands",
     };
 
@@ -53,6 +54,20 @@ public sealed partial class HospitalSimulation
                 Book(MoneyCategory.Cheats, amount);
                 var verb = amount > 0 ? "Added" : "Took away";
                 return new CheatResult(true, $"{verb} £{Math.Abs(amount):N0}. Balance is now £{Balance:N0}.");
+
+            case "level":
+                if (!IsCareer)
+                {
+                    return new CheatResult(false, "Levels are only used in a Career game.");
+                }
+
+                if (words.Length != 2 || !int.TryParse(words[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var level) || level < 1 || level > Database.Levels.Count)
+                {
+                    return new CheatResult(false, $"Usage: level <number>, from 1 to {Database.Levels.Count}.");
+                }
+
+                SetLevel(level);
+                return new CheatResult(true, $"Now on level {Level}: {CurrentLevel!.Name}.");
 
             case "emergency":
                 return CheatEmergency(words.Length > 1 ? words[1].ToLowerInvariant() : null);
