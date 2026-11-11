@@ -153,6 +153,19 @@ public partial class SmokeTest : Node
                 }
 
                 GD.Print("[smoke] Settings and Load Game panels open and close.");
+                foreach (var name in World3D.Models3D.All())
+                {
+                    var model = World3D.Models3D.Make(name);
+                    Check(model is not null, $"The Blender model '{name}' did not load.");
+                    if (model is not null)
+                    {
+                        var triangles = World3D.Models3D.Triangles(model);
+                        Check(triangles > 0 && triangles <= World3D.Models3D.TriangleLimit, $"The Blender model '{name}' has {triangles} triangles (limit {World3D.Models3D.TriangleLimit}).");
+                        model.Free();
+                    }
+                }
+
+                GD.Print($"[smoke] Blender models load within budget: {string.Join(", ", World3D.Models3D.All())}.");
                 Check(manager.Database is not null, "Game data failed to load: " + manager.DataLoadError);
                 ((UI.MainMenu)scene).ShowNewGame();
                 _frame = 0;
