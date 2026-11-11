@@ -57,7 +57,7 @@ public partial class Beds3D : Node3D
                 BedView? view = def.Id switch
                 {
                     "birthing_bed" => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.MaternityBlanket, false),
-                    _ when space.IsServiceRoom => new BedView(this, space.PatientSpot, false, (def.Id, colour), null, space.Kind == CareSpaceKind.Theatre ? TheatreDrape : ScanSheet, false, SlideTowards(space, item, def.Id)),
+                    _ when space.IsServiceRoom => new BedView(this, space.PatientSpot, false, (def.Id, colour), null, space.Kind == CareSpaceKind.Theatre ? TheatreDrape : ScanSheet, false, SlideTowards(space, item, def.Id)) { Plaster = space.Kind == CareSpaceKind.PlasterRoom },
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
                         : null,
@@ -105,9 +105,20 @@ public partial class Beds3D : Node3D
             _time += delta;
         }
 
+        // Patients waiting for a nurse to come: their call light is on.
+        var calling = _view.Simulation.Tasks
+            .Where(t => !t.Started && t.Role is Simulation.Staff.StaffRole.Nurse or Simulation.Staff.StaffRole.HealthcareAssistant
+                && t.Kind is Simulation.Staff.TaskKind.Observations or Simulation.Staff.TaskKind.GiveMedication)
+            .Select(t => t.PatientId)
+            .ToHashSet();
+        // Patients having a drip put up right now: the bed's pole carries the new bag.
+        var dripping = _view.Simulation.Tasks
+            .Where(t => t.Started && Activity3D.OnDrip(t, _view.Simulation))
+            .Select(t => t.PatientId)
+            .ToHashSet();
         foreach (var bed in _beds)
         {
-            bed.Sync(_view.World, _view.Simulation, _time);
+            bed.Sync(_view.World, _view.Simulation, _time, calling, dripping);
         }
 
         foreach (var fx in _fx)
@@ -210,11 +221,21 @@ public partial class Beds3D : Node3D
             }
         }
 
-        public void Sync(WorldLayer world, HospitalSimulation sim, double time)
+        /// <summary>A plaster room couch: the cast goes on whoever lies on it.</summary>
+        public bool Plaster { get; init; }
+
+        public void Sync(WorldLayer world, HospitalSimulation sim, double time, HashSet<int> calling, HashSet<int> dripping)
         {
             var patient = _table
                 ? sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == _spot)
                 : world.BedOccupant(_spot, _occupantId?.Invoke());
+
+            // Out of bed with the physio: the bed is left empty while they walk.
+            if (patient is not null && !_table && Activity3D.PhysioWalk(patient, world, sim, time) is not null)
+            {
+                patient = null;
+            }
+
             if (_made is not null)
             {
                 _made.Visible = patient is null;
@@ -224,6 +245,116 @@ public partial class Beds3D : Node3D
             Slide(ScanPhaseFor(sim, patient, time));
             Ring(patient is not null && ReferenceEquals(world.Selected, patient));
             Alert(patient);
+            CallLight(_onWard && patient is not null && calling.Contains(patient.Id) && !Asleep(sim, patient), time);
+            DripPole(_onWard && patient is not null && dripping.Contains(patient.Id));
+        }
+
+        private Node3D? _pole;
+
+        /// <summary>The bed's own drip pole at the head corner, with a bag of fluid, while a drip goes up.</summary>
+        private void DripPole(bool on)
+        {
+            if (_pole is null && !on)
+            {
+                return;
+            }
+
+            if (_pole is null)
+            {
+                var b = new MeshBatch();
+                var steel = new Color("#B0BEC5");
+                var foot = new Vector3(-0.66f, Kit3D.H(20f), -1.9f);
+                var top = new Vector3(-0.66f, Kit3D.H(66f), -1.9f);
+                b.Rod(foot, top, 0.022f, steel);
+                b.Rod(top + new Vector3(-0.1f, 0, 0), top + new Vector3(0.1f, 0, 0), 0.016f, steel, small: true);
+                var bag = top + new Vector3(0.08f, -Kit3D.H(7f), 0);
+                b.Box(bag, new Vector3(0.12f, Kit3D.H(9f), 0.05f), Basis.Identity, new Color("#DCEFFA"));
+                b.Box(bag + new Vector3(0, -Kit3D.H(1.5f), 0.02f), new Vector3(0.08f, Kit3D.H(3.5f), 0.012f), Basis.Identity, new Color("#4FA3E0"));
+                b.Rod(bag - new Vector3(0, Kit3D.H(4.5f), 0), new Vector3(-0.3f, Kit3D.H(26f), -1.3f), 0.008f, new Color("#E8F1F5"), small: true);
+                _pole = b.AddTo(_node)!;
+                _pole.Name = "DripPole";
+            }
+
+            _pole.Visible = on;
+        }
+
+        private Node3D? _bell;
+
+        /// <summary>The call light on the bed head, flashing while the patient waits for a nurse.</summary>
+        private void CallLight(bool on, double time)
+        {
+            if (_bell is null && !on)
+            {
+                return;
+            }
+
+            if (_bell is null)
+            {
+                var b = new MeshBatch();
+                b.Ball(new Vector3(0.6f, Kit3D.H(28.2f), -1.99f), new Vector3(0.17f, 0.12f, 0.17f), new Color("#FFB300"), small: true);
+                b.Ball(new Vector3(0.6f, Kit3D.H(28.2f), -1.99f), new Vector3(0.42f, 0.3f, 0.42f), new Color("#FFB300", 0.3f), small: true);
+                _bell = b.AddTo(_node, alpha: true, shadow: false)!;
+                ((MeshInstance3D)_bell).MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+                _bell.Name = "CallLight";
+            }
+
+            _bell.Visible = on && Mathf.PosMod((float)time, 1.6f) < 1.1f;
+        }
+
+        /// <summary>What a patient awake in a ward bed is doing: lunch on a tray at mealtimes, otherwise a book, their phone or nothing much.</summary>
+        private InBed Doing(HospitalSimulation sim, Patient patient, bool asleep, double time)
+        {
+            if (!_onWard || asleep || patient.BusyWithTaskId is not null || patient.InArrest || patient.Emergency is not null || !patient.IsAlive)
+            {
+                return InBed.None;
+            }
+
+            var t = sim.Now.TimeOfDay.TotalHours;
+            if (t is >= 8 and < 8.75 or >= 12.25 and < 13.25 or >= 17.25 and < 18.25)
+            {
+                return InBed.Meal;
+            }
+
+            var roll = Activity3D.Chance(patient.Id, (int)Math.Floor((time + (patient.Id * 3.1)) / 20));
+            return roll switch
+            {
+                < 0.3 => InBed.Book,
+                < 0.5 => InBed.Phone,
+                _ => InBed.None,
+            };
+        }
+
+        private Node3D? _table3;
+
+        /// <summary>The table across the bed, with a tray of food, at mealtimes.</summary>
+        private void MealTable(bool on)
+        {
+            if (_table3 is null && !on)
+            {
+                return;
+            }
+
+            if (_table3 is null)
+            {
+                var b = new MeshBatch();
+                var top = _mattress + 0.32f;
+                var z = -0.3f;
+                var grey = new Color("#B0BEC5");
+                b.Box(new Vector3(0.95f, 0.02f, z), new Vector3(0.12f, 0.04f, 0.6f), grey);
+                b.Box(new Vector3(0.95f, top / 2, z), new Vector3(0.06f, top, 0.06f), grey);
+                b.Box(new Vector3(0.25f, top, z), new Vector3(1.45f, 0.04f, 0.5f), new Color("#D7C4A3"));
+                b.Box(new Vector3(0.15f, top + 0.03f, z), new Vector3(0.75f, 0.02f, 0.42f), new Color("#5C7A99"));
+                b.Cylinder(new Vector3(0.05f, top + 0.05f, z), 0.17f, 0.02f, 0.17f, Colors.White);
+                b.Ball(new Vector3(0.0f, top + 0.08f, z - 0.03f), new Vector3(0.12f, 0.06f, 0.1f), new Color("#C8913F"), small: true);
+                b.Ball(new Vector3(0.1f, top + 0.07f, z + 0.05f), new Vector3(0.1f, 0.05f, 0.08f), new Color("#6AA84F"), small: true);
+                b.Cylinder(new Vector3(0.38f, top + 0.09f, z - 0.08f), 0.05f, 0.12f, 0.05f, new Color("#F4F1EA"));
+                b.Cylinder(new Vector3(0.38f, top + 0.155f, z - 0.08f), 0.042f, 0.01f, 0.042f, new Color("#6B4226"));
+                _table3 = new Node3D { Name = "MealTable" };
+                b.AddTo(_table3);
+                _node.AddChild(_table3);
+            }
+
+            _table3.Visible = on;
         }
 
         /// <summary>During a scan the table top glides in, holds while the scanner runs, and glides back out.</summary>
@@ -309,6 +440,7 @@ public partial class Beds3D : Node3D
             if (patient is null)
             {
                 Snore(false);
+                MealTable(false);
                 _lying?.QueueFree();
                 (_lying, _lyingKey) = (null, null);
                 return;
@@ -319,8 +451,12 @@ public partial class Beds3D : Node3D
             var babies = world.OnChest(patient);
             // In bed by day they're awake; at night, unless someone is with them, they sleep (eyes shut, a few Zs).
             var asleep = !_table && Asleep(world.Simulation, patient);
-            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep);
+            var doing = babies is { Length: > 0 } ? InBed.None : Doing(world.Simulation, patient, asleep, time);
+            var cast = Plaster ? CastOn(world.Simulation, patient) : 0f;
+            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast);
             Breathe(asleep, time);
+            MealTable(doing == InBed.Meal);
+            Busy(time);
             if (_lying is not null && Equals(_lyingKey, key))
             {
                 return;
@@ -328,10 +464,42 @@ public partial class Beds3D : Node3D
 
             _lying?.QueueFree();
             _lyingKey = key;
-            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep);
+            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast);
             Snore(asleep);
             _lying.Position = new Vector3(0, _mattress, 0);
             _top.AddChild(_lying);
+        }
+
+        /// <summary>How much of the cast is on (in fifths), while a plaster technician is putting it on.</summary>
+        /// <remarks>Negative for a cast on the leg.</remarks>
+        private static float CastOn(HospitalSimulation sim, Patient patient)
+        {
+            var task = sim.Tasks.FirstOrDefault(t => t.Started && t.Kind == Simulation.Staff.TaskKind.Procedure && t.PatientId == patient.Id);
+            if (task is null)
+            {
+                return 0f;
+            }
+
+            var done = Mathf.Max(0.2f, Mathf.Ceil((float)Activity3D.Progress(task, sim) * 5f) / 5f);
+            return Activity3D.LegCast(task) ? -done : done;
+        }
+
+        /// <summary>The raised hands move a little: turning a page, scrolling, a forkful now and then.</summary>
+        private void Busy(double time)
+        {
+            if (_lying?.GetNodeOrNull<Node3D>("Holding") is not { } hands)
+            {
+                return;
+            }
+
+            var f = (float)time + (_spot.X * 0.7f);
+            var doing = _lyingKey is ValueTuple<PersonLook, Color?, int, BabyLook?, bool, InBed, float> k ? k.Item6 : InBed.None;
+            hands.Rotation = doing switch
+            {
+                InBed.Meal => new Vector3(-0.9f * Mathf.Max(0, Mathf.Sin(f * 1.3f)), 0, 0),
+                InBed.Book => new Vector3(0.05f * Mathf.Sin(f * 0.8f), 0, 0),
+                _ => new Vector3(0.04f * Mathf.Sin(f * 2.2f), 0, 0),
+            };
         }
 
         private void Ring(bool selected)

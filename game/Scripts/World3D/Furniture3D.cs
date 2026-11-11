@@ -136,6 +136,14 @@ public partial class Furniture3D : Node3D
         SyncTrolleys(world, sim);
     }
 
+    /// <summary>The frame a piece of furniture is built in (its middle, turned to face its front), and its size across and front to back.</summary>
+    internal static Transform3D Frame(CareSpace space, PlacedFurniture item, string id, Simulation.Simulation.HospitalSimulation sim, out float w, out float d)
+    {
+        var front = FrontOf(space, item, id, sim);
+        (w, d) = front.X != 0 ? ((float)item.Length, (float)item.Width) : ((float)item.Width, (float)item.Length);
+        return new Transform3D(new Basis(Vector3.Up, Kit3D.Yaw(front.X, front.Y)), Kit3D.At(item.X + (item.Width / 2), item.Y + (item.Length / 2)));
+    }
+
     /// <summary>Points the batch's frame at a footprint's middle, facing <paramref name="front"/>; returns its size across and front to back.</summary>
     private static (float W, float D) Place(MeshBatch solid, MeshBatch glass, double cx, double cy, (int X, int Y) front, double w, double l)
     {

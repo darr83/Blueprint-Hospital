@@ -306,19 +306,44 @@ public static class Carriers3D
     /// A hospital wheelchair round someone sitting in it, facing +z, with its seat under their hips:
     /// big wheels with push rims, a navy sling seat and back, push handles, armrests, castors and footplates.
     /// </summary>
-    public static void Wheelchair(MeshBatch b, float scale = 1f)
+    /// <summary>Where a wheelchair's big wheel turns on its axle (side -1 left, +1 right).</summary>
+    public static Vector3 WheelchairHub(float side) => new(side * W(13), Person3D.V(10), -0.04f);
+
+    /// <summary>
+    /// One big wheel of a wheelchair, built round its own hub so it can turn as the chair is pushed:
+    /// the tyre, the spokes and the push rim.
+    /// </summary>
+    public static void WheelchairWheel(MeshBatch b, float side)
+    {
+        var sideways = new Basis(Vector3.Forward, Mathf.Pi / 2);
+        var r = Person3D.V(8.4f);
+        b.Ring(Vector3.Zero, Person3D.V(9.2f), Tyre, sideways, 1.4f);
+        b.Cylinder(Vector3.Zero, r, 0.012f, r, new Color("#B8C2CA"), sideways);
+        for (var i = 0; i < 6; i++)
+        {
+            var a = i * Mathf.Pi / 3;
+            var end = new Vector3(0, Mathf.Sin(a) * r * 0.95f, Mathf.Cos(a) * r * 0.95f);
+            b.Rod(new Vector3(side * 0.012f, 0, 0) - end, new Vector3(side * 0.012f, 0, 0) + end, 0.008f, new Color("#4A555E"), small: true);
+        }
+
+        b.Ring(new Vector3(side * 0.035f, 0, 0), Person3D.V(7.6f), new Color("#C9D2D9"), sideways, 0.6f);
+        b.Cylinder(Vector3.Zero, 0.03f, 0.06f, 0.03f, new Color("#C9D2D9"), sideways);
+    }
+
+    public static void Wheelchair(MeshBatch b, float scale = 1f, bool wheels = true)
     {
         var frame = new Color("#8C979F");
         var seat = new Color("#2B4A6B");
         var seatTop = Person3D.V(13) * scale;
-        var sideways = new Basis(Vector3.Forward, Mathf.Pi / 2);
         foreach (var side in new[] { -1f, 1f })
         {
-            var hub = new Vector3(side * W(13), Person3D.V(10), -0.04f);
-            b.Ring(hub, Person3D.V(9.2f), Tyre, sideways, 1.4f);
-            b.Cylinder(hub, Person3D.V(8.4f), 0.015f, Person3D.V(8.4f), new Color("#9AA5AE"), sideways);
-            b.Ring(hub + new Vector3(side * 0.035f, 0, 0), Person3D.V(7.6f), new Color("#C9D2D9"), sideways, 0.6f);
-            b.Cylinder(hub, 0.03f, 0.06f, 0.03f, new Color("#C9D2D9"), sideways);
+            if (wheels)
+            {
+                var at = b.Frame;
+                b.Frame = at * new Transform3D(Basis.Identity, WheelchairHub(side));
+                WheelchairWheel(b, side);
+                b.Frame = at;
+            }
 
             // Frame up to the push handles, armrest, front castor and footplate.
             var x = side * W(9.5f);
