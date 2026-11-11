@@ -6,6 +6,7 @@ using BlueprintHospital.Simulation.Agents;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
+using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Transport;
 using Godot;
 
@@ -29,10 +30,21 @@ public partial class Agents3D : Node3D
 
     public int Count => _views.Count;
 
+    /// <summary>The animation clock, in real seconds; it stands still while the game is paused.</summary>
+    public double AnimTime { get; private set; }
+
+    private Dictionary<int, ClinicalTask> _tasks = new();
+
     public void Sync(double delta)
     {
         var world = _view.World;
         var sim = _view.Simulation;
+        if (!sim.Clock.IsPaused)
+        {
+            AnimTime += delta;
+        }
+
+        _tasks = sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
         var present = new HashSet<Agent>();
         foreach (var p in sim.Patients)
         {
@@ -189,7 +201,22 @@ public partial class Agents3D : Node3D
                     break;
             }
 
-            Wheelchair(_agent is Patient wp && world.InWheelchair(wp), look.Scale);
+            // What they are doing with their hands, and who or what they turn to while they do it.
+            var inChair = _agent is Patient wp && world.InWheelchair(wp);
+            var t = _owner.AnimTime + (_agent.Id * 1.618);
+            var (act, faceTo) = pose == Pose.Cpr || inChair || baby is not null ? (Act.None, null) : Activity3D.For(_agent, world, sim, _owner._tasks, _owner.AnimTime);
+            if (faceTo is { } target && !seated)
+            {
+                var (dx, dy) = (target.X - x, target.Y - y);
+                var d = Math.Sqrt((dx * dx) + (dy * dy));
+                if (d > 0.2)
+                {
+                    facing = (dx / d, dy / d);
+                    pose = Pose.Standing;
+                }
+            }
+
+            Wheelchair(inChair, look.Scale);
             if (seated)
             {
                 pose = Pose.Seated;
@@ -202,7 +229,9 @@ public partial class Agents3D : Node3D
             var want = Kit3D.Yaw(facing.X, facing.Y);
             if (float.IsNaN(_yaw) || pose != Pose.Walking)
             {
-                _yaw = pose == Pose.Walking || pose == Pose.Cpr || seated ? want : float.IsNaN(_yaw) ? want : _yaw;
+                _yaw = pose == Pose.Walking || pose == Pose.Cpr || seated || float.IsNaN(_yaw) ? want
+                    : act != Act.None && faceTo is not null ? _yaw + (Mathf.Wrap(want - _yaw, -Mathf.Pi, Mathf.Pi) * (1f - Mathf.Exp(-6f * (float)delta)))
+                    : _yaw;
             }
             else
             {
@@ -221,6 +250,7 @@ public partial class Agents3D : Node3D
             var walking = pose == Pose.Walking;
             var stride = (world.StrideTime(_agent, walking) * 9) + (_agent.Id * 7);
             _person.SetPose(pose, stride);
+            _person.SetAct(act, pose, t);
             _person.Modulate(_agent is Patient { IsAlive: false });
 
             Ring(world, upright: true);

@@ -53,7 +53,7 @@ public partial class Beds3D : Node3D
                 BedView? view = def.Id switch
                 {
                     "birthing_bed" => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.MaternityBlanket, false),
-                    _ when space.IsServiceRoom => new BedView(this, space.PatientSpot, false, (def.Id, colour), null, space.Kind == CareSpaceKind.Theatre ? TheatreDrape : ScanSheet, false),
+                    _ when space.IsServiceRoom => new BedView(this, space.PatientSpot, false, (def.Id, colour), null, space.Kind == CareSpaceKind.Theatre ? TheatreDrape : ScanSheet, false, SlideTowards(space, item, def.Id)),
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
                         : null,
@@ -67,12 +67,36 @@ public partial class Beds3D : Node3D
         }
     }
 
-    public void Sync()
+    /// <summary>The animation clock, in real seconds; it stands still while the game is paused.</summary>
+    private double _time;
+
+    public void Sync(double delta)
     {
+        if (!_view.Simulation.Clock.IsPaused)
+        {
+            _time += delta;
+        }
+
         foreach (var bed in _beds)
         {
-            bed.Sync(_view.World, _view.Simulation);
+            bed.Sync(_view.World, _view.Simulation, _time);
         }
+    }
+
+    /// <summary>
+    /// For a CT table: how far (in tiles, + towards south) its top slides to carry the patient into the
+    /// scanner's ring, or zero for tables that stay put.
+    /// </summary>
+    private static float SlideTowards(CareSpace space, PlacedFurniture table, string id)
+    {
+        if (id != "ct_table" || space.Furniture.FirstOrDefault(f => f.ItemId == "ct_gantry") is not { } gantry)
+        {
+            return 0;
+        }
+
+        var dy = gantry.CentreY - table.CentreY;
+        var reach = (float)Math.Min(Math.Abs(dy) - 0.4, 2.0);
+        return reach <= 0 ? 0 : Math.Sign(dy) * reach;
     }
 
     /// <summary>One bed or table and its patient.</summary>
@@ -90,9 +114,12 @@ public partial class Beds3D : Node3D
         private object? _lyingKey;
         private Node3D? _ring;
         private Alert3D? _alert;
+        private readonly Node3D _top;
+        private readonly float _slide;
 
-        public BedView(Node3D parent, GridCoord spot, bool headSouth, (string Id, Color Colour)? table, Func<int?>? occupantId, Color blanket, bool onWard)
+        public BedView(Node3D parent, GridCoord spot, bool headSouth, (string Id, Color Colour)? table, Func<int?>? occupantId, Color blanket, bool onWard, float slide = 0)
         {
+            _slide = slide;
             _spot = spot;
             _table = table is not null;
             _occupantId = occupantId;
@@ -107,7 +134,22 @@ public partial class Beds3D : Node3D
             parent.AddChild(_node);
 
             var frame = new MeshBatch();
-            _mattress = table is { } t ? Carriers3D.Table(frame, t.Id, t.Colour) : Carriers3D.Bed(frame, made: false);
+            _top = _node;
+            if (slide != 0 && table is { } ct)
+            {
+                // The CT table's top (and whoever lies on it) is its own node, so it can glide into the scanner.
+                Carriers3D.Table(frame, "ct_base", ct.Colour);
+                _top = new Node3D { Name = "TableTop" };
+                _node.AddChild(_top);
+                var top = new MeshBatch();
+                _mattress = Carriers3D.CtTop(top, ct.Colour);
+                top.AddTo(_top);
+            }
+            else
+            {
+                _mattress = table is { } t ? Carriers3D.Table(frame, t.Id, t.Colour) : Carriers3D.Bed(frame, made: false);
+            }
+
             frame.AddTo(_node);
             if (!_table)
             {
@@ -118,7 +160,7 @@ public partial class Beds3D : Node3D
             }
         }
 
-        public void Sync(WorldLayer world, HospitalSimulation sim)
+        public void Sync(WorldLayer world, HospitalSimulation sim, double time)
         {
             var patient = _table
                 ? sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == _spot)
@@ -129,9 +171,36 @@ public partial class Beds3D : Node3D
             }
 
             Lying(world, patient);
+            Slide(patient is not null && sim.Staff.Any(s => s.Role == Simulation.Staff.StaffRole.Radiographer && s.CurrentTaskId is { } id && sim.Tasks.Any(t => t.Id == id && t.Started && t.PatientId == patient.Id)), time);
             Ring(patient is not null && ReferenceEquals(world.Selected, patient));
             Alert(patient);
         }
+
+        /// <summary>During a scan the table top glides in, holds while the scanner runs, and glides back out.</summary>
+        private void Slide(bool scanning, double time)
+        {
+            if (_slide == 0)
+            {
+                return;
+            }
+
+            var into = 0f;
+            if (scanning)
+            {
+                var cycle = (float)(time % 10.0);
+                into = cycle switch
+                {
+                    < 2.5f => Smooth(cycle / 2.5f),
+                    < 6.5f => 1f,
+                    < 9f => 1f - Smooth((cycle - 6.5f) / 2.5f),
+                    _ => 0f,
+                };
+            }
+
+            _top.Position = new Vector3(0, 0, _slide * into);
+        }
+
+        private static float Smooth(float x) => x * x * (3 - (2 * x));
 
         private void Lying(WorldLayer world, Patient? patient)
         {
@@ -155,7 +224,7 @@ public partial class Beds3D : Node3D
             _lyingKey = key;
             _lying = Lying3D.Build(look, _blanket, band, babies);
             _lying.Position = new Vector3(0, _mattress, 0);
-            _node.AddChild(_lying);
+            _top.AddChild(_lying);
         }
 
         private void Ring(bool selected)

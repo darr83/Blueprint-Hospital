@@ -203,7 +203,7 @@ public partial class View3D : Node3D
         Daylight();
 
         _walls.Animate();
-        _beds.Sync();
+        _beds.Sync(delta);
         _furniture.Sync();
         _decor.Sync();
         _agents.Sync(delta);

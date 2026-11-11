@@ -464,6 +464,7 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.Decor.WallArtCount > 0, "The 3D world has no pictures on the walls.");
                 Check(hospital.View3D.Decor.BoardCount > 0, "The 3D world has no name boards over the doors.");
                 Check(hospital.View3D.Decor.PropCount > 0, "The 3D world has no plants or props.");
+                CheckActs(hospital);
                 hospital.RotateView(1);
                 hospital.ToggleWalls();
                 _frame = 0;
@@ -1721,6 +1722,27 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>The build bar fits on screen and every room can be reached from it.</summary>
+    /// <summary>Every animated action poses a figure, standing and sitting, without throwing, and the hand props appear.</summary>
+    private void CheckActs(HospitalScene hospital)
+    {
+        var person = World3D.Person3D.Build(Looks.Staff(hospital.Session.Simulation.Staff.First()));
+        hospital.View3D.Root.AddChild(person);
+        foreach (var act in Enum.GetValues<World3D.Act>())
+        {
+            foreach (var pose in new[] { World3D.Pose.Standing, World3D.Pose.Seated })
+            {
+                person.SetPose(pose, 0);
+                person.SetAct(act, pose, 5.5);
+            }
+        }
+
+        person.SetAct(World3D.Act.Phone, World3D.Pose.Seated, 1);
+        Check(person.FindChild("Phone", true, false) is Node3D { Visible: true }, "Someone looking at their phone has no phone in their hand.");
+        person.SetAct(World3D.Act.None, World3D.Pose.Standing, 1);
+        Check(person.FindChild("Phone", true, false) is Node3D { Visible: false }, "The phone stayed in their hand after they put it away.");
+        person.QueueFree();
+    }
+
     private void CheckBuildBar(HospitalScene hospital)
     {
         var bar = hospital.Hud.Build;
