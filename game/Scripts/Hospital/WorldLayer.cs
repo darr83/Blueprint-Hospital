@@ -51,7 +51,6 @@ public partial class WorldLayer : Node2D
 
     /// <summary>Mother and baby ward beds that have a cot beside them, by the bed's patient spot.</summary>
     private readonly HashSet<GridCoord> _cotBeds = new();
-    private readonly List<Node> _staticNodes = new();
     private IDisposable? _layoutSubscription;
     private HospitalSimulation _sim = null!;
     private SimulationClock _clock = null!;
@@ -120,12 +119,6 @@ public partial class WorldLayer : Node2D
     public void RebuildStatic()
     {
         StaticVersion++;
-        foreach (var node in _staticNodes)
-        {
-            node.QueueFree();
-        }
-
-        _staticNodes.Clear();
         _monitors.Clear();
         _bedSpots.Clear();
         _cotBeds.Clear();
@@ -157,10 +150,7 @@ public partial class WorldLayer : Node2D
 
         BuildWalls();
         BuildFurniture();
-        foreach (var (anchor, draw) in Decorations.Plan(_sim))
-        {
-            AddProp(anchor, draw);
-        }
+        Decorations.Plan(_sim);
 
         _layoutDirty = false;
     }
@@ -174,35 +164,9 @@ public partial class WorldLayer : Node2D
         }
 
         SyncAgents();
-        SyncTrolleys();
     }
 
     // ------------------------------------------------------------------ resus trolleys
-
-    private readonly Dictionary<int, TrolleyNode> _trolleyNodes = new();
-
-    /// <summary>Resus trolleys move (pushed to an arrest and back, or moved by the player), so each has its own node.</summary>
-    private void SyncTrolleys()
-    {
-        var present = _sim.ResusTrolleys.ToDictionary(t => t.Id);
-        foreach (var gone in _trolleyNodes.Keys.Where(id => !present.ContainsKey(id)).ToList())
-        {
-            _trolleyNodes[gone].QueueFree();
-            _trolleyNodes.Remove(gone);
-        }
-
-        foreach (var trolley in present.Values)
-        {
-            if (!_trolleyNodes.TryGetValue(trolley.Id, out var node))
-            {
-                node = new TrolleyNode(this, trolley);
-                _trolleyNodes[trolley.Id] = node;
-                AddChild(node);
-            }
-
-            node.Sync();
-        }
-    }
 
     /// <summary>Where a trolley is now, between simulation ticks.</summary>
     public (double X, double Y) Interpolated(ResusTrolley trolley)
@@ -214,28 +178,6 @@ public partial class WorldLayer : Node2D
         }
 
         return (trolley.PreviousX + ((trolley.X - trolley.PreviousX) * t), trolley.PreviousY + ((trolley.Y - trolley.PreviousY) * t));
-    }
-
-    private sealed partial class TrolleyNode(WorldLayer world, ResusTrolley trolley) : Node2D
-    {
-        public void Sync()
-        {
-            var (x, y) = world.Interpolated(trolley);
-            Visible = IsoDraw.OnViewFloor(y);
-            Position = IsoDraw.ToScreen(x, y);
-            QueueRedraw();
-        }
-
-        public override void _Draw()
-        {
-            DrawSetTransform(-Position);
-            var (x, y) = world.Interpolated(trolley);
-            var def = world.Simulation.Database.Furniture.GetValueOrDefault(HospitalSimulation.ResusTrolleyItem);
-            var w = (def?.WidthM ?? 0.6) / BlueprintHospital.Simulation.World.Units.MetresPerTile;
-            var l = (def?.DepthM ?? 0.7) / BlueprintHospital.Simulation.World.Units.MetresPerTile;
-            var height = (float)((def?.HeightM ?? 1.0) * IsoDraw.PixelsPerMetre);
-            Figures.ResusTrolleyAt(this, x, y, w, l, height, new Color(def?.Colour ?? "#D84B3E"), trolley.Facing);
-        }
     }
 
     // ------------------------------------------------------------------ people and vehicles
@@ -519,92 +461,6 @@ public partial class WorldLayer : Node2D
         var solid = walls.Where(w => !doors.Contains(w)).ToHashSet();
         WallEdges = solid;
         DoorEdges = doors.Where(d => !solid.Contains(d)).ToHashSet();
-        var joints = new Dictionary<(int X, int Y), Sides>();
-        void Join((int X, int Y) at, Sides side) => joints[at] = joints.GetValueOrDefault(at) | side;
-        foreach (var (x, y, horizontal) in solid)
-        {
-            if (horizontal)
-            {
-                Join((x, y), Sides.East);
-                Join((x + 1, y), Sides.West);
-            }
-            else
-            {
-                Join((x, y), Sides.South);
-                Join((x, y + 1), Sides.North);
-            }
-        }
-
-        var doorPoints = new HashSet<(int X, int Y)>();
-        foreach (var (x, y, horizontal) in doors.Where(d => !solid.Contains(d)))
-        {
-            doorPoints.Add((x, y));
-            doorPoints.Add(horizontal ? (x + 1, y) : (x, y + 1));
-        }
-
-        const double h = WallThickness / 2;
-        const double span = 1 - WallThickness;
-
-        // Which walled room each tile is in, so each face of a wall takes the finish of the room it looks into.
-        var roomAt = new Dictionary<GridCoord, CareSpace>();
-        foreach (var space in ViewSpaces.Where(s => s.HasWalls).OrderByDescending(s => s.Rect.Area))
-        {
-            var r = space.Rect;
-            for (var tx = r.X; tx < r.Right; tx++)
-            {
-                for (var ty = r.Y; ty < r.Bottom; ty++)
-                {
-                    roomAt[new GridCoord(tx, ty)] = space;
-                }
-            }
-        }
-
-        WallPaint?[] Paint(double px, double py, double pw, double pl)
-        {
-            var faces = new WallPaint?[4];
-            var (cx, cy) = (px + (pw / 2), py + (pl / 2));
-            var outward = new[] { (cx, py - 0.4), (px + pw + 0.4, cy), (cx, py + pl + 0.4), (px - 0.4, cy) };
-            for (var i = 0; i < 4; i++)
-            {
-                var tile = new GridCoord((int)Math.Floor(outward[i].Item1), (int)Math.Floor(outward[i].Item2));
-                if (roomAt.TryGetValue(tile, out var room) && DecorArt.LookOf(_sim, room) is { Walls: not WallFinish.Standard } look)
-                {
-                    faces[i] = new WallPaint(look.Walls, DecorArt.WallColour(look), DecorArt.WallAccent(room, look));
-                }
-            }
-
-            return faces;
-        }
-
-        foreach (var (x, y, horizontal) in solid)
-        {
-            if (horizontal)
-            {
-                var paint = Paint(x + h, y - h, span, WallThickness);
-                AddProp(FrontFace(x + h, y - h, span, WallThickness), c => Wall(c, x + h, y - h, span, WallThickness, Sides.East | Sides.West, paint: paint));
-            }
-            else
-            {
-                var paint = Paint(x - h, y + h, WallThickness, span);
-                AddProp(FrontFace(x - h, y + h, WallThickness, span), c => Wall(c, x - h, y + h, WallThickness, span, Sides.North | Sides.South, paint: paint));
-            }
-        }
-
-        foreach (var ((x, y), joined) in joints)
-        {
-            // Posts beside a doorway are its frame, in a darker trim.
-            var frame = doorPoints.Contains((x, y));
-            var paint = frame ? null : Paint(x - h, y - h, WallThickness, WallThickness);
-            AddProp(FrontFace(x - h, y - h, WallThickness, WallThickness), c => Wall(c, x - h, y - h, WallThickness, WallThickness, joined, frame, paint));
-        }
-
-        // Each room's doorway: frame, doors and name board.
-        foreach (var space in ViewSpaces.Where(RoomSigns.Named))
-        {
-            var (fx, fy, fw, fl) = RoomSigns.SignFootprint(space);
-            var (mx, my) = RoomSigns.DoorMiddle(space);
-            AddProp(FrontFace(fx, fy, fw, fl), c => RoomSigns.Doorway(c, space, DoorOpenness(space, mx, my), WallThickness, WallHeight, WallTop, WallFace, FrameTop, FrameFace), animated: true);
-        }
     }
 
     /// <summary>Wall edges on the floor in view (a horizontal edge runs from (X, Y) to (X + 1, Y)); the 2D plan draws these.</summary>
@@ -633,32 +489,6 @@ public partial class WorldLayer : Node2D
         return open;
     }
 
-    private static readonly Color WallSkirting = new("#9FB0BE");
-    private static readonly Color WallRim = new("#C3CDD6");
-    private static readonly Color FrameFace = new("#A9B7C3");
-    private static readonly Color FrameTop = new("#C7D2DB");
-
-    /// <summary>A decorated wall face: its finish, colour and second colour.</summary>
-    private sealed record WallPaint(WallFinish Finish, Color Colour, Color? Accent);
-
-    private static void Wall(CanvasItem c, double x, double y, double w, double l, Sides joined, bool frame = false, WallPaint?[]? paint = null)
-    {
-        IsoDraw.Prism(c, x, y, w, l, WallHeight, frame ? FrameTop : WallTop, frame ? FrameFace : WallFace, joined, skirting: frame ? FrameFace.Darkened(0.15f) : WallSkirting, rim: WallRim);
-        if (paint is null)
-        {
-            return;
-        }
-
-        foreach (var (a, b, side, left) in IsoDraw.VisibleFaces(x, y, w, l))
-        {
-            var index = side switch { Sides.North => 0, Sides.East => 1, Sides.South => 2, _ => 3 };
-            if ((joined & side) == 0 && paint[index] is { } face)
-            {
-                DecorArt.DrawWallFace(c, a, b, WallHeight, left ? 0f : 0.1f, face.Finish, face.Colour, face.Accent, WallSkirting);
-            }
-        }
-    }
-
     /// <summary>The middle of whichever side of a footprint is nearest the viewer, so thin pieces sort right from every angle.</summary>
     internal static Vector2 FrontFace(double x, double y, double w, double l)
     {
@@ -685,45 +515,33 @@ public partial class WorldLayer : Node2D
                 }
 
                 var colour = new Color(def.Colour);
-                var height = (float)(def.HeightM * IsoDraw.PixelsPerMetre);
                 switch (def.Style)
                 {
                     case FurnitureStyle.Box when def.Id == "cot":
-                        AddCot(space, item, height);
+                        AddCot(space, item);
                         break;
-                    case FurnitureStyle.Bed when def.Id == "incubator":
-                        AddIncubator(space, item, height, colour);
+                    case FurnitureStyle.Bed when def.Id is "incubator":
                         break;
                     case FurnitureStyle.Bed when def.Id == "birthing_bed":
-                        AddBed(space.PatientSpot, false, () => space.OccupantId, blanket: Looks.MaternityBlanket);
+                        _bedSpots.Add(space.PatientSpot);
                         break;
                     case FurnitureStyle.Bed when space.IsServiceRoom:
-                        AddTable(space, def.Id, colour);
                         break;
                     case FurnitureStyle.Bed when space.IsWard:
                         if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
                         {
-                            AddBed(wardBed.PatientSpot, wardBed.HeadSouth, () => wardBed.OccupantId, onWard: true, blanket: _sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : null);
+                            _bedSpots.Add(wardBed.PatientSpot);
                         }
 
                         break;
                     case FurnitureStyle.Bed:
-                        AddBed(space.PatientSpot, false, () => space.OccupantId);
+                        _bedSpots.Add(space.PatientSpot);
                         break;
                     case FurnitureStyle.Monitor:
                         AddObsMonitor(space, item.CentreX, item.CentreY);
                         break;
                     case FurnitureStyle.Chair:
-                        Chair(item.Tile, RoomChairFacing(space, item), colour, itemId: def.Id);
-                        break;
-                    case FurnitureStyle.Box when ToiletArt.Draws(def.Id):
-                        ToiletArt.Add(def.Id, space, item, colour, _sim, (anchor, draw, animated) => AddProp(anchor, draw, animated));
-                        break;
-                    case FurnitureStyle.Box when CafeArt.Draws(def.Id):
-                        CafeArt.Add(def.Id, space, item, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, (anchor, draw) => AddProp(anchor, draw));
-                        break;
-                    default:
-                        Block(item.ItemId, item.X, item.Y, item.Width, item.Length, (float)(def.HeightM * IsoDraw.PixelsPerMetre), colour, FurnitureArt.FrontOf(space, item));
+                        _chairs.Add(new ChairInfo(item.Tile, RoomChairFacing(space, item), colour, null, def.Id));
                         break;
                 }
             }
@@ -731,46 +549,8 @@ public partial class WorldLayer : Node2D
 
         foreach (var chair in _sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
         {
-            Chair(chair.Tile, chair.Facing, new Color(chair.Colour), _chairShifts.GetValueOrDefault(chair.Tile));
+            _chairs.Add(new ChairInfo(chair.Tile, chair.Facing, new Color(chair.Colour), _chairShifts.GetValueOrDefault(chair.Tile), "waiting_seat"));
         }
-    }
-
-    private void AddBed(GridCoord spot, bool headSouth, Func<int?> occupantId, bool onWard = false, Color? blanket = null)
-    {
-        var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
-        _bedSpots.Add(spot);
-
-        // Bed and whoever is lying on it are one object, anchored at the middle of the bed.
-        AddProp(IsoDraw.ToScreen(cx, cy), c =>
-        {
-            var occupant = BedOccupant(spot, occupantId());
-
-            var lying = occupant is not null;
-            if (lying && ReferenceEquals(Selected, occupant))
-            {
-                var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);
-                c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
-            }
-
-            Figures.Bed(c, cx, cy, made: !lying, headSouth, lift =>
-            {
-                if (lying)
-                {
-                    var cover = blanket ?? (onWard ? Looks.WardBlanket : Looks.EdBlanket);
-                    var band = onWard || occupant!.Maternity ? null : Looks.Wristband(occupant!.Triage);
-                    Figures.Lying(c, cx, cy, Looks.Patient(occupant!), cover, lift, headSouth, band, OnChest(occupant!));
-                }
-            });
-
-            if (occupant is { InArrest: true })
-            {
-                Figures.CrashMarker(c, IsoDraw.ToScreen(cx, cy), Time);
-            }
-            else if (occupant is { Emergency: not null })
-            {
-                Figures.EmergencyMarker(c, IsoDraw.ToScreen(cx, cy), Time, 44, occupant.EmergencyTreated);
-            }
-        }, animated: true);
     }
 
     /// <summary>Who is lying in the bed at <paramref name="spot"/>: usually its own patient, otherwise whoever is still lying there waiting to be moved.</summary>
@@ -783,29 +563,6 @@ public partial class WorldLayer : Node2D
         }
 
         return occupant;
-    }
-
-    /// <summary>An imaging or operating table, with the patient lying on it during a scan or an operation.</summary>
-    private void AddTable(CareSpace space, string itemId, Color colour)
-    {
-        var spot = space.PatientSpot;
-        var (cx, cy) = (spot.X + 0.5, spot.Y + 0.5);
-        var cover = space.Kind == CareSpaceKind.Theatre ? new Color("#4E9C8F") : new Color("#CFE0EE");
-        AddProp(IsoDraw.ToScreen(cx, cy), c =>
-        {
-            var patient = _sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == spot);
-            if (patient is not null && ReferenceEquals(Selected, patient))
-            {
-                var ring = IsoDraw.FloorEllipse(IsoDraw.ToScreen(cx, cy), 46, 32);
-                c.DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
-            }
-
-            var lift = TableArt.Draw(c, itemId, cx, cy, colour);
-            if (patient is not null)
-            {
-                Figures.Lying(c, cx, cy, Looks.Patient(patient), cover, lift, false, onChest: OnChest(patient));
-            }
-        }, animated: true);
     }
 
     // ------------------------------------------------------------------ babies
@@ -839,50 +596,19 @@ public partial class WorldLayer : Node2D
     }
 
     /// <summary>A cot: on a mother and baby ward it belongs to the nearest bed, and that mum's baby sleeps in it while she is in bed.</summary>
-    private void AddCot(CareSpace space, PlacedFurniture item, float height)
+    private void AddCot(CareSpace space, PlacedFurniture item)
     {
-        var whole = (item.X, item.Y, item.Width, item.Length);
         var (gx, gy) = (item.X + (item.Width / 2), item.Y + (item.Length / 2));
-        var bed = _sim.IsMotherAndBabyWard(space) && space.Beds.Count > 0
-            ? space.Beds.MinBy(b => Math.Pow(b.PatientSpot.X + 0.5 - gx, 2) + Math.Pow(b.PatientSpot.Y + 0.5 - gy, 2))
-            : null;
-        if (bed is not null)
+        if (_sim.IsMotherAndBabyWard(space) && space.Beds.Count > 0)
         {
-            _cotBeds.Add(bed.PatientSpot);
+            _cotBeds.Add(space.Beds.MinBy(b => Math.Pow(b.PatientSpot.X + 0.5 - gx, 2) + Math.Pow(b.PatientSpot.Y + 0.5 - gy, 2))!.PatientSpot);
         }
-
-        AddProp(IsoDraw.ToScreen(gx, gy), c =>
-        {
-            var babies = Array.Empty<BabyLook>();
-            if (bed?.OccupantId is { } id && _sim.FindPatient(id) is { } mother && BabyInCot(mother))
-            {
-                babies = BabiesWith(mother);
-            }
-
-            MaternityArt.Cot(c, whole, height, babies);
-        }, animated: bed is not null);
-    }
-
-    /// <summary>An incubator on the neonatal unit, with its baby.</summary>
-    private void AddIncubator(CareSpace space, PlacedFurniture item, float height, Color colour)
-    {
-        var whole = (item.X, item.Y, item.Width, item.Length);
-        var (gx, gy) = (item.X + (item.Width / 2), item.Y + (item.Length / 2));
-        var index = space.Beds.Count == 0 ? -1 : Enumerable.Range(0, space.Beds.Count).MinBy(i => Math.Pow(space.Beds[i].PatientSpot.X - gx, 2) + Math.Pow(space.Beds[i].PatientSpot.Y - gy, 2));
-        var headSouth = index >= 0 && space.Beds[index].HeadSouth;
-        AddProp(IsoDraw.ToScreen(gx, gy), c =>
-        {
-            var baby = _sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.NeonatalUnit && b.UnitId == space.Id && b.CotIndex == index);
-            var look = baby is null ? null : Looks.Baby(baby, _sim.FindPatient(baby.MotherId));
-            MaternityArt.Incubator(c, whole, height, colour, look, headSouth, Time);
-        }, animated: true);
     }
 
     private void AddObsMonitor(CareSpace space, double gx, double gy)
     {
         var bed = space.Beds.Count == 0 ? null : space.Beds.MinBy(b => Math.Pow(b.PatientSpot.X + 0.5 - gx, 2) + Math.Pow(b.PatientSpot.Y + 0.5 - gy, 2));
         _monitors.Add(new ObsMonitorInfo(space, gx, gy, bed));
-        AddProp(IsoDraw.ToScreen(gx, gy), c => Figures.MonitorStand(c, gx, gy));
     }
 
     /// <summary>Every obs monitor's position and room; their screens are drawn above the world so they are never hidden.</summary>
@@ -913,14 +639,6 @@ public partial class WorldLayer : Node2D
 
     /// <summary>Every chair on the floor in view, as last built: where its seat is, which way it faces, its colour and kind.</summary>
     public IReadOnlyList<ChairInfo> Chairs => _chairs;
-
-    /// <summary>A chair in two parts, so whoever sits on it sorts between the seat and the back.</summary>
-    private void Chair(GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null, string itemId = "waiting_seat")
-    {
-        _chairs.Add(new ChairInfo(tile, facing, colour, shift, itemId));
-        AddProp(ChairArt.SeatAnchor(tile, facing, shift), c => ChairArt.Seat(c, tile, facing, colour, shift));
-        AddProp(ChairArt.BackAnchor(tile, facing, shift), c => ChairArt.Back(c, tile, facing, colour, shift));
-    }
 
     /// <summary>A chair in a room faces the desk or table beside it, otherwise south.</summary>
     private WallSide RoomChairFacing(CareSpace space, PlacedFurniture chair)
@@ -953,52 +671,6 @@ public partial class WorldLayer : Node2D
         return Math.Abs(dx) > Math.Abs(dy) ? (dx > 0 ? WallSide.East : WallSide.West) : (dy > 0 ? WallSide.South : WallSide.North);
     }
 
-    /// <summary>A piece of furniture, split into one-tile slices along its length so each slice sorts correctly.</summary>
-    private void Block(string itemId, double x, double y, double w, double l, float height, Color colour, Sides front = Sides.None)
-    {
-        var alongX = w >= l;
-        var length = alongX ? w : l;
-        var slices = Math.Max(1, (int)Math.Ceiling(length));
-        var step = length / slices;
-        for (var i = 0; i < slices; i++)
-        {
-            var (sx, sy, sw, sl) = alongX ? (x + (i * step), y, step, l) : (x, y + (i * step), w, step);
-            var joined = Sides.None;
-            if (i > 0)
-            {
-                joined |= alongX ? Sides.West : Sides.North;
-            }
-
-            if (i < slices - 1)
-            {
-                joined |= alongX ? Sides.East : Sides.South;
-            }
-
-            AddProp(IsoDraw.ToScreen(sx + (sw / 2), sy + (sl / 2)), c => FurnitureArt.Slice(c, itemId, sx, sy, sw, sl, (x, y, w, l), height, colour, joined, front));
-        }
-    }
-
-    private void AddProp(Vector2 anchor, Action<CanvasItem> draw, bool animated = false)
-    {
-        var node = new PropNode(draw, animated) { Position = anchor };
-        _staticNodes.Add(node);
-        AddChild(node);
-    }
-
-    /// <summary>A static or animated object drawn in world coordinates and sorted by its anchor.</summary>
-    private sealed partial class PropNode(Action<CanvasItem> draw, bool animated) : Node2D
-    {
-        public override void _Ready() => SetProcess(animated);
-
-        public override void _Process(double delta) => QueueRedraw();
-
-        public override void _Draw()
-        {
-            DrawSetTransform(-Position);
-            draw(this);
-        }
-    }
-
     /// <summary>A patient, member of staff or ambulance, kept at its interpolated position.</summary>
     private sealed partial class AgentNode(WorldLayer world, Agent agent) : Node2D
     {
@@ -1022,183 +694,7 @@ public partial class WorldLayer : Node2D
 
             // Seated people sit just in front of their chair. A trolley is long, so it sorts by its
             // nearest corner: walls behind it don't cover it as it passes.
-            Position = foot + new Vector2(0, world.IsSeated(agent) ? 1 : agent is Patient p2 && world.OnTrolley(p2) ? TrolleyDepth(p2, foot) : 0);
-            QueueRedraw();
-        }
-
-        public override void _Draw()
-        {
-            DrawSetTransform(-Position);
-            var foot = world.FootPosition(agent);
-            switch (agent)
-            {
-                case AmbulanceVehicle ambulance:
-                    Vehicles.Ambulance(this, world, ambulance);
-                    break;
-
-                case Patient patient:
-                    DrawPatient(patient, foot);
-                    break;
-
-                case Outpatient outpatient:
-                {
-                    DrawRing(foot, ReferenceEquals(world.Selected, outpatient) ? new Color("#FFEB3B") : Looks.OutpatientRing);
-                    var clinicLook = Looks.Outpatient(outpatient, world.Simulation.FindAppointment(outpatient.AppointmentId));
-                    if (world.IsSeated(outpatient))
-                    {
-                        var facing = world.SeatFacing(outpatient);
-                        Figures.Seated(this, foot, clinicLook, away: ChairArt.FacesAway(facing), lean: ChairArt.Lean(facing));
-                    }
-                    else
-                    {
-                        Figures.Standing(this, foot, clinicLook, world.StrideTime(outpatient, outpatient.IsMoving), outpatient.IsMoving, outpatient.Id * 17, away: WalkingAway(outpatient, outpatient.IsMoving));
-                    }
-
-                    break;
-                }
-
-                case StaffMember member:
-                    DrawRing(foot, ReferenceEquals(world.Selected, member) ? new Color("#FFEB3B") : (Color?)null);
-                    var look = Looks.Staff(member);
-                    if (world.IsSeated(member))
-                    {
-                        var facing = world.SeatFacing(member);
-                        Figures.Seated(this, foot, look, away: ChairArt.FacesAway(facing), lean: ChairArt.Lean(facing));
-                    }
-                    else if (world.CprChest(member) is { } cpr)
-                    {
-                        Figures.DoingCpr(this, cpr.Foot, look, cpr.Chest, world.Time, member.Id * 7);
-                    }
-                    else
-                    {
-                        var pushing = member.PushingPatientId is { } pid && world.Simulation.FindPatient(pid) is { IsMoving: true };
-                        pushing |= member.CrashPatientId is not null && world.Simulation.ResusTrolleys.Any(t => t.PushedByStaffId == member.Id) && member.IsMoving;
-
-                        // Legs keep time with their pace, so the crash team's run (a faster walk speed) steps faster too.
-                        Figures.Standing(this, foot, look, world.StrideTime(member, member.IsMoving || pushing), member.IsMoving || pushing, member.Id * 7, away: WalkingAway(member, member.IsMoving || pushing), holding: world.CarriedBy(member), medicineBag: world.Simulation.IsCarryingMedicines(member));
-                    }
-
-                    break;
-            }
-        }
-
-        private float TrolleyDepth(Patient patient, Vector2 foot)
-        {
-            var (x, y) = world.Interpolated(patient);
-            var (fx, fy) = patient.Facing;
-            var (nx, ny) = (-fy, fx);
-            var nearest = float.MinValue;
-            foreach (var (a, b) in new[] { (2.0, 0.7), (2.0, -0.7), (-2.0, 0.7), (-2.0, -0.7) })
-            {
-                nearest = Math.Max(nearest, IsoDraw.ToScreen(x + (fx * a) + (nx * b), y + (fy * a) + (ny * b)).Y);
-            }
-
-            return Math.Max(0, nearest - foot.Y - 2);
-        }
-
-        private void DrawPatient(Patient patient, Vector2 foot)
-        {
-            var look = Looks.Patient(patient);
-            var alpha = patient.IsAlive ? 1f : 0.5f;
-            var selected = ReferenceEquals(world.Selected, patient);
-
-            if (world.OnAmbulanceStretcher(patient))
-            {
-                // On the ambulance crew's trolley.
-                var (gx, gy) = world.Interpolated(patient);
-                if (selected)
-                {
-                    var ring = IsoDraw.FloorEllipse(foot, 42, 32);
-                    DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
-                }
-
-                Figures.AmbulanceStretcher(this, gx, gy, (0, 1), look, new Color("#B5413B"), Looks.Wristband(patient.Triage));
-                if (patient.InArrest)
-                {
-                    Figures.CrashMarker(this, foot, world.Time, 40);
-                }
-
-                return;
-            }
-
-            if (world.OnTrolley(patient))
-            {
-                // Being pushed on a trolley, or waiting on one for a porter.
-                var (gx, gy) = world.Interpolated(patient);
-                if (selected)
-                {
-                    var ring = IsoDraw.FloorEllipse(foot, 42, 32);
-                    DrawPolyline(ring.Append(ring[0]).ToArray(), new Color("#FFEB3B"), 3f, true);
-                }
-
-                var lift = Figures.Trolley(this, gx, gy, patient.Facing);
-                var blanket = patient.Maternity ? Looks.MaternityBlanket : patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket;
-                Figures.LyingAlong(this, gx, gy, patient.Facing, look, blanket, lift, patient.Maternity ? null : Looks.Wristband(patient.Triage), world.BabiesWith(patient));
-                if (patient.InArrest)
-                {
-                    Figures.CrashMarker(this, foot, world.Time, 40);
-                }
-
-                return;
-            }
-
-            if (patient.OnFloorAfterFall && world.Simulation.BedOf(patient) is { } fallenFrom)
-            {
-                // Fallen beside their bed: lying on the floor until the team help them up.
-                Figures.LyingAlong(this, fallenFrom.StaffSpot.X + 0.5, fallenFrom.StaffSpot.Y + 0.5, (1, 0), look, look.Trousers, 0);
-                Figures.EmergencyMarker(this, foot, world.Time, 32, height: 100);
-                return;
-            }
-
-            if (patient.InArrest)
-            {
-                // Collapsed where they were: lying on the floor with the crash team round them.
-                var (gx, gy) = world.Interpolated(patient);
-                Figures.LyingAlong(this, gx, gy, patient.Facing, look, look.Top, 0);
-                Figures.CrashMarker(this, foot, world.Time, 34);
-                return;
-            }
-
-            DrawRing(foot, selected ? new Color("#FFEB3B") : Looks.TriageRing(patient.Triage));
-            var baby = world.InArms(patient);
-            if (world.InWheelchair(patient))
-            {
-                Figures.WheelchairBack(this, foot);
-                Figures.Seated(this, foot, look, alpha, baby);
-                Figures.WheelchairFront(this, foot);
-            }
-            else if (world.IsSeated(patient))
-            {
-                var facing = world.SeatFacing(patient);
-                Figures.Seated(this, foot, look, alpha, baby, ChairArt.FacesAway(facing), ChairArt.Lean(facing));
-            }
-            else
-            {
-                Figures.Standing(this, foot, look, world.StrideTime(patient, patient.IsMoving), patient.IsMoving, patient.Id * 13, alpha, WalkingAway(patient, patient.IsMoving), baby);
-            }
-        }
-
-        /// <summary>True when someone walking is heading up the screen, so they are seen from behind.</summary>
-        private static bool WalkingAway(Agent who, bool moving)
-        {
-            if (!moving)
-            {
-                return false;
-            }
-
-            var (fx, fy) = who.Facing;
-            return (IsoDraw.ToScreen(fx, fy) - IsoDraw.ToScreen(0, 0)).Y < -0.01f;
-        }
-
-        private void DrawRing(Vector2 foot, Color? colour)
-        {
-            if (colour is not { } c)
-            {
-                return;
-            }
-
-            var ring = IsoDraw.FloorEllipse(foot, 13, 24);
-            DrawPolyline(ring.Append(ring[0]).ToArray(), c, 2.5f, true);
+            Position = foot;
         }
     }
 }

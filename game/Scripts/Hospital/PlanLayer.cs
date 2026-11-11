@@ -15,19 +15,16 @@ using Godot;
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// The 2D plan view (V or the 2D button): the hospital seen straight down, like an architect's
-/// plan. Floors come from the usual floor renderers (IsoDraw draws them flat while the plan is on);
-/// this layer adds walls, doorways, furniture, beds, monitors and room names, and draws everyone
-/// as a simple circle in the colour of their uniform. Patients are a circle in their own clothes
-/// with a ring in their triage colour. It only reads the game, like the isometric world layer.
+/// The plan view (V or the 2D button): the 3D hospital seen straight down, like an architect's
+/// plan. This layer adds room names over it and marks everyone with a circle in the colour of their
+/// uniform, so people are easy to find and pick from above. Patients are a circle in their own
+/// clothes with a ring in their triage colour. It only reads the game.
 /// </summary>
 public partial class PlanLayer : Node2D
 {
     /// <summary>A person's circle, in tiles (a tile is half a metre).</summary>
     public const double PersonRadius = 0.42;
 
-    private static readonly Color WallColour = new("#56636F");
-    private static readonly Color DoorColour = new("#B9C6D1");
     private static readonly Color Outline = new("#1D2B36");
     private static readonly Color Selected = new("#FFEB3B");
     private static readonly Color LabelColour = new("#33424F");
@@ -55,16 +52,6 @@ public partial class PlanLayer : Node2D
 
     private static float Px(double tiles) => (float)(tiles * IsoDraw.PlanTile);
 
-    private void Rect(double x, double y, double w, double l, Color fill, Color? edge = null, float width = 1.2f)
-    {
-        var corners = new[] { P(x, y), P(x + w, y), P(x + w, y + l), P(x, y + l) };
-        DrawColoredPolygon(corners, fill);
-        if (edge is { } e)
-        {
-            DrawPolyline(corners.Append(corners[0]).ToArray(), e, width, true);
-        }
-    }
-
     public override void _Draw()
     {
         if (_world is null)
@@ -72,43 +59,30 @@ public partial class PlanLayer : Node2D
             return;
         }
 
-        var spaces = Sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).ToList();
+        // The 3D world below draws the rooms, furniture and vehicles from above; this layer marks the people.
         var beds = new Dictionary<GridCoord, bool>();
-        foreach (var space in spaces)
+        foreach (var space in Sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)))
         {
-            DrawFurniture(space, beds);
-        }
-
-        foreach (var chair in Sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
-        {
-            Chair(chair.Tile.X + 0.5, chair.Tile.Y + 0.5, new Color(chair.Colour));
-        }
-
-        foreach (var trolley in Sim.ResusTrolleys)
-        {
-            var (x, y) = _world.Interpolated(trolley);
-            if (IsoDraw.OnViewFloor(y))
+            foreach (var bed in space.Beds)
             {
-                Rect(x - 0.6, y - 0.7, 1.2, 1.4, new Color("#D84B3E"), Outline);
-                DrawLine(P(x - 0.3, y), P(x + 0.3, y), Colors.White, 2f);
-                DrawLine(P(x, y - 0.3), P(x, y + 0.3), Colors.White, 2f);
+                beds[bed.PatientSpot] = bed.HeadSouth;
+            }
+
+            if (space.PatientSpot is var spot && !space.IsWard)
+            {
+                beds.TryAdd(spot, false);
+            }
+
+            if (RoomSigns.Named(space))
+            {
+                RoomLabel(space);
             }
         }
 
-        DrawWalls();
-        DrawMonitors();
-        foreach (var space in spaces.Where(RoomSigns.Named))
-        {
-            RoomLabel(space);
-        }
-
-        foreach (var agent in _world.AgentsInView().OrderBy(a => a is AmbulanceVehicle ? 0 : 1))
+        foreach (var agent in _world.AgentsInView())
         {
             switch (agent)
             {
-                case AmbulanceVehicle ambulance:
-                    Ambulance(ambulance);
-                    break;
                 case Patient patient:
                     DrawPatient(patient, beds);
                     break;
@@ -123,120 +97,7 @@ public partial class PlanLayer : Node2D
         }
     }
 
-    // ------------------------------------------------------------------ walls
-
-    private void DrawWalls()
-    {
-        const double h = WorldLayer.WallThickness / 2;
-        foreach (var (x, y, horizontal) in _world.DoorEdges)
-        {
-            // A doorway: a pale threshold across the gap.
-            if (horizontal)
-            {
-                Rect(x, y - 0.06, 1, 0.12, DoorColour);
-            }
-            else
-            {
-                Rect(x - 0.06, y, 0.12, 1, DoorColour);
-            }
-        }
-
-        foreach (var (x, y, horizontal) in _world.WallEdges)
-        {
-            if (horizontal)
-            {
-                Rect(x - h, y - h, 1 + (2 * h), 2 * h, WallColour);
-            }
-            else
-            {
-                Rect(x - h, y - h, 2 * h, 1 + (2 * h), WallColour);
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------ furniture
-
-    private void DrawFurniture(CareSpace space, Dictionary<GridCoord, bool> beds)
-    {
-        foreach (var item in space.Furniture)
-        {
-            if (item.ItemId == HospitalSimulation.ResusTrolleyItem || !Sim.Database.Furniture.TryGetValue(item.ItemId, out var def))
-            {
-                continue;
-            }
-
-            var colour = new Color(def.Colour);
-            switch (def.Style)
-            {
-                case FurnitureStyle.Monitor:
-                    // Drawn on top with the walls (see DrawMonitors).
-                    break;
-                case FurnitureStyle.Bed when def.Id == "incubator":
-                    Rect(item.X, item.Y, item.Width, item.Length, new Color("#DDEFF5"), new Color("#7FA9BC"));
-                    break;
-                case FurnitureStyle.Bed when space.IsServiceRoom:
-                    Rect(item.X, item.Y, item.Width, item.Length, colour.Lightened(0.35f), colour.Darkened(0.35f));
-                    break;
-                case FurnitureStyle.Bed when space.IsWard:
-                    if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
-                    {
-                        beds[wardBed.PatientSpot] = wardBed.HeadSouth;
-                        Bed(wardBed.PatientSpot, wardBed.HeadSouth);
-                    }
-
-                    break;
-                case FurnitureStyle.Bed:
-                    beds[space.PatientSpot] = false;
-                    Bed(space.PatientSpot, false);
-                    break;
-                case FurnitureStyle.Chair:
-                    Chair(item.CentreX, item.CentreY, colour);
-                    break;
-                default:
-                    Rect(item.X, item.Y, item.Width, item.Length, colour.Lightened(0.15f), colour.Darkened(0.4f), 1f);
-                    break;
-            }
-        }
-    }
-
-    /// <summary>A bed (0.8 m by 2.1 m) seen from above: frame, white sheet and a pillow at the head.</summary>
-    private void Bed(GridCoord spot, bool headSouth)
-    {
-        var (x, y) = (spot.X + 0.5 - 0.8, spot.Y + 0.5 - 2.1);
-        Rect(x, y, 1.6, 4.2, new Color("#9DB2C4"), new Color("#6F8396"));
-        Rect(x + 0.12, y + 0.12, 1.36, 3.96, new Color("#F4F7F9"));
-        var pillowY = headSouth ? y + 4.2 - 0.95 : y + 0.25;
-        Rect(x + 0.3, pillowY, 1.0, 0.7, Colors.White, new Color("#C9D3DB"), 1f);
-    }
-
-    private void Chair(double cx, double cy, Color colour) =>
-        Rect(cx - 0.35, cy - 0.35, 0.7, 0.7, colour, colour.Darkened(0.4f), 1f);
-
-    /// <summary>Obs monitors: a small screen whose border follows the patient's NEWS2 band, as in the 3D view.</summary>
-    private void DrawMonitors()
-    {
-        foreach (var monitor in _world.Monitors)
-        {
-            if (!IsoDraw.OnViewFloor(monitor.Y))
-            {
-                continue;
-            }
-
-            var patient = _world.ConnectedPatient(monitor);
-            var border = patient is null ? new Color("#7C8A96") : patient.MonitorColour is not { } colour ? new Color("#F2F4F6") : Looks.TriageRing(colour);
-            Rect(monitor.X - 0.45, monitor.Y - 0.35, 0.9, 0.7, border, Outline, 1f);
-            Rect(monitor.X - 0.3, monitor.Y - 0.2, 0.6, 0.4, patient is null ? new Color("#26323C") : new Color("#0E1A22"));
-            if (patient is not null)
-            {
-                // A little trace that moves, so a connected monitor looks alive.
-                var t = (float)(_world.Time * 2 % 1);
-                var a = P(monitor.X - 0.25, monitor.Y);
-                var b = P(monitor.X + 0.25, monitor.Y);
-                DrawLine(a, b, new Color("#57E389", 0.6f), 1f);
-                DrawCircle(a.Lerp(b, t), 1.6f, new Color("#57E389"));
-            }
-        }
-    }
+    // ------------------------------------------------------------------ rooms
 
     private void RoomLabel(CareSpace space)
     {
@@ -296,13 +157,7 @@ public partial class PlanLayer : Node2D
         else if (_world.OnTrolley(patient) || _world.OnAmbulanceStretcher(patient))
         {
             var (x, y) = _world.Interpolated(patient);
-            Rect(x - 0.7, y - 1.9, 1.4, 3.8, new Color("#E8EEF2"), new Color("#7C8A96"));
             at = P(x, y - 1.0);
-        }
-        else if (_world.InWheelchair(patient))
-        {
-            var (x, y) = _world.Interpolated(patient);
-            Rect(x - 0.55, y - 0.55, 1.1, 1.1, new Color("#3A4652"));
         }
 
         var ring = patient.Triage is null ? Colors.White : Looks.TriageRing(patient.Triage);
@@ -318,36 +173,6 @@ public partial class PlanLayer : Node2D
             var off = new Vector2(Px(0.55) + (i * Px(0.35)), Px(0.35));
             DrawCircle(at + off, Px(0.2), Outline);
             DrawCircle(at + off, Px(0.2) - 1.5f, baby.Wrap);
-        }
-    }
-
-    private void Ambulance(AmbulanceVehicle ambulance)
-    {
-        var (x, y) = _world.Interpolated(ambulance);
-        var dir = ambulance.Facing;
-        var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
-        var (fx, fy) = len < 1e-6 ? (1.0, 0.0) : (dir.X / len, dir.Y / len);
-        var (nx, ny) = (-fy, fx);
-        var (cx, cy) = (x - (fx * 2.9), y - (fy * 2.9));
-
-        Vector2[] Box(double from, double to, double half) => new[]
-        {
-            P(cx + (fx * to) + (nx * half), cy + (fy * to) + (ny * half)),
-            P(cx + (fx * to) - (nx * half), cy + (fy * to) - (ny * half)),
-            P(cx + (fx * from) - (nx * half), cy + (fy * from) - (ny * half)),
-            P(cx + (fx * from) + (nx * half), cy + (fy * from) + (ny * half)),
-        };
-
-        var body = Box(-5.8, 5.8, 2.5);
-        DrawColoredPolygon(body, new Color("#F2D22E"));
-        DrawColoredPolygon(Box(-5.8, 5.8, 0.5), new Color("#2E8B3E"));
-        DrawColoredPolygon(Box(3.6, 5.8, 2.3), new Color("#DDE3E8"));
-        DrawPolyline(body.Append(body[0]).ToArray(), Outline, 1.5f, true);
-        var flashing = ambulance.State is AmbulanceState.Driving or AmbulanceState.WaitingForBay
-                       && Sim.FindPatient(ambulance.PatientId) is { Triage: TriageCategory.Red or null };
-        if (flashing && (int)(_world.Time * 6) % 2 == 0)
-        {
-            DrawCircle(P(cx + (fx * 3.4), cy + (fy * 3.4)), 6, new Color("#4FA3FF"));
         }
     }
 

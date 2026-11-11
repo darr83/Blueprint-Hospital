@@ -48,11 +48,15 @@ public partial class ArtShots : Node
                     cursor.Visible = false;
                 }
 
-                h.Set3D(Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-3d") >= 0);
 
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
                 {
                     h.ToggleWalls();
+                }
+
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-plan") >= 0)
+                {
+                    h.SetPlanView(true);
                 }
 
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-wing") >= 0)

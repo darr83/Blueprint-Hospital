@@ -178,10 +178,7 @@ public partial class SmokeTest : Node
             case Stage.WaitForHospital when scene is HospitalScene hospital && hospital.IsNodeReady():
                 Check(hospital.Session.Site.Buildings.Count == 1, "Starter building missing.");
                 Check(hospital.Camera.IsCurrent(), "Camera is not active.");
-                Check(hospital.Is3D && hospital.View3D.Visible, "The hospital did not open in 3D.");
-
-                // The checks below still look at the 2D layers; the 3D world has its own stage further on.
-                hospital.Set3D(false);
+                Check(hospital.View3D.Visible, "The hospital did not open in 3D.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 GD.Print("[smoke] Hospital scene loaded.");
                 FitOutWaitingRoom(hospital);
@@ -424,7 +421,7 @@ public partial class SmokeTest : Node
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
                 hospital.TogglePlanView();
-                Check(hospital.PlanView && !hospital.World.Visible, "V did not switch to the 2D plan.");
+                Check(hospital.PlanView && IsoDraw.Plan && hospital.View3D.Visible, "V did not switch to the plan from above.");
                 _frame = 0;
                 _stage = Stage.PlanWard;
                 break;
@@ -451,9 +448,8 @@ public partial class SmokeTest : Node
             case Stage.PlanOverview when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("07r_plan_overview");
                 hospital.TogglePlanView();
-                Check(!hospital.PlanView && hospital.World.Visible && !IsoDraw.Plan, "V did not switch back to the 3D view.");
+                Check(!hospital.PlanView && !IsoDraw.Plan, "V did not switch back to the 3D view.");
                 GD.Print("[smoke] 2D plan view: on, click picks a circle, back to 3D.");
-                hospital.Set3D(true);
                 _frame = 0;
                 _stage = Stage.World3D;
                 break;
@@ -479,7 +475,6 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.Cutaway, "X did not cut the walls down.");
                 hospital.ToggleWalls();
                 hospital.RotateView(-1);
-                hospital.Set3D(false);
                 GD.Print("[smoke] 3D world: walls and floors built, turned, walls cut down and back.");
                 {
                     var ward = hospital.Session.Simulation.Wards.Single().Rect;
