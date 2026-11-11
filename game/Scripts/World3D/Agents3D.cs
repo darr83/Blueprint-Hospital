@@ -49,6 +49,11 @@ public partial class Agents3D : Node3D
             present.Add(o);
         }
 
+        foreach (var a in sim.Ambulances)
+        {
+            present.Add(a);
+        }
+
         foreach (var gone in _views.Keys.Where(a => !present.Contains(a)).ToList())
         {
             _views[gone].Node.QueueFree();
@@ -74,8 +79,13 @@ public partial class Agents3D : Node3D
         private readonly Agent _agent;
         private Person3D? _person;
         private MeshInstance3D? _ring;
-        private Color? _ringColour;
+        private (Color Colour, float Radius)? _ringKey;
         private float _yaw = float.NaN;
+        private Node3D? _lying;
+        private object? _lyingKey;
+        private Node3D? _chair;
+        private Alert3D? _alert;
+        private Ambulance3D? _ambulance;
 
         public AgentView(Agents3D owner, Agent agent)
         {
@@ -89,6 +99,14 @@ public partial class Agents3D : Node3D
 
         public void Sync(WorldLayer world, HospitalSimulation sim, double delta)
         {
+            if (_agent is AmbulanceVehicle vehicle)
+            {
+                Node.Visible = world.OnViewFloor(vehicle);
+                _ambulance ??= Ambulance3D.Make(Node);
+                _ambulance.Sync(world, sim, vehicle);
+                return;
+            }
+
             var visible = world.OnViewFloor(_agent) && _agent switch
             {
                 Patient p => world.IsOnMap(p) && !world.InBed(p),
@@ -113,12 +131,25 @@ public partial class Agents3D : Node3D
                 return;
             }
 
+            if (_agent is Patient lyingPatient && LyingDown(world, sim, lyingPatient, look))
+            {
+                if (_person is not null)
+                {
+                    _person.Visible = false;
+                }
+
+                return;
+            }
+
+            ClearLying();
             if (_person is null || _person.Look != look)
             {
                 _person?.QueueFree();
                 _person = Person3D.Build(look);
                 Node.AddChild(_person);
             }
+
+            _person.Visible = true;
 
             var (x, y) = world.FootGrid(_agent);
             var pose = _agent.IsMoving ? Pose.Walking : Pose.Standing;
@@ -158,6 +189,7 @@ public partial class Agents3D : Node3D
                     break;
             }
 
+            Wheelchair(_agent is Patient wp && world.InWheelchair(wp), look.Scale);
             if (seated)
             {
                 pose = Pose.Seated;
@@ -179,6 +211,11 @@ public partial class Agents3D : Node3D
             }
 
             _person.Rotation = new Vector3(0, _yaw, 0);
+            if (_chair is not null)
+            {
+                _chair.Rotation = _person.Rotation;
+            }
+
             _person.Hold(baby);
             _person.CarryBag(bag);
             var walking = pose == Pose.Walking;
@@ -186,24 +223,142 @@ public partial class Agents3D : Node3D
             _person.SetPose(pose, stride);
             _person.Modulate(_agent is Patient { IsAlive: false });
 
-            Ring(world, sim);
+            Ring(world, upright: true);
+            SetAlert(null, 0, 0);
         }
 
-        /// <summary>The ring on the floor: yellow when selected, a patient's triage colour, or lilac for a clinic visitor.</summary>
-        private void Ring(WorldLayer world, HospitalSimulation sim)
+        /// <summary>
+        /// A patient lying down rather than on their feet: on a trolley or the ambulance crew's stretcher
+        /// (head at the back, by the porter), on the floor beside their bed after a fall, or collapsed in an arrest.
+        /// </summary>
+        private bool LyingDown(WorldLayer world, HospitalSimulation sim, Patient patient, PersonLook look)
         {
-            Color? colour = ReferenceEquals(world.Selected, _agent) ? SelectedRing : _agent switch
+            (double X, double Y) at;
+            (double X, double Y) dir;
+            string carrier;
+            Color blanket;
+            Color? band = patient.Maternity ? null : Looks.Wristband(patient.Triage);
+            BabyLook[]? babies = null;
+            AlertKind? alert = patient.InArrest ? AlertKind.Crash : null;
+            if (world.OnAmbulanceStretcher(patient))
+            {
+                (at, dir, carrier, blanket) = (world.Interpolated(patient), (0, 1), "stretcher", new Color("#B5413B"));
+            }
+            else if (world.OnTrolley(patient))
+            {
+                blanket = patient.Maternity ? Looks.MaternityBlanket : patient.Stage == PatientStage.OnWard ? Looks.WardBlanket : Looks.EdBlanket;
+                (at, dir, carrier) = (world.Interpolated(patient), patient.Facing, "trolley");
+                babies = world.BabiesWith(patient);
+            }
+            else if (patient.OnFloorAfterFall && sim.BedOf(patient) is { } fallenFrom)
+            {
+                (at, dir, carrier, blanket, band) = ((fallenFrom.StaffSpot.X + 0.5, fallenFrom.StaffSpot.Y + 0.5), (1, 0), "floor", look.Trousers, null);
+                alert = AlertKind.Emergency;
+            }
+            else if (patient.InArrest)
+            {
+                (at, dir, carrier, blanket, band) = (world.Interpolated(patient), patient.Facing, "floor", look.Top, null);
+            }
+            else
+            {
+                return false;
+            }
+
+            Node.Position = Kit3D.At(at.X, at.Y);
+            var key = (look, carrier, blanket, band, babies?.Length ?? 0);
+            if (_lying is null || !Equals(_lyingKey, key))
+            {
+                ClearLying();
+                _lyingKey = key;
+                _lying = new Node3D { Name = "LyingDown" };
+                var b = new MeshBatch();
+                var mattress = carrier switch
+                {
+                    "stretcher" => Carriers3D.Stretcher(b),
+                    "trolley" => Carriers3D.Trolley(b),
+                    _ => 0f,
+                };
+                if (carrier == "stretcher")
+                {
+                    Carriers3D.Straps(b, mattress);
+                }
+
+                b.AddTo(_lying);
+                var figure = Lying3D.Build(look, blanket, band, babies);
+                figure.Position = new Vector3(0, mattress, 0);
+                _lying.AddChild(figure);
+                Node.AddChild(_lying);
+            }
+
+            var len = Math.Sqrt((dir.X * dir.X) + (dir.Y * dir.Y));
+            _lying.Rotation = new Vector3(0, len < 1e-6 ? 0 : Kit3D.Yaw(dir.X / len, dir.Y / len), 0);
+            Wheelchair(false, 1);
+            Ring(world, upright: false);
+            SetAlert(alert, carrier == "floor" ? 1.1f : 1.35f, alert == AlertKind.Crash ? 74 : 100);
+            return true;
+        }
+
+        private void ClearLying()
+        {
+            _lying?.QueueFree();
+            (_lying, _lyingKey) = (null, null);
+        }
+
+        /// <summary>Shows (or takes away) the wheelchair round a seated patient.</summary>
+        private void Wheelchair(bool on, float scale)
+        {
+            if (on == (_chair is not null))
+            {
+                return;
+            }
+
+            if (!on)
+            {
+                _chair!.QueueFree();
+                _chair = null;
+                return;
+            }
+
+            _chair = new Node3D { Name = "Wheelchair" };
+            var b = new MeshBatch();
+            Carriers3D.Wheelchair(b, Mathf.Clamp(scale, 0.6f, 1f));
+            b.AddTo(_chair);
+            Node.AddChild(_chair);
+        }
+
+        private void SetAlert(AlertKind? kind, float radius, float height)
+        {
+            if (kind == _alert?.Kind)
+            {
+                return;
+            }
+
+            _alert?.QueueFree();
+            _alert = kind is { } k ? Alert3D.Make(k, radius, height) : null;
+            if (_alert is not null)
+            {
+                Node.AddChild(_alert);
+            }
+        }
+
+        /// <summary>The ring on the floor: yellow when selected, a patient's triage colour, or lilac for a clinic visitor (people on their feet only).</summary>
+        private void Ring(WorldLayer world, bool upright)
+        {
+            var selected = ReferenceEquals(world.Selected, _agent);
+            Color? colour = selected ? SelectedRing : !upright ? null : _agent switch
             {
                 Patient p => Looks.TriageRing(p.Triage),
                 Outpatient => Looks.OutpatientRing,
                 _ => null,
             };
-            if (colour == _ringColour)
+            var radius = upright ? Kit3D.H(13) * 0.85f : 1.25f;
+            (Color, float)? key = colour is { } c0 ? (c0, radius) : null;
+            if (key == _ringKey)
             {
                 return;
             }
 
-            _ringColour = colour;
+            _ringKey = key;
             _ring?.QueueFree();
             _ring = null;
             if (colour is not { } c)
@@ -212,7 +367,7 @@ public partial class Agents3D : Node3D
             }
 
             var b = new MeshBatch();
-            b.Ring(new Vector3(0, 0.02f, 0), Kit3D.H(13) * 0.85f, c, null, 0.12f);
+            b.Ring(new Vector3(0, 0.02f, 0), radius, c, null, 0.12f);
             _ring = b.AddTo(Node, shadow: false);
         }
 

@@ -279,7 +279,7 @@ public partial class WorldLayer : Node2D
     public bool OnViewFloor(Agent agent) => IsoDraw.OnViewFloor(agent.Y);
 
     /// <summary>The rooms on the floor in view.</summary>
-    private IEnumerable<CareSpace> ViewSpaces => _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y));
+    public IEnumerable<CareSpace> ViewSpaces => _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y));
 
     /// <summary>The patient or staff member under a world-space point, nearest the viewer first.</summary>
     public Agent? HitTest(Vector2 world)
@@ -739,12 +739,7 @@ public partial class WorldLayer : Node2D
         // Bed and whoever is lying on it are one object, anchored at the middle of the bed.
         AddProp(IsoDraw.ToScreen(cx, cy), c =>
         {
-            // Usually the bed's own patient; otherwise whoever is still lying here waiting to be moved.
-            var occupant = occupantId() is { } id ? _sim.FindPatient(id) : null;
-            if (occupant is null || occupant.Tile != spot || !InBed(occupant))
-            {
-                occupant = _sim.Patients.FirstOrDefault(p => p.Tile == spot && InBed(p));
-            }
+            var occupant = BedOccupant(spot, occupantId());
 
             var lying = occupant is not null;
             if (lying && ReferenceEquals(Selected, occupant))
@@ -772,6 +767,18 @@ public partial class WorldLayer : Node2D
                 Figures.EmergencyMarker(c, IsoDraw.ToScreen(cx, cy), Time, 44, occupant.EmergencyTreated);
             }
         }, animated: true);
+    }
+
+    /// <summary>Who is lying in the bed at <paramref name="spot"/>: usually its own patient, otherwise whoever is still lying there waiting to be moved.</summary>
+    public Patient? BedOccupant(GridCoord spot, int? occupantId)
+    {
+        var occupant = occupantId is { } id ? _sim.FindPatient(id) : null;
+        if (occupant is null || occupant.Tile != spot || !InBed(occupant))
+        {
+            occupant = _sim.Patients.FirstOrDefault(p => p.Tile == spot && InBed(p));
+        }
+
+        return occupant;
     }
 
     /// <summary>An imaging or operating table, with the patient lying on it during a scan or an operation.</summary>
@@ -815,7 +822,7 @@ public partial class WorldLayer : Node2D
         !mother.IsMoving && _sim.BedOf(mother) is { } bed && mother.Tile == bed.PatientSpot && _cotBeds.Contains(bed.PatientSpot) && InBed(mother);
 
     /// <summary>Babies lying on mum's chest: skin to skin after the birth, or anywhere she is lying without a cot beside her.</summary>
-    private BabyLook[]? OnChest(Patient mother) => BabyInCot(mother) ? null : BabiesWith(mother);
+    public BabyLook[]? OnChest(Patient mother) => BabyInCot(mother) ? null : BabiesWith(mother);
 
     /// <summary>The baby mum carries in her arms when she is up and about.</summary>
     public BabyLook? InArms(Patient mother) => BabiesWith(mother) is { Length: > 0 } babies ? babies[0] : null;

@@ -43,10 +43,10 @@ public partial class Person3D : Node3D
     public PersonLook Look { get; private set; } = null!;
 
     /// <summary>Horizontal size in world units of something the 2D art drew <paramref name="px"/> pixels wide.</summary>
-    private static float W(double px) => (float)(px / Kit3D.PxPerUnit);
+    internal static float W(double px) => (float)(px / Kit3D.PxPerUnit);
 
     /// <summary>Vertical size in world units of something the 2D art drew <paramref name="px"/> pixels tall.</summary>
-    private static float V(double px) => Kit3D.H(px);
+    internal static float V(double px) => Kit3D.H(px);
 
     public static Person3D Build(PersonLook look)
     {
@@ -190,63 +190,7 @@ public partial class Person3D : Node3D
         body.Cylinder(new Vector3(0, shY + V(2.5f * s), stoop * 0.15f), W(3.2f * s), V(5 * s), W(3.2f * s), look.Skin);
         body.Ball(head, new Vector3(headR * 2, headR * 2.05f, headR * 1.95f), look.Skin);
 
-        // Ears.
-        body.Ball(head + new Vector3(-headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
-        body.Ball(head + new Vector3(headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
-
-        // Face: dot eyes and a smile, on the front of the head.
-        var face = head + new Vector3(0, 0, headR * 0.93f);
-        var eyeY = V(0.6f);
-        body.Ball(face + new Vector3(-W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
-        body.Ball(face + new Vector3(W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
-        var mouthY = -V(3.2f);
-        var mouthColour = look.Lips ?? new Color("#7A3B32");
-        if (look.Mouth == Mouth.Flat)
-        {
-            body.Box(face + new Vector3(0, mouthY, -0.005f), new Vector3(W(3.2f), V(0.8f), 0.02f), mouthColour);
-        }
-        else
-        {
-            var wide = look.Mouth == Mouth.Grin ? 1.25f : 1f;
-            body.Box(face + new Vector3(0, mouthY - V(0.4f), -0.008f), new Vector3(W(2.2f * wide), V(0.9f), 0.02f), mouthColour);
-            body.Box(face + new Vector3(-W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, -0.55f)));
-            body.Box(face + new Vector3(W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, 0.55f)));
-        }
-
-        if (look.Blush)
-        {
-            var pink = new Color("#F08C8C", 1f).Lerp(look.Skin, 0.4f);
-            body.Ball(face + new Vector3(-W(4.4f), -V(1.6f), -0.02f), new Vector3(W(2.6f), V(1.6f), 0.02f), pink, small: true);
-            body.Ball(face + new Vector3(W(4.4f), -V(1.6f), -0.02f), new Vector3(W(2.6f), V(1.6f), 0.02f), pink, small: true);
-        }
-
-        if (look.Glasses)
-        {
-            var frame = look.GlassesFrame ?? Ink;
-            var facing = Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0));
-            body.Ring(face + new Vector3(-W(2.7f), eyeY, 0.012f), W(2.3f), frame, facing, 0.35f);
-            body.Ring(face + new Vector3(W(2.7f), eyeY, 0.012f), W(2.3f), frame, facing, 0.35f);
-            body.Box(face + new Vector3(0, eyeY + V(0.4f), 0.012f), new Vector3(W(1.4f), V(0.6f), 0.01f), frame);
-        }
-
-        if (look.Beard || look.Stubble)
-        {
-            var colour = look.Stubble && !look.Beard ? look.Skin.Lerp(look.Hair, 0.35f) : look.Hair;
-            body.Ball(head + new Vector3(0, -headR * 0.42f, headR * 0.35f), new Vector3(headR * 1.75f, headR * 1.1f, headR * 1.3f), colour);
-            body.Box(face + new Vector3(0, mouthY - V(0.4f), 0.01f), new Vector3(W(2.6f), V(0.9f), 0.02f), mouthColour);
-        }
-
-        if (look.Moustache)
-        {
-            body.Box(face + new Vector3(0, mouthY + V(1.4f), 0.006f), new Vector3(W(5), V(1.4f), 0.03f), look.Hair);
-        }
-
-        if (look.Mask)
-        {
-            body.Ball(head + new Vector3(0, -headR * 0.38f, headR * 0.62f), new Vector3(headR * 1.5f, headR * 0.85f, headR * 0.6f), new Color("#9CC9E0"));
-        }
-
-        Hair(body, look, head, headR);
+        Head(body, look, head, headR);
 
         if (look.Stethoscope)
         {
@@ -308,6 +252,77 @@ public partial class Person3D : Node3D
         }
 
         _ = bodyMesh;
+    }
+
+    /// <summary>The head's features (ears, face, glasses, beard, mask) and hair, on a head ball already drawn at <paramref name="head"/>.</summary>
+    public static void Head(MeshBatch b, PersonLook look, Vector3 head, float headR, bool asleep = false)
+    {
+        // Ears.
+        b.Ball(head + new Vector3(-headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
+        b.Ball(head + new Vector3(headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
+
+        // Face: dot eyes and a smile, on the front of the head.
+        var face = head + new Vector3(0, 0, headR * 0.93f);
+        var eyeY = V(0.6f);
+        if (asleep)
+        {
+            // Resting, eyes closed: two little lids.
+            b.Box(face + new Vector3(-W(2.6f), eyeY - V(0.3f), -0.004f), new Vector3(W(2.6f), V(0.7f), 0.02f), look.Skin.Darkened(0.5f));
+            b.Box(face + new Vector3(W(2.6f), eyeY - V(0.3f), -0.004f), new Vector3(W(2.6f), V(0.7f), 0.02f), look.Skin.Darkened(0.5f));
+        }
+        else
+        {
+            b.Ball(face + new Vector3(-W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
+            b.Ball(face + new Vector3(W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
+        }
+        var mouthY = -V(3.2f);
+        var mouthColour = look.Lips ?? new Color("#7A3B32");
+        if (look.Mouth == Mouth.Flat)
+        {
+            b.Box(face + new Vector3(0, mouthY, -0.005f), new Vector3(W(3.2f), V(0.8f), 0.02f), mouthColour);
+        }
+        else
+        {
+            var wide = look.Mouth == Mouth.Grin ? 1.25f : 1f;
+            b.Box(face + new Vector3(0, mouthY - V(0.4f), -0.008f), new Vector3(W(2.2f * wide), V(0.9f), 0.02f), mouthColour);
+            b.Box(face + new Vector3(-W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, -0.55f)));
+            b.Box(face + new Vector3(W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, 0.55f)));
+        }
+
+        if (look.Blush)
+        {
+            var pink = new Color("#F08C8C", 1f).Lerp(look.Skin, 0.4f);
+            b.Ball(face + new Vector3(-W(4.4f), -V(1.6f), -0.02f), new Vector3(W(2.6f), V(1.6f), 0.02f), pink, small: true);
+            b.Ball(face + new Vector3(W(4.4f), -V(1.6f), -0.02f), new Vector3(W(2.6f), V(1.6f), 0.02f), pink, small: true);
+        }
+
+        if (look.Glasses)
+        {
+            var frame = look.GlassesFrame ?? Ink;
+            var facing = Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0));
+            b.Ring(face + new Vector3(-W(2.7f), eyeY, 0.012f), W(2.3f), frame, facing, 0.35f);
+            b.Ring(face + new Vector3(W(2.7f), eyeY, 0.012f), W(2.3f), frame, facing, 0.35f);
+            b.Box(face + new Vector3(0, eyeY + V(0.4f), 0.012f), new Vector3(W(1.4f), V(0.6f), 0.01f), frame);
+        }
+
+        if (look.Beard || look.Stubble)
+        {
+            var colour = look.Stubble && !look.Beard ? look.Skin.Lerp(look.Hair, 0.35f) : look.Hair;
+            b.Ball(head + new Vector3(0, -headR * 0.42f, headR * 0.35f), new Vector3(headR * 1.75f, headR * 1.1f, headR * 1.3f), colour);
+            b.Box(face + new Vector3(0, mouthY - V(0.4f), 0.01f), new Vector3(W(2.6f), V(0.9f), 0.02f), mouthColour);
+        }
+
+        if (look.Moustache)
+        {
+            b.Box(face + new Vector3(0, mouthY + V(1.4f), 0.006f), new Vector3(W(5), V(1.4f), 0.03f), look.Hair);
+        }
+
+        if (look.Mask)
+        {
+            b.Ball(head + new Vector3(0, -headR * 0.38f, headR * 0.62f), new Vector3(headR * 1.5f, headR * 0.85f, headR * 0.6f), new Color("#9CC9E0"));
+        }
+
+        Hair(b, look, head, headR);
     }
 
     /// <summary>Hair (or a cap, scarf or turban), fitted over the head.</summary>

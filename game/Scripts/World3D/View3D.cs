@@ -36,6 +36,7 @@ public partial class View3D : Node3D
     private FloorPainter _floors = null!;
     private Walls3D _walls = null!;
     private Agents3D _agents = null!;
+    private Beds3D _beds = null!;
 
     private int _rotation = -1;
     private int _floor = -1;
@@ -114,12 +115,18 @@ public partial class View3D : Node3D
         _root.AddChild(_walls);
         _walls.Initialise(this);
 
+        _beds = new Beds3D { Name = "Beds" };
+        _root.AddChild(_beds);
+        _beds.Initialise(this);
+
         _agents = new Agents3D { Name = "People" };
         _root.AddChild(_agents);
         _agents.Initialise(this);
     }
 
     public Agents3D People => _agents;
+
+    public Beds3D Beds => _beds;
 
     /// <summary>Shows or hides the 3D world (and its camera).</summary>
     public void SetShown(bool on)
@@ -174,9 +181,11 @@ public partial class View3D : Node3D
             _ground.Rebuild();
             _floors.Repaint();
             _walls.Rebuild();
+            _beds.Rebuild();
         }
 
         _walls.Animate();
+        _beds.Sync();
         _agents.Sync(delta);
         PlaceCamera();
     }

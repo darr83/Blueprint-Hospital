@@ -91,6 +91,28 @@ public static class Kit3D
         Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
     };
 
+    private static StandardMaterial3D? _vertexColoursUnshaded;
+
+    /// <summary>Vertex-coloured and unlit: markers and signs that should read at full colour.</summary>
+    public static StandardMaterial3D VertexColoursUnshaded => _vertexColoursUnshaded ??= new StandardMaterial3D
+    {
+        VertexColorUseAsAlbedo = true,
+        VertexColorIsSrgb = true,
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+    };
+
+    private static StandardMaterial3D? _vertexColoursUnshadedAlpha;
+
+    /// <summary>Vertex-coloured, unlit and see-through: rings on the floor.</summary>
+    public static StandardMaterial3D VertexColoursUnshadedAlpha => _vertexColoursUnshadedAlpha ??= new StandardMaterial3D
+    {
+        VertexColorUseAsAlbedo = true,
+        VertexColorIsSrgb = true,
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+    };
+
     // ------------------------------------------------------------------ shapes
 
     public static readonly BoxMesh UnitBox = new() { Size = Vector3.One };
