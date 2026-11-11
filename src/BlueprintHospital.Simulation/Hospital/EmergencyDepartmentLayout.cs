@@ -30,18 +30,102 @@ public static class EmergencyDepartmentLayout
         new("nurses_station", "nurses_station", "Nurses' station", 38, 17, 10, 9, WallSide.North),
     };
 
-    public static List<CareSpace> Create(Building building, GameDatabase database)
+    /// <summary>Where the A&amp;E corridor meets the east and west walls: the ambulance doors of a ready-made start go here.</summary>
+    public const int SpineAt = 9;
+
+    /// <summary>Where the starter's waiting room link meets the front wall in the usual layout.</summary>
+    private const int LinkAt = 22;
+
+    /// <summary>
+    /// True when the ready-made A&amp;E can be laid out around <paramref name="plan"/>: the main entrance on the
+    /// north or south wall, and the ambulance doors at the east or west end of the A&amp;E corridor.
+    /// </summary>
+    public static bool FitsStarter(SitePlan plan) =>
+        plan.EntranceSide is WallSide.North or WallSide.South
+        && plan.AmbulanceSide is WallSide.East or WallSide.West
+        && plan.AmbulanceAt == StarterAmbulanceAt(plan.EntranceSide);
+
+    /// <summary>Where the ambulance doors go for a ready-made start (the corridor moves to the back when the front is north).</summary>
+    public static int StarterAmbulanceAt(WallSide entranceSide) =>
+        entranceSide == WallSide.North ? StarterSite.MainBuildingFootprint.Length - SpineAt - 8 : SpineAt;
+
+    public static List<CareSpace> Create(Building building, GameDatabase database, SitePlan? plan = null)
     {
-        var o = new GridCoord(building.Footprint.X, building.Footprint.Y);
-        return Starter.Select(p =>
+        var fit = plan is not null && FitsStarter(plan) ? plan : SitePlan.Standard;
+        return Arrange(fit).Select(p =>
         {
             var template = database.RoomTemplates[p.Template];
-            var rect = RoomLayoutEngine.RectFor(new GridCoord(o.X + p.X, o.Y + p.Y), p.Width, p.Depth, p.Door);
-            return RoomLayoutEngine.Build(template, database, p.Id, p.Name, rect, p.Door);
+            var rect = Place(building.Footprint, fit, p.X, p.Y, p.Width, p.Depth, p.Door, out var door);
+            return RoomLayoutEngine.Build(template, database, p.Id, p.Name, rect, door);
         }).ToList();
     }
 
-    /// <summary>Builds the walkability grid: paths and floors walkable, walls blocking except at doors and entrances.</summary>
+    /// <summary>
+    /// The starter rooms for a plan, in the usual (front-south, ambulances-east) frame: the waiting room link
+    /// slides along to meet the main entrance and the rooms beside it move out of its way.
+    /// </summary>
+    private static IEnumerable<Placement> Arrange(SitePlan plan)
+    {
+        var link = LocalLink(plan);
+        if (link == LinkAt)
+        {
+            return Starter;
+        }
+
+        var width = StarterSite.MainBuildingFootprint.Width;
+        var front = Starter.Where(p => p.Y == 17 && p.Template != "corridor").OrderBy(p => p.X).ToList();
+        var placed = new List<(int X, int Width)> { (link, 8) };
+        var moved = new List<Placement>();
+        foreach (var room in front)
+        {
+            // Nearest spot to where it usually is, clear of the link and the rooms already placed.
+            var w = room.Door is WallSide.North or WallSide.South ? room.Width : room.Depth;
+            var x = Enumerable.Range(4, width - 4 - w + 1)
+                .Where(x => placed.All(o => x + w <= o.X || o.X + o.Width <= x))
+                .OrderBy(x => Math.Abs(x - room.X)).ThenBy(x => x).First();
+            placed.Add((x, w));
+            moved.Add(x == room.X ? room : room.Door is WallSide.North ? room with { X = x } : room with { X = x, Width = room.Depth, Depth = room.Width, Door = WallSide.North });
+        }
+
+        return Starter.Where(p => !front.Contains(p))
+            .Select(p => p.Id == "corridor_link" ? p with { X = link } : p)
+            .Concat(moved);
+    }
+
+    /// <summary>Where the waiting room link meets the front wall, counted in the usual (unmirrored) frame.</summary>
+    private static int LocalLink(SitePlan plan) =>
+        plan.AmbulanceSide == WallSide.West ? StarterSite.MainBuildingFootprint.Width - plan.EntranceAt - StarterSite.DoorWidth : plan.EntranceAt;
+
+    /// <summary>Where the starter waiting room goes for a plan: centred on the main entrance's link.</summary>
+    public static GridRect StarterWaitingRoom(GridRect building, SitePlan? plan)
+    {
+        var fit = plan is not null && FitsStarter(plan) ? plan : SitePlan.Standard;
+        var x = Math.Clamp(15 + (LocalLink(fit) - LinkAt), 0, building.Width - 22);
+        return Place(building, fit, x, 26, 22, 14, WallSide.North, out _);
+    }
+
+    /// <summary>
+    /// A starter room's rectangle on the building, mirrored to suit the plan: top to bottom when the main
+    /// entrance is on the north wall, left to right when the ambulances come to the west wall.
+    /// </summary>
+    private static GridRect Place(GridRect b, SitePlan plan, int x, int y, int width, int depth, WallSide door, out WallSide side)
+    {
+        var local = RoomLayoutEngine.RectFor(new GridCoord(x, y), width, depth, door);
+        var flipY = plan.EntranceSide == WallSide.North;
+        var flipX = plan.AmbulanceSide == WallSide.West;
+        var lx = flipX ? b.Width - local.X - local.Width : local.X;
+        var ly = flipY ? b.Length - local.Y - local.Length : local.Y;
+        side = door switch
+        {
+            WallSide.North when flipY => WallSide.South,
+            WallSide.South when flipY => WallSide.North,
+            WallSide.East when flipX => WallSide.West,
+            WallSide.West when flipX => WallSide.East,
+            _ => door,
+        };
+        return new GridRect(b.X + lx, b.Y + ly, local.Width, local.Length);
+    }
+
     public static NavGrid BuildNavGrid(SiteMap site, IEnumerable<CareSpace> spaces)
     {
         var all = spaces as IReadOnlyCollection<CareSpace> ?? spaces.ToList();

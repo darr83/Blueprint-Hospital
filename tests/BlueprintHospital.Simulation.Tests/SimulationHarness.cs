@@ -11,12 +11,12 @@ internal sealed class SimulationHarness
 {
     private static GameDatabase? _database;
 
-    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0, StartingHospital startWith = StartingHospital.SmallEmergency, bool waitingRoom = true, GameType type = GameType.Sandbox)
+    public SimulationHarness(int seed = 1234, bool arrivals = false, DateTime? start = null, double arrivalMultiplier = 1.0, StartingHospital startWith = StartingHospital.SmallEmergency, bool waitingRoom = true, GameType type = GameType.Sandbox, SitePlan? plan = null)
     {
         Database = _database ??= GameDatabase.Load(new FileSystemDataSource(TestData.GameDataDirectory()));
         Events = new EventBus();
         Clock = new SimulationClock(Events, start ?? new DateTime(2027, 1, 4, 10, 0, 0));
-        Sim = new HospitalSimulation(Database, Clock, Events, StarterSite.Create(), new SimulationOptions
+        Sim = new HospitalSimulation(Database, Clock, Events, StarterSite.Create(plan ?? SitePlan.Standard), new SimulationOptions
         {
             Seed = seed,
             AutomaticArrivals = arrivals,

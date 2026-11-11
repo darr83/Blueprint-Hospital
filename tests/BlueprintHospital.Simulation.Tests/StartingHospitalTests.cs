@@ -51,7 +51,7 @@ public class StartingHospitalTests
         h.Sim.HireStaff(StaffRole.Doctor, skill: 0.7);
         h.Sim.HireStaff(StaffRole.Receptionist, skill: 0.7);
         Assert.False(h.Sim.IsEmergencyOpen);
-        Assert.Equal(new[] { "a reception desk in the waiting room", "an entrance door on the front path in the waiting room", "a door through to a corridor in the waiting room" }, h.Sim.ClosedReasons);
+        Assert.Equal(new[] { "a reception desk in the waiting room", "a door through to a corridor in the waiting room" }, h.Sim.ClosedReasons);
 
         var room = h.Sim.SpacesOfKind(CareSpaceKind.Waiting).Single();
         WaitingRoomTests.FitOut(h, room);

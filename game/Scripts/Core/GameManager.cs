@@ -53,16 +53,43 @@ public partial class GameManager : Node
         }
     }
 
-    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency, bool unlimitedMoney = false, Simulation.Simulation.WardEmergencyFrequency wardEmergencies = Simulation.Simulation.WardEmergencyFrequency.Realistic, Simulation.Simulation.GameType type = Simulation.Simulation.GameType.Sandbox)
+    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency, bool unlimitedMoney = false, Simulation.Simulation.WardEmergencyFrequency wardEmergencies = Simulation.Simulation.WardEmergencyFrequency.Realistic, Simulation.Simulation.GameType type = Simulation.Simulation.GameType.Sandbox, Simulation.World.SitePlan? plan = null, bool chooseSite = false)
     {
         if (Database is null)
         {
             return;
         }
 
-        Session = GameSession.CreateNew(Database, hospitalName, start, unlimitedMoney, wardEmergencies, type);
+        Session = GameSession.CreateNew(Database, hospitalName, start, unlimitedMoney, wardEmergencies, type, plan);
+        SitePlanning = chooseSite ? new NewGameChoices(hospitalName, start, unlimitedMoney, wardEmergencies, type) : null;
+        SitePlanStep = Hospital.SitePlanStep.MainEntrance;
         ChangeScene(HospitalScene);
     }
+
+    /// <summary>
+    /// While a new game's site plan is being chosen: what the player picked on the New Game panel. The hospital
+    /// is built again for each choice of entrance, so the picture always shows the real layout.
+    /// </summary>
+    public NewGameChoices? SitePlanning { get; private set; }
+
+    /// <summary>Which entrance the site plan is placing next.</summary>
+    public Hospital.SitePlanStep SitePlanStep { get; set; }
+
+    /// <summary>Builds the new hospital again around <paramref name="plan"/>, staying in the site plan.</summary>
+    public void Replan(Simulation.World.SitePlan plan, Hospital.SitePlanStep next)
+    {
+        if (Database is null || SitePlanning is not { } c)
+        {
+            return;
+        }
+
+        Session = GameSession.CreateNew(Database, c.HospitalName, c.Start, c.UnlimitedMoney, c.WardEmergencies, c.Type, plan);
+        SitePlanStep = next;
+        ChangeScene(HospitalScene);
+    }
+
+    /// <summary>The site plan is done: the game starts.</summary>
+    public void FinishSitePlan() => SitePlanning = null;
 
     /// <summary>Creates a new session without changing scene (used when the hospital scene is run directly).</summary>
     public void StartNewGameInPlace()
@@ -75,6 +102,7 @@ public partial class GameManager : Node
 
     public void LoadGame(string slotName)
     {
+        SitePlanning = null;
         if (Database is null)
         {
             return;
@@ -98,6 +126,7 @@ public partial class GameManager : Node
     public void ReturnToMainMenu()
     {
         Session = null;
+        SitePlanning = null;
         ChangeScene(MainMenuScene);
     }
 
@@ -122,3 +151,6 @@ public partial class GameManager : Node
         Settings.Apply(GetTree());
     }
 }
+
+/// <summary>The New Game panel's choices, kept while the player plans the site.</summary>
+public sealed record NewGameChoices(string HospitalName, Simulation.Simulation.StartingHospital Start, bool UnlimitedMoney, Simulation.Simulation.WardEmergencyFrequency WardEmergencies, Simulation.Simulation.GameType Type);

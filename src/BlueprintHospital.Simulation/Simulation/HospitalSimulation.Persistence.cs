@@ -934,7 +934,7 @@ public sealed partial class HospitalSimulation
                 RouteAmbulanceToBay(ambulance);
                 break;
             case AmbulanceState.Departing:
-                ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, ambulance.Tile.Y), new GridCoord(AmbulanceRoadEntry.X, 0) }));
+                ambulance.FollowPath(RouteOffSite(ambulance.Tile));
                 break;
         }
     }
