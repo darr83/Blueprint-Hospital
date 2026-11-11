@@ -38,6 +38,33 @@ public static class Decorations
         Computer, Phone, Folders, KettleMugs, ReflexHammer, PillTray, GelWarmer,
     }
 
+    /// <summary>A picture or sign on the inside of a wall: <see cref="Rect"/>'s <see cref="Side"/> wall from T0 to T1 tiles along it.</summary>
+    public sealed record WallPiece(GridRect Rect, WallSide Side, double T0, double T1, string Kind, Action<CanvasItem, float, float> DrawFlat);
+
+    /// <summary>A prop standing on the floor at (X, Y), its front facing (Dx, Dy) into the room.</summary>
+    public sealed record FloorPiece(string Kind, double X, double Y, float Scale, int Dx, int Dy);
+
+    /// <summary>A small thing on a desk or counter top at (X, Y), <see cref="TopPx"/> 2D pixels up.</summary>
+    public sealed record TopPiece(string Kind, double X, double Y, float TopPx, bool AlongX);
+
+    /// <summary>Theatre lights (or the cath lab's screens) hanging over (X, Y).</summary>
+    public sealed record OverheadPiece(bool Theatre, double X, double Y);
+
+    /// <summary>The wall pieces placed by the last <see cref="Plan"/> (the 3D world builds from these).</summary>
+    public static List<WallPiece> WallPieces { get; } = new();
+
+    public static List<FloorPiece> FloorPieces { get; } = new();
+
+    public static List<TopPiece> TopPieces { get; } = new();
+
+    public static List<OverheadPiece> OverheadPieces { get; } = new();
+
+    /// <summary>A wall piece drawn flat into a w × h pixel box (y down), for painting into a texture.</summary>
+    private static void DrawFlatWall(CanvasItem c, Wall kind, float w, float h) => DrawWall(c, kind, (u, v) => new Vector2(u * w, (1 - v) * h));
+
+    private static void AddWallPiece(GridRect r, WallSide side, double t0, double t1, Wall kind) =>
+        WallPieces.Add(new WallPiece(r, side, t0, t1, kind.ToString(), (c, w, h) => DrawFlatWall(c, kind, w, h)));
+
     private sealed record Recipe(Wall[] Walls, Floor[] Floors, (string Item, OnTop[] Things)[]? Tops = null);
 
     private static readonly Wall[] NoWalls = Array.Empty<Wall>();
@@ -123,6 +150,10 @@ public static class Decorations
     public static List<(Vector2 Anchor, Action<CanvasItem> Draw)> Plan(HospitalSimulation sim)
     {
         var props = new List<(Vector2, Action<CanvasItem>)>();
+        WallPieces.Clear();
+        FloorPieces.Clear();
+        TopPieces.Clear();
+        OverheadPieces.Clear();
         foreach (var space in sim.Spaces.Where(s => s.HasWalls && IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             if (RecipeFor(space) is not { } recipe)
@@ -143,6 +174,7 @@ public static class Decorations
             {
                 var (cx, cy) = (space.PatientSpot.X + 0.5, space.PatientSpot.Y + 0.5);
                 var theatre = space.Kind == CareSpaceKind.Theatre;
+                OverheadPieces.Add(new OverheadPiece(theatre, theatre ? cx : cx + 1.4, theatre ? cy : cy - 0.6));
                 props.Add((IsoDraw.ToScreen(cx, cy) + new Vector2(0, 3), c =>
                 {
                     if (theatre)
@@ -269,6 +301,8 @@ public static class Decorations
             gy += tile.Y == r.Y ? 0.15 : tile.Y == r.Bottom - 1 ? -0.15 : 0;
             var kind = floor;
             var scale = kind is Floor.Bins or Floor.Plant or Floor.Skeleton or Floor.PrivacyScreen or Floor.FloorLamp or Floor.GymBall or Floor.Bucket or Floor.OxygenSpare ? FloorScale : 1.15f;
+            var (dx, dy) = tile.Y == r.Y ? (0, 1) : tile.Y == r.Bottom - 1 ? (0, -1) : tile.X == r.X ? (1, 0) : (-1, 0);
+            FloorPieces.Add(new FloorPiece(kind.ToString(), gx, gy, scale, dx, dy));
             props.Add((IsoDraw.ToScreen(gx, gy), c => Scaled(c, IsoDraw.ToScreen(gx, gy), scale, () => DrawFloor(c, kind, gx, gy))));
         }
     }
@@ -394,6 +428,7 @@ public static class Decorations
                 var centre = run.Start + (run.Length / 2.0);
                 var (t0, t1) = (centre - (width / 2), centre + (width / 2));
                 var wallSide = side;
+                AddWallPiece(r, wallSide, t0, t1, kind);
                 props.Add((AfterWall(r, wallSide, t0, t1), c =>
                 {
                     if (Facing(r, wallSide))
@@ -442,6 +477,11 @@ public static class Decorations
                     var along = length * f;
                     return (thing, alongX ? item.X + along : item.CentreX, alongX ? item.CentreY : item.Y + along);
                 }).ToArray();
+                foreach (var (thing, gx, gy) in spots)
+                {
+                    TopPieces.Add(new TopPiece(thing.ToString(), gx, gy, height, alongX));
+                }
+
                 props.Add((anchor + new Vector2(0, 0.8f), c =>
                 {
                     foreach (var (thing, gx, gy) in spots)
@@ -474,6 +514,7 @@ public static class Decorations
                 {
                     var rect = new GridRect(inside.X, inside.Y, 1, 1);
                     var wallSide = side;
+                    AddWallPiece(rect, wallSide, 0.15, 0.85, Wall.FireExtinguisher);
                     props.Add((AfterWall(rect, wallSide, 0.15, 0.85), c =>
                     {
                         if (Facing(rect, wallSide))
@@ -486,6 +527,7 @@ public static class Decorations
                 {
                     var rect = new GridRect(inside.X, inside.Y, 1, 1);
                     var wallSide = side;
+                    AddWallPiece(rect, wallSide, -0.4, 1.4, Wall.FireExit);
                     props.Add((AfterWall(rect, wallSide, -0.4, 1.4), c =>
                     {
                         if (Facing(rect, wallSide))
@@ -497,6 +539,7 @@ public static class Decorations
                 else if (count % 9 == 7)
                 {
                     var (gx, gy) = (inside.X + 0.5, inside.Y + 0.5);
+                    FloorPieces.Add(new FloorPiece(nameof(Floor.Plant), gx, gy, FloorScale, 0, 1));
                     props.Add((IsoDraw.ToScreen(gx, gy), c => Scaled(c, IsoDraw.ToScreen(gx, gy), FloorScale, () => DrawFloor(c, Floor.Plant, gx, gy))));
                 }
             }
