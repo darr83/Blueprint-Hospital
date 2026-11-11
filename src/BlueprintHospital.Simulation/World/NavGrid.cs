@@ -233,6 +233,125 @@ public sealed class NavGrid
         return Array.Empty<GridCoord>();
     }
 
+    /// <summary>
+    /// A walking route: the shortest tile path, then straightened wherever a person could walk directly
+    /// between two points on it, so people cut across open floor at any angle instead of stepping in a
+    /// staircase. Lift rides and stair climbs are kept exactly where they were.
+    /// </summary>
+    public IReadOnlyList<GridCoord> FindRoute(GridCoord start, GridCoord goal, bool stepFreeOnly = false) =>
+        Smooth(FindPath(start, goal, stepFreeOnly));
+
+    /// <summary>How far either side of the centre line a walker needs clear floor (tiles): about a shoulder's width.</summary>
+    public const double WalkClearance = 0.3;
+
+    /// <summary>Drops every waypoint that can be walked past in a straight line (see <see cref="FindRoute"/>).</summary>
+    public IReadOnlyList<GridCoord> Smooth(IReadOnlyList<GridCoord> path)
+    {
+        if (path.Count < 3)
+        {
+            return path;
+        }
+
+        var nav = path as NavPath;
+        var result = new NavPath();
+        var anchor = 0;
+        result.Add(path[0]);
+        while (anchor < path.Count - 1)
+        {
+            // A ride to another floor is never smoothed: step onto it from the tile before.
+            if (nav?.HopAt(anchor + 1) is > 0)
+            {
+                result.Add(path[anchor + 1]);
+                result.SetHop(result.Count - 1, nav.HopAt(anchor + 1));
+                anchor++;
+                continue;
+            }
+
+            var far = anchor + 1;
+            var maxCost = CostAt(path[anchor]);
+            for (var j = anchor + 2; j < path.Count; j++)
+            {
+                if (nav?.HopAt(j) is > 0)
+                {
+                    break;
+                }
+
+                maxCost = Math.Max(maxCost, Math.Max(CostAt(path[j - 1]), CostAt(path[j])));
+                if (!ClearLine(path[anchor], path[j], maxCost))
+                {
+                    break;
+                }
+
+                far = j;
+            }
+
+            result.Add(path[far]);
+            anchor = far;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// True if someone can walk straight from the middle of <paramref name="a"/> to the middle of
+    /// <paramref name="b"/> with shoulder room either side, never crossing a wall or a tile dearer than
+    /// <paramref name="maxCost"/> (so a straightened route doesn't wander onto grass or roads).
+    /// </summary>
+    public bool ClearLine(GridCoord a, GridCoord b, int maxCost)
+    {
+        var (ax, ay) = (a.X + 0.5, a.Y + 0.5);
+        var (dx, dy) = (b.X - a.X, (double)(b.Y - a.Y));
+        var length = Math.Sqrt((dx * dx) + (dy * dy));
+        if (length < 1e-6)
+        {
+            return true;
+        }
+
+        var (nx, ny) = (-dy / length * WalkClearance, dx / length * WalkClearance);
+        var steps = (int)Math.Ceiling(length / 0.1);
+        foreach (var side in new[] { 0.0, -1.0, 1.0 })
+        {
+            var previous = a;
+            for (var k = 1; k <= steps; k++)
+            {
+                var t = (double)k / steps;
+                var tile = new GridCoord((int)Math.Floor(ax + (dx * t) + (nx * side)), (int)Math.Floor(ay + (dy * t) + (ny * side)));
+                if (tile == previous)
+                {
+                    continue;
+                }
+
+                if (!InBounds(tile) || !IsWalkable(tile) || _cost[Index(tile)] > maxCost || !StepAllowed(previous, tile))
+                {
+                    return false;
+                }
+
+                previous = tile;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>One step between touching tiles; a diagonal step must be open both ways round its corner.</summary>
+    private bool StepAllowed(GridCoord from, GridCoord to)
+    {
+        var (dx, dy) = (to.X - from.X, to.Y - from.Y);
+        if (Math.Abs(dx) > 1 || Math.Abs(dy) > 1)
+        {
+            return false;
+        }
+
+        if (dx == 0 || dy == 0)
+        {
+            return CanStep(from, to);
+        }
+
+        var viaX = new GridCoord(to.X, from.Y);
+        var viaY = new GridCoord(from.X, to.Y);
+        return CanStep(from, viaX) && CanStep(viaX, to) && CanStep(from, viaY) && CanStep(viaY, to);
+    }
+
     private NavPath Reconstruct(Dictionary<int, int> cameFrom, Dictionary<int, int> hops, int current)
     {
         var reversed = new List<(int Index, int Hop)> { (current, hops.GetValueOrDefault(current)) };

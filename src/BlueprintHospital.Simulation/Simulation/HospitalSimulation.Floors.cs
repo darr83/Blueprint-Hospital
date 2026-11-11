@@ -48,14 +48,14 @@ public sealed partial class HospitalSimulation
         var wheeled = agent is Patient { Mobility: not Mobility.Walking } || (agent is Staff.StaffMember { PushingPatientId: not null });
         if (wheeled && Site.FloorCount > 1)
         {
-            var stepFree = Nav.FindPath(agent.Tile, destination, stepFreeOnly: true);
+            var stepFree = Nav.FindRoute(agent.Tile, destination, stepFreeOnly: true);
             if (stepFree.Count > 0)
             {
                 return stepFree;
             }
         }
 
-        return Nav.FindPath(agent.Tile, destination);
+        return Nav.FindRoute(agent.Tile, destination);
     }
 
     // ------------------------------------------------------------------ floors

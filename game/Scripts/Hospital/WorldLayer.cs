@@ -239,10 +239,17 @@ public partial class WorldLayer : Node2D
     /// <summary>World position of an agent's feet, interpolated between simulation ticks.</summary>
     public Vector2 FootPosition(Agent agent)
     {
+        var (x, y) = FootGrid(agent);
+        return IsoDraw.ToScreen(x, y);
+    }
+
+    /// <summary>Where an agent's feet are on the grid (in tiles), interpolated between simulation ticks.</summary>
+    public (double X, double Y) FootGrid(Agent agent)
+    {
         // On the floor beside their bed after a fall.
         if (agent is Patient { OnFloorAfterFall: true } fallen && _sim.BedOf(fallen) is { } bed)
         {
-            return IsoDraw.ToScreen(bed.StaffSpot.X + 0.5, bed.StaffSpot.Y + 0.5);
+            return (bed.StaffSpot.X + 0.5, bed.StaffSpot.Y + 0.5);
         }
 
         var (x, y) = Interpolated(agent);
@@ -253,7 +260,7 @@ public partial class WorldLayer : Node2D
             (x, y) = (x + (cx - (agent.Tile.X + 0.5)), y + (cy - (agent.Tile.Y + 0.5)));
         }
 
-        return IsoDraw.ToScreen(x, y);
+        return (x, y);
     }
 
     public (double X, double Y) Interpolated(Agent agent)
@@ -303,6 +310,20 @@ public partial class WorldLayer : Node2D
     /// <summary>For the member of a crash team doing compressions right now: where the patient's chest is on screen.</summary>
     public (Vector2 Chest, Vector2 Foot)? CprChest(StaffMember member)
     {
+        if (CprSpot(member) is not { } spot)
+        {
+            return null;
+        }
+
+        return (IsoDraw.ToScreen(spot.ChestX, spot.ChestY) + new Vector2(0, -spot.Lift), IsoDraw.ToScreen(spot.FootX, spot.FootY));
+    }
+
+    /// <summary>
+    /// For the member of a crash team doing compressions right now: where they stand and where the
+    /// patient's chest is (grid tiles), and how high the chest is (2D pixels).
+    /// </summary>
+    public (double ChestX, double ChestY, double FootX, double FootY, float Lift)? CprSpot(StaffMember member)
+    {
         if (member.CrashPatientId is not { } id || member.IsMoving || _sim.ArrestOf(id) is not { } arrest || !ReferenceEquals(_sim.CompressingNow(arrest), member)
             || _sim.FindPatient(id) is not { } patient)
         {
@@ -311,7 +332,7 @@ public partial class WorldLayer : Node2D
 
         var (x, y) = Interpolated(patient);
         var raised = OnTrolley(patient) || OnAmbulanceStretcher(patient);
-        var lift = new Vector2(0, InBed(patient) ? -22 : raised ? -24 : -6);
+        var lift = InBed(patient) ? 22f : raised ? 24f : 6f;
 
         // Stand right up against the bed (or beside the patient on the floor), on whichever side they were sent to,
         // with the hands on the near side of the chest.
@@ -320,13 +341,12 @@ public partial class WorldLayer : Node2D
         var length = Math.Sqrt((dx * dx) + (dy * dy));
         if (length < 0.01)
         {
-            return (IsoDraw.ToScreen(x, y) + lift, IsoDraw.ToScreen(mx, my));
+            return (x, y, mx, my, lift);
         }
 
         var (ux, uy) = (dx / length, dy / length);
         var gap = InBed(patient) || raised ? 1.25 : 0.8;
-        var chest = IsoDraw.ToScreen(x + (ux * 0.25), y + (uy * 0.25)) + lift;
-        return (chest, IsoDraw.ToScreen(x + (ux * gap), y + (uy * gap)));
+        return (x + (ux * 0.25), y + (uy * 0.25), x + (ux * gap), y + (uy * gap), lift);
     }
 
     /// <summary>On a trolley away from a bed: being pushed, waiting for a porter, or parked in corridor care.</summary>
@@ -798,10 +818,10 @@ public partial class WorldLayer : Node2D
     private BabyLook[]? OnChest(Patient mother) => BabyInCot(mother) ? null : BabiesWith(mother);
 
     /// <summary>The baby mum carries in her arms when she is up and about.</summary>
-    private BabyLook? InArms(Patient mother) => BabiesWith(mother) is { Length: > 0 } babies ? babies[0] : null;
+    public BabyLook? InArms(Patient mother) => BabiesWith(mother) is { Length: > 0 } babies ? babies[0] : null;
 
     /// <summary>The baby a nurse is carrying to or from the neonatal unit.</summary>
-    private BabyLook? CarriedBy(StaffMember member)
+    public BabyLook? CarriedBy(StaffMember member)
     {
         var baby = _sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.Carried && b.CarriedByStaffId == member.Id);
         return baby is null ? null : Looks.Baby(baby, _sim.FindPatient(baby.MotherId));
