@@ -216,6 +216,15 @@ public partial class Agents3D : Node3D
                 }
             }
 
+            // A radiographer goes behind the lead screen to take the picture, then comes back to the patient.
+            if (_agent is StaffMember radiographer && Activity3D.ScanVisit(radiographer, world, sim, _owner._tasks, _owner.AnimTime) is { } visit)
+            {
+                (x, y) = visit.At;
+                (act, faceTo) = (visit.Act, null);
+                facing = visit.Facing;
+                pose = visit.Walking ? Pose.Walking : Pose.Standing;
+            }
+
             Wheelchair(inChair, look.Scale);
             if (seated)
             {
@@ -230,7 +239,7 @@ public partial class Agents3D : Node3D
             if (float.IsNaN(_yaw) || pose != Pose.Walking)
             {
                 _yaw = pose == Pose.Walking || pose == Pose.Cpr || seated || float.IsNaN(_yaw) ? want
-                    : act != Act.None && faceTo is not null ? _yaw + (Mathf.Wrap(want - _yaw, -Mathf.Pi, Mathf.Pi) * (1f - Mathf.Exp(-6f * (float)delta)))
+                    : act != Act.None || faceTo is not null ? _yaw + (Mathf.Wrap(want - _yaw, -Mathf.Pi, Mathf.Pi) * (1f - Mathf.Exp(-6f * (float)delta)))
                     : _yaw;
             }
             else

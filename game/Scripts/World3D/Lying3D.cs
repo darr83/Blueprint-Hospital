@@ -20,8 +20,8 @@ public static class Lying3D
 
     private static float V(double px) => Person3D.V(px);
 
-    /// <summary>Builds the figure. <paramref name="band"/> is the wristband's triage colour (white band if null).</summary>
-    public static Node3D Build(PersonLook look, Color blanket, Color? band, BabyLook[]? onChest = null)
+    /// <summary>Builds the figure. <paramref name="band"/> is the wristband's triage colour (white band if null); eyes are closed unless <paramref name="awake"/>.</summary>
+    public static Node3D Build(PersonLook look, Color blanket, Color? band, BabyLook[]? onChest = null, bool awake = false)
     {
         var node = new Node3D { Name = "Lying" };
         var b = new MeshBatch();
@@ -95,7 +95,7 @@ public static class Lying3D
         b.Capsule(new Vector3(0, V(3), U(-1.2)), head + new Vector3(0, -r * 0.4f, r * 0.5f), W(2.6f) * sz, skin.Darkened(0.06f));
         b.Frame = new Transform3D(new Basis(Vector3.Right, -Mathf.Pi / 2), head);
         b.Ball(Vector3.Zero, new Vector3(r * 2, r * 2.05f, r * 1.95f), skin);
-        Person3D.Head(b, look, Vector3.Zero, r, asleep: true);
+        Person3D.Head(b, look, Vector3.Zero, r, asleep: !awake);
         b.Frame = Transform3D.Identity;
         b.AddTo(node);
 

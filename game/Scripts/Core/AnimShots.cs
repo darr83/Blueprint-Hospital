@@ -28,15 +28,17 @@ public partial class AnimShots : Node
     private int _settle;
     private Agent? _subject;
 
-    private static readonly (string Name, Act Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Scenes =
+    private static readonly (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Scenes =
     {
         ("vending", Act.VendPress, (_, a) => a is not StaffMember, 3.0f, 120, Array.Empty<string>()),
         ("waiting", Act.Phone, (s, a) => a is not StaffMember && InRoom(s, a, CareSpaceKind.Waiting) && SeatedNear(s, a) >= 5, 2.6f, 120, Array.Empty<string>()),
         ("reception", Act.Typing, (_, a) => a is StaffMember { Role: StaffRole.Receptionist }, 3.0f, 60, Array.Empty<string>()),
         ("examine", Act.Examine, (_, a) => a is StaffMember, 3.0f, 120, Array.Empty<string>()),
         ("observations", Act.Observations, (_, a) => a is StaffMember { Role: StaffRole.Nurse }, 3.0f, 60, Array.Empty<string>()),
-        ("xray", Act.None, (s, a) => InRoom(s, a, CareSpaceKind.XRay) && Busy(s, a), 3.0f, 90, new[] { "wrist_fracture", "ankle_fracture" }),
-        ("ct", Act.None, (s, a) => InRoom(s, a, CareSpaceKind.CT) && Busy(s, a), 2.6f, 150, new[] { "minor_head_injury", "transient_ischaemic_attack" }),
+        ("xray", null, (s, a) => InRoom(s, a, CareSpaceKind.XRay) && Busy(s, a), 2.3f, 190, new[] { "wrist_fracture", "ankle_fracture" }),
+        ("ct", null, (s, a) => InRoom(s, a, CareSpaceKind.CT) && Busy(s, a), 2.3f, 190, new[] { "minor_head_injury", "transient_ischaemic_attack" }),
+        ("chat", Act.Talk, (_, a) => a is StaffMember { Activity: StaffActivity.Idle or StaffActivity.OnBreak }, 3.0f, 120, Array.Empty<string>()),
+        ("night", null, (s, a) => a is Patient p && (s.Now.Hour >= 22 || s.Now.Hour < 5) && !p.IsMoving && p.Stage is PatientStage.InTreatmentSpace or PatientStage.OnWard && p.BusyWithTaskId is null, 2.4f, 90, Array.Empty<string>()),
     };
 
     public static bool Begin()
@@ -151,7 +153,7 @@ public partial class AnimShots : Node
                 }
 
                 tasks = sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
-                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act == Act.None ? Activity3D.For(a, _hospital.World, sim, tasks, 0).Act != Act.None : Activity3D.For(a, _hospital.World, sim, tasks, 0).Act == scene.Act));
+                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act is null || Activity3D.For(a, _hospital.World, sim, tasks, 0).Act == scene.Act));
                 if (_subject is not null)
                 {
                     break;
@@ -182,6 +184,11 @@ public partial class AnimShots : Node
             if (Activity3D.For(_subject, _hospital.World, sim, tasks, 0).FaceTo is { } face && Math.Abs(face.X - fx) + Math.Abs(face.Y - fy) < 5)
             {
                 (fx, fy) = ((fx + face.X) / 2, (fy + face.Y) / 2);
+            }
+
+            if (scene.Name is "xray" or "ct" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
+            {
+                (fx, fy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0) - 1);
             }
 
             _hospital.Camera.SnapTo(IsoDraw.ToScreen(fx, fy) + new Vector2(0, -18), scene.Zoom);

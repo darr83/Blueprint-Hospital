@@ -46,6 +46,7 @@ public partial class Person3D : Node3D
     private Node3D? _cup;
     private Node3D? _can;
     private Node3D? _pot;
+    private Node3D? _keypad;
 
     public PersonLook Look { get; private set; } = null!;
 
@@ -699,8 +700,10 @@ public partial class Person3D : Node3D
 
             case Act.VendPress:
             {
-                // Studying the choices, then tapping in the number.
+                // Studying the choices, then tapping in the number; the keypad lights up with each press.
                 var cycle = Mathf.PosMod(f, 4f);
+                _keypad ??= Keypad();
+                _keypad.Visible = cycle >= 1.5f && S(9) > 0.2f;
                 right = cycle < 1.5f
                     ? new Vector3(-0.35f, 0, -0.05f)
                     : new Vector3(-1.55f + (0.14f * Mathf.Max(0, S(9))), 0, -0.18f);
@@ -834,6 +837,11 @@ public partial class Person3D : Node3D
             Hide(_can);
         }
 
+        if (act != Act.VendPress)
+        {
+            Hide(_keypad);
+        }
+
         if (act == Act.Medicine)
         {
             _pot = Prop(_pot, _armR, Pot);
@@ -862,6 +870,20 @@ public partial class Person3D : Node3D
         build(b);
         b.AddTo(node);
         arm.AddChild(node);
+        return node;
+    }
+
+    /// <summary>The lit keypad on the vending machine in front of them, flashing as they press it.</summary>
+    private Node3D Keypad()
+    {
+        var b = new MeshBatch();
+        var at = new Vector3(W(5), V(44), 0.62f);
+        b.Box(at, new Vector3(W(6), V(7), 0.02f), new Color("#9EF0FF"));
+        b.Box(at + new Vector3(0, V(9), 0), new Vector3(W(9), V(3), 0.02f), new Color("#B9FFCF"));
+        var node = new Node3D { Name = "Keypad" };
+        var mesh = b.AddTo(node, shadow: false)!;
+        mesh.MaterialOverride = Kit3D.VertexColoursUnshaded;
+        AddChild(node);
         return node;
     }
 
