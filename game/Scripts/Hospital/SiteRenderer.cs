@@ -17,7 +17,7 @@ public partial class SiteRenderer : Node2D
         [TileKind.Grass] = new Color("#6E9E57"),
         [TileKind.Paving] = new Color("#B9B5AA"),
         [TileKind.Road] = new Color("#55595E"),
-        [TileKind.AmbulanceBay] = new Color("#D9C23E"),
+        [TileKind.AmbulanceBay] = new Color("#62666B"),
         [TileKind.Parking] = new Color("#6D7176"),
         [TileKind.BuildingFloor] = new Color("#E7E3DA"),
     };

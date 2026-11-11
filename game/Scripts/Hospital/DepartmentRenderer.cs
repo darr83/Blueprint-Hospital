@@ -120,10 +120,37 @@ public partial class DepartmentRenderer : Node2D
             return;
         }
 
-        // Ambulance bay markings: one box per handover slot.
-        foreach (var slot in _sim.AmbulanceBayPatientTiles)
+        DrawAmbulanceBays();
+    }
+
+    /// <summary>
+    /// The ambulance bays painted on the tarmac, UK style: a yellow line down each side and across the
+    /// back, and AMBULANCE written up the open end where the vehicles reverse in.
+    /// </summary>
+    private void DrawAmbulanceBays()
+    {
+        var yellow = new Color("#F2C230");
+        const double line = 0.18;
+        var font = ThemeDB.FallbackFont;
+        foreach (var bay in _sim.AmbulanceBays)
         {
-            IsoDraw.FloorOutline(this, slot.X + 3, slot.Y - 1, 12, 3.6, new Color(1, 1, 1, 0.7f), 2f);
+            IsoDraw.FloorQuad(this, bay.X, bay.Y - (line / 2), bay.Width, line, yellow);
+            IsoDraw.FloorQuad(this, bay.X, bay.Bottom - (line / 2), bay.Width, line, yellow);
+            IsoDraw.FloorQuad(this, bay.X, bay.Y, line * 1.5, bay.Length, yellow);
+
+            if (!Flat)
+            {
+                continue;
+            }
+
+            // Lettering across the mouth of the bay, reading from the road.
+            const int size = 22;
+            const string text = "AMBULANCE";
+            var width = font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X;
+            var at = IsoDraw.ToScreen(bay.Right - 0.55, bay.Y + (bay.Length / 2.0));
+            DrawSetTransform(at, -Mathf.Pi / 2, Vector2.One);
+            DrawString(font, new Vector2(-width / 2, size * 0.35f), text, HorizontalAlignment.Left, -1, size, new Color(yellow, 0.9f));
+            DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         }
     }
 
