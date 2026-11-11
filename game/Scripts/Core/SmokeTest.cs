@@ -62,6 +62,9 @@ public partial class SmokeTest : Node
         Stats,
         StatsWeek,
         Ward,
+        PlanWard,
+        PlanEmergency,
+        PlanOverview,
         WardBed,
         CrashCall,
         CrashPanelOpen,
@@ -414,6 +417,41 @@ public partial class SmokeTest : Node
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
+                hospital.TogglePlanView();
+                Check(hospital.PlanView && !hospital.World.Visible, "V did not switch to the 2D plan.");
+                _frame = 0;
+                _stage = Stage.PlanWard;
+                break;
+
+            case Stage.PlanWard when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07p_plan_ward");
+                CheckPlanClick(hospital);
+                {
+                    var cubicle = hospital.Session.Simulation.Spaces.Where(sp => sp.IsTreatmentSpace).OrderBy(sp => sp.Id).First().Rect;
+                    hospital.Camera.SnapTo(IsoDraw.ToScreen(cubicle.X + 4, cubicle.Y + 6), 0.9f);
+                }
+
+                _frame = 0;
+                _stage = Stage.PlanEmergency;
+                break;
+
+            case Stage.PlanEmergency when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07q_plan_emergency");
+                hospital.Camera.SnapTo(IsoDraw.ToScreen(Simulation.World.StarterSite.MainBuildingFootprint.X + 22, Simulation.World.StarterSite.MainBuildingFootprint.Y + 16), 0.42f);
+                _frame = 0;
+                _stage = Stage.PlanOverview;
+                break;
+
+            case Stage.PlanOverview when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07r_plan_overview");
+                hospital.TogglePlanView();
+                Check(!hospital.PlanView && hospital.World.Visible && !IsoDraw.Plan, "V did not switch back to the 3D view.");
+                GD.Print("[smoke] 2D plan view: on, click picks a circle, back to 3D.");
+                {
+                    var ward = hospital.Session.Simulation.Wards.Single().Rect;
+                    hospital.Camera.SnapTo(IsoDraw.ToScreen(ward.X + (ward.Width / 2.0), ward.Y + (ward.Length / 2.0)), 0.9f);
+                }
+
                 ClickWardBed(hospital);
                 _frame = 0;
                 _stage = Stage.WardBed;
@@ -1553,6 +1591,21 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>Play mode: clicking the ward floor picks nothing; clicking an empty bed opens the bed.</summary>
+    /// <summary>In the 2D plan a click on someone's circle picks them, as clicking their figure does in 3D.</summary>
+    private static void CheckPlanClick(HospitalScene hospital)
+    {
+        var member = hospital.Session.Simulation.Staff.FirstOrDefault(m => m.IsInBuilding && hospital.World.OnViewFloor(m) && !m.IsMoving);
+        if (member is null)
+        {
+            return;
+        }
+
+        hospital.ClickAt(hospital.World.FootPosition(member));
+        Check(hospital.World.Selected is StaffMember, "Clicking a staff circle in the 2D plan did not pick anyone.");
+        hospital.Hud.HideRightPanels();
+        hospital.World.Selected = null;
+    }
+
     private static void ClickWardBed(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;

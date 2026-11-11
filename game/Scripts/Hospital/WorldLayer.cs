@@ -489,6 +489,8 @@ public partial class WorldLayer : Node2D
         // every grid point a wall touches. Faces that meet a neighbour are left out, so straight
         // runs, corners, T-junctions and crossings all join seamlessly from all four view angles.
         var solid = walls.Where(w => !doors.Contains(w)).ToHashSet();
+        WallEdges = solid;
+        DoorEdges = doors.Where(d => !solid.Contains(d)).ToHashSet();
         var joints = new Dictionary<(int X, int Y), Sides>();
         void Join((int X, int Y) at, Sides side) => joints[at] = joints.GetValueOrDefault(at) | side;
         foreach (var (x, y, horizontal) in solid)
@@ -576,6 +578,18 @@ public partial class WorldLayer : Node2D
             AddProp(FrontFace(fx, fy, fw, fl), c => RoomSigns.Doorway(c, space, DoorOpenness(space, mx, my), WallThickness, WallHeight, WallTop, WallFace, FrameTop, FrameFace), animated: true);
         }
     }
+
+    /// <summary>Wall edges on the floor in view (a horizontal edge runs from (X, Y) to (X + 1, Y)); the 2D plan draws these.</summary>
+    public IReadOnlyCollection<(int X, int Y, bool Horizontal)> WallEdges { get; private set; } = Array.Empty<(int, int, bool)>();
+
+    /// <summary>Doorway edges on the floor in view.</summary>
+    public IReadOnlyCollection<(int X, int Y, bool Horizontal)> DoorEdges { get; private set; } = Array.Empty<(int, int, bool)>();
+
+    /// <summary>Everyone on the floor in view who is on the map, including patients lying in bed (the 2D plan draws them all).</summary>
+    public IEnumerable<Agent> AgentsInView() =>
+        _agentNodes.Keys.Where(a => OnViewFloor(a)
+                                    && (a is not Patient p || IsOnMap(p))
+                                    && _sim.ToiletTripOf(a)?.Stage != ToiletStage.Using);
 
     private readonly Dictionary<CareSpace, (float Open, double At)> _doors = new();
 
