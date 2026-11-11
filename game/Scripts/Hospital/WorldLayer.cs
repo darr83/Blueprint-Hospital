@@ -17,6 +17,9 @@ namespace BlueprintHospital.Hospital;
 
 /// <summary>Where an obs monitor stands, and the room whose patient it is connected to.</summary>
 /// <summary>An obs monitor; on a ward (ICU, HDU) it shows the patient in the bed beside it.</summary>
+/// <summary>A chair as built: its tile, the way it faces, its colour, how far it is moved off the middle of its tile, and its furniture id.</summary>
+public sealed record ChairInfo(GridCoord Tile, WallSide Facing, Color Colour, (double X, double Y)? Shift, string ItemId);
+
 public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y, WardBed? Bed = null);
 
 /// <summary>
@@ -126,6 +129,7 @@ public partial class WorldLayer : Node2D
         _monitors.Clear();
         _bedSpots.Clear();
         _cotBeds.Clear();
+        _chairs.Clear();
         _seatTiles.Clear();
         _chairShifts.Clear();
 
@@ -710,7 +714,7 @@ public partial class WorldLayer : Node2D
                         AddObsMonitor(space, item.CentreX, item.CentreY);
                         break;
                     case FurnitureStyle.Chair:
-                        Chair(item.Tile, RoomChairFacing(space, item), colour);
+                        Chair(item.Tile, RoomChairFacing(space, item), colour, itemId: def.Id);
                         break;
                     case FurnitureStyle.Box when ToiletArt.Draws(def.Id):
                         ToiletArt.Add(def.Id, space, item, colour, _sim, (anchor, draw, animated) => AddProp(anchor, draw, animated));
@@ -905,9 +909,15 @@ public partial class WorldLayer : Node2D
         return patient is not null && !patient.IsMoving && patient.Tile == space.PatientSpot ? patient : null;
     }
 
+    private readonly List<ChairInfo> _chairs = new();
+
+    /// <summary>Every chair on the floor in view, as last built: where its seat is, which way it faces, its colour and kind.</summary>
+    public IReadOnlyList<ChairInfo> Chairs => _chairs;
+
     /// <summary>A chair in two parts, so whoever sits on it sorts between the seat and the back.</summary>
-    private void Chair(GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null)
+    private void Chair(GridCoord tile, WallSide facing, Color colour, (double X, double Y)? shift = null, string itemId = "waiting_seat")
     {
+        _chairs.Add(new ChairInfo(tile, facing, colour, shift, itemId));
         AddProp(ChairArt.SeatAnchor(tile, facing, shift), c => ChairArt.Seat(c, tile, facing, colour, shift));
         AddProp(ChairArt.BackAnchor(tile, facing, shift), c => ChairArt.Back(c, tile, facing, colour, shift));
     }
