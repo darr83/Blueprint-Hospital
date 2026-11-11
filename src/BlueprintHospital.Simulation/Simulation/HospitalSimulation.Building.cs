@@ -783,7 +783,7 @@ public sealed partial class HospitalSimulation
         {
             if (member.Activity is StaffActivity.OnBreak or StaffActivity.WalkingToBreak
                 && !_toiletTrips.ContainsKey(member)
-                && !SpacesOfKind(CareSpaceKind.StaffRoom).Any(r => r.Seats.Contains(member.Destination ?? member.Tile)))
+                && !SpacesOfKind(CareSpaceKind.StaffRoom).Any(r => r.Rect.Contains(member.Destination ?? member.Tile)))
             {
                 member.Activity = StaffActivity.Idle;
                 member.BreakEndsAt = null;

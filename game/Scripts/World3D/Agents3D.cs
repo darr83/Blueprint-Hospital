@@ -326,6 +326,7 @@ public partial class Agents3D : Node3D
             if (seated)
             {
                 pose = Pose.Seated;
+                _person.Seat = inChair ? Person3D.SeatShape.Wheelchair(look.Scale) : physio is not null ? Person3D.SeatShape.BedSide : Person3D.SeatShape.Chair;
                 facing = world.IsSeated(_agent) && physio is null ? Facing(world.SeatFacing(_agent)) : facing;
             }
 

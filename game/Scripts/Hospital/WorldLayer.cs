@@ -353,7 +353,31 @@ public partial class WorldLayer : Node2D
         return space.IsTreatmentSpace ? patient.Tile == space.PatientSpot : _sim.BedOf(patient) is { } bed && patient.Tile == bed.PatientSpot;
     }
 
-    public bool IsSeated(Agent agent) => !agent.IsMoving && _seatTiles.ContainsKey(agent.Tile);
+    public bool IsSeated(Agent agent) =>
+        !agent.IsMoving && _seatTiles.ContainsKey(agent.Tile) && (!_sitters.TryGetValue(agent.Tile, out var sitter) || sitter == agent);
+
+    /// <summary>Who sits on each occupied chair this frame: one person to a chair, however briefly two meet there.</summary>
+    private readonly Dictionary<GridCoord, Agent> _sitters = new();
+
+    private void SeatSitters(IEnumerable<Agent> present)
+    {
+        _sitters.Clear();
+        var claims = present
+            .Where(a => a is not AmbulanceVehicle && !a.IsMoving && _seatTiles.ContainsKey(a.Tile))
+            .OrderBy(a => a switch
+            {
+                // Whoever booked the chair, then whoever is working from it, then whoever got there first.
+                Patient p when p.Seat == p.Tile => 0,
+                Outpatient o when o.Seat == o.Tile => 0,
+                StaffMember { Activity: StaffActivity.Working } => 1,
+                _ => 2,
+            })
+            .ThenBy(a => a.Id);
+        foreach (var agent in claims)
+        {
+            _sitters.TryAdd(agent.Tile, agent);
+        }
+    }
 
     /// <summary>The way someone sitting where <paramref name="agent"/> is looks.</summary>
     public WallSide SeatFacing(Agent agent) => _seatTiles.GetValueOrDefault(agent.Tile, WallSide.South);
@@ -393,6 +417,7 @@ public partial class WorldLayer : Node2D
             _agentNodes.Remove(gone);
         }
 
+        SeatSitters(present);
         foreach (var agent in present)
         {
             if (!_agentNodes.TryGetValue(agent, out var node))
