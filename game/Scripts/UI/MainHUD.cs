@@ -57,6 +57,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised by the 2D / 3D button (V): switches between the isometric view and the flat plan.</summary>
     public event Action? PlanToggled;
 
+    /// <summary>The walls button: walls cut down low so you can see into every room (X).</summary>
+    public event Action? WallsToggled;
+
     private Button? _planButton;
     private readonly PanelContainer _planKey = new() { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
     private readonly VBoxContainer _planKeyRows = new();
@@ -814,6 +817,7 @@ public partial class MainHUD : CanvasLayer
         _mapControls.AddChild(MapButton("−", "Zoom out (mouse wheel)", () => ZoomRequested?.Invoke(0.8f)));
         _mapControls.AddChild(MapButton("⟲", "Turn the view anticlockwise (Q)", () => RotateRequested?.Invoke(-1)));
         _mapControls.AddChild(MapButton("⟳", "Turn the view clockwise (E)", () => RotateRequested?.Invoke(1)));
+        _mapControls.AddChild(MapButton("⌂", "Walls up or cut down low, to see into every room (X)", () => WallsToggled?.Invoke()));
         _planButton = MapButton("2D", "Flat 2D plan: the hospital from above, people as circles in their uniform colour (V)", () => PlanToggled?.Invoke());
         _planButton.AddThemeFontSizeOverride("font_size", 16);
         _mapControls.AddChild(_planButton);

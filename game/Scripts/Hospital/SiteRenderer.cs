@@ -97,9 +97,23 @@ public partial class SiteRenderer : Node2D
     }
 
     /// <summary>The grounds seen from an upper floor: washed out towards the sky.</summary>
-    private static readonly Color UpperFloorGround = new(0.9f, 0.93f, 0.96f, 0.62f);
+    public static readonly Color UpperFloorGround = new(0.9f, 0.93f, 0.96f, 0.62f);
 
-    private static readonly Color UpperFloorSlab = new("#D6D3CC");
+    public static readonly Color UpperFloorSlab = new("#D6D3CC");
+
+    /// <summary>The colour the ground is painted at a tile, with a little variation so large areas don't look flat.</summary>
+    public static Color TileColour(SiteMap site, GridCoord tile)
+    {
+        var kind = site[tile];
+        var colour = GroundColours[kind];
+        var noise = Hash(tile) * 0.06f - 0.03f;
+        return kind switch
+        {
+            TileKind.BuildingFloor => ((tile.X / 2) + (tile.Y / 2)) % 2 == 0 ? colour : colour.Darkened(0.035f),
+            TileKind.Parking when tile.X % 6 == 0 => new Color("#E9E9E9"),
+            _ => new Color(colour.R + noise, colour.G + noise, colour.B + noise),
+        };
+    }
 
     private ArrayMesh BuildGroundMesh()
     {
@@ -108,18 +122,7 @@ public partial class SiteRenderer : Node2D
 
         foreach (var tile in _site.Bounds.Tiles())
         {
-            var kind = _site[tile];
-            var colour = GroundColours[kind];
-
-            // Subtle variation so large areas don't look flat.
-            var noise = Hash(tile) * 0.06f - 0.03f;
-            colour = kind switch
-            {
-                TileKind.BuildingFloor => ((tile.X / 2) + (tile.Y / 2)) % 2 == 0 ? colour : colour.Darkened(0.035f),
-                TileKind.Parking when tile.X % 6 == 0 => new Color("#E9E9E9"),
-                _ => new Color(colour.R + noise, colour.G + noise, colour.B + noise),
-            };
-
+            var colour = TileColour(_site, tile);
             AddQuad(vertices, colours, tile.X, tile.Y, 1, 1, colour);
         }
 

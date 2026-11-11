@@ -44,6 +44,8 @@ public partial class HospitalScene : Node2D
     private MainHUD _hud = null!;
     private SelectionHighlight _highlight = null!;
     private SelectionHighlight _itemHighlight = null!;
+    private AccidentLayer _accidents = null!;
+    private BlueprintHospital.World3D.View3D _view3D = null!;
 
     /// <summary>Play (people and beds) or Build (rooms and items).</summary>
     public GameMode Mode { get; private set; } = GameMode.Play;
@@ -89,20 +91,27 @@ public partial class HospitalScene : Node2D
         AddChild(_highlight);
 
         // Wet patches where someone didn't make it to a toilet, on the floor under everything else.
-        var accidents = new AccidentLayer { Name = "Accidents" };
-        AddChild(accidents);
-        accidents.Initialise(_session.Simulation);
+        _accidents = new AccidentLayer { Name = "Accidents" };
+        AddChild(_accidents);
+        _accidents.Initialise(_session.Simulation);
 
         // Walls, furniture, people and vehicles, depth-sorted together; labels on top.
         _world = new WorldLayer { Name = "World" };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
 
+        // The 3D world, drawn under everything 2D (labels, cursor and build outlines stay on top).
+        _view3D = new BlueprintHospital.World3D.View3D { Name = "World3D" };
+        AddChild(_view3D);
+        _view3D.Initialise(this, _session.Simulation, _world);
+        _view3D.ShowGrid = _site.ShowGrid;
+
         // The 2D plan view (V): walls, furniture and everyone as circles, seen from above. Hidden until turned on.
         IsoDraw.SetPlan(false);
         _plan = new PlanLayer { Name = "Plan", Visible = false };
         AddChild(_plan);
         _plan.Initialise(_world);
+        Set3D(false);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -191,6 +200,7 @@ public partial class HospitalScene : Node2D
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
         _hud.RotateRequested += RotateView;
         _hud.PlanToggled += TogglePlanView;
+        _hud.WallsToggled += ToggleWalls;
         _hud.FloorStepRequested += step => ShowFloor(ViewFloor + step);
         _hud.AddFloorRequested += () =>
         {
@@ -390,6 +400,12 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.V:
                 TogglePlanView();
+                break;
+            case Key.F3:
+                Set3D(!Is3D);
+                break;
+            case Key.X:
+                ToggleWalls();
                 break;
             case Key.Q:
                 RotateView(-1);
@@ -630,9 +646,8 @@ public partial class HospitalScene : Node2D
         var state = _camera.CaptureState();
         var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
         IsoDraw.SetPlan(on);
-        _world.Visible = !on;
         _overlay.Visible = !on;
-        _plan.Visible = on;
+        UpdateLayers();
         _site.Rebuild();
         _department.QueueRedraw();
         _world.RebuildStatic();
@@ -643,6 +658,33 @@ public partial class HospitalScene : Node2D
 
     /// <summary>The floor in view (0 = ground).</summary>
     public int ViewFloor => IsoDraw.ViewFloor;
+
+    /// <summary>True while the hospital is shown in 3D.</summary>
+    public bool Is3D { get; private set; }
+
+    public BlueprintHospital.World3D.View3D View3D => _view3D;
+
+    /// <summary>Cuts the walls down low (or puts them back up) so you can see into every room.</summary>
+    public void ToggleWalls() => _view3D.Cutaway = !_view3D.Cutaway;
+
+    /// <summary>Switches between the 3D world and the 2D drawing.</summary>
+    public void Set3D(bool on)
+    {
+        Is3D = on;
+        _view3D.SetShown(on);
+        UpdateLayers();
+    }
+
+    /// <summary>Shows the 2D world layers only where the 3D world isn't drawing the same thing.</summary>
+    private void UpdateLayers()
+    {
+        var flat = !Is3D;
+        _site.Visible = flat;
+        _department.Visible = flat;
+        _accidents.Visible = flat;
+        _world.Visible = flat && !IsoDraw.Plan;
+        _plan.Visible = flat && IsoDraw.Plan;
+    }
 
     /// <summary>Looks at another floor: only its rooms and people are drawn, over the grounds faded below.</summary>
     public void ShowFloor(int floor)
@@ -671,6 +713,7 @@ public partial class HospitalScene : Node2D
     private void ToggleGrid()
     {
         _site.ShowGrid = !_site.ShowGrid;
+        _view3D.ShowGrid = _site.ShowGrid;
         _hud.SetGridShown(_site.ShowGrid);
     }
 

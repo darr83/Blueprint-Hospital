@@ -65,6 +65,8 @@ public partial class SmokeTest : Node
         PlanWard,
         PlanEmergency,
         PlanOverview,
+        World3D,
+        World3DTurned,
         WardBed,
         CrashCall,
         CrashPanelOpen,
@@ -447,6 +449,28 @@ public partial class SmokeTest : Node
                 hospital.TogglePlanView();
                 Check(!hospital.PlanView && hospital.World.Visible && !IsoDraw.Plan, "V did not switch back to the 3D view.");
                 GD.Print("[smoke] 2D plan view: on, click picks a circle, back to 3D.");
+                hospital.Set3D(true);
+                _frame = 0;
+                _stage = Stage.World3D;
+                break;
+
+            case Stage.World3D when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07s_world3d");
+                Check(hospital.View3D.Visible, "The 3D world did not show.");
+                Check(hospital.View3D.Root.GetNode("Walls").GetChildCount() > 0, "The 3D world has no walls.");
+                hospital.RotateView(1);
+                hospital.ToggleWalls();
+                _frame = 0;
+                _stage = Stage.World3DTurned;
+                break;
+
+            case Stage.World3DTurned when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07t_world3d_turned_cutaway");
+                Check(hospital.View3D.Cutaway, "X did not cut the walls down.");
+                hospital.ToggleWalls();
+                hospital.RotateView(-1);
+                hospital.Set3D(false);
+                GD.Print("[smoke] 3D world: walls and floors built, turned, walls cut down and back.");
                 {
                     var ward = hospital.Session.Simulation.Wards.Single().Rect;
                     hospital.Camera.SnapTo(IsoDraw.ToScreen(ward.X + (ward.Width / 2.0), ward.Y + (ward.Length / 2.0)), 0.9f);
