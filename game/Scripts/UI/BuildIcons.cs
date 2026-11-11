@@ -62,6 +62,7 @@ public static class BuildIcons
         ["access"] = "<circle cx='11' cy='4' r='1.8'/><path d='M11 6.5V13h6l2 5'/><path d='M8 9.5a6 6 0 1 0 7.5 7.5'/>",
         ["reception"] = "<path d='M3 12h18v8H3z'/><circle cx='12' cy='6' r='2.5'/><path d='M8 12a4 4 0 0 1 8 0'/>",
         ["resus_trolley"] = "<rect x='5' y='8' width='12' height='10' rx='1'/><path d='M5 11.5h12M5 15h12'/><path d='M17 9h2.5v-3'/><circle cx='7' cy='20' r='1.3'/><circle cx='15' cy='20' r='1.3'/><path d='M9 3.5l-1.5 2.5h3L9 8.5'/>",
+        ["mop"] = "<path d='M15 3l-4 11'/><path d='M7 14h8l1 3H6z'/><path d='M7 17l-1 3M10 17v3M13 17v3M16 17l1 3'/><path d='M3 12h4v8H3'/>",
         ["lock"] = "<rect x='5' y='11' width='14' height='10' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
     };
 
@@ -78,7 +79,7 @@ public static class BuildIcons
         ["plaster_room"] = "cast", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
         ["outpatient_reception"] = "reception", ["pharmacy"] = "pharmacy", ["cafeteria"] = "facilities", ["vending_point"] = "vend",
-        ["accessible_toilet"] = "access",
+        ["accessible_toilet"] = "access", ["cleaning_room"] = "mop",
     };
 
     private static readonly Dictionary<string, Texture2D> Cache = new();

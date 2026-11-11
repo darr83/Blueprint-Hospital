@@ -84,6 +84,9 @@ public enum CareSpaceKind
 
     /// <summary>Delivery room on the labour ward: a midwife stays with one woman through labour and the birth.</summary>
     DeliveryRoom,
+
+    /// <summary>Cleaning room: where cleaners keep their mops, buckets and brushes, and fill up at the sink.</summary>
+    CleaningRoom,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

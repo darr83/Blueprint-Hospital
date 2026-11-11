@@ -55,6 +55,9 @@ public enum RoomLayoutKind
 
     /// <summary>A flight of stairs, drawn as the steps. It stands in the same place on every floor.</summary>
     Stairs,
+
+    /// <summary>A cleaners' sink, shelves of cleaning supplies, a rack of brushes and mops and a mop bucket.</summary>
+    Cleaning,
 }
 
 /// <summary>What kind of unit a ward is, when it is more than a plain ward.</summary>

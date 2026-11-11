@@ -363,6 +363,15 @@ public partial class Agents3D : Node3D
 
             _person.SetPose(pose, stride);
             _person.SetAct(act, pose, t);
+
+            // A cleaner with their kit pushes the bucket along, or has it beside them while they mop or sweep.
+            var kit = CleanKit.None;
+            if (_agent is StaffMember cleaner && cleaner.IsOnDuty && !cleaner.IsOnBreak && sim.CleanerJobOf(cleaner) is { HasKit: true })
+            {
+                kit = act == Act.Mop ? CleanKit.Mopping : act == Act.Sweep ? CleanKit.Sweeping : CleanKit.Pushing;
+            }
+
+            _person.Clean(kit, t);
             _person.Modulate(_agent is Patient { IsAlive: false });
 
             Ring(world, upright: true);

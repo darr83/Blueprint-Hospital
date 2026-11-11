@@ -78,6 +78,7 @@ public static class Decorations
         CareSpaceKind.Toilets => new(new[] { Wall.ToiletSign, Wall.HandWashPoster }, NoFloors),
         CareSpaceKind.AccessibleToilet => new(new[] { Wall.AccessibleSign }, NoFloors),
         CareSpaceKind.StaffToilet => new(new[] { Wall.StaffOnly }, NoFloors),
+        CareSpaceKind.CleaningRoom => new(new[] { Wall.StaffOnly, Wall.GloveDispenser }, NoFloors),
         CareSpaceKind.OutreachOffice => new(new[] { Wall.Noticeboard, Wall.Clock }, new[] { Floor.Bookshelf },
             new[] { ("office_desk", new[] { OnTop.Computer, OnTop.Phone }) }),
         CareSpaceKind.Triage => new(new[] { Wall.HeightChart, Wall.PainPoster }, new[] { Floor.Scales }),

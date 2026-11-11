@@ -53,5 +53,49 @@
  "colour": "#CFD8DC",
  "cost": 350,
  "is_equipment": false
+},
+{
+ "id": "cleaners_sink",
+ "name": "Cleaners' sink",
+ "width_m": 0.6,
+ "depth_m": 0.5,
+ "height_m": 0.9,
+ "style": "box",
+ "colour": "#F2F5F7",
+ "cost": 450,
+ "is_equipment": false
+},
+{
+ "id": "cleaning_shelves",
+ "name": "Cleaning supplies shelves",
+ "width_m": 0.9,
+ "depth_m": 0.4,
+ "height_m": 1.8,
+ "style": "box",
+ "colour": "#B0BEC5",
+ "cost": 250,
+ "is_equipment": false
+},
+{
+ "id": "broom_rack",
+ "name": "Brush and mop rack",
+ "width_m": 0.6,
+ "depth_m": 0.15,
+ "height_m": 1.6,
+ "style": "box",
+ "colour": "#546E7A",
+ "cost": 120,
+ "is_equipment": false
+},
+{
+ "id": "mop_bucket",
+ "name": "Mop bucket",
+ "width_m": 0.45,
+ "depth_m": 0.35,
+ "height_m": 0.9,
+ "style": "box",
+ "colour": "#FBC02D",
+ "cost": 90,
+ "is_equipment": false
 }
 ]

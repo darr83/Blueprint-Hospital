@@ -227,6 +227,12 @@ public static class Looks
                 Kind = TopKind.Polo, HiVis = true, Radio = true, Lanyard = true, ShoeColour = new Color("#1C1F22"),
             },
 
+            // Cleaners: a navy polo under a green tabard, with yellow rubber gloves.
+            StaffRole.Cleaner => new PersonLook(new Color("#26375E"), new Color("#22262B"), who.Skin, hair)
+            {
+                Kind = TopKind.Polo, Apron = new Color("#6FAE3A"), Gloves = new Color("#F2C230"), Lanyard = true, ShoeColour = new Color("#1C1F22"),
+            },
+
             // Reception: a lilac blazer over a blouse.
             _ => new PersonLook(new Color("#F3F0FA"), new Color("#2E2E38"), who.Skin, hair)
             {

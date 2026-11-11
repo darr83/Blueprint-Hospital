@@ -65,6 +65,16 @@ public partial class AnimShots : Node
         ("night4", null, (s, a) => a is Patient p && OnWardBed(p) && s.Now.Hour is >= 23 or < 4 && WardCount(s, p) >= 3, 1.8f, 45, new[] { "ischaemic_stroke" }),
     };
 
+    /// <summary>The cleaner (run with --anim-set=5): the cleaning room, mopping up a spill, mopping, sweeping and pushing the bucket.</summary>
+    private static readonly (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Scenes5 =
+    {
+        ("cupboard", null, (s, a) => a is StaffMember { Role: StaffRole.Cleaner, IsMoving: false } m && InRoom(s, a, CareSpaceKind.CleaningRoom) && s.CleanerJobOf(m) is null or { Stage: CleanerStage.FetchingKit }, 3.4f, 45, Array.Empty<string>()),
+        ("spill", Act.Mop, (s, a) => a is StaffMember m && s.CleanerJobOf(m) is { Spill: not null }, 3.0f, 120, Array.Empty<string>()),
+        ("mop", Act.Mop, (s, a) => a is StaffMember m && s.CleanerJobOf(m) is { Spill: null } && !InRoom(s, a, CareSpaceKind.Toilets), 3.0f, 120, Array.Empty<string>()),
+        ("sweep", Act.Sweep, (_, a) => a is StaffMember, 3.0f, 120, Array.Empty<string>()),
+        ("push", null, (s, a) => a is StaffMember { Role: StaffRole.Cleaner, IsMoving: true } m && s.CleanerJobOf(m) is { HasKit: true, Stage: CleanerStage.Walking } && a.RemainingPath.Count() > 8, 3.0f, 90, Array.Empty<string>()),
+    };
+
     private static WorldLayer? World;
 
     private static bool OnWardBed(Patient p) => p.Stage == PatientStage.OnWard && !p.IsMoving && World!.InBed(p)
@@ -78,7 +88,9 @@ public partial class AnimShots : Node
 
     private static bool Set4 => OS.GetCmdlineUserArgs().Contains("--anim-set=4");
 
-    private static (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Active => Set4 ? Scenes4 : Scenes;
+    private static bool Set5 => OS.GetCmdlineUserArgs().Contains("--anim-set=5");
+
+    private static (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Active => Set5 ? Scenes5 : Set4 ? Scenes4 : Scenes;
 
     public static bool Begin()
     {
@@ -174,6 +186,12 @@ public partial class AnimShots : Node
                 }
             }
 
+            if (Set5 && scene.Name == "spill" && _settle % 6 == 1)
+            {
+                // A dropped drink in the corridor for the cleaner to deal with.
+                sim.SpillForTest(new Simulation.World.GridCoord(50 + (_settle % 40), 15), SpillKind.Drink);
+            }
+
             if (Set4 && _settle % 40 == 0 && scene.Name is "checkin" or "pharmacy" or "entrance" or "wheelchair")
             {
                 for (var i = 0; i < 4; i++)
@@ -246,12 +264,12 @@ public partial class AnimShots : Node
                 (fx, fy) = ((fx + face.X) / 2, (fy + face.Y) / 2);
             }
 
-            if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
+            if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
             {
                 (fx, fy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0) - 1);
             }
 
-            if (scene.Name is "pharmacy")
+            if (scene.Name is "pharmacy" or "cupboard")
             {
                 // From the other side, so the shelves don't stand between the camera and the pharmacist.
                 _hospital.RotateView(2 - IsoDraw.Rotation);
@@ -285,7 +303,7 @@ public partial class AnimShots : Node
         }
 
         // Let the camera settle for a few frames, then save one frame each frame.
-        if (scene.Name is "wheelchair" && _subject is not null && _settle > 0)
+        if (scene.Name is "wheelchair" or "push" && _subject is not null && _settle > 0)
         {
             // Moving subjects: keep them in the middle of the shot.
             var (sx, sy) = _hospital.World.Interpolated(_subject);
@@ -321,6 +339,29 @@ public partial class AnimShots : Node
             Build4(h);
             return;
         }
+
+        if (Set5)
+        {
+            // The batch 1 hospital, plus a cleaning room and toilets south of the corridor, and cleaners.
+            Build1(h);
+            Report("cleaning_room", sim.BuildRoom(sim.AutoPlan("cleaning_room", new Simulation.World.GridRect(46, 18, 5, 6))));
+            Report("public_toilets", sim.BuildRoom(sim.AutoPlan("public_toilets", new Simulation.World.GridRect(52, 18, 10, 8))));
+            Report("staff_room", sim.BuildRoom(sim.AutoPlan("staff_room", new Simulation.World.GridRect(63, 18, 10, 8))));
+            for (var i = 0; i < 2; i++)
+            {
+                sim.HireStaff(StaffRole.Cleaner, skill: 0.6);
+                sim.HireStaff(StaffRole.Cleaner, skill: 0.6, shift: StaffShift.Night);
+            }
+
+            return;
+        }
+
+        Build1(h);
+    }
+
+    private static void Build1(HospitalScene h)
+    {
+        var sim = h.Session.Simulation;
 
         sim.AdjustBalance(10_000_000);
         foreach (var dept in sim.Database.Departments.Keys)

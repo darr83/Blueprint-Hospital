@@ -110,7 +110,7 @@ public sealed partial class HospitalSimulation
             return rooms.Count > 0 ? rooms : new[] { new StaffPosting(null, "No room yet") };
         }
 
-        var postings = new List<StaffPosting> { new(null, role is StaffRole.Porter or StaffRole.Receptionist ? "Whole hospital" : "A&E") };
+        var postings = new List<StaffPosting> { new(null, role is StaffRole.Porter or StaffRole.Receptionist or StaffRole.Cleaner ? "Whole hospital" : "A&E") };
         if (role is StaffRole.Nurse or StaffRole.Doctor or StaffRole.HealthcareAssistant)
         {
             postings.AddRange(Wards.Select(w => new StaffPosting(w.Id, w.Name)));
@@ -152,6 +152,11 @@ public sealed partial class HospitalSimulation
 
         var movesTo = _spaces.Values.Count(s => s.IsWard || (s.IsServiceRoom && s.Kind != CareSpaceKind.Pharmacy));
         needs.Add(new("Whole hospital", null, StaffRole.Porter, 1 + (int)Math.Ceiling(movesTo / 2.0), Have(StaffRole.Porter, null)));
+        if (CleaningRooms.Any())
+        {
+            // One cleaner for every 15 rooms and corridors, by day and by night.
+            needs.Add(new("Whole hospital", null, StaffRole.Cleaner, Math.Max(1, (int)Math.Ceiling(_spaces.Count / 15.0)), Have(StaffRole.Cleaner, null)));
+        }
 
         foreach (var ward in Wards)
         {

@@ -38,5 +38,24 @@
     "base_cost": 1000, "cost_per_square_metre": 600,
     "staffing": "None: the machines are stocked by the supplier, who pays the hospital a share of the takings.",
     "furniture": ["vending_machine", "water_cooler", "waiting_seat"]
+  },
+  {
+    "id": "cleaning_room",
+    "name": "Cleaning room",
+    "category": "Facilities",
+    "description": "Where cleaners keep their mops, buckets and brushes and fill up at the sink. Cleaners collect their kit here, mop up spills and keep the floors clean. Without cleaners, spills stay on the floor for hours.",
+    "kind": "cleaning_room",
+    "department": "facilities",
+    "layout": "cleaning",
+    "sizes": [
+      { "name": "Cupboard", "width_m": 2, "length_m": 2.5 },
+      { "name": "Standard", "width_m": 2.5, "length_m": 3 },
+      { "name": "Large", "width_m": 3.5, "length_m": 3.5 }
+    ],
+    "min_width_m": 2, "min_length_m": 2.5, "max_width_m": 6, "max_length_m": 5,
+    "door_width_m": 1.0,
+    "base_cost": 1500, "cost_per_square_metre": 600,
+    "staffing": "Base for the hospital's cleaners.",
+    "furniture": ["cleaners_sink", "cleaning_shelves", "broom_rack", "mop_bucket"]
   }
 ]

@@ -38,6 +38,10 @@ public static partial class Furnish3D
             case "water_cooler": WaterCooler(b, glass, h); return true;
             case "food_counter": FoodCounter(b, glass, w, d, h, colour, seed); return true;
             case "cafe_table": CafeTable(b, w, d, h, colour); return true;
+            case "cleaners_sink": CleanersSink(b, w, d, h); return true;
+            case "cleaning_shelves": CleaningShelves(b, w, d, h, colour, seed); return true;
+            case "broom_rack": BroomRack(b, w, d, h, colour); return true;
+            case "mop_bucket": MopBucket(b, w, d, h, colour); return true;
             default: return false;
         }
     }
@@ -421,6 +425,137 @@ public static partial class Furnish3D
 
         Blk(b, 0, front + 0.005f, w * 0.9f, 0.01f, h - H(8), H(6), cabinet.Lightened(0.3f));
         Blk(b, 0, 0, w + 0.01f, d + 0.01f, h - H(1), H(1), cabinet.Lightened(0.15f));
+    }
+
+    // ------------------------------------------------------------------ cleaning room
+
+    /// <summary>UK hospital cleaning colour code: red for toilets, blue for general areas, green for kitchens, yellow for isolation.</summary>
+    private static readonly Color[] CleanCodes = { new("#D32F2F"), new("#1E6FD9"), new("#2E9E4A"), new("#F2C230") };
+
+    /// <summary>A deep low sink on a cupboard, for filling and emptying mop buckets, with tall taps and a tiled splashback.</summary>
+    private static void CleanersSink(MeshBatch b, float w, float d, float h)
+    {
+        var top = h * 0.62f;
+        Blk(b, 0, 0, w, d, 0, top, new Color("#E3E8EB"));
+        Blk(b, 0, (d / 2) + 0.004f, 0.012f, 0.01f, H(3), top - H(6), new Color("#B7C1C8"));
+        foreach (var x in new[] { -(w / 4), w / 4 })
+        {
+            Blk(b, x, (d / 2) + 0.01f, 0.08f, 0.02f, top - H(9), H(1.2f), Steel);
+        }
+
+        // The deep steel sink, its dark inside, and the grille the bucket stands on.
+        Blk(b, 0, 0, w + 0.04f, d + 0.02f, top, H(7), Steel);
+        Blk(b, 0, 0.02f, w - 0.12f, d - 0.12f, top + H(7) - 0.004f, 0.006f, new Color("#4D5A63"));
+        for (var i = -2; i <= 2; i++)
+        {
+            Blk(b, i * (w - 0.2f) / 5, 0.02f, 0.02f, d - 0.16f, top + H(7), 0.01f, new Color("#9AA6AE"));
+        }
+
+        Blk(b, 0, -(d / 2) + 0.015f, w + 0.04f, 0.03f, top + H(7), H(22), new Color("#F4F7F8"));
+        for (var row = 0; row < 4; row++)
+        {
+            Blk(b, 0, -(d / 2) + 0.032f, w + 0.04f, 0.004f, top + H(7) + H(5.5f * (row + 1)), H(0.4f), new Color("#C9D3D9"));
+        }
+
+        foreach (var (x, c) in new[] { (-(w / 4), new Color("#1E88E5")), (w / 4, new Color("#E53935")) })
+        {
+            Bar(b, new Vector3(x, top + H(16), -(d / 2) + 0.07f), new Vector3(x, top + H(16), -(d / 2) + 0.2f), 0.022f, Chrome);
+            Bar(b, new Vector3(x, top + H(16), -(d / 2) + 0.2f), new Vector3(x, top + H(12), -(d / 2) + 0.22f), 0.018f, Chrome);
+            b.Ball(new Vector3(x, top + H(17.5f), -(d / 2) + 0.07f), new Vector3(0.06f, 0.03f, 0.06f), c, small: true);
+        }
+
+        // A red hazard notice and a bottle of disinfectant on the side.
+        Blk(b, 0, -(d / 2) + 0.035f, 0.22f, 0.005f, top + H(22), H(7), new Color("#FFFFFF"));
+        Blk(b, 0, -(d / 2) + 0.038f, 0.18f, 0.004f, top + H(26), H(1.5f), new Color("#D32F2F"));
+        b.Cylinder(new Vector3((w / 2) - 0.06f, top + H(7) + H(4), -(d / 2) + 0.1f), 0.035f, H(8), 0.035f, new Color("#F2C230"));
+    }
+
+    /// <summary>Wire shelving stacked with colour-coded spray bottles, toilet rolls, blue paper and bin bags.</summary>
+    private static void CleaningShelves(MeshBatch b, float w, float d, float h, Color colour, int seed)
+    {
+        foreach (var (x, z) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        {
+            Bar(b, new Vector3(x * ((w / 2) - 0.02f), 0, z * ((d / 2) - 0.02f)), new Vector3(x * ((w / 2) - 0.02f), h, z * ((d / 2) - 0.02f)), 0.014f, colour.Darkened(0.2f));
+        }
+
+        for (var i = 0; i < 4; i++)
+        {
+            var y = H(3) + (i * (h - H(4)) / 3.2f);
+            Blk(b, 0, 0, w, d, y, H(0.8f), colour);
+            for (var k = 0; k < 6; k++)
+            {
+                var x = -(w / 2) + 0.1f + (k * (w - 0.2f) / 5.5f);
+                var pick = (k + (i * 2) + seed) % 5;
+                switch (i == 0 ? 4 : pick)
+                {
+                    case 0:
+                    case 1:
+                        // A trigger spray bottle.
+                        var c = CleanCodes[(k + i + seed) % CleanCodes.Length];
+                        b.Cylinder(new Vector3(x, y + H(5), 0.02f), 0.035f, H(8), 0.035f, c.Lightened(0.15f));
+                        Blk(b, x, 0.02f, 0.03f, 0.05f, y + H(9), H(2.5f), Colors.White);
+                        break;
+                    case 2:
+                        b.Cylinder(new Vector3(x, y + H(4), 0), 0.05f, H(7), 0.05f, new Color("#F7F7F2"));
+                        b.Cylinder(new Vector3(x, y + H(11), 0), 0.05f, H(7), 0.05f, new Color("#F7F7F2"));
+                        break;
+                    case 3:
+                        b.Cylinder(new Vector3(x, y + H(5), 0), 0.07f, H(9), 0.07f, new Color("#4F8FD8"));
+                        break;
+                    default:
+                        // A carton of bin bags or a stack of cloths.
+                        Blk(b, x, 0, 0.13f, d * 0.7f, y + H(0.8f), H(5), (k % 2 == 0 ? new Color("#3A3F44") : new Color("#E8C547")));
+                        break;
+                }
+            }
+        }
+    }
+
+    /// <summary>A rail on the wall with colour-coded mops and a brush hanging from it, heads down.</summary>
+    private static void BroomRack(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        var back = -(d / 2);
+        Blk(b, 0, back + 0.02f, w, 0.03f, h * 0.8f, H(2.5f), colour);
+        var tools = 4;
+        for (var i = 0; i < tools; i++)
+        {
+            var x = -(w / 2) + ((i + 0.5f) * w / tools);
+            var code = CleanCodes[i % CleanCodes.Length];
+            var brush = i == tools - 1;
+            Bar(b, new Vector3(x, H(6), back + 0.09f), new Vector3(x, h * 0.83f, back + 0.05f), 0.018f, brush ? new Color("#C62828") : code);
+            b.Ball(new Vector3(x, h * 0.81f, back + 0.06f), new Vector3(0.045f, 0.045f, 0.045f), colour.Darkened(0.2f), small: true);
+            if (brush)
+            {
+                Blk(b, x, back + 0.1f, 0.3f, 0.06f, H(2), H(2.5f), new Color("#8D6E4E"));
+                Blk(b, x, back + 0.1f, 0.3f, 0.05f, 0, H(2), new Color("#37474F"));
+            }
+            else
+            {
+                b.Ball(new Vector3(x, H(3), back + 0.1f), new Vector3(0.12f, H(6), 0.1f), new Color("#ECEFF1"));
+                Blk(b, x, back + 0.1f, 0.06f, 0.05f, H(6), H(2), code);
+            }
+        }
+    }
+
+    /// <summary>The yellow wheeled mop bucket with its wringer, a mop standing in it and a wet floor sign folded beside.</summary>
+    private static void MopBucket(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        var bw = w * 0.8f;
+        var bd = d * 0.8f;
+        foreach (var (x, z) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        {
+            b.Ball(new Vector3(x * ((bw / 2) - 0.04f), H(1.2f), z * ((bd / 2) - 0.04f)), new Vector3(0.06f, H(2.4f), 0.06f), new Color("#2B2F33"), small: true);
+        }
+
+        Blk(b, 0, 0, bw, bd, H(2), h * 0.36f, colour);
+        Blk(b, 0, 0.03f, bw - 0.06f, bd * 0.55f, H(2) + (h * 0.36f) - 0.004f, 0.006f, new Color("#6E8C99"));
+        Blk(b, 0, -(bd / 2) + (bd * 0.2f), bw * 0.9f, bd * 0.35f, H(2) + (h * 0.36f), H(5), new Color("#7D8790"));
+        Blk(b, 0, -(bd / 2) + (bd * 0.2f), 0.06f, bd * 0.5f, H(2) + (h * 0.36f) + H(5), H(1.2f), new Color("#C62828"));
+        Bar(b, new Vector3(-(bw / 2), H(2) + (h * 0.36f), bd / 2), new Vector3(bw / 2, H(2) + (h * 0.36f), bd / 2), 0.014f, colour.Darkened(0.15f));
+
+        // The mop in the wringer, its handle leaning back against the wall.
+        b.Ball(new Vector3(0, H(2) + (h * 0.3f), -(bd / 2) + (bd * 0.2f)), new Vector3(0.14f, H(5), 0.1f), new Color("#ECEFF1"));
+        Bar(b, new Vector3(0, H(2) + (h * 0.36f), -(bd / 2) + (bd * 0.2f)), new Vector3(0.02f, h, -(d / 2) + 0.02f), 0.018f, new Color("#3F7FD9"));
     }
 
     private static void WaterCooler(MeshBatch b, MeshBatch glass, float h)
