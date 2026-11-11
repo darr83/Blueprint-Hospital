@@ -77,12 +77,33 @@ public partial class PeopleShots3D : Node
             return;
         }
 
-        var views = new (string Name, int Rotation, Pose Pose)[]
+        // The whole line-up from five sides, then (with --people3d-close) each row close up, five people a shot.
+        var views = new System.Collections.Generic.List<(string Name, int Rotation, Pose Pose, double X, double Y, float Zoom)>
         {
-            ("standing", 0, Pose.Standing), ("walking", 0, Pose.Walking), ("seated", 0, Pose.Seated), ("behind", 2, Pose.Standing), ("side", 1, Pose.Walking),
+            ("standing", 0, Pose.Standing, Centre.X + 3.5, Centre.Y + 8.5, 1.2f), ("walking", 0, Pose.Walking, Centre.X + 3.5, Centre.Y + 8.5, 1.2f),
+            ("seated", 0, Pose.Seated, Centre.X + 3.5, Centre.Y + 8.5, 1.2f), ("behind", 2, Pose.Standing, Centre.X + 3.5, Centre.Y + 8.5, 1.2f),
+            ("side", 1, Pose.Walking, Centre.X + 3.5, Centre.Y + 8.5, 1.2f),
         };
+        if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--people3d-close") >= 0)
+        {
+            views.Clear();
+            for (var row = 0; row < 4; row++)
+            {
+                for (var half = 0; half < 2; half++)
+                {
+                    var col = 2 + (half * 5);
+                    views.Add(($"close_{row}{half}", 0, Pose.Standing, Centre.X - 9 + (col * 1.6) + (row * 2.2) + 0.6, Centre.Y + 9 - (col * 1.6) + (row * 2.2) + 0.6, 3f));
+                }
+            }
+
+            views.Add(("close_walk", 0, Pose.Walking, Centre.X - 9 + (2 * 1.6) + 0.6, Centre.Y + 9 - (2 * 1.6) + 0.6, 3f));
+            views.Add(("close_back", 2, Pose.Standing, Centre.X - 9 + (2 * 1.6) - 0.6, Centre.Y + 9 - (2 * 1.6) - 0.6, 3f));
+            views.Add(("close_seated", 0, Pose.Seated, Centre.X - 9 + (2 * 1.6) + 0.6, Centre.Y + 9 - (2 * 1.6) + 0.6, 3f));
+            views.Add(("close_beds", 0, Pose.Standing, Centre.X + 6.5, Centre.Y + 12.5, 2.2f));
+        }
+
         var index = _shot / 2;
-        if (index >= views.Length)
+        if (index >= views.Count)
         {
             GD.Print("[people3d] Done.");
             GetTree().Quit(0);
@@ -98,7 +119,7 @@ public partial class PeopleShots3D : Node
                 person.SetPose(view.Pose, 1.2);
             }
 
-            _hospital.Camera.SnapTo(IsoDraw.ToScreen(Centre.X + 3.5, Centre.Y + 8.5), 1.2f);
+            _hospital.Camera.SnapTo(IsoDraw.ToScreen(view.X, view.Y), view.Zoom);
         }
         else
         {

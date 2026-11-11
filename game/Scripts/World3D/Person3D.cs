@@ -115,11 +115,21 @@ public partial class Person3D : Node3D
         var torsoTop = shY + V(2 * s);
         var torsoMid = (torsoTop + _hipY) / 2;
         var top = look.Jacket ?? look.Top;
-        body.Pill(new Vector3(0, torsoMid, 0), new Vector3((shW * 2) + W(2), torsoTop - _hipY + V(5 * s), depth), top);
+        var torsoAt = new Vector3(0, torsoMid, 0);
+        var torsoSize = new Vector3((shW * 2) + W(2), torsoTop - _hipY + V(5 * s), depth);
+        body.Shape("torso", torsoAt, torsoSize, top);
+
+        // Clothes and kit modelled to lie on the torso: the same box, so they follow its curve.
+        void Wear(string part, Color colour) => body.Shape(part, torsoAt, torsoSize, colour);
+
+        // A band right round the body at a height (0 at the hem, 1 at the shoulders).
+        void Band(float at, float tall, Color colour, float fit = 1.02f) =>
+            body.Shape("band", torsoAt + new Vector3(0, (at - 0.5f) * torsoSize.Y, 0), new Vector3(torsoSize.X * fit, tall, torsoSize.Z * fit), colour);
+
         if (look.Jacket is { } jacket)
         {
             // An open jacket or coat: the shirt shows down the front, the coat tails hang below the hips.
-            body.Box(new Vector3(0, torsoMid + V(3), (depth / 2) + 0.003f), new Vector3(shW * 0.55f, torsoTop - _hipY - V(4), 0.02f), look.Top);
+            Wear("shirt_front", look.Top);
             body.Pill(new Vector3(0, _hipY - V(3 * s), 0), new Vector3((hipW * 2) + W(3), V(10 * s), depth * 1.02f), jacket);
         }
 
@@ -127,7 +137,7 @@ public partial class Person3D : Node3D
         {
             for (var i = 0; i < 3; i++)
             {
-                body.Pill(new Vector3(0, _hipY + V((5 + (i * 6)) * s), 0), new Vector3((shW * 2) + W(2.6f), V(2 * s), depth * 1.03f), look.Top.Darkened(0.25f));
+                Band(0.3f + (i * 0.17f), V(2 * s), look.Top.Darkened(0.25f), 1.02f);
             }
         }
 
@@ -139,25 +149,26 @@ public partial class Person3D : Node3D
         if (look.Trim is { } trim)
         {
             // Piping round the collar and down the tunic's edge.
-            body.Box(new Vector3(0, torsoTop - V(2), (depth / 2) - 0.01f), new Vector3(W(7), V(2.2f), 0.03f), trim);
-            body.Box(new Vector3(0, torsoMid, (depth / 2) + 0.002f), new Vector3(W(1.2f), torsoTop - _hipY - V(4), 0.02f), trim);
+            Wear("collar", trim);
+            Band(0.065f, V(1.0f), trim, 0.975f);
         }
 
         if (look.HiVis)
         {
             // Reflective bands round the body.
-            body.Pill(new Vector3(0, _hipY + V(8 * s), 0), new Vector3((shW * 2) + W(3), V(2.2f), depth * 1.05f), new Color("#E9EEF2"));
-            body.Pill(new Vector3(0, _hipY + V(14 * s), 0), new Vector3((shW * 2) + W(3), V(2.2f), depth * 1.05f), new Color("#E9EEF2"));
+            Band(0.32f, V(2.2f), new Color("#E9EEF2"));
+            Band(0.55f, V(2.2f), new Color("#E9EEF2"));
         }
 
         if (look.Apron is { } apron)
         {
-            body.Box(new Vector3(0, _hipY + V(4), (depth / 2) + 0.004f), new Vector3(shW * 1.5f, torsoTop - _hipY + V(2), 0.025f), apron);
+            Wear("apron", apron);
+            body.Box(new Vector3(0, _hipY - V(3), (depth / 2) * 0.9f), new Vector3(shW * 1.45f, V(8), 0.025f), apron);
         }
 
         if (look.Tie is { } tie)
         {
-            body.Box(new Vector3(0, torsoMid + V(2), (depth / 2) + 0.006f), new Vector3(W(2.6f), torsoTop - _hipY - V(6), 0.02f), tie);
+            Wear("tie", tie);
         }
 
         if (look.Epaulettes is { } ep)
@@ -190,25 +201,22 @@ public partial class Person3D : Node3D
         var chest = new Vector3(0, torsoMid + V(5 * s), depth / 2);
         if (look.Lanyard)
         {
-            body.Box(chest + new Vector3(-W(2.2f), V(4), 0.006f), new Vector3(W(1), V(9), 0.01f), LanyardBlue, Basis.FromEuler(new Vector3(0, 0, -0.35f)));
-            body.Box(chest + new Vector3(W(2.2f), V(4), 0.006f), new Vector3(W(1), V(9), 0.01f), LanyardBlue, Basis.FromEuler(new Vector3(0, 0, 0.35f)));
-            body.Box(chest + new Vector3(0, -V(1.5f), 0.01f), new Vector3(W(4), V(5), 0.015f), Colors.White);
+            Wear("lanyard", LanyardBlue);
         }
 
         if (look.Badge is { } badge)
         {
-            body.Box(chest + new Vector3(-shW * 0.5f, V(1), 0.01f), new Vector3(W(3.5f), V(2.5f), 0.015f), badge);
+            Wear("badge", badge);
         }
 
         if (look.Pocket)
         {
-            body.Box(chest + new Vector3(shW * 0.5f, -V(2), 0.004f), new Vector3(W(4), V(4), 0.012f), top.Darkened(0.15f));
-            body.Box(chest + new Vector3(shW * 0.42f, V(0.5f), 0.008f), new Vector3(W(0.8f), V(3), 0.012f), new Color("#2F6FD0"));
+            Wear("pocket", top.Darkened(0.15f));
         }
 
         if (look.FobWatch)
         {
-            body.Ball(chest + new Vector3(shW * 0.5f, V(3), 0.012f), new Vector3(W(2.4f), V(2.4f), 0.02f), new Color("#E8EDF2"), small: true);
+            Wear("fob", new Color("#E8EDF2"));
         }
 
         if (look.Radio)
@@ -220,8 +228,6 @@ public partial class Person3D : Node3D
         var headY = shY + V(2.2f * s) + V(0.86f * 7.5f * look.HeadScale) + V(1);
         var head = new Vector3(0, headY, stoop * 0.3f);
         body.Cylinder(new Vector3(0, shY + V(2.5f * s), stoop * 0.15f), W(3.2f * s), V(5 * s), W(3.2f * s), look.Skin);
-        body.Ball(head, new Vector3(headR * 2, headR * 2.05f, headR * 1.95f), look.Skin);
-
         Head(body, look, head, headR);
 
         if (look.Stethoscope)
@@ -290,9 +296,8 @@ public partial class Person3D : Node3D
     /// <summary>The head's features (ears, face, glasses, beard, mask) and hair, on a head ball already drawn at <paramref name="head"/>.</summary>
     public static void Head(MeshBatch b, PersonLook look, Vector3 head, float headR, bool asleep = false)
     {
-        // Ears.
-        b.Ball(head + new Vector3(-headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
-        b.Ball(head + new Vector3(headR * 0.97f, -V(0.5f), 0), new Vector3(W(2.6f), V(3.4f), W(2)), look.Skin.Darkened(0.05f), small: true);
+        // The head itself, with its ears and nose.
+        b.Shape("head", head, new Vector3(headR * 2, headR * 2.05f, headR * 1.95f), look.Skin);
 
         // Face: dot eyes and a smile, on the front of the head.
         var face = head + new Vector3(0, 0, headR * 0.93f);
@@ -305,8 +310,16 @@ public partial class Person3D : Node3D
         }
         else
         {
-            b.Ball(face + new Vector3(-W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
-            b.Ball(face + new Vector3(W(2.6f), eyeY, 0), new Vector3(W(2), V(2.2f), W(1.2f)), Ink, small: true);
+            b.Shape("eye", face + new Vector3(-W(2.7f), eyeY, -0.004f), new Vector3(W(2.3f), V(2.7f), W(1.4f)), Ink);
+            b.Shape("eye", face + new Vector3(W(2.7f), eyeY, -0.004f), new Vector3(W(2.3f), V(2.7f), W(1.4f)), Ink);
+        }
+
+        if (!look.Glasses && look.Cap is null && look.Style is not (HairStyle.Hijab or HairStyle.Turban))
+        {
+            // Eyebrows, in the hair's colour (a soft grey-brown for the bald).
+            var brow = (look.Style == HairStyle.Bald ? look.Skin.Darkened(0.35f) : look.Hair).Lerp(look.Skin, 0.15f);
+            b.Shape("brow", face + new Vector3(-W(2.8f), eyeY + V(2.5f), -0.012f), new Vector3(W(2.8f), V(1.1f), W(1)), brow, Basis.FromEuler(new Vector3(0, 0, 0.12f)));
+            b.Shape("brow", face + new Vector3(W(2.8f), eyeY + V(2.5f), -0.012f), new Vector3(W(2.8f), V(1.1f), W(1)), brow, Basis.FromEuler(new Vector3(0, 0, -0.12f)));
         }
         var mouthY = -V(3.2f);
         var mouthColour = look.Lips ?? new Color("#7A3B32");
@@ -317,9 +330,7 @@ public partial class Person3D : Node3D
         else
         {
             var wide = look.Mouth == Mouth.Grin ? 1.25f : 1f;
-            b.Box(face + new Vector3(0, mouthY - V(0.4f), -0.008f), new Vector3(W(2.2f * wide), V(0.9f), 0.02f), mouthColour);
-            b.Box(face + new Vector3(-W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, -0.55f)));
-            b.Box(face + new Vector3(W(1.7f * wide), mouthY + V(0.2f), -0.012f), new Vector3(W(1.4f), V(0.9f), 0.02f), mouthColour, Basis.FromEuler(new Vector3(0, 0, 0.55f)));
+            b.Shape("smile", face + new Vector3(0, mouthY, -0.012f), new Vector3(W(4.6f * wide), V(2.1f), W(1.8f)), mouthColour);
         }
 
         if (look.Blush)
@@ -366,8 +377,14 @@ public partial class Person3D : Node3D
         var back = new Vector3(0, 0, -r * 0.18f);
 
         // The hair's crown: a cap over the top and back of the head.
-        void Crown(float lift = 0.32f, float size = 1.06f, float forward = -0.12f) =>
-            b.Ball(head + new Vector3(0, r * lift, r * forward), new Vector3(r * 2 * size, r * 1.55f * size, r * 2 * size), hair);
+        // A modelled cap of hair with a hairline: the forehead and face clear, down to the nape behind.
+        void Crown(float lift = 0.32f, float size = 1.06f, float forward = -0.12f)
+        {
+            _ = lift;
+            _ = forward;
+            var fit = size / 1.06f;
+            b.Shape("hair_cap", head + new Vector3(0, r * 0.02f, 0), new Vector3(r * 2 * fit, r * 2.05f * fit, r * 1.95f * fit), hair);
+        }
 
         switch (look.Style)
         {
@@ -388,29 +405,29 @@ public partial class Person3D : Node3D
                 break;
             case HairStyle.Curly:
             case HairStyle.Perm:
-                Crown(0.3f, 1.12f, -0.1f);
-                for (var i = 0; i < 6; i++)
+                Crown(0.3f, 1.08f, -0.1f);
+                for (var i = 0; i < 7; i++)
                 {
-                    var a = i * Mathf.Tau / 6;
-                    b.Ball(head + new Vector3(Mathf.Cos(a) * r * 0.85f, r * 0.55f, (Mathf.Sin(a) * r * 0.75f) - (r * 0.15f)), new Vector3(r * 0.75f, r * 0.75f, r * 0.75f), hair, small: true);
+                    var a = i * Mathf.Tau / 7;
+                    b.Shape("hair_curl", head + new Vector3(Mathf.Cos(a) * r * 0.8f, r * 0.6f, (Mathf.Sin(a) * r * 0.75f) - (r * 0.15f)), new Vector3(r * 0.8f, r * 0.75f, r * 0.8f), hair, Basis.FromEuler(new Vector3(0, a, 0)));
                 }
+
+                b.Shape("hair_curl", head + new Vector3(0, r * 0.95f, -r * 0.1f), new Vector3(r * 0.95f, r * 0.7f, r * 0.95f), hair);
 
                 break;
             case HairStyle.Afro:
-                b.Ball(head + new Vector3(0, r * 0.45f, -r * 0.2f), new Vector3(r * 2.7f, r * 2.3f, r * 2.6f), hair);
+                b.Shape("hair_afro", head + new Vector3(0, r * 0.45f, -r * 0.2f), new Vector3(r * 2.7f, r * 2.3f, r * 2.6f), hair);
                 break;
             case HairStyle.Long:
             case HairStyle.Wavy:
-                Crown(0.3f, 1.08f, -0.12f);
-                b.Pill(head + new Vector3(0, -r * 0.9f, -r * 0.45f), new Vector3(r * 2.1f, r * 2.4f, r * 1.2f), hair);
+                b.Shape("hair_long", head + new Vector3(0, r * 0.02f, 0), new Vector3(r * 2, r * 2.05f, r * 1.95f), hair);
                 break;
             case HairStyle.Bob:
-                Crown(0.28f, 1.1f, -0.1f);
-                b.Ball(head + new Vector3(0, -r * 0.25f, -r * 0.25f), new Vector3(r * 2.25f, r * 1.5f, r * 1.8f), hair);
+                b.Shape("hair_bob", head + new Vector3(0, r * 0.02f, 0), new Vector3(r * 2, r * 2.05f, r * 1.95f), hair);
                 break;
             case HairStyle.Ponytail:
                 Crown(0.32f, 1.05f, -0.14f);
-                b.Pill(head + new Vector3(0, -r * 0.5f, -r * 1.15f), new Vector3(r * 0.7f, r * 1.9f, r * 0.7f), hair);
+                b.Shape("hair_tail", head + new Vector3(0, -r * 0.45f, -r * 1.12f), new Vector3(r * 0.75f, r * 1.9f, r * 0.75f), hair);
                 if (look.Bobble is { } bobble)
                 {
                     b.Ball(head + new Vector3(0, r * 0.35f, -r * 1.05f), new Vector3(r * 0.4f, r * 0.4f, r * 0.4f), bobble, small: true);
@@ -419,28 +436,28 @@ public partial class Person3D : Node3D
                 break;
             case HairStyle.Pigtails:
                 Crown(0.32f, 1.05f, -0.12f);
-                b.Pill(head + new Vector3(-r * 1.05f, -r * 0.4f, -r * 0.3f), new Vector3(r * 0.6f, r * 1.4f, r * 0.6f), hair);
-                b.Pill(head + new Vector3(r * 1.05f, -r * 0.4f, -r * 0.3f), new Vector3(r * 0.6f, r * 1.4f, r * 0.6f), hair);
+                b.Shape("hair_tail", head + new Vector3(-r * 1.08f, -r * 0.4f, -r * 0.3f), new Vector3(r * 0.65f, r * 1.4f, r * 0.65f), hair);
+                b.Shape("hair_tail", head + new Vector3(r * 1.08f, -r * 0.4f, -r * 0.3f), new Vector3(r * 0.65f, r * 1.4f, r * 0.65f), hair);
                 break;
             case HairStyle.Bun:
                 Crown(0.32f, 1.05f, -0.14f);
-                b.Ball(head + new Vector3(0, r * 0.75f, -r * 0.85f), new Vector3(r * 0.95f, r * 0.95f, r * 0.95f), hair);
+                b.Shape("hair_bun", head + new Vector3(0, r * 0.75f, -r * 0.85f), new Vector3(r * 0.95f, r * 0.95f, r * 0.95f), hair);
                 break;
             case HairStyle.Braids:
                 Crown(0.32f, 1.06f, -0.12f);
                 for (var i = -2; i <= 2; i++)
                 {
-                    b.Pill(head + new Vector3(i * r * 0.32f, -r * 0.9f, -r * 0.75f), new Vector3(r * 0.32f, r * 2.2f, r * 0.32f), hair);
+                    b.Shape("hair_tail", head + new Vector3(i * r * 0.32f, -r * 0.9f, -r * (0.8f - (Math.Abs(i) * 0.08f))), new Vector3(r * 0.34f, r * 2.2f, r * 0.34f), hair);
                 }
 
                 break;
             case HairStyle.Quiff:
                 Crown(0.36f, 1.04f, -0.14f);
-                b.Ball(head + new Vector3(0, r * 0.95f, r * 0.45f), new Vector3(r * 1.3f, r * 0.7f, r * 0.9f), hair);
+                b.Shape("hair_fringe", head + new Vector3(0, r * 0.95f, r * 0.45f), new Vector3(r * 1.3f, r * 0.75f, r * 0.9f), hair);
                 break;
             case HairStyle.SidePart:
                 Crown(0.36f, 1.05f, -0.12f);
-                b.Ball(head + new Vector3(-r * 0.4f, r * 0.7f, r * 0.4f), new Vector3(r * 1.3f, r * 0.55f, r * 0.9f), hair);
+                b.Shape("hair_fringe", head + new Vector3(-r * 0.1f, r * 0.7f, r * 0.5f), new Vector3(r * 1.7f, r * 0.6f, r * 0.9f), hair);
                 break;
             case HairStyle.Hijab:
                 // A scarf wrapped over the head and down to the shoulders, the face left open.
@@ -470,9 +487,9 @@ public partial class Person3D : Node3D
         var b = new MeshBatch();
         var elbow = new Vector3(0, -length * 0.45f, 0);
         var wrist = new Vector3(0, -length + radius, 0);
-        b.Capsule(Vector3.Zero, elbow, radius * 1.1f, cloth);
-        b.Capsule(elbow, wrist, radius, sleeve ?? skin);
-        b.Ball(wrist + new Vector3(0, -radius * 0.5f, 0), new Vector3(radius * 2.6f, radius * 2.6f, radius * 2.6f), hand, small: true);
+        b.LimbShape("sleeve", Vector3.Zero, elbow, radius * 1.15f, cloth);
+        b.LimbShape("limb", elbow + new Vector3(0, radius * 0.6f, 0), wrist, radius, sleeve ?? skin);
+        b.Shape("hand", wrist + new Vector3(0, -radius * 0.6f, 0), new Vector3(radius * 2.5f, radius * 3f, radius * 2.7f), hand);
         b.AddTo(pivot);
         return pivot;
     }
@@ -493,7 +510,7 @@ public partial class Person3D : Node3D
         var thighMesh = new Node3D { Name = "ThighMesh" };
         thigh.AddChild(thighMesh);
         var tb = new MeshBatch();
-        tb.Capsule(Vector3.Zero, new Vector3(0, -kneeDrop, 0), radius * 1.05f, thighColour);
+        tb.LimbShape("limb", Vector3.Zero, new Vector3(0, -kneeDrop, 0), radius * 1.08f, thighColour);
         tb.AddTo(thighMesh);
         var knee = new Node3D { Position = new Vector3(0, -kneeDrop, 0) };
         thigh.AddChild(knee);
@@ -502,7 +519,7 @@ public partial class Person3D : Node3D
         var sb = new MeshBatch();
         var ankle = -(_hipY - kneeDrop) + V(2.4f);
         _ankle = ankle;
-        sb.Capsule(Vector3.Zero, new Vector3(0, ankle, 0), radius, shinColour);
+        sb.LimbShape("limb", Vector3.Zero, new Vector3(0, ankle, 0), radius, shinColour);
         if (hem is { } h)
         {
             sb.Cylinder(new Vector3(0, ankle + V(1.2f), 0), radius * 1.08f, V(0.8f), radius * 1.08f, h);
@@ -512,7 +529,7 @@ public partial class Person3D : Node3D
         var foot = new Node3D { Name = "Foot", Position = new Vector3(0, ankle, 0) };
         knee.AddChild(foot);
         var fb = new MeshBatch();
-        fb.Ball(new Vector3(0, -V(1.2f), W(1.8f)), new Vector3(radius * 2.3f, V(3.4f), radius * 3.4f), shoes, small: true);
+        fb.Shape("shoe", new Vector3(0, -V(1.0f), W(1.8f)), new Vector3(radius * 2.4f, V(4.2f), radius * 3.7f), shoes);
         fb.AddTo(foot);
         _legs.Add(new LegParts(thighMesh, knee, shinMesh, foot));
         return (thigh, knee);

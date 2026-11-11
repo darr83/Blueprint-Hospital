@@ -50,6 +50,47 @@ public sealed class MeshBatch
         }
     }
 
+    /// <summary>
+    /// A modelled body part from the <see cref="PeopleKit"/>, its unit box stretched to <paramref name="size"/>
+    /// at <paramref name="centre"/> and painted <paramref name="colour"/> (surfaces with a colour of their own keep it).
+    /// </summary>
+    public void Shape(string part, Vector3 centre, Vector3 size, Color colour, Basis? basis = null)
+    {
+        if (PeopleKit.Part(part) is not { } surfaces)
+        {
+            Ball(centre, size, colour);
+            return;
+        }
+
+        var xf = Frame * new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(size), centre);
+        var normalBasis = xf.Basis.Inverse().Transposed();
+        foreach (var surface in surfaces)
+        {
+            var start = _vertices.Count;
+            var paint = surface.Fixed ?? colour;
+            for (var k = 0; k < surface.Vertices.Length; k++)
+            {
+                _vertices.Add(xf * surface.Vertices[k]);
+                _normals.Add((normalBasis * surface.Normals[k]).Normalized());
+                _colours.Add(paint);
+            }
+
+            foreach (var index in surface.Indices)
+            {
+                _indices.Add(start + index);
+            }
+        }
+    }
+
+    /// <summary>A modelled limb part (see <see cref="Shape"/>) running from <paramref name="from"/> to <paramref name="to"/>, as <see cref="Capsule"/> does.</summary>
+    public void LimbShape(string part, Vector3 from, Vector3 to, float radius, Color colour)
+    {
+        var along = to - from;
+        // The parts are modelled top up, so the part's top goes at "from".
+        var basis = Kit3D.AlongBasis(-along.Normalized());
+        Shape(part, (from + to) / 2, new Vector3(radius * 2, along.Length() + (radius * 2), radius * 2), colour, basis);
+    }
+
     /// <summary>An axis-aligned box from its centre and size.</summary>
     public void Box(Vector3 centre, Vector3 size, Color colour) =>
         Add(Kit3D.UnitBox, new Transform3D(Basis.FromScale(size), centre), colour);

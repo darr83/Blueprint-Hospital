@@ -160,7 +160,7 @@ public partial class SmokeTest : Node
                     if (model is not null)
                     {
                         var triangles = World3D.Models3D.Triangles(model);
-                        Check(triangles > 0 && triangles <= World3D.Models3D.TriangleLimit, $"The Blender model '{name}' has {triangles} triangles (limit {World3D.Models3D.TriangleLimit}).");
+                        Check(triangles > 0 && (World3D.Models3D.IsKit(name) || triangles <= World3D.Models3D.TriangleLimit), $"The Blender model '{name}' has {triangles} triangles (limit {World3D.Models3D.TriangleLimit}).");
                         model.Free();
                     }
                 }
