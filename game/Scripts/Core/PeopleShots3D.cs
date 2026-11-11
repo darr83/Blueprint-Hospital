@@ -65,7 +65,6 @@ public partial class PeopleShots3D : Node
                 }
 
                 h.Session.Clock.SetSpeed(SimulationSpeed.Paused);
-                h.Set3D(true);
                 Build(h);
                 _frame = 0;
             }

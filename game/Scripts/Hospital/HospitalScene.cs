@@ -32,8 +32,7 @@ public partial class HospitalScene : Node2D
 {
     private readonly IsoProjection _projection = new();
     private GameSession _session = null!;
-    private SiteRenderer _site = null!;
-    private DepartmentRenderer _department = null!;
+    private bool _showGrid;
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
     private PlanLayer _plan = null!;
@@ -44,7 +43,6 @@ public partial class HospitalScene : Node2D
     private MainHUD _hud = null!;
     private SelectionHighlight _highlight = null!;
     private SelectionHighlight _itemHighlight = null!;
-    private AccidentLayer _accidents = null!;
     private BlueprintHospital.World3D.View3D _view3D = null!;
 
     /// <summary>Play (people and beds) or Build (rooms and items).</summary>
@@ -54,7 +52,6 @@ public partial class HospitalScene : Node2D
 
     public IsoCamera Camera => _camera;
 
-    public SiteRenderer SiteView => _site;
 
     public WorldLayer World => _world;
 
@@ -77,41 +74,29 @@ public partial class HospitalScene : Node2D
         IsoDraw.SetRotation(0);
         IsoDraw.SetViewFloor(0);
 
-        _site = new SiteRenderer { Name = "Site" };
-        AddChild(_site);
-        _site.Initialise(_session.Site, _projection);
-        _site.ShowGrid = settings.ShowGridByDefault;
-
-        _department = new DepartmentRenderer { Name = "Department" };
-        AddChild(_department);
-        _department.Initialise(_session.Simulation);
+        _showGrid = settings.ShowGridByDefault;
 
         // Outline of the selected room or item, on the floor under everything standing on it.
         _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
         AddChild(_highlight);
 
-        // Wet patches where someone didn't make it to a toilet, on the floor under everything else.
-        _accidents = new AccidentLayer { Name = "Accidents" };
-        AddChild(_accidents);
-        _accidents.Initialise(_session.Simulation);
-
-        // Walls, furniture, people and vehicles, depth-sorted together; labels on top.
-        _world = new WorldLayer { Name = "World" };
+        // Keeps track of the layout and where everyone is between ticks; draws nothing itself.
+        _world = new WorldLayer { Name = "World", Visible = false };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
 
-        // The 3D world, drawn under everything 2D (labels, cursor and build outlines stay on top).
+        // The hospital in 3D, drawn under everything 2D (labels, cursor and build outlines stay on top).
         _view3D = new BlueprintHospital.World3D.View3D { Name = "World3D" };
         AddChild(_view3D);
         _view3D.Initialise(this, _session.Simulation, _world);
-        _view3D.ShowGrid = _site.ShowGrid;
+        _view3D.ShowGrid = _showGrid;
 
-        // The 2D plan view (V): walls, furniture and everyone as circles, seen from above. Hidden until turned on.
+        // The plan view (V): the 3D world straight from above, with everyone marked by a circle. Hidden until turned on.
         IsoDraw.SetPlan(false);
         _plan = new PlanLayer { Name = "Plan", Visible = false };
         AddChild(_plan);
         _plan.Initialise(_world);
-        Set3D(true);
+        _view3D.SetShown(true);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -150,7 +135,7 @@ public partial class HospitalScene : Node2D
         {
             // Start looking at the emergency department.
             var footprint = StarterSite.MainBuildingFootprint;
-            _camera.SnapTo(_site.ToScreen(footprint.X + 22, footprint.Y + 16), 0.56f);
+            _camera.SnapTo(IsoDraw.ToScreenGround(footprint.X + 22, footprint.Y + 16), 0.56f);
         }
 
         _hud = new MainHUD { Name = "HUD" };
@@ -209,7 +194,7 @@ public partial class HospitalScene : Node2D
             _hud.Build.Open("building");
         };
         _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
-        _hud.SetGridShown(_site.ShowGrid);
+        _hud.SetGridShown(_showGrid);
         _hud.SelectionAnchor = () => _world.Selected switch
         {
             Agent a when !_world.OnViewFloor(a) => null,
@@ -316,8 +301,6 @@ public partial class HospitalScene : Node2D
             }
 
             _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
-            _site.Rebuild();
-            _department.QueueRedraw();
         }
     }
 
@@ -400,9 +383,6 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.V:
                 TogglePlanView();
-                break;
-            case Key.F3:
-                Set3D(!Is3D);
                 break;
             case Key.X:
                 ToggleWalls();
@@ -623,8 +603,6 @@ public partial class HospitalScene : Node2D
         var state = _camera.CaptureState();
         var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
         IsoDraw.SetRotation(IsoDraw.Rotation + quarterTurns);
-        _site.Rebuild();
-        _department.QueueRedraw();
         _world.RebuildStatic();
         _camera.Bounds = SiteBounds();
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
@@ -647,9 +625,7 @@ public partial class HospitalScene : Node2D
         var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
         IsoDraw.SetPlan(on);
         _overlay.Visible = !on;
-        UpdateLayers();
-        _site.Rebuild();
-        _department.QueueRedraw();
+        _plan.Visible = on;
         _world.RebuildStatic();
         _camera.Bounds = SiteBounds();
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
@@ -659,32 +635,10 @@ public partial class HospitalScene : Node2D
     /// <summary>The floor in view (0 = ground).</summary>
     public int ViewFloor => IsoDraw.ViewFloor;
 
-    /// <summary>True while the hospital is shown in 3D.</summary>
-    public bool Is3D { get; private set; }
-
     public BlueprintHospital.World3D.View3D View3D => _view3D;
 
     /// <summary>Cuts the walls down low (or puts them back up) so you can see into every room.</summary>
     public void ToggleWalls() => _view3D.Cutaway = !_view3D.Cutaway;
-
-    /// <summary>Switches between the 3D world and the 2D drawing.</summary>
-    public void Set3D(bool on)
-    {
-        Is3D = on;
-        _view3D.SetShown(on);
-        UpdateLayers();
-    }
-
-    /// <summary>Shows the 2D world layers only where the 3D world isn't drawing the same thing.</summary>
-    private void UpdateLayers()
-    {
-        var flat = !Is3D;
-        _site.Visible = flat;
-        _department.Visible = flat;
-        _accidents.Visible = flat;
-        _world.Visible = flat && !IsoDraw.Plan;
-        _plan.Visible = flat && IsoDraw.Plan;
-    }
 
     /// <summary>Looks at another floor: only its rooms and people are drawn, over the grounds faded below.</summary>
     public void ShowFloor(int floor)
@@ -697,8 +651,6 @@ public partial class HospitalScene : Node2D
         }
 
         IsoDraw.SetViewFloor(floor);
-        _site.QueueRedraw();
-        _department.QueueRedraw();
         _world.RebuildStatic();
         _hud.SetFloorShown(floor, _session.Simulation.FloorCount);
     }
@@ -712,9 +664,9 @@ public partial class HospitalScene : Node2D
 
     private void ToggleGrid()
     {
-        _site.ShowGrid = !_site.ShowGrid;
-        _view3D.ShowGrid = _site.ShowGrid;
-        _hud.SetGridShown(_site.ShowGrid);
+        _showGrid = !_showGrid;
+        _view3D.ShowGrid = _showGrid;
+        _hud.SetGridShown(_showGrid);
     }
 
     /// <summary>Shows or hides everyone's walking route (the selected person's always shows).</summary>
@@ -745,7 +697,7 @@ public partial class HospitalScene : Node2D
         var site = _session.Site;
         var corners = new[]
         {
-            _site.ToScreen(0, 0), _site.ToScreen(site.Width, 0), _site.ToScreen(site.Width, site.Length), _site.ToScreen(0, site.Length),
+            IsoDraw.ToScreenGround(0, 0), IsoDraw.ToScreenGround(site.Width, 0), IsoDraw.ToScreenGround(site.Width, site.Length), IsoDraw.ToScreenGround(0, site.Length),
         };
         var rect = new Rect2(corners[0], Vector2.Zero);
         foreach (var c in corners)
