@@ -1441,6 +1441,9 @@ public partial class SmokeTest : Node
         var stairs = Place("stairs", 5, 8);
         Check(stairs is not null, "Found nowhere to put stairs.");
         GD.Print($"[smoke] {lift!.Name} at {lift.Rect} and {stairs!.Name} at {stairs.Rect}, through {sim.FloorCount} floors.");
+        Check(RoomSigns.KindOf(stairs) == RoomSigns.DoorKind.Single && !RoomSigns.OpenGap(stairs), "Stairs should have an ordinary single door.");
+        Check(RoomSigns.KindOf(lift) == RoomSigns.DoorKind.None && !RoomSigns.OpenGap(lift), "A lift should have its steel sliding doors, not a swinging door.");
+        Check(sim.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Waiting).All(RoomSigns.OpenGap), "Waiting room doorways should be plain gaps.");
 
         // Upstairs: a corridor from the lift door across the building, then a ward off it.
         var upLift = sim.ShaftOf(lift).Single(s => sim.FloorOf(s) == 1);
