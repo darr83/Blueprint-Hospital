@@ -59,6 +59,27 @@ public static class IsoDraw
 
     public static void SetPlan(bool on) => Plan = on;
 
+    /// <summary>
+    /// Draws flat from above, unrotated, until disposed: used to paint the floors into the texture
+    /// that lies on the 3D floor, whatever the camera is doing.
+    /// </summary>
+    public static FlatScope PushFlat()
+    {
+        var scope = new FlatScope(Plan, Rotation);
+        Plan = true;
+        Rotation = 0;
+        return scope;
+    }
+
+    public readonly struct FlatScope(bool plan, int rotation) : IDisposable
+    {
+        public void Dispose()
+        {
+            Plan = plan;
+            Rotation = rotation;
+        }
+    }
+
     /// <summary>Which floor a grid position is on.</summary>
     public static int FloorOf(double y) => _floorStride <= 0 || y < _floorStride ? 0 : (int)(y / _floorStride);
 

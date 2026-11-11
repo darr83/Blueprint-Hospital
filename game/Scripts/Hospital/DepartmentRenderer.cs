@@ -64,12 +64,17 @@ public partial class DepartmentRenderer : Node2D
         QueueRedraw();
     }
 
+    /// <summary>True for the copy that paints the floors flat, into the texture on the 3D floor.</summary>
+    public bool Flat { get; set; }
+
     public override void _Draw()
     {
         if (_sim is null)
         {
             return;
         }
+
+        using var flat = Flat ? IsoDraw.PushFlat() : default(IsoDraw.FlatScope?);
 
         foreach (var space in _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
         {

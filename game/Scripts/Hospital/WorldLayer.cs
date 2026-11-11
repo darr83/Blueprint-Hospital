@@ -110,9 +110,13 @@ public partial class WorldLayer : Node2D
 
     public override void _ExitTree() => _layoutSubscription?.Dispose();
 
+    /// <summary>Counts rebuilds, so the 3D view knows when to rebuild its walls and floors too.</summary>
+    public int StaticVersion { get; private set; }
+
     /// <summary>Rebuilds walls and furniture, after rooms are built, moved or demolished.</summary>
     public void RebuildStatic()
     {
+        StaticVersion++;
         foreach (var node in _staticNodes)
         {
             node.QueueFree();
@@ -594,7 +598,7 @@ public partial class WorldLayer : Node2D
     private readonly Dictionary<CareSpace, (float Open, double At)> _doors = new();
 
     /// <summary>How far a room's door stands open: it swings open as someone comes near and closes behind them.</summary>
-    private float DoorOpenness(CareSpace space, double mx, double my)
+    public float DoorOpenness(CareSpace space, double mx, double my)
     {
         static bool Near(Agent a, double x, double y) => Math.Abs(a.X - x) < 1.6 && Math.Abs(a.Y - y) < 1.6;
         var near = _sim.Patients.Any(p => Near(p, mx, my)) || _sim.Staff.Any(s => Near(s, mx, my));

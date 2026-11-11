@@ -48,6 +48,16 @@ public partial class ArtShots : Node
                     cursor.Visible = false;
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-3d") >= 0)
+                {
+                    h.Set3D(true);
+                }
+
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
+                {
+                    h.ToggleWalls();
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-wing") >= 0)
                 {
                     BuildShowroom(h);
