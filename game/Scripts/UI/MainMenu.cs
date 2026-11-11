@@ -58,7 +58,7 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!ArtGallery.Begin() && !DoorShots.Begin())
+        else if (!ArtGallery.Begin() && !DoorShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin())
         {
             ArtShots.Begin(this);
         }

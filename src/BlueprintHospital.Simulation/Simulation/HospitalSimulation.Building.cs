@@ -792,7 +792,7 @@ public sealed partial class HospitalSimulation
             if (member.Activity == StaffActivity.Idle && member.CurrentTaskId is null)
             {
                 var home = HomeTile(member);
-                var path = Nav.FindPath(member.Tile, home);
+                var path = Nav.FindRoute(member.Tile, home);
                 if (path.Count > 0)
                 {
                     member.FollowPath(path);

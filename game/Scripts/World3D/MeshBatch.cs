@@ -54,6 +54,52 @@ public sealed class MeshBatch
     public void Block(double x, double y, double w, double l, float height, Color colour, float from = 0) =>
         Box(new Vector3((float)(x + (w / 2)), from + (height / 2), (float)(y + (l / 2))), new Vector3((float)w, height, (float)l), colour);
 
+    /// <summary>A box turned by <paramref name="basis"/> (applied before its size).</summary>
+    public void Box(Vector3 centre, Vector3 size, Basis basis, Color colour) =>
+        Add(Kit3D.UnitBox, new Transform3D(basis * Basis.FromScale(size), centre), colour);
+
+    /// <summary>A box turned by <paramref name="basis"/>.</summary>
+    public void Box(Vector3 centre, Vector3 size, Color colour, Basis basis) => Box(centre, size, basis, colour);
+
+    /// <summary>An ellipsoid: a sphere stretched to <paramref name="size"/> (full widths).</summary>
+    public void Ball(Vector3 centre, Vector3 size, Color colour, bool small = false) =>
+        Add(small ? Kit3D.SmallSphere : Kit3D.UnitSphere, new Transform3D(Basis.FromScale(size), centre), colour);
+
+    /// <summary>An ellipsoid turned by <paramref name="basis"/>.</summary>
+    public void Ball(Vector3 centre, Vector3 size, Basis basis, Color colour, bool small = false) =>
+        Add(small ? Kit3D.SmallSphere : Kit3D.UnitSphere, new Transform3D(basis * Basis.FromScale(size), centre), colour);
+
+    /// <summary>A rounded rod from <paramref name="from"/> to <paramref name="to"/>, for limbs.</summary>
+    public void Capsule(Vector3 from, Vector3 to, float radius, Color colour, float depthScale = 1f)
+    {
+        var along = to - from;
+        var basis = Kit3D.AlongBasis(along.Normalized());
+        Add(Kit3D.UnitCapsule, new Transform3D(basis * Basis.FromScale(new Vector3(radius * 2, along.Length() + (radius * 2), radius * 2 * depthScale)), (from + to) / 2), colour);
+    }
+
+    /// <summary>A rounded body part: a capsule standing upright, <paramref name="size"/> across, tall and deep.</summary>
+    public void Pill(Vector3 centre, Vector3 size, Color colour, Basis? basis = null) =>
+        Add(Kit3D.UnitCapsule, new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(size), centre), colour);
+
+    /// <summary>A cylinder from <paramref name="from"/> to <paramref name="to"/>.</summary>
+    public void Rod(Vector3 from, Vector3 to, float radius, Color colour, bool small = false)
+    {
+        var along = to - from;
+        var basis = Kit3D.AlongBasis(along.Normalized());
+        Add(small ? Kit3D.SmallCylinder : Kit3D.UnitCylinder, new Transform3D(basis * Basis.FromScale(new Vector3(radius * 2, along.Length(), radius * 2)), (from + to) / 2), colour);
+    }
+
+    /// <summary>An upright cylinder (or a cone with <paramref name="cone"/>) centred at <paramref name="centre"/>.</summary>
+    public void Cylinder(Vector3 centre, float radiusX, float height, float radiusZ, Color colour, Basis? basis = null, bool cone = false) =>
+        Add(cone ? Kit3D.UnitCone : Kit3D.UnitCylinder, new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(new Vector3(radiusX * 2, height, radiusZ * 2)), centre), colour);
+
+    /// <summary>A ring (torus) lying flat, <paramref name="radius"/> to the middle of its band (the band is about a fifth as thick).</summary>
+    public void Ring(Vector3 centre, float radius, Color colour, Basis? basis = null, float flatten = 1f)
+    {
+        var scale = radius / 0.45f;
+        Add(Kit3D.UnitRing, new Transform3D((basis ?? Basis.Identity) * Basis.FromScale(new Vector3(scale, scale * flatten, scale)), centre), colour);
+    }
+
     /// <summary>A flat quad lying on the floor at height <paramref name="lift"/>.</summary>
     public void Floor(double x, double y, double w, double l, float lift, Color colour)
     {

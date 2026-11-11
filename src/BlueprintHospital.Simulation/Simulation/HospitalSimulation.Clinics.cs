@@ -540,7 +540,7 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var path = Nav.FindPath(o.Tile, destination);
+        var path = Nav.FindRoute(o.Tile, destination);
         if (path.Count > 0)
         {
             o.FollowPath(path);

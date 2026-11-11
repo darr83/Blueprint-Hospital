@@ -97,6 +97,12 @@ public static class Kit3D
 
     public static readonly SphereMesh UnitSphere = new() { Radius = 0.5f, Height = 1f, RadialSegments = 18, Rings = 9 };
 
+    /// <summary>A coarse sphere for small details (eyes, buttons), where a smooth one would be wasted.</summary>
+    public static readonly SphereMesh SmallSphere = new() { Radius = 0.5f, Height = 1f, RadialSegments = 8, Rings = 4 };
+
+    /// <summary>A coarse cylinder for thin rods and rails.</summary>
+    public static readonly CylinderMesh SmallCylinder = new() { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 1f, RadialSegments = 8, Rings = 1 };
+
     public static readonly CylinderMesh UnitCylinder = new() { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 1f, RadialSegments = 18, Rings = 1 };
 
     public static readonly CylinderMesh UnitCone = new() { TopRadius = 0.0f, BottomRadius = 0.5f, Height = 1f, RadialSegments = 18, Rings = 1 };
