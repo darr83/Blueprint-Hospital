@@ -109,6 +109,51 @@ public partial class Agents3D : Node3D
         private Alert3D? _alert;
         private Ambulance3D? _ambulance;
 
+        private Person3D[]? _crew;
+
+        /// <summary>
+        /// The two-person crew stand at either end of their stretcher by the bay until a nurse takes
+        /// handover; then they wheel the patient in (drawn as the trolley and its pusher) and leave.
+        /// </summary>
+        private void SyncCrew(WorldLayer world, HospitalSimulation sim, AmbulanceVehicle vehicle)
+        {
+            var patient = vehicle is { State: AmbulanceState.AtBay, Purpose: AmbulancePurpose.Arrival } ? sim.FindPatient(vehicle.PatientId) : null;
+            var show = patient is not null && world.OnAmbulanceStretcher(patient) && Node.Visible;
+            if (!show)
+            {
+                if (_crew is not null)
+                {
+                    foreach (var member in _crew)
+                    {
+                        member.Visible = false;
+                    }
+                }
+
+                return;
+            }
+
+            _crew ??= new[] { Make(vehicle.Id * 2), Make((vehicle.Id * 2) + 1) };
+            var (x, y) = world.Interpolated(patient!);
+
+            // The stretcher lies head to the north; one crew member at each end, facing along it.
+            for (var i = 0; i < 2; i++)
+            {
+                var end = i == 0 ? -1 : 1;
+                var member = _crew[i];
+                member.Visible = true;
+                member.Position = Kit3D.At(x + 0.35, y + (end * 2.75));
+                member.Rotation = new Vector3(0, Kit3D.Yaw(0, -end), 0);
+                member.SetPose(Pose.Standing, 0);
+            }
+
+            Person3D Make(int seed)
+            {
+                var person = Person3D.Build(Looks.Paramedic(seed));
+                Node.AddChild(person);
+                return person;
+            }
+        }
+
         public AgentView(Agents3D owner, Agent agent)
         {
             _owner = owner;
@@ -126,6 +171,7 @@ public partial class Agents3D : Node3D
                 Node.Visible = world.OnViewFloor(vehicle);
                 _ambulance ??= Ambulance3D.Make(Node);
                 _ambulance.Sync(world, sim, vehicle);
+                SyncCrew(world, sim, vehicle);
                 return;
             }
 

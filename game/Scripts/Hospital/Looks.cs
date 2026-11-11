@@ -244,6 +244,25 @@ public static class Looks
         return WithFace(look, seed, female, age, who.SkinIndex, neat: true);
     }
 
+    /// <summary>
+    /// An ambulance crew member: the green paramedic uniform with reflective trim, epaulettes and a radio.
+    /// <paramref name="seed"/> picks the face and hair, so each crew looks the same every time it is drawn.
+    /// </summary>
+    public static PersonLook Paramedic(int seed)
+    {
+        var female = Roll(seed, 3, 2) == 0;
+        var age = 24 + Roll(seed, 2, 30);
+        var who = Person(seed, female, age);
+        var style = StaffHair(seed, female, age);
+        var hair = style is HairStyle.Hijab or HairStyle.Turban ? ScarfColours[Roll(seed, 12, ScarfColours.Length)] : who.Hair;
+        var look = new PersonLook(new Color("#1F5A3E"), new Color("#173A2A"), who.Skin, hair)
+        {
+            Kind = TopKind.Tunic, Trim = new Color("#C9D6D0"), Epaulettes = new Color("#C9D6D0"), Radio = true, ShoeColour = new Color("#1A1C1E"),
+            Style = style, Build = 0.95f + (Roll(seed, 4, 5) * 0.06f),
+        };
+        return WithFace(look, seed, female, age, who.SkinIndex, neat: true);
+    }
+
     /// <summary>The colour that stands for a staff member's uniform in lists and on route lines.</summary>
     public static Color UniformColour(StaffMember member) => Staff(member).Jacket ?? Staff(member).Top;
 

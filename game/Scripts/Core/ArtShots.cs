@@ -82,6 +82,23 @@ public partial class ArtShots : Node
                     clock.Step();
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-ambulances") >= 0)
+                {
+                    // A busy run of ambulances: every bay taken and more queueing on the road.
+                    var sim = h.Session.Simulation;
+                    for (var i = 0; i < 6; i++)
+                    {
+                        sim.SpawnPatient(ArrivalMethod.Ambulance);
+                    }
+
+                    for (var i = 0; i < 4000 && sim.Ambulances.Count(a => a.State == Simulation.Transport.AmbulanceState.AtBay) < 4; i++)
+                    {
+                        clock.Step();
+                    }
+
+                    GD.Print($"[art] Ambulances: {string.Join(", ", sim.Ambulances.Select(a => $"{a.CallSign} {a.State} {a.X:0.0},{a.Y:0.0}"))}");
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-corridor") >= 0)
                 {
                     // Busy night: more ambulances than cubicles, so the overflow goes into corridor care.

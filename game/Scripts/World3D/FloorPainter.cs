@@ -86,7 +86,7 @@ public partial class FloorPainter : Node3D
         var rects = _sim.Site.Buildings.SelectMany(b => b.Areas).ToList();
         if (IsoDraw.ViewFloor == 0)
         {
-            rects.AddRange(_sim.AmbulanceBayPatientTiles.Select(s => new GridRect(s.X + 2, s.Y - 2, 14, 6)));
+            rects.AddRange(_sim.AmbulanceBays);
         }
 
         if (rects.Count == 0)
