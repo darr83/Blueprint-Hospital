@@ -1,4 +1,5 @@
 using System;
+using BlueprintHospital.Core;
 using BlueprintHospital.Hospital;
 using BlueprintHospital.Simulation.Simulation;
 using Godot;
@@ -24,6 +25,8 @@ public partial class View3D : Node3D
     private WorldLayer _world = null!;
     private Camera3D _camera = null!;
     private DirectionalLight3D _sun = null!;
+    private DirectionalLight3D _fill = null!;
+    private bool? _enhanced;
     private WorldEnvironment _environment = null!;
 
     /// <summary>The grounds: turned with the view, never shifted (they belong to the ground floor).</summary>
@@ -50,6 +53,9 @@ public partial class View3D : Node3D
     public Node3D Root => _root;
 
     public WorldLayer World => _world;
+
+    /// <summary>How bright the enhanced lighting's fill light is now (0 with enhanced lighting off).</summary>
+    public float FillEnergy => _fill.LightEnergy;
 
     public HospitalSimulation Simulation => _sim;
 
@@ -85,6 +91,11 @@ public partial class View3D : Node3D
         };
         AddChild(_sun);
 
+        // A weak, shadowless, cool light from the other side, so faces turned away from the sun are
+        // not all one flat shade. Only lit with enhanced lighting on.
+        _fill = new DirectionalLight3D { Name = "Fill", LightColor = new Color("#CFE0FF"), LightEnergy = 0f, ShadowEnabled = false };
+        AddChild(_fill);
+
         var environment = new Godot.Environment
         {
             BackgroundMode = Godot.Environment.BGMode.Color,
@@ -100,6 +111,7 @@ public partial class View3D : Node3D
         };
         _environment = new WorldEnvironment { Name = "Environment", Environment = environment };
         AddChild(_environment);
+        ApplyLighting();
 
         _groundRoot = new Node3D { Name = "Grounds" };
         AddChild(_groundRoot);
@@ -222,6 +234,42 @@ public partial class View3D : Node3D
         PlaceCamera();
     }
 
+    /// <summary>
+    /// Sets the lighting quality from the player's settings. Enhanced: deeper contact shading where
+    /// things meet, sharper and finer sun shadows, a soft fill light, smoothed edges and a slightly
+    /// richer picture. Off: the plain lighting, for slower computers.
+    /// </summary>
+    private void ApplyLighting()
+    {
+        var on = GameManager.Instance?.Settings.EnhancedLighting ?? true;
+        if (_enhanced == on)
+        {
+            return;
+        }
+
+        _enhanced = on;
+        var env = _environment.Environment;
+        env.SsaoRadius = on ? 1.0f : 0.8f;
+        env.SsaoIntensity = on ? 2.6f : 1.4f;
+        env.SsaoPower = on ? 1.6f : 1.5f;
+        env.SsaoDetail = on ? 1.0f : 0.5f;
+        env.AdjustmentEnabled = on;
+        env.AdjustmentSaturation = 1.12f;
+        env.AdjustmentContrast = 1.1f;
+        env.AdjustmentBrightness = 0.97f;
+        _sun.ShadowBlur = on ? 0.6f : 1.0f;
+        if (DisplayServer.GetName() == "headless")
+        {
+            return;
+        }
+
+        var viewport = GetViewport();
+        viewport.Msaa3D = on ? Viewport.Msaa.Msaa4X : Viewport.Msaa.Disabled;
+        viewport.ScreenSpaceAA = on ? Viewport.ScreenSpaceAAEnum.Smaa : Viewport.ScreenSpaceAAEnum.Disabled;
+        RenderingServer.DirectionalShadowAtlasSetSize(on ? 8192 : 4096, true);
+        RenderingServer.DirectionalSoftShadowFilterSetQuality(on ? RenderingServer.ShadowQuality.SoftHigh : RenderingServer.ShadowQuality.SoftLow);
+    }
+
     private static readonly Color DaySun = new("#FFF6E8");
     private static readonly Color DawnSun = new("#FFC98A");
     private static readonly Color NightSun = new("#8FA6D8");
@@ -246,6 +294,8 @@ public partial class View3D : Node3D
         var sun = NightSun.Lerp(DaySun, day).Lerp(DawnSun, low * 0.6f);
         _sun.LightColor = sun;
         _sun.LightEnergy = Mathf.Lerp(0.24f, 0.72f, day);
+        ApplyLighting();
+        _fill.LightEnergy = _enhanced == true ? Mathf.Lerp(0.05f, 0.12f, day) : 0f;
         var env = _environment.Environment;
         env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day);
         env.AmbientLightEnergy = Mathf.Lerp(0.38f, 0.5f, day);
@@ -283,6 +333,7 @@ public partial class View3D : Node3D
             _camera.Size = height / (IsoDraw.PlanTile * zoom);
             _camera.Transform = new Transform3D(Basis.Identity, target + (Vector3.Up * CameraDistance)).LookingAt(target, Vector3.Forward);
             _sun.RotationDegrees = new Vector3(-62, -30, 0);
+            _fill.RotationDegrees = new Vector3(-50, 150, 0);
             return;
         }
 
@@ -299,5 +350,6 @@ public partial class View3D : Node3D
         // Sun over the viewer's left shoulder: shadows fall to the right and a little towards the viewer,
         // as the 2D art's drop shadows did.
         _sun.GlobalRotationDegrees = new Vector3(-52, -72, 0);
+        _fill.GlobalRotationDegrees = new Vector3(-35, 110, 0);
     }
 }
