@@ -21,6 +21,7 @@ public partial class SmokeTest : Node
 {
     private const string SlotName = "smoke_test";
     private int _frame;
+    private bool _lightingWas = true;
     private Stage _stage = Stage.WaitForMenu;
     private DateTime _savedTime;
     private CameraState? _savedCamera;
@@ -202,6 +203,9 @@ public partial class SmokeTest : Node
                 hospital.Hud.Feed.PinnedOpen = false;
                 GD.Print($"[smoke] Notifications: latest in the top bar, {hospital.Hud.Feed.RowsShown} on hover.");
                 _overview = hospital.CaptureCamera();
+                // Enhanced lighting can be switched off and on while playing (checked over the next two stages).
+                _lightingWas = manager.Settings.EnhancedLighting;
+                manager.Settings.EnhancedLighting = false;
                 // Close up on a bed with a patient in it, if there is one.
                 var sim = hospital.Session.Simulation;
                 var bay = sim.Spaces.Where(sp => sp.IsTreatmentSpace).OrderBy(sp => sp.IsFree).ThenBy(sp => sp.Id).First().Rect;
@@ -212,6 +216,8 @@ public partial class SmokeTest : Node
 
             case Stage.CloseUp when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("03_close_up");
+                Check(hospital.View3D.FillEnergy == 0f, "Turning enhanced lighting off left the fill light on.");
+                manager.Settings.EnhancedLighting = true;
                 LookAtWaitingRoom(hospital);
                 _frame = 0;
                 _stage = Stage.WaitingRoom;
@@ -219,6 +225,9 @@ public partial class SmokeTest : Node
 
             case Stage.WaitingRoom when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("03a_waiting_room");
+                Check(hospital.View3D.FillEnergy > 0f, "Turning enhanced lighting on did not light the fill light.");
+                manager.Settings.EnhancedLighting = _lightingWas;
+                GD.Print("[smoke] Enhanced lighting switches off and on.");
                 hospital.RotateView(1);
                 LookAtWaitingRoom(hospital);
                 _frame = 0;

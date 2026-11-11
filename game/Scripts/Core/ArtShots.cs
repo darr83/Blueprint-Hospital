@@ -49,6 +49,12 @@ public partial class ArtShots : Node
                 }
 
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-plain-light") >= 0)
+                {
+                    // For before/after shots of the lighting setting (not saved).
+                    GameManager.Instance.Settings.EnhancedLighting = false;
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
                 {
                     h.ToggleWalls();
