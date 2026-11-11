@@ -459,6 +459,7 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.Visible, "The 3D world did not show.");
                 Check(hospital.View3D.Root.GetNode("Walls").GetChildCount() > 0, "The 3D world has no walls.");
                 Check(hospital.View3D.People.Count > 0, "Nobody is standing in the 3D world.");
+                Check(hospital.View3D.Beds.Count > 0, "The 3D world has no beds.");
                 hospital.RotateView(1);
                 hospital.ToggleWalls();
                 _frame = 0;

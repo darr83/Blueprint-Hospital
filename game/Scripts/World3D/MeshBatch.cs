@@ -18,6 +18,9 @@ public sealed class MeshBatch
 
     public bool IsEmpty => _vertices.Count == 0;
 
+    /// <summary>Applied to everything added from now on: lets a part built upright be laid down or turned.</summary>
+    public Transform3D Frame { get; set; } = Transform3D.Identity;
+
     /// <summary>Adds <paramref name="mesh"/> moved by <paramref name="xf"/>, painted <paramref name="colour"/>.</summary>
     public void Add(Mesh mesh, Transform3D xf, Color colour)
     {
@@ -31,6 +34,7 @@ public sealed class MeshBatch
             Cache[mesh] = data;
         }
 
+        xf = Frame * xf;
         var normalBasis = xf.Basis.Inverse().Transposed();
         var start = _vertices.Count;
         for (var k = 0; k < data.V.Length; k++)
@@ -104,15 +108,32 @@ public sealed class MeshBatch
     public void Floor(double x, double y, double w, double l, float lift, Color colour)
     {
         var start = _vertices.Count;
+        var f = Frame;
         var (x0, y0, x1, y1) = ((float)x, (float)y, (float)(x + w), (float)(y + l));
-        _vertices.AddRange(new[] { new Vector3(x0, lift, y0), new Vector3(x1, lift, y0), new Vector3(x1, lift, y1), new Vector3(x0, lift, y1) });
+        _vertices.AddRange(new[] { f * new Vector3(x0, lift, y0), f * new Vector3(x1, lift, y0), f * new Vector3(x1, lift, y1), f * new Vector3(x0, lift, y1) });
         for (var k = 0; k < 4; k++)
         {
-            _normals.Add(Vector3.Up);
+            _normals.Add((f.Basis * Vector3.Up).Normalized());
             _colours.Add(colour);
         }
 
         _indices.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
+    }
+
+    /// <summary>A flat triangle, seen from both sides.</summary>
+    public void Tri(Vector3 a, Vector3 b, Vector3 c, Color colour)
+    {
+        var f = Frame;
+        var n = (f.Basis * (b - a).Cross(c - a)).Normalized();
+        var start = _vertices.Count;
+        _vertices.AddRange(new[] { f * a, f * b, f * c, f * a, f * c, f * b });
+        for (var k = 0; k < 6; k++)
+        {
+            _normals.Add(k < 3 ? n : -n);
+            _colours.Add(colour);
+        }
+
+        _indices.AddRange(new[] { start, start + 2, start + 1, start + 3, start + 5, start + 4 });
     }
 
     /// <summary>The finished mesh (null when nothing was added).</summary>

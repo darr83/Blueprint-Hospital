@@ -99,7 +99,7 @@ public partial class PeopleShots3D : Node
                 person.SetPose(view.Pose, 1.2);
             }
 
-            _hospital.Camera.SnapTo(IsoDraw.ToScreen(Centre.X + 1.1, Centre.Y + 4.7), 1.45f);
+            _hospital.Camera.SnapTo(IsoDraw.ToScreen(Centre.X + 3.5, Centre.Y + 8.5), 1.2f);
         }
         else
         {
@@ -146,6 +146,59 @@ public partial class PeopleShots3D : Node
             }
 
             _line.AddChild(person);
+        }
+
+        // A row of beds, tables and trolleys with patients on them.
+        var patient = Looks.Preview(77, Sex.Female, 58);
+        var child = Looks.Preview(78, Sex.Male, 7);
+        var kinds = new[] { "bed", "bed_empty", "trolley", "stretcher", "floor", "xray_table", "ct_table", "operating_table", "cath_lab_table", "treatment_couch", "wheelchair" };
+        for (var i = 0; i < kinds.Length; i++)
+        {
+            var holder = new Node3D { Position = Kit3D.At(Centre.X - 6 + (i * 2.6) + 9, Centre.Y + 6 - (i * 2.6) + 9) };
+            var b = new MeshBatch();
+            var who = i == 2 ? child : patient;
+            var top = kinds[i] switch
+            {
+                "bed" or "bed_empty" => Carriers3D.Bed(b, kinds[i] == "bed_empty"),
+                "trolley" => Carriers3D.Trolley(b),
+                "stretcher" => Carriers3D.Stretcher(b),
+                "floor" => 0f,
+                "wheelchair" => -1f,
+                var id => Carriers3D.Table(b, id, new Color("#7FA7C4")),
+            };
+            if (kinds[i] == "stretcher")
+            {
+                Carriers3D.Straps(b, top);
+            }
+
+            if (kinds[i] == "wheelchair")
+            {
+                Carriers3D.Wheelchair(b);
+                var sitter = Person3D.Build(patient);
+                sitter.SetPose(Pose.Seated, 0);
+                holder.AddChild(sitter);
+            }
+
+            b.AddTo(holder);
+            if (top >= 0 && kinds[i] != "bed_empty")
+            {
+                var lying = Lying3D.Build(who, kinds[i] == "floor" ? who.Top : Looks.EdBlanket, kinds[i] == "bed" ? new Color("#F2A33A") : null, null);
+                lying.Position = new Vector3(0, top, 0);
+                holder.AddChild(lying);
+            }
+
+            if (i == 0)
+            {
+                holder.AddChild(Alert3D.Make(AlertKind.Crash, 1.45f, 78));
+            }
+
+            if (kinds[i] == "floor")
+            {
+                holder.AddChild(Alert3D.Make(AlertKind.Emergency, 1.1f, 100));
+            }
+
+            holder.Rotation = new Vector3(0, Mathf.Pi / 2, 0);
+            _line.AddChild(holder);
         }
     }
 }

@@ -1,0 +1,27 @@
+newmtl yellow
+Kd 0.9800 0.8400 0.1000
+
+newmtl green
+Kd 0.0800 0.4500 0.2400
+
+newmtl plastic
+Kd 0.3765 0.3765 0.3765
+
+newmtl _defaultMat
+Kd 1.0000 1.0000 1.0000
+
+newmtl lightFront
+Kd 1.0000 0.9763 0.9292
+
+newmtl window
+Kd 0.9373 0.9373 0.9373
+
+newmtl lightLeft
+Kd 0.1300 0.2500 0.5500
+
+newmtl lightRight
+Kd 0.1300 0.2500 0.5500
+
+newmtl carTire
+Kd 0.2392 0.2392 0.2392
+
