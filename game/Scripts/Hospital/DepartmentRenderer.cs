@@ -132,11 +132,23 @@ public partial class DepartmentRenderer : Node2D
         var yellow = new Color("#F2C230");
         const double line = 0.18;
         var font = ThemeDB.FallbackFont;
+        var side = _sim.AmbulanceBaySide;
+        var across = side is WallSide.East or WallSide.West;
         foreach (var bay in _sim.AmbulanceBays)
         {
-            IsoDraw.FloorQuad(this, bay.X, bay.Y - (line / 2), bay.Width, line, yellow);
-            IsoDraw.FloorQuad(this, bay.X, bay.Bottom - (line / 2), bay.Width, line, yellow);
-            IsoDraw.FloorQuad(this, bay.X, bay.Y, line * 1.5, bay.Length, yellow);
+            if (across)
+            {
+                // Bays run east-west: lines along the north and south edges, the back line by the building.
+                IsoDraw.FloorQuad(this, bay.X, bay.Y - (line / 2), bay.Width, line, yellow);
+                IsoDraw.FloorQuad(this, bay.X, bay.Bottom - (line / 2), bay.Width, line, yellow);
+                IsoDraw.FloorQuad(this, side == WallSide.East ? bay.X : bay.Right - (line * 1.5), bay.Y, line * 1.5, bay.Length, yellow);
+            }
+            else
+            {
+                IsoDraw.FloorQuad(this, bay.X - (line / 2), bay.Y, line, bay.Length, yellow);
+                IsoDraw.FloorQuad(this, bay.Right - (line / 2), bay.Y, line, bay.Length, yellow);
+                IsoDraw.FloorQuad(this, bay.X, side == WallSide.South ? bay.Y : bay.Bottom - (line * 1.5), bay.Width, line * 1.5, yellow);
+            }
 
             if (!Flat)
             {
@@ -147,8 +159,14 @@ public partial class DepartmentRenderer : Node2D
             const int size = 22;
             const string text = "AMBULANCE";
             var width = font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X;
-            var at = IsoDraw.ToScreen(bay.Right - 0.55, bay.Y + (bay.Length / 2.0));
-            DrawSetTransform(at, -Mathf.Pi / 2, Vector2.One);
+            var (at, angle) = side switch
+            {
+                WallSide.East => (IsoDraw.ToScreen(bay.Right - 0.55, bay.Y + (bay.Length / 2.0)), -Mathf.Pi / 2),
+                WallSide.West => (IsoDraw.ToScreen(bay.X + 0.55, bay.Y + (bay.Length / 2.0)), Mathf.Pi / 2),
+                WallSide.North => (IsoDraw.ToScreen(bay.X + (bay.Width / 2.0), bay.Y + 0.55), Mathf.Pi),
+                _ => (IsoDraw.ToScreen(bay.X + (bay.Width / 2.0), bay.Bottom - 0.55), 0f),
+            };
+            DrawSetTransform(at, angle, Vector2.One);
             DrawString(font, new Vector2(-width / 2, size * 0.35f), text, HorizontalAlignment.Left, -1, size, new Color(yellow, 0.9f));
             DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         }

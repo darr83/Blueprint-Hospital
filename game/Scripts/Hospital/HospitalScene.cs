@@ -203,6 +203,14 @@ public partial class HospitalScene : Node2D
             Outpatient o when _session.Simulation.FindAppointment(o.AppointmentId) is { } a => (_world.FootPosition(o), a.FullName),
             _ => null,
         };
+
+        // A new game starts with the site plan: where the main entrance and ambulance bays go.
+        if (manager.SitePlanning is not null)
+        {
+            var planner = new SitePlanner { Name = "SitePlanner" };
+            AddChild(planner);
+            planner.Initialise(this);
+        }
     }
 
     /// <summary>

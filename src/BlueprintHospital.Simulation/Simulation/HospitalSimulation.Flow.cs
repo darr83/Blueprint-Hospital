@@ -39,14 +39,16 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>
-    /// Where the <paramref name="place"/>th ambulance in the queue waits: in line on the side road, south of
+    /// Where the <paramref name="place"/>th ambulance in the queue waits: in line on the road short of
     /// the bays, one vehicle length plus a gap apart.
     /// </summary>
     private GridCoord QueueSpot(int place)
     {
-        var first = AmbulanceBays.Max(b => b.Bottom) + (int)Math.Ceiling(AmbulanceVehicle.LengthTiles / 2) + 3;
-        var y = first + (place * ((int)Math.Ceiling(AmbulanceVehicle.LengthTiles) + 2));
-        return new GridCoord(AmbulanceRoadEntry.X, Math.Min(y, AmbulanceRoadEntry.Y));
+        var lane = AmbulanceLane;
+        var nearest = AmbulanceBays.SelectMany(b => new[] { new GridCoord(b.X, b.Y), new GridCoord(b.Right - 1, b.Bottom - 1) }).Min(lane.Along);
+        var first = nearest - (int)Math.Ceiling(AmbulanceVehicle.LengthTiles / 2) - 3;
+        var along = first - (place * ((int)Math.Ceiling(AmbulanceVehicle.LengthTiles) + 2));
+        return lane.At(Math.Max(along, 0));
     }
 
     private void RouteAmbulanceToBay(AmbulanceVehicle ambulance)
@@ -75,13 +77,14 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>
-    /// Drives up the side road to the bay, stops level with it, then backs in so the rear doors face the
+    /// Drives along the road to the bay, stops level with it, then backs in so the rear doors face the
     /// building (the reversing leg starts in <see cref="UpdateAmbulances"/> once the first leg is done).
     /// </summary>
     private void DriveToBay(AmbulanceVehicle ambulance, int slot)
     {
         var parking = AmbulanceParkingTiles[slot];
-        if (ambulance.Tile.Y == parking.Y && ambulance.Tile.X <= AmbulanceRoadEntry.X)
+        var lane = AmbulanceLane;
+        if (InBayMouth(ambulance.Tile, parking))
         {
             // Already lined up with the bay: back straight in.
             ambulance.Reversing = true;
@@ -90,8 +93,20 @@ public sealed partial class HospitalSimulation
         }
 
         ambulance.Reversing = false;
-        ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, ambulance.Tile.Y), new GridCoord(AmbulanceRoadEntry.X, parking.Y) }));
+        ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { lane.Beside(ambulance.Tile), lane.Beside(parking) }));
     }
+
+    /// <summary>True on the straight line from the lane back into a bay.</summary>
+    private bool InBayMouth(GridCoord tile, GridCoord parking)
+    {
+        var onLane = AmbulanceLane.Beside(parking);
+        return tile.X >= Math.Min(onLane.X, parking.X) && tile.X <= Math.Max(onLane.X, parking.X)
+            && tile.Y >= Math.Min(onLane.Y, parking.Y) && tile.Y <= Math.Max(onLane.Y, parking.Y);
+    }
+
+    /// <summary>The drive off the site: onto the road and on along it to the far edge.</summary>
+    private List<GridCoord> RouteOffSite(GridCoord from) =>
+        StraightRoute(from, new[] { AmbulanceLane.Beside(from), AmbulanceLane.Exit });
 
     private static List<GridCoord> StraightRoute(GridCoord from, IEnumerable<GridCoord> waypoints)
     {
@@ -183,7 +198,7 @@ public sealed partial class HospitalSimulation
         ambulance.State = AmbulanceState.Departing;
         ambulance.BaySlot = null;
         ambulance.Reversing = false;
-        ambulance.FollowPath(StraightRoute(ambulance.Tile, new[] { new GridCoord(AmbulanceRoadEntry.X, ambulance.Tile.Y), new GridCoord(AmbulanceRoadEntry.X, 0) }));
+        ambulance.FollowPath(RouteOffSite(ambulance.Tile));
     }
 
     internal AmbulanceVehicle? AmbulanceFor(Patient patient) =>

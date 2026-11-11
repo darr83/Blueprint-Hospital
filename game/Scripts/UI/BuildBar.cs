@@ -864,7 +864,7 @@ public partial class BuildBar : Control
 
             case BuildMenu.WaitingDoors:
             {
-                lines.Add("A waiting room needs an entrance door on the front path (the blue mat outside the main entrance) and a door onto a corridor so patients can go through to be seen. Click a door again to take it out.");
+                lines.Add("A waiting room needs a door onto a corridor so patients can go through to be seen. Patients come in either through an entrance door on the front path (the blue mat outside the main entrance) or along a corridor joined to the main entrance. Click a door again to take it out.");
                 lines.Add($"{muted}Cost[/color]  £{HospitalSimulation.EntranceDoorCost:N0} for the entrance, £{HospitalSimulation.InnerDoorCost:N0} for an inner door; 2 m wide, up to {HospitalSimulation.MaxWaitingDoors} per room");
                 if (_sim.MainWaitingRoom is { } room)
                 {

@@ -86,7 +86,7 @@ public sealed partial class HospitalSimulation
         Notifications = new NotificationLog(events);
 
         var building = site.Buildings[0];
-        _spaces = EmergencyDepartmentLayout.Create(building, database).ToDictionary(s => s.Id);
+        _spaces = EmergencyDepartmentLayout.Create(building, database, site.Layout?.Plan).ToDictionary(s => s.Id);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
         foreach (var space in _spaces.Values)
         {
@@ -97,20 +97,21 @@ public sealed partial class HospitalSimulation
         _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);
 
-        var entrance = building.Entrances.First(e => !e.IsAmbulanceEntrance);
-        WalkInSpawn = new GridCoord(entrance.Tile.X + 4, building.Footprint.Bottom + 16);
-        var ambulanceEntrance = building.Entrances.First(e => e.IsAmbulanceEntrance);
-        // The bays sit side by side along the wall, centred on the ambulance entrance. An ambulance
+        // The bays sit side by side against the wall, centred on the ambulance entrance. An ambulance
         // reverses in so its back doors face the building; the crew unload the stretcher onto the path.
-        var door = ambulanceEntrance.Tile.Y + (ambulanceEntrance.WidthTiles / 2);
-        var baysTop = door - (StarterSite.AmbulanceBays * StarterSite.BayWidth / 2);
-        AmbulanceBays = Enumerable.Range(0, StarterSite.AmbulanceBays)
-            .Select(i => new GridRect(building.Footprint.Right + StarterSite.BayOffset, baysTop + (i * StarterSite.BayWidth), StarterSite.BayLength, StarterSite.BayWidth))
-            .ToArray();
-        AmbulanceBayPatientTiles = AmbulanceBays.Select(b => new GridCoord(b.X - 1, b.Y + (b.Length / 2))).ToArray();
-        AmbulanceParkingTiles = AmbulanceBays.Select(b => new GridCoord(b.X + (b.Width / 2), b.Y + (b.Length / 2))).ToArray();
-        AmbulanceRoadEntry = new GridCoord(building.Footprint.Right + StarterSite.RoadOffset + 5, site.Length - 1);
-        _bayOrder = Enumerable.Range(0, AmbulanceBays.Count).OrderBy(i => Math.Abs(AmbulanceParkingTiles[i].Y + 0.5 - door)).ThenBy(i => i).ToArray();
+        var layout = site.Layout ?? StarterSite.Create().Layout!;
+        WalkInSpawn = layout.WalkInSpawn;
+        AmbulanceBays = layout.AmbulanceBays;
+        AmbulanceBayPatientTiles = layout.PatientTiles;
+        AmbulanceParkingTiles = layout.ParkingTiles;
+        AmbulanceLane = layout.Lane;
+        AmbulanceBaySide = layout.BaySide;
+        var ambulanceEntrance = building.Entrances.First(e => e.IsAmbulanceEntrance);
+        var door = new GridCoord(ambulanceEntrance.Tile.X + (ambulanceEntrance.Side is WallSide.North or WallSide.South ? ambulanceEntrance.WidthTiles / 2 : 0),
+            ambulanceEntrance.Tile.Y + (ambulanceEntrance.Side is WallSide.North or WallSide.South ? 0 : ambulanceEntrance.WidthTiles / 2));
+        _bayOrder = Enumerable.Range(0, AmbulanceBays.Count)
+            .OrderBy(i => Math.Abs(AmbulanceBaySide is WallSide.East or WallSide.West ? AmbulanceParkingTiles[i].Y + 0.5 - door.Y : AmbulanceParkingTiles[i].X + 0.5 - door.X))
+            .ThenBy(i => i).ToArray();
 
         UnlimitedMoney = _options.UnlimitedMoney;
         WardEmergencies = _options.WardEmergencies;
@@ -180,7 +181,14 @@ public sealed partial class HospitalSimulation
     // Bay slots in the order ambulances take them: nearest the doors first.
     private readonly int[] _bayOrder;
 
-    public GridCoord AmbulanceRoadEntry { get; }
+    /// <summary>Where ambulances come onto the site: the start of their road.</summary>
+    public GridCoord AmbulanceRoadEntry => AmbulanceLane.Entry;
+
+    /// <summary>The road the ambulances drive along past the bays.</summary>
+    public AmbulanceLane AmbulanceLane { get; }
+
+    /// <summary>The wall the ambulance bays stand against.</summary>
+    public WallSide AmbulanceBaySide { get; }
 
     public CareSpace Space(string id) => _spaces[id];
 

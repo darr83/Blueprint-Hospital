@@ -160,6 +160,9 @@ public sealed class SiteMap
 
     public GridRect Bounds => new(0, 0, Width, Length);
 
+    /// <summary>The ambulance bays, the ambulances' road and where walk-in patients arrive (set by <see cref="StarterSite"/>).</summary>
+    public SiteLayout? Layout { get; internal set; }
+
     public IReadOnlyList<Building> Buildings => _buildings;
 
     /// <summary>Floors in the building, counting the ground floor (1 until the player adds a floor).</summary>

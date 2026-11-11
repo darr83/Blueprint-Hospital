@@ -401,7 +401,8 @@ public sealed partial class HospitalSimulation
     /// <summary>A corridor must touch another corridor or a waiting room, or take in an entrance.</summary>
     private bool JoinsCirculation(GridRect rect, CareSpace? replacing)
     {
-        if (MainBuilding.Entrances.Any(e => rect.Contains(e.Tile)))
+        // A corridor reaching any part of an entrance's doorway joins it.
+        if (Site.FloorOf(rect) == 0 && MainBuilding.Entrances.Any(e => DoorwayTiles(e).Any(rect.Contains)))
         {
             return true;
         }
@@ -416,6 +417,10 @@ public sealed partial class HospitalSimulation
         return _spaces.Values.Any(s => s != replacing && s.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting
                                        && s.Rect.Tiles().Any(t => grown.Contains(t) && !IsCorner(grown, t)));
     }
+
+    /// <summary>The floor tiles just inside an entrance's doorway.</summary>
+    internal static IEnumerable<GridCoord> DoorwayTiles(Entrance e) => Enumerable.Range(0, e.WidthTiles)
+        .Select(i => e.Side is WallSide.North or WallSide.South ? new GridCoord(e.Tile.X + i, e.Tile.Y) : new GridCoord(e.Tile.X, e.Tile.Y + i));
 
     private static bool IsCorner(GridRect r, GridCoord t) =>
         (t.X == r.X || t.X == r.Right - 1) && (t.Y == r.Y || t.Y == r.Bottom - 1);
@@ -460,7 +465,7 @@ public sealed partial class HospitalSimulation
         var stepFree = Site.FloorCount > 1 ? nav.Reachable(WalkInSpawn, stepFreeOnly: true) : reached;
 
         // A waiting room built over the main entrance is reached through the entrance doors the player puts in it.
-        foreach (var entrance in MainBuilding.Entrances.Where(e => !reached.Contains(e.Tile) && !spaces.Any(s => s.Kind == CareSpaceKind.Waiting && s.Rect.Contains(e.Tile))))
+        foreach (var entrance in MainBuilding.Entrances.Where(e => !DoorwayTiles(e).Any(reached.Contains) && !spaces.Any(s => s.Kind == CareSpaceKind.Waiting && DoorwayTiles(e).Any(s.Rect.Contains))))
         {
             yield return $"Would block the {entrance.Name.ToLowerInvariant()}.";
         }

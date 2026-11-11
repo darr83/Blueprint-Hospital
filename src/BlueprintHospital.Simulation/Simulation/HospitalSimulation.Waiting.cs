@@ -66,10 +66,29 @@ public sealed partial class HospitalSimulation
 
     public bool HasInnerDoor(CareSpace room) => room.Doors.Any(d => !IsEntranceDoor(room, d));
 
-    /// <summary>The waiting room walk-in patients come in to: one with a reception desk and an entrance door.</summary>
+    /// <summary>
+    /// The waiting room walk-in patients come in to: one with a reception desk, either right behind the main
+    /// entrance (an entrance door) or along a corridor from it.
+    /// </summary>
     public CareSpace? MainWaitingRoom =>
         SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r) && HasInnerDoor(r))
-        ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r));
+        ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r))
+        ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasInnerDoor(r) && ReachedFromStreet(r));
+
+    private NavGrid? _streetReachNav;
+    private HashSet<GridCoord> _streetReach = new();
+
+    /// <summary>True when people coming in through the main entrance can walk to the room's reception desk.</summary>
+    public bool ReachedFromStreet(CareSpace room)
+    {
+        if (!ReferenceEquals(_streetReachNav, Nav))
+        {
+            _streetReach = Nav.Reachable(WalkInSpawn);
+            _streetReachNav = Nav;
+        }
+
+        return DeskOf(room) is { } desk ? _streetReach.Contains(desk.PatientSpot) : _streetReach.Contains(room.StaffSpot);
+    }
 
     /// <summary>What a waiting room still needs before walk-in patients can use it (empty when it is ready).</summary>
     public IReadOnlyList<string> WaitingRoomProblems(CareSpace room)
@@ -80,14 +99,13 @@ public sealed partial class HospitalSimulation
             missing.Add("a reception desk");
         }
 
-        if (!HasEntranceDoor(room))
-        {
-            missing.Add("an entrance door on the front path");
-        }
-
         if (!HasInnerDoor(room))
         {
             missing.Add("a door through to a corridor");
+        }
+        else if (!HasEntranceDoor(room) && FittingsOf(room).Desk is not null && !ReachedFromStreet(room))
+        {
+            missing.Add("a corridor from the main entrance (or an entrance door on the front path)");
         }
 
         return missing;
@@ -756,9 +774,9 @@ public sealed partial class HospitalSimulation
     /// </summary>
     public CareSpace BuildStarterWaitingRoom()
     {
-        var o = new GridCoord(MainBuilding.Footprint.X, MainBuilding.Footprint.Y);
-        var rect = RoomLayoutEngine.RectFor(new GridCoord(o.X + 15, o.Y + 26), 22, 14, WallSide.North);
-        var plan = new RoomPlan("waiting_room", rect, WallSide.North);
+        var rect = EmergencyDepartmentLayout.StarterWaitingRoom(MainBuilding.Footprint, Site.Layout?.Plan);
+        var inner = Site.Layout?.Plan is { EntranceSide: WallSide.North } plan0 && EmergencyDepartmentLayout.FitsStarter(plan0) ? WallSide.South : WallSide.North;
+        var plan = new RoomPlan("waiting_room", rect, inner);
         var (room, chairs) = UpgradeOldWaitingRoom(plan, "waiting_room", "Waiting room");
         _spaces[room.Id] = room;
         _chairs.RemoveAll(c => room.Rect.Contains(c.Tile));

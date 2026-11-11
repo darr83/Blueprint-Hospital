@@ -22,6 +22,9 @@ public sealed class SaveGame
 
     public CameraState Camera { get; init; } = new(0, 0, 1);
 
+    /// <summary>Where the player put the main entrance and the ambulance bays (absent in older saves: the usual places).</summary>
+    public World.SitePlan? SitePlan { get; init; }
+
     /// <summary>Rooms, corridors, building extensions and money (format 2 onwards; absent in older saves).</summary>
     public Simulation.LayoutState? Layout { get; init; }
 

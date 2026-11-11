@@ -9,13 +9,13 @@ namespace BlueprintHospital.Core;
 /// <summary>One game in progress: its clock, event bus, hospital site and the simulation running on them.</summary>
 public sealed class GameSession
 {
-    private GameSession(GameDatabase database, string hospitalName, SaveGame? save, StartingHospital start = StartingHospital.SmallEmergency, bool unlimitedMoney = false, WardEmergencyFrequency wardEmergencies = WardEmergencyFrequency.Realistic, GameType type = GameType.Sandbox)
+    private GameSession(GameDatabase database, string hospitalName, SaveGame? save, StartingHospital start = StartingHospital.SmallEmergency, bool unlimitedMoney = false, WardEmergencyFrequency wardEmergencies = WardEmergencyFrequency.Realistic, GameType type = GameType.Sandbox, SitePlan? plan = null)
     {
         Database = database;
         HospitalName = hospitalName;
         Events = new EventBus();
         Clock = new SimulationClock(Events);
-        Site = StarterSite.Create();
+        Site = StarterSite.Create(save?.SitePlan ?? plan ?? SitePlan.Standard);
 
         if (save is not null)
         {
@@ -54,8 +54,8 @@ public sealed class GameSession
     /// <summary>Camera to restore when the hospital scene opens, if the game was loaded.</summary>
     public CameraState? InitialCamera { get; }
 
-    public static GameSession CreateNew(GameDatabase database, string hospitalName, StartingHospital start = StartingHospital.SmallEmergency, bool unlimitedMoney = false, WardEmergencyFrequency wardEmergencies = WardEmergencyFrequency.Realistic, GameType type = GameType.Sandbox) =>
-        new(database, string.IsNullOrWhiteSpace(hospitalName) ? "Blueprint General Hospital" : hospitalName.Trim(), null, start, unlimitedMoney, wardEmergencies, type);
+    public static GameSession CreateNew(GameDatabase database, string hospitalName, StartingHospital start = StartingHospital.SmallEmergency, bool unlimitedMoney = false, WardEmergencyFrequency wardEmergencies = WardEmergencyFrequency.Realistic, GameType type = GameType.Sandbox, SitePlan? plan = null) =>
+        new(database, string.IsNullOrWhiteSpace(hospitalName) ? "Blueprint General Hospital" : hospitalName.Trim(), null, start, unlimitedMoney, wardEmergencies, type, plan);
 
     public static GameSession FromSave(GameDatabase database, SaveGame save) => new(database, save.HospitalName, save);
 
@@ -65,6 +65,7 @@ public sealed class GameSession
         SavedAtUtc = DateTime.UtcNow,
         Clock = Clock.CaptureState(),
         Camera = camera,
+        SitePlan = Site.Layout?.Plan,
         Layout = Simulation.CaptureLayout(),
         People = Simulation.CapturePeople(),
     };
