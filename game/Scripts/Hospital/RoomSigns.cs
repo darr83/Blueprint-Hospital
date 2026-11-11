@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.World;
 using Godot;
@@ -42,10 +43,10 @@ public static class RoomSigns
     /// <summary>What hangs in a doorway.</summary>
     public enum DoorKind
     {
-        /// <summary>No door: open-plan public areas, lifts and stairs.</summary>
+        /// <summary>No swinging door: open-plan public areas (a plain gap for waiting rooms) and lifts (steel sliding doors).</summary>
         None,
 
-        /// <summary>One leaf, for staff-only rooms and small rooms people walk into.</summary>
+        /// <summary>One leaf, for staff-only rooms, stairwells and small rooms people walk into.</summary>
         Single,
 
         /// <summary>Two leaves, for rooms patients are wheeled into on a bed or trolley.</summary>
@@ -58,9 +59,30 @@ public static class RoomSigns
         CareSpaceKind.Theatre or CareSpaceKind.CT or CareSpaceKind.XRay or CareSpaceKind.CathLab
             or CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery or CareSpaceKind.DeliveryRoom => DoorKind.Double,
         CareSpaceKind.Waiting or CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint or CareSpaceKind.OutpatientReception
-            or CareSpaceKind.Lift or CareSpaceKind.Stairs => DoorKind.None,
+            or CareSpaceKind.Lift => DoorKind.None,
         _ => DoorKind.Single,
     };
+
+    /// <summary>
+    /// Rooms whose doorways are a plain gap in the wall, with no frame or lintel: waiting rooms. Their
+    /// name board stands on the wall beside the gap instead (the front entrance keeps its glass doors).
+    /// </summary>
+    public static bool OpenGap(CareSpace space) => space.Kind == CareSpaceKind.Waiting;
+
+    /// <summary>The wall edges a doorway opens through (a horizontal edge runs from (X, Y) to (X + 1, Y)).</summary>
+    public static IEnumerable<(int X, int Y, bool Horizontal)> DoorwayEdges(GridRect r, Doorway d)
+    {
+        for (var i = d.Offset; i < d.Offset + d.Width; i++)
+        {
+            yield return d.Side switch
+            {
+                WallSide.North => (r.X + i, r.Y, true),
+                WallSide.South => (r.X + i, r.Bottom, true),
+                WallSide.West => (r.X, r.Y + i, false),
+                _ => (r.Right, r.Y + i, false),
+            };
+        }
+    }
 
     /// <summary>The middle of a room's doorway, in tiles.</summary>
     public static (double X, double Y) DoorMiddle(CareSpace space)

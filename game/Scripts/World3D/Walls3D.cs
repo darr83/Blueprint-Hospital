@@ -25,6 +25,11 @@ public partial class Walls3D : Node3D
     private static readonly Color KickPlate = new("#B7C1C9");
     private static readonly Color Handle = new("#7A8792");
 
+    /// <summary>Brushed stainless steel for lift doors, and the darker steel surround they slide in.</summary>
+    private static readonly Color LiftSteel = new("#C2CCD4");
+    private static readonly Color LiftSteelLight = new("#DCE3E9");
+    private static readonly Color LiftSurround = new("#6F7C87");
+
     private View3D _view = null!;
     private readonly List<(CareSpace Space, double Mx, double My, Node3D[] Hinges, float[] Closed)> _doors = new();
     private readonly List<Sliding> _sliding = new();
@@ -97,9 +102,14 @@ public partial class Walls3D : Node3D
             }
         }
 
-        // A post at every point a wall reaches closes corners and ends; posts beside doorways are frame trim.
+        // A post at every point a wall reaches closes corners and ends; posts beside doorways are frame trim,
+        // except where a doorway is a plain gap (a waiting room's), whose wall ends stay plain wall.
+        var gaps = _view.Simulation.Spaces
+            .Where(s => IsoDraw.OnViewFloor(s.Rect.Y) && RoomSigns.OpenGap(s))
+            .SelectMany(s => s.Doors.Where(d => !_view.Simulation.IsEntranceDoor(s, d)).SelectMany(d => RoomSigns.DoorwayEdges(s.Rect, d)))
+            .ToHashSet();
         var doorPoints = new HashSet<(int X, int Y)>();
-        foreach (var (x, y, horizontal) in world.DoorEdges)
+        foreach (var (x, y, horizontal) in world.DoorEdges.Where(e => !gaps.Contains(e)))
         {
             doorPoints.Add((x, y));
             doorPoints.Add(horizontal ? (x + 1, y) : (x, y + 1));
@@ -280,12 +290,35 @@ public partial class Walls3D : Node3D
             closed[i] = (horizontal ? new Vector3(mid, 0, (float)line) : new Vector3((float)line, 0, mid)) + (out3 * face);
             var node = new Node3D { Name = $"LiftDoor{i}", Position = closed[i], Rotation = new Vector3(0, horizontal ? 0 : Mathf.Pi / 2, 0) };
             AddChild(node);
+            // A brushed steel leaf (a real metal finish, so it catches the light), with fine vertical
+            // brushing lines on both faces and a dark rubber strip where the two leaves meet.
+            Kit3D.Box(node, new Vector3(0, doorH / 2, 0), new Vector3(leaf, doorH - 0.02f, 0.05f), LiftSteel, Finish.Metal);
             var b = new MeshBatch();
-            b.Box(new Vector3(0, doorH / 2, 0), new Vector3(leaf, doorH - 0.02f, 0.05f), new Color("#C3CDD5"));
-            b.Box(new Vector3(0, doorH / 2, 0.03f), new Vector3(leaf * 0.86f, doorH * 0.9f, 0.01f), new Color("#D5DEE5"));
-            b.Box(new Vector3((i == 0 ? 1 : -1) * ((leaf / 2) - 0.012f), doorH / 2, 0.03f), new Vector3(0.02f, doorH - 0.04f, 0.012f), new Color("#8E9AA4"));
+            foreach (var z in new[] { 0.027f, -0.027f })
+            {
+                for (var k = 1; k < 5; k++)
+                {
+                    b.Box(new Vector3((leaf * k / 5f) - (leaf / 2), doorH / 2, z), new Vector3(0.012f, doorH * 0.92f, 0.004f), LiftSteelLight);
+                }
+
+                b.Box(new Vector3((i == 0 ? 1 : -1) * ((leaf / 2) - 0.012f), doorH / 2, z), new Vector3(0.024f, doorH - 0.04f, 0.006f), new Color("#3D464E"));
+            }
+
             b.AddTo(node);
             panels[i] = node;
+        }
+
+        // A floor indicator over the doors: a dark panel with the floor number lit in amber.
+        var midS = (float)((openFrom + openTo) / 2);
+        var indicator = (horizontal ? new Vector3(midS, 0, (float)line) : new Vector3((float)line, 0, midS)) + (out3 * (face + 0.01f));
+        var ib = new MeshBatch();
+        ib.Box(indicator + new Vector3(0, doorH + Kit3D.H(3), 0), horizontal ? new Vector3(0.5f, Kit3D.H(4), 0.03f) : new Vector3(0.03f, Kit3D.H(4), 0.5f), new Color("#1F262C"));
+        ib.AddTo(this, shadow: false);
+        var lit = new MeshBatch();
+        lit.Box(indicator + (out3 * 0.02f) + new Vector3(0, doorH + Kit3D.H(3), 0), horizontal ? new Vector3(0.16f, Kit3D.H(2.4f), 0.01f) : new Vector3(0.01f, Kit3D.H(2.4f), 0.16f), new Color("#FFB300"));
+        if (lit.AddTo(this, shadow: false) is { } litMesh)
+        {
+            litMesh.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
         }
 
         // The call button plate on the wall beside the doors, and the button's light.
@@ -310,6 +343,12 @@ public partial class Walls3D : Node3D
     /// <summary>A room's doorway: infill either side, frame and lintel, and one or two leaves swinging into the room.</summary>
     private void AddDoorway(CareSpace space)
     {
+        if (RoomSigns.OpenGap(space))
+        {
+            // Just a gap in the wall: no frame, lintel or doors (the front entrance has its own glass doors).
+            return;
+        }
+
         var r = space.Rect;
         var d = space.Doors[0];
         var (a, b, o) = d.Side switch
@@ -356,9 +395,10 @@ public partial class Walls3D : Node3D
         const double post = 0.14;
         var openFrom = leaves == 0 ? start : gapStart;
         var openTo = leaves == 0 ? start + doorTiles : gapStart + (leafTiles * leaves);
-        Along(openFrom, post, wallT + 0.04, 0, frameH, FrameFace);
-        Along(openTo - post, post, wallT + 0.04, 0, frameH, FrameFace);
-        Along(openFrom, openTo - openFrom, wallT + 0.04, doorH, frameH, FrameFace);
+        var frame = space.Kind == CareSpaceKind.Lift ? LiftSurround : FrameFace;
+        Along(openFrom, post, wallT + 0.04, 0, frameH, frame);
+        Along(openTo - post, post, wallT + 0.04, 0, frameH, frame);
+        Along(openFrom, openTo - openFrom, wallT + 0.04, doorH, frameH, frame);
         if (wallH > frameH)
         {
             Along(start, doorTiles, wallT, frameH, wallH, WallFace);

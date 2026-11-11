@@ -314,6 +314,21 @@ public partial class Decor3D : Node3D
             var cell = cellFor($"board:{name}:{colour.ToHtml()}:{icon}:{style}:{length:0}", length, Signs.BoardHeight, c => Signs.NameBoard(c, style, name, colour, icon, length));
 
             var (mx, my) = RoomSigns.DoorMiddle(space);
+            if (RoomSigns.OpenGap(space) && !_view.Simulation.IsEntranceDoor(space, d))
+            {
+                // A plain gap has nothing over it to stand on, so the board stands on the wall beside it,
+                // on whichever side has more wall (centred over the gap if neither has room).
+                var wallLength = horizontal ? space.Rect.Width : space.Rect.Length;
+                var before = d.Offset;
+                var after = wallLength - d.Offset - d.Width;
+                var shift = (d.Width / 2.0) + (tiles / 2) + 0.3;
+                if (Math.Max(before, after) >= (tiles + 0.6))
+                {
+                    var step = after >= before ? shift : -shift;
+                    (mx, my) = horizontal ? (mx + step, my) : (mx, my + step);
+                }
+            }
+
             var lift = Kit3D.H(Math.Max(RoomSigns.FrameHeight, WorldLayer.WallHeight) + 2);
             var bh = Kit3D.H(Signs.BoardHeight);
             var along = horizontal ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
