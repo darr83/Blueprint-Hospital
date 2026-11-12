@@ -63,6 +63,7 @@ public static class BuildIcons
         ["reception"] = "<path d='M3 12h18v8H3z'/><circle cx='12' cy='6' r='2.5'/><path d='M8 12a4 4 0 0 1 8 0'/>",
         ["resus_trolley"] = "<rect x='5' y='8' width='12' height='10' rx='1'/><path d='M5 11.5h12M5 15h12'/><path d='M17 9h2.5v-3'/><circle cx='7' cy='20' r='1.3'/><circle cx='15' cy='20' r='1.3'/><path d='M9 3.5l-1.5 2.5h3L9 8.5'/>",
         ["mop"] = "<path d='M15 3l-4 11'/><path d='M7 14h8l1 3H6z'/><path d='M7 17l-1 3M10 17v3M13 17v3M16 17l1 3'/><path d='M3 12h4v8H3'/>",
+        ["baybeds"] = "<path d='M2 4h20'/><path d='M12 4c-1.6 2 1.6 3.5 0 5.5s1.6 3.5 0 5.5'/><path d='M2.5 20v-6M2.5 17.5h7v2.5M14.5 20v-6M14.5 17.5h7v2.5'/><circle cx='5' cy='15.6' r='1.1'/><circle cx='17' cy='15.6' r='1.1'/>",
         ["lock"] = "<rect x='5' y='11' width='14' height='10' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
     };
 
@@ -71,7 +72,7 @@ public static class BuildIcons
     {
         ["extend_building"] = "extend", ["add_floor"] = "floor", ["waiting_chairs"] = "seat", ["resus_trolleys"] = "resus_trolley", ["waiting_desk"] = "reception", ["waiting_doors"] = "door", ["corridor"] = "corridor",
         ["lift"] = "lift", ["stairs"] = "stairs",
-        ["waiting_room"] = "chairs", ["triage_room"] = "triage", ["resus_bay"] = "resus",
+        ["waiting_room"] = "chairs", ["triage_room"] = "triage", ["resus_bay"] = "resus", ["minors_room"] = "baybeds",
         ["nurses_station"] = "station", ["doctors_office"] = "office", ["staff_room"] = "people", ["outreach_office"] = "office",
         ["ambulatory_care_unit"] = "chairs", ["echo_room"] = "heart", ["cath_lab"] = "icu", ["eeg_room"] = "brainwave",
         ["ct_scanner"] = "scanner", ["xray_room"] = "imaging", ["operating_theatre"] = "theatres", ["csection_theatre"] = "theatres", ["caesarean_theatre"] = "theatres", ["antenatal_scan_room"] = "wave", ["delivery_room"] = "bed",

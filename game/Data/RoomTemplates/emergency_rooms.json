@@ -19,6 +19,25 @@
     "furniture": ["hospital_bed", "obs_monitor", "clinical_cupboard", "hand_basin", "visitor_chair"]
   },
   {
+    "id": "minors_room",
+    "name": "Minors room",
+    "category": "A&E",
+    "description": "An open minors room with a row of beds, each behind its own curtains. The bigger you drag it, the more beds it holds. Each bed works just like a minors cubicle.",
+    "kind": "minors",
+    "department": "emergency",
+    "layout": "ward",
+    "sizes": [
+      { "name": "3 beds", "width_m": 8.0, "length_m": 5.5 },
+      { "name": "5 beds", "width_m": 13.0, "length_m": 5.5 },
+      { "name": "8 beds", "width_m": 10.5, "length_m": 8.0 }
+    ],
+    "min_width_m": 5, "min_length_m": 5, "max_width_m": 25, "max_length_m": 12,
+    "door_width_m": 2.0,
+    "base_cost": 10000, "cost_per_square_metre": 1000,
+    "staffing": "Seen by a doctor; nurses give treatment and observations, just as in a minors cubicle.",
+    "furniture": ["hospital_bed", "obs_monitor", "bay_curtain", "clinical_cupboard", "hand_basin"]
+  },
+  {
     "id": "majors_cubicle",
     "name": "Majors cubicle",
     "category": "A&E",

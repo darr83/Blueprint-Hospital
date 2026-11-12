@@ -53,7 +53,7 @@ public partial class HospitalAudio
             var r = space.Rect;
             var centre = IsoDraw.ToScreen(r.X + (r.Width / 2.0), r.Y + (r.Length / 2.0));
             var atSpot = sim.Patients.FirstOrDefault(p => !p.IsMoving && p.Tile == space.PatientSpot);
-            var occupied = atSpot is not null || space.OccupantId is not null;
+            var occupied = atSpot is not null || space.PlacesUsed > 0;
             var staffHere = sim.Staff.Count(s => !s.IsMoving && r.Contains(s.Tile));
 
             switch (space.Kind)

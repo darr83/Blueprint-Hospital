@@ -58,6 +58,9 @@ public partial class Beds3D : Node3D
                 {
                     "birthing_bed" => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.MaternityBlanket, false),
                     _ when space.IsServiceRoom => new BedView(this, space.PatientSpot, false, (def.Id, colour), null, space.Kind == CareSpaceKind.Theatre ? TheatreDrape : ScanSheet, false, SlideTowards(space, item, def.Id)) { Plaster = space.Kind == CareSpaceKind.PlasterRoom },
+                    _ when space.IsMultiBed => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } bay
+                        ? new BedView(this, bay.PatientSpot, bay.HeadSouth, null, () => bay.OccupantId, Looks.EdBlanket, false)
+                        : null,
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
                         : null,

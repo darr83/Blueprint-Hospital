@@ -430,7 +430,7 @@ public sealed partial class HospitalSimulation
         _patients.Values.Any(p => p.Tile == spot && !p.IsMoving && p.Stage != PatientStage.Gone);
 
     /// <summary>A cubicle or bay that is not booked for anyone and has nobody still lying in it.</summary>
-    public bool IsVacant(CareSpace space) => space.IsFree && !SomeoneLyingOn(space.PatientSpot);
+    public bool IsVacant(CareSpace space) => space.IsMultiBed ? space.Beds.Any(IsVacant) : space.IsFree && !SomeoneLyingOn(space.PatientSpot);
 
     /// <summary>A ward bed that is not booked for anyone and has nobody still lying in it.</summary>
     public bool IsVacant(WardBed bed) => bed.OccupantId is null && !SomeoneLyingOn(bed.PatientSpot);

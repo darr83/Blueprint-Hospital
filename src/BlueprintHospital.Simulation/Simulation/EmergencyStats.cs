@@ -308,7 +308,7 @@ public sealed class EmergencyStats
         (int, int) Usage(CareSpaceKind kind)
         {
             var spaces = sim.Spaces.Where(s => s.Kind == kind).ToList();
-            return (spaces.Count(s => !s.IsFree), spaces.Count);
+            return (spaces.Sum(s => s.PlacesUsed), spaces.Sum(s => s.Places));
         }
 
         Resus = Usage(CareSpaceKind.Resus);

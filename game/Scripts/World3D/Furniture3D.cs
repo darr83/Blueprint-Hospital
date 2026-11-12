@@ -92,6 +92,13 @@ public partial class Furniture3D : Node3D
                 }
 
                 var front = FrontOf(space, item, def.Id, sim);
+                if (def.Id == RoomLayoutEngine.BayCurtain && space.Beds.Count > 0)
+                {
+                    // Faces the foot of the beds either side, where the aisle is.
+                    var beside = space.Beds.MinBy(b => Math.Abs(b.PatientSpot.Y + 0.5 - item.CentreY) + (Math.Abs(b.PatientSpot.X + 0.5 - item.CentreX) * 0.1))!;
+                    front = beside.HeadSouth ? (0, -1) : (0, 1);
+                }
+
                 if (def.Id == "vending_machine")
                 {
                     seed = Math.Max(0, space.Furniture.Where(f => f.ItemId == def.Id).OrderBy(f => f.X).ThenBy(f => f.Y).ToList().IndexOf(item)) % 3;

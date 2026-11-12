@@ -125,7 +125,7 @@ public partial class ItemPanel : PanelContainer
 
     /// <summary>The patient in (or on their way to) a bed, if any.</summary>
     public static int? BedOccupant(CareSpace room, PlacedFurniture bed) =>
-        room.IsWard ? room.Beds.FirstOrDefault(b => b.PatientSpot == bed.Tile)?.OccupantId : room.OccupantId;
+        room.HasBeds ? room.Beds.FirstOrDefault(b => b.PatientSpot == bed.Tile)?.OccupantId : room.OccupantId;
 
     private void Open(CareSpace room, PlacedFurniture item, bool asBed)
     {
@@ -150,13 +150,13 @@ public partial class ItemPanel : PanelContainer
         _chairTools.Visible = false;
         if (AsBed)
         {
-            var number = room.IsWard ? room.Beds.ToList().FindIndex(b => b.PatientSpot == Item.Tile) + 1 : 0;
+            var number = room.HasBeds ? room.Beds.ToList().FindIndex(b => b.PatientSpot == Item.Tile) + 1 : 0;
             _title.Text = number > 0 ? $"Bed {number}" : "Bed";
             var patient = BedOccupant(room, Item) is { } id ? _sim.FindPatient(id) : null;
             var status = patient switch
             {
                 null => "Empty",
-                _ when patient.Tile == (room.IsWard ? Item.Tile : room.PatientSpot) && !patient.IsMoving => $"{patient.FullName} ({patient.Age}{(patient.Sex == Sex.Female ? "F" : "M")})",
+                _ when patient.Tile == (room.HasBeds ? Item.Tile : room.PatientSpot) && !patient.IsMoving => $"{patient.FullName} ({patient.Age}{(patient.Sex == Sex.Female ? "F" : "M")})",
                 _ => $"Kept for {patient.FullName}, on their way",
             };
             _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}Patient[/color]  {status}";

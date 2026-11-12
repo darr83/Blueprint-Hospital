@@ -140,7 +140,7 @@ public sealed partial class HospitalSimulation
     {
         int Have(StaffRole role, string? roomId) => _staff.Count(s => s.Role == role && s.BaseRoomId == roomId && s.Shift == shift);
 
-        var treatment = _spaces.Values.Count(s => s.IsTreatmentSpace);
+        var treatment = _spaces.Values.Where(s => s.IsTreatmentSpace).Sum(s => s.Places);
         var triage = SpacesOfKind(CareSpaceKind.Triage).Count();
         var needs = new List<StaffingNeed>
         {

@@ -209,6 +209,17 @@
   "is_equipment": false
  },
  {
+  "id": "bay_curtain",
+  "name": "Bay curtains",
+  "width_m": 0.1,
+  "depth_m": 2.3,
+  "height_m": 2.0,
+  "style": "box",
+  "colour": "#7FB7CF",
+  "cost": 350,
+  "is_equipment": false
+ },
+ {
   "id": "bedside_locker",
   "name": "Bedside locker",
   "width_m": 0.45,
