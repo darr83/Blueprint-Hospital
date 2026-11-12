@@ -258,7 +258,7 @@ public class CareerGatingTests
     }
 
     [Fact]
-    public void Early_levels_only_get_walk_in_patients_with_a_and_e_conditions_who_are_not_very_ill()
+    public void Early_levels_only_get_walk_in_patients_a_and_e_can_send_home_who_are_not_very_ill()
     {
         var h = Career(seed: 11, arrivals: true, arrivalMultiplier: 3);
         var arrived = new List<Patients.Patient>();
@@ -270,7 +270,7 @@ public class CareerGatingTests
         {
             var condition = p.Condition;
             Assert.Equal(Patients.ArrivalMethod.WalkIn, p.ArrivalMethod);
-            Assert.Equal("emergency", condition.Department);
+            Assert.True(condition.Department == "emergency" || condition.Disposition == Disposition.Discharge, condition.Id);
             Assert.True(condition.InitialSeverity[1] <= HospitalSimulation.MaxSeverityBeforeRedPatients, condition.Id);
         }
     }

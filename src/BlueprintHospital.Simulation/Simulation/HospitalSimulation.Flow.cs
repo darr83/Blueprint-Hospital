@@ -241,8 +241,7 @@ public sealed partial class HospitalSimulation
                 {
                     // Before a Career hospital reaches the crash team's level, nobody gets ill enough for their heart
                 // to stop; before it takes red patients, nobody waiting gets that ill either.
-                var fatal = condition.CanBeFatal && IsFeatureOn(LevelFeatures.Arrests);
-                var worst = fatal ? 1.0 : IsFeatureOn(LevelFeatures.RedPatients) ? 0.9 : MaxSeverityBeforeRedPatients + 0.1;
+                var worst = WorstSeverityAtThisLevel(patient);
                 patient.Severity = Math.Max(patient.Severity, Math.Min(worst, patient.Severity + (condition.DeteriorationPerHour * support * hours)));
                 }
             }
@@ -252,7 +251,8 @@ public sealed partial class HospitalSimulation
             }
             else if (!stabilised && (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal))
             {
-                patient.Severity = Math.Min(condition.CanBeFatal ? 1.0 : 0.9, patient.Severity + (condition.DeteriorationPerHour * support * hours));
+                var worst = IsCareer ? WorstSeverityAtThisLevel(patient) : condition.CanBeFatal ? 1.0 : 0.9;
+                patient.Severity = Math.Max(patient.Severity, Math.Min(worst, patient.Severity + (condition.DeteriorationPerHour * support * hours)));
             }
 
             if (condition.CanBeFatal && patient.Severity >= 1.0 && patient.Stage != PatientStage.Leaving)
@@ -422,7 +422,7 @@ public sealed partial class HospitalSimulation
         {
             Notifications.Add(Now, NotificationLevel.Warning, $"Abnormal result for {patient.FullName}: {test.Name}.", patient.Id, patient.CareSpaceId, patient.Triage);
 
-            if (test.EscalateToRedIfAbnormal && patient.Triage is { } current && current != TriageCategory.Red)
+            if (test.EscalateToRedIfAbnormal && patient.Triage is { } current && current != TriageCategory.Red && WorstTriageAtThisLevel == TriageCategory.Red)
             {
                 patient.Triage = TriageCategory.Red;
                 patient.TriageReason = $"Abnormal {test.Name}: {order.Summary}";
@@ -492,7 +492,7 @@ public sealed partial class HospitalSimulation
         }
 
         var news = patient.LatestObservations!.Value.News2;
-        var decision = TriageSystem.Assess(obs, patient.HistoryTaken ? patient.Symptoms : patient.KnownSymptoms, Database);
+        var decision = ForThisLevel(TriageSystem.Assess(obs, patient.HistoryTaken ? patient.Symptoms : patient.KnownSymptoms, Database));
 
         if (patient.Triage is not { } current)
         {
@@ -518,7 +518,7 @@ public sealed partial class HospitalSimulation
 
     // ---------------------------------------------------------------- treatment spaces
 
-    private static CareSpaceKind[] SpacePreference(TriageCategory category) => category switch
+    private static CareSpaceKind[] BaseSpacePreference(TriageCategory category) => category switch
     {
         TriageCategory.Red => new[] { CareSpaceKind.Resus, CareSpaceKind.Majors },
         TriageCategory.Amber => new[] { CareSpaceKind.Majors, CareSpaceKind.Resus },

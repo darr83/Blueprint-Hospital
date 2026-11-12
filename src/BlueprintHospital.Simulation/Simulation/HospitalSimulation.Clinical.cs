@@ -124,7 +124,7 @@ public sealed partial class HospitalSimulation
 
         var obs = patient.CurrentObservations();
         patient.RecordObservations(Now, obs);
-        var decision = TriageSystem.Assess(obs, patient.KnownSymptoms.Concat(handover ? patient.Symptoms : Array.Empty<string>()).Distinct(), Database);
+        var decision = ForThisLevel(TriageSystem.Assess(obs, patient.KnownSymptoms.Concat(handover ? patient.Symptoms : Array.Empty<string>()).Distinct(), Database));
 
         if (handover)
         {

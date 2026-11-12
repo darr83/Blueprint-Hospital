@@ -18,11 +18,40 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
     /// <summary>Which conditions may come in (a Career hospital only gets patients it can look after). All, if not set.</summary>
     public Func<ConditionDefinition, bool>? Allows { get; set; }
 
+    /// <summary>
+    /// Whether a patient made at random may come in (a Career hospital only gets people it is set up for:
+    /// adults, or no one too ill). Others are made again, up to <see cref="SuitsAttempts"/> times. All, if not set.
+    /// </summary>
+    public Func<Patient, bool>? Suits { get; set; }
+
+    /// <summary>How many times a random patient is made again before the last one is taken anyway.</summary>
+    public const int SuitsAttempts = 40;
+
     /// <summary>Lets loaded games continue numbering where they left off.</summary>
     public void SetNextId(int next) => _nextId = Math.Max(_nextId, next);
 
     /// <summary>Generates a patient. Pass <paramref name="forcedMethod"/> or <paramref name="conditionId"/> to control the scenario.</summary>
     public Patient Generate(DateTime now, ArrivalMethod? forcedMethod = null, string? conditionId = null)
+    {
+        if (conditionId is not null || Suits is not { } suits)
+        {
+            return GenerateOnce(now, forcedMethod, conditionId);
+        }
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var id = _nextId;
+            var patient = GenerateOnce(now, forcedMethod, null);
+            if (attempt >= SuitsAttempts || suits(patient))
+            {
+                return patient;
+            }
+
+            _nextId = id;
+        }
+    }
+
+    private Patient GenerateOnce(DateTime now, ArrivalMethod? forcedMethod, string? conditionId)
     {
         var condition = conditionId is null
             ? PickCondition(forcedMethod)

@@ -293,6 +293,8 @@ public sealed partial class LevelBadge : Button
     private static string FeatureWord(string feature) => feature switch
     {
         LevelFeatures.Ambulances => "ambulances",
+        LevelFeatures.AmberPatients => "amber patients",
+        LevelFeatures.Children => "children",
         LevelFeatures.RedPatients => "red patients",
         LevelFeatures.Arrests => "cardiac arrests and the crash team",
         LevelFeatures.Spills => "spills to clean",

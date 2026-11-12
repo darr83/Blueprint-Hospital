@@ -8,7 +8,7 @@
     "id": "level_1",
     "number": 1,
     "name": "Walk-in centre",
-    "description": "A small A&E for people who walk in. Get patients triaged, seen and home within four hours.",
+    "description": "A small A&E for adults who walk in with minor problems. Get patients triaged, seen and home within four hours.",
     "grant": 0,
     "arrival_rate": 0.6,
     "departments": ["emergency", "facilities"],
@@ -27,18 +27,18 @@
     "id": "level_2",
     "number": 2,
     "name": "Emergency department",
-    "description": "Ambulances now bring patients in. Build majors cubicles and an X-ray room, and hire porters to move patients.",
+    "description": "Ambulances now bring patients in, with sicker (amber) patients and children. Build majors cubicles and an X-ray room, and hire porters to move patients.",
     "grant": 100000,
     "arrival_rate": 0.8,
     "departments": ["radiology"],
     "rooms": ["majors_cubicle", "xray_room", "emergency_ward", "accessible_toilet", "staff_toilet"],
     "staff": ["radiographer", "healthcare_assistant", "porter"],
     "grades": ["Band 7 nurse"],
-    "features": ["ambulances"],
+    "features": ["ambulances", "amber_patients", "children"],
     "goals": [
-      { "type": "count", "text": "Treat 50 A&E patients", "stat": "ae.departed", "target": 50 },
+      { "type": "count", "text": "Treat 40 A&E patients", "stat": "ae.departed", "target": 40 },
       { "type": "average_at_most", "text": "Ambulance handovers average 30 minutes or less", "stat": "ae.handover_minutes", "of": ["ae.handovers"], "target": 30, "min_count": 10 },
-      { "type": "count", "text": "Do 10 X-rays or scans", "stat": "services.scans", "target": 10 }
+      { "type": "count", "text": "Do 8 X-rays or scans", "stat": "services.scans", "target": 8 }
     ]
   },
   {
@@ -55,7 +55,7 @@
     "features": ["red_patients", "arrests", "spills"],
     "goals": [
       { "type": "count", "text": "Care for 5 red patients", "stat": "ae.triaged.red", "target": 5 },
-      { "type": "share_at_least", "text": "85% leave A&E within 4 hours", "stat": "ae.within_4h", "of": ["ae.departed"], "target": 0.85, "min_count": 40 },
+      { "type": "share_at_least", "text": "85% leave A&E within 4 hours", "stat": "ae.within_4h", "of": ["ae.departed"], "target": 0.85, "min_count": 30 },
       { "type": "rooms", "text": "Build a cleaning room", "room": "cleaning_room", "target": 1 }
     ]
   },
@@ -73,8 +73,8 @@
     "features": ["ward_emergencies"],
     "goals": [
       { "type": "departments_open", "text": "Open Acute Medicine", "departments": ["general_medicine"], "target": 1 },
-      { "type": "count", "text": "Admit 30 patients from A&E", "stat": "ae.admitted", "target": 30 },
-      { "type": "count", "text": "Send 25 patients home from the wards", "stat": "ward.discharges", "target": 25 }
+      { "type": "count", "text": "Admit 15 patients from A&E", "stat": "ae.admitted", "target": 15 },
+      { "type": "count", "text": "Send 12 patients home from the wards", "stat": "ward.discharges", "target": 12 }
     ]
   },
   {
@@ -91,8 +91,8 @@
     "features": [],
     "goals": [
       { "type": "departments_open", "text": "Open General Surgery", "departments": ["general_surgery"], "target": 1 },
-      { "type": "count", "text": "Do 15 operations", "stat": "services.operations", "target": 15 },
-      { "type": "count", "text": "Do 30 X-rays or scans", "stat": "services.scans", "target": 30 }
+      { "type": "count", "text": "Do 8 operations", "stat": "services.operations", "target": 8 },
+      { "type": "count", "text": "Do 20 X-rays or scans", "stat": "services.scans", "target": 20 }
     ]
   },
   {
@@ -127,7 +127,7 @@
     "goals": [
       { "type": "departments_open", "text": "Open Critical Care", "departments": ["critical_care"], "target": 1 },
       { "type": "rooms", "text": "Build a high dependency unit", "room": "high_dependency_unit", "target": 1 },
-      { "type": "count", "text": "Admit 60 patients from A&E", "stat": "ae.admitted", "target": 60 }
+      { "type": "count", "text": "Admit 25 patients from A&E", "stat": "ae.admitted", "target": 25 }
     ]
   },
   {
@@ -145,7 +145,7 @@
     "features": [],
     "goals": [
       { "type": "departments_open", "text": "Open Trauma and Orthopaedics or Cardiology", "departments": ["trauma_orthopaedics", "cardiology"], "target": 1 },
-      { "type": "count", "text": "Send 60 patients home from the wards", "stat": "ward.discharges", "target": 60 }
+      { "type": "count", "text": "Send 20 patients home from the wards", "stat": "ward.discharges", "target": 20 }
     ]
   },
   {
