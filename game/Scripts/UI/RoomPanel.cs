@@ -288,6 +288,11 @@ public partial class RoomPanel : PanelContainer
             return $"{member.Name}";
         }
 
+        if (room.IsMultiBed)
+        {
+            return $"{room.PlacesUsed} of {room.Beds.Count} beds in use";
+        }
+
         if (room.IsWard)
         {
             var used = room.Beds.Count(b => b.OccupantId is not null);

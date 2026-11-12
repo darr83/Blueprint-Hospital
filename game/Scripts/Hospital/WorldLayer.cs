@@ -350,7 +350,7 @@ public partial class WorldLayer : Node2D
             return false;
         }
 
-        return space.IsTreatmentSpace ? patient.Tile == space.PatientSpot : _sim.BedOf(patient) is { } bed && patient.Tile == bed.PatientSpot;
+        return _sim.BedOf(patient) is { } bed ? patient.Tile == bed.PatientSpot : space.IsTreatmentSpace && patient.Tile == space.PatientSpot;
     }
 
     public bool IsSeated(Agent agent) =>
@@ -552,7 +552,7 @@ public partial class WorldLayer : Node2D
                         break;
                     case FurnitureStyle.Bed when space.IsServiceRoom:
                         break;
-                    case FurnitureStyle.Bed when space.IsWard:
+                    case FurnitureStyle.Bed when space.HasBeds:
                         if (space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed)
                         {
                             _bedSpots.Add(wardBed.PatientSpot);

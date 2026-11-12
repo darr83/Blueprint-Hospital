@@ -75,6 +75,11 @@ public partial class ArtShots : Node
                     BuildRooms(h, list["--art-rooms=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries));
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-minors") >= 0)
+                {
+                    BuildMinorsRoom(h);
+                }
+
                 // Bring in a few patients so there are people in the beds to look at.
                 for (var i = 0; i < 6; i++)
                 {
@@ -123,6 +128,23 @@ public partial class ArtShots : Node
                     GD.Print($"[art] Corridor patients: {sim.CorridorPatients.Count()}, spots: {string.Join(" ", sim.CorridorCareSpots())}");
                 }
 
+                if (_minors is { } minors)
+                {
+                    // Fill the minors room's beds.
+                    var sim = h.Session.Simulation;
+                    for (var i = 0; i < 10; i++)
+                    {
+                        sim.SpawnPatient(ArrivalMethod.WalkIn);
+                    }
+
+                    for (var i = 0; i < 30000 && sim.Patients.Count(p => p.CareSpaceId == minors.Id && sim.BedOf(p) is { } bed && p.Tile == bed.PatientSpot && !p.IsMoving) < 4; i++)
+                    {
+                        clock.Step();
+                    }
+
+                    GD.Print($"[art] Minors room: {minors.PlacesUsed} of {minors.Beds.Count} beds in use");
+                }
+
                 _frame = 0;
             }
 
@@ -145,6 +167,12 @@ public partial class ArtShots : Node
                     var v = view["--art-view=".Length..].Split(',').Select(t => double.Parse(t, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
                     return (IsoDraw.ToScreen(v[0], v[1]), (float)v[2]);
                 }),
+            }
+            : _minors is { } room
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("minors_room", _ => (IsoDraw.ToScreen(room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0)), 1.3f)),
+                ("minors_room_close", _ => (IsoDraw.ToScreen(room.Rect.X + 8, room.Rect.Y + 4), 2.4f)),
             }
             : _corridor
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
@@ -207,6 +235,25 @@ public partial class ArtShots : Node
     private bool _wing;
 
     private bool _corridor;
+
+    private CareSpace? _minors;
+
+    /// <summary>Swaps A&amp;E's minors cubicles for a big minors room in a new wing, to review its beds and curtains.</summary>
+    private void BuildMinorsRoom(HospitalScene h)
+    {
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(10_000_000);
+        Report("extension", sim.ExtendBuilding(new Simulation.World.GridRect(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(44, 13, 56, 5), Simulation.World.WallSide.South)));
+        Report("minors room", sim.BuildRoom(sim.AutoPlan("minors_room", new Simulation.World.GridRect(44, 2, 26, 11))));
+        foreach (var cubicle in sim.Spaces.Where(s => s.Kind == CareSpaceKind.Minors && !s.HasBeds).ToList())
+        {
+            Report(cubicle.Name, sim.DemolishRoom(cubicle.Id));
+        }
+
+        _minors = sim.Spaces.FirstOrDefault(s => s.TemplateId == "minors_room");
+    }
 
     private static (Vector2, float) CorridorView(HospitalScene h)
     {

@@ -111,13 +111,13 @@ public sealed partial class HospitalSimulation
     /// <summary>After a scan or an operation the patient goes back to their cubicle (or the waiting room).</summary>
     private void ReturnFromServiceRoom(Patient patient)
     {
-        if (patient.CareSpaceId is { } id && FindSpace(id) is { IsTreatmentSpace: true } cubicle)
-        {
-            WalkTo(patient, cubicle.PatientSpot);
-        }
-        else if (BedOf(patient) is { } bed)
+        if (BedOf(patient) is { } bed)
         {
             WalkTo(patient, bed.PatientSpot);
+        }
+        else if (patient.CareSpaceId is { } id && FindSpace(id) is { IsTreatmentSpace: true } cubicle)
+        {
+            WalkTo(patient, cubicle.PatientSpot);
         }
         else
         {

@@ -68,7 +68,7 @@ public partial class PlanLayer : Node2D
                 beds[bed.PatientSpot] = bed.HeadSouth;
             }
 
-            if (space.PatientSpot is var spot && !space.IsWard)
+            if (space.PatientSpot is var spot && !space.HasBeds)
             {
                 beds.TryAdd(spot, false);
             }

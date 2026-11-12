@@ -16,6 +16,9 @@ public static class RoomLayoutEngine
     private const int BedTilesX = 3;
     private const int BedTilesY = 5;
 
+    /// <summary>The privacy curtain hung between neighbouring beds in a minors room.</summary>
+    public const string BayCurtain = "bay_curtain";
+
     /// <summary>Furniture a layout cannot work without.</summary>
     public static IReadOnlyList<string> RequiredFurniture(RoomLayoutKind layout) => layout switch
     {
@@ -245,14 +248,25 @@ public static class RoomLayoutEngine
 
         var door = plan.DoorApproach(4);
         var locker = template.Furniture.Contains("bedside_locker");
+        // A minors room: a curtain hangs between each pair of neighbouring beds (and the foot rail is drawn with it).
+        var curtained = template.Furniture.Contains(BayCurtain);
         foreach (var (rowY, headSouth) in rows)
         {
+            int? lastX = null;
             for (var x = r.X + 1; x + BedTilesX + (cot ? 2 : 0) <= r.Right - 1; x += pitch)
             {
                 if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
                 {
+                    lastX = null;
                     continue;
                 }
+
+                if (curtained && lastX is { } previous && x - previous == pitch)
+                {
+                    plan.AddWorld(BayCurtain, x - 0.6, rowY + 0.15, 0.2, BedTilesY - 0.5);
+                }
+
+                lastX = x;
 
                 var spot = new GridCoord(x + 1, rowY + 2);
                 var staff = new GridCoord(x + 1, headSouth ? rowY - 1 : rowY + BedTilesY);
@@ -286,7 +300,7 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot"))
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot" and not BayCurtain))
         {
             plan.TryPlaceAgainstWalls(item);
         }

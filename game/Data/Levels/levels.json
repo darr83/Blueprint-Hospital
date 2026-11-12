@@ -13,7 +13,7 @@
     "arrival_rate": 0.6,
     "departments": ["emergency", "facilities"],
     "rooms": ["extend_building", "corridor", "decorate", "waiting_room", "waiting_desk", "waiting_doors", "waiting_chairs",
-              "triage_room", "minors_cubicle", "nurses_station", "doctors_office", "staff_room", "public_toilets", "vending_point"],
+              "triage_room", "minors_cubicle", "minors_room", "nurses_station", "doctors_office", "staff_room", "public_toilets", "vending_point"],
     "staff": ["receptionist", "nurse", "doctor"],
     "grades": ["Band 5 nurse", "Band 6 nurse", "Junior Doctor", "Doctor"],
     "features": [],

@@ -99,6 +99,9 @@ public static partial class Furnish3D
             case "kitchenette":
                 Kitchenette(b, w, d, h, colour);
                 return true;
+            case "bay_curtain":
+                BayCurtain(b, d, colour);
+                return true;
             case "bedside_locker":
                 Locker(b, w, d, h, colour);
                 return true;
@@ -313,6 +316,48 @@ public static partial class Furnish3D
         b.Cylinder(new Vector3(w * 0.1f, h + H(2.5f), 0), 0.07f, H(5), 0.07f, new Color("#ECEFF1"));
         Blk(b, w * 0.32f, -0.03f, 0.5f, d * 0.65f, h, H(8), new Color("#E0E4E8"));
         Blk(b, w * 0.29f, (d * 0.29f) + 0.005f, 0.32f, 0.01f, h + H(1.5f), H(5), new Color("#2B2F33"));
+    }
+
+    /// <summary>
+    /// The curtains between two minors beds: a pleated curtain hanging from a ceiling rail down the
+    /// length of the beds (its front, +z, is the foot end by the aisle), with the foot curtains of
+    /// both beds drawn back and bunched up beside it.
+    /// </summary>
+    private static void BayCurtain(MeshBatch b, float d, Color colour)
+    {
+        var rail = Kit3D.M(2.05);
+        var top = Kit3D.M(1.97);
+        var bottom = Kit3D.M(0.38);
+        var fold = colour.Darkened(0.16f);
+        var hem = colour.Lightened(0.25f);
+
+        // The rail it hangs from, along the top of the divide. (A rail across the foot of the beds is
+        // left out: seen from above it would look like a pole lying across each patient.)
+        b.Box(new Vector3(0, rail, 0), new Vector3(0.05f, 0.04f, d), Chrome);
+
+        // The pleats: narrow panels set a little either side of the line, alternately in shade.
+        var pleats = Math.Max(4, (int)Math.Round(d / 0.24f));
+        var step = (d - 0.1f) / pleats;
+        for (var i = 0; i < pleats; i++)
+        {
+            var z = (-d / 2) + 0.05f + (step * (i + 0.5f));
+            var x = i % 2 == 0 ? 0.025f : -0.025f;
+            Blk(b, x, z, 0.035f, step * 1.06f, bottom, top - bottom, i % 2 == 0 ? colour : fold);
+        }
+
+        // A light hem band near the top, as on real disposable curtains (the mesh strip).
+        Blk(b, 0, 0, 0.075f, d - 0.1f, top - Kit3D.M(0.28), Kit3D.M(0.22), hem);
+
+        // The foot curtains, drawn back and gathered beside the divide.
+        foreach (var side in new[] { -1, 1 })
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                var x = side * (0.12f + (i * 0.11f));
+                var z = (d / 2) - 0.03f + (i % 2 == 0 ? 0.03f : -0.03f);
+                Blk(b, x, z, 0.1f, 0.07f, bottom, top - bottom, i % 2 == 0 ? colour : fold);
+            }
+        }
     }
 
     private static void Locker(MeshBatch b, float w, float d, float h, Color colour)

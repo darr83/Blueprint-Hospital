@@ -26,9 +26,9 @@ public sealed partial class HospitalSimulation
 
     public IEnumerable<CareSpace> Wards => SpacesOfKind(CareSpaceKind.Ward);
 
-    /// <summary>The ward bed a patient is in or heading to.</summary>
+    /// <summary>The ward bed (or bed in a multi-bed minors room) a patient is in or heading to.</summary>
     public WardBed? BedOf(Patient patient) =>
-        patient.CareSpaceId is { } id && FindSpace(id) is { IsWard: true } ward && patient.BedIndex is { } index && index < ward.Beds.Count
+        patient.CareSpaceId is { } id && FindSpace(id) is { HasBeds: true } ward && patient.BedIndex is { } index && index < ward.Beds.Count
             ? ward.Beds[index]
             : null;
 

@@ -192,6 +192,12 @@ public sealed class CareSpace
 
     public bool IsWard => Kind == CareSpaceKind.Ward;
 
+    /// <summary>A room with a row of beds: a ward, or a minors room (each bed behind its own curtains).</summary>
+    public bool HasBeds => Beds.Count > 0;
+
+    /// <summary>A minors (or other treatment) room with several beds, each working like a cubicle of its own.</summary>
+    public bool IsMultiBed => IsTreatmentSpace && HasBeds;
+
     /// <summary>A lift or stairs: one of these stands in the same spot on every floor.</summary>
     public bool IsShaft => Kind is CareSpaceKind.Lift or CareSpaceKind.Stairs;
 
@@ -215,7 +221,14 @@ public sealed class CareSpace
 
     public bool IsTreatmentSpace => Kind is CareSpaceKind.Minors or CareSpaceKind.Majors or CareSpaceKind.Resus;
 
-    public bool IsFree => OccupantId is null;
+    /// <summary>Not booked for anyone; a multi-bed room is free while any of its beds is.</summary>
+    public bool IsFree => IsMultiBed ? Beds.Any(b => b.OccupantId is null) : OccupantId is null;
+
+    /// <summary>Patient places in this space: one per bed in a multi-bed room, otherwise one.</summary>
+    public int Places => IsMultiBed ? Beds.Count : 1;
+
+    /// <summary>Patient places in use.</summary>
+    public int PlacesUsed => IsMultiBed ? Beds.Count(b => b.OccupantId is not null) : OccupantId is null ? 0 : 1;
 
     public double AreaSquareMetres => Units.AreaSquareMetres(Rect.Width, Rect.Length);
 

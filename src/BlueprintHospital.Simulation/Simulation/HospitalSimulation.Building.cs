@@ -749,6 +749,7 @@ public sealed partial class HospitalSimulation
     {
         var baseName = template.Kind switch
         {
+            CareSpaceKind.Minors when template.Layout == RoomLayoutKind.Ward => "Minors room",
             CareSpaceKind.Minors => "Minors",
             CareSpaceKind.Majors => "Majors",
             CareSpaceKind.Resus => "Resus",

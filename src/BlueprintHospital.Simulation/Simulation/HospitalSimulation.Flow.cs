@@ -623,10 +623,21 @@ public sealed partial class HospitalSimulation
         LeaveCorridor(patient);
         ReleaseSpace(patient);
         ReleaseSeat(patient);
-        space.OccupantId = patient.Id;
         patient.CareSpaceId = space.Id;
         patient.Stage = PatientStage.InTreatmentSpace;
-        WalkTo(patient, space.PatientSpot);
+        if (space.IsMultiBed)
+        {
+            // A minors room: the first empty bed, behind its own curtains.
+            var index = Enumerable.Range(0, space.Beds.Count).First(i => IsVacant(space.Beds[i]));
+            space.Beds[index].OccupantId = patient.Id;
+            patient.BedIndex = index;
+            WalkTo(patient, space.Beds[index].PatientSpot);
+        }
+        else
+        {
+            space.OccupantId = patient.Id;
+            WalkTo(patient, space.PatientSpot);
+        }
 
         if (from == PatientStage.InAmbulanceQueue && AmbulanceFor(patient) is { } ambulance)
         {
