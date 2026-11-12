@@ -151,6 +151,12 @@ public static class LevelFeatures
     /// <summary>Patients arrive by ambulance (before this, everyone walks in).</summary>
     public const string Ambulances = "ambulances";
 
+    /// <summary>Patients who need a majors cubicle (triaged amber) come in. Before this, everyone is well enough for minors.</summary>
+    public const string AmberPatients = "amber_patients";
+
+    /// <summary>Children come in. Before this, the hospital only sees adults (16 and over).</summary>
+    public const string Children = "children";
+
     /// <summary>Patients sick enough to be triaged red come in.</summary>
     public const string RedPatients = "red_patients";
 
@@ -174,6 +180,6 @@ public static class LevelFeatures
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        Ambulances, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity,
+        Ambulances, AmberPatients, Children, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity,
     };
 }

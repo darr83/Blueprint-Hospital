@@ -93,7 +93,7 @@ public sealed partial class HospitalSimulation
             DecorateNewRoom(space);
         }
 
-        _generator = new PatientGenerator(database, Random) { Allows = CanArriveAtThisLevel };
+        _generator = new PatientGenerator(database, Random) { Allows = CanArriveAtThisLevel, Suits = SuitsThisLevel };
         _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);
 

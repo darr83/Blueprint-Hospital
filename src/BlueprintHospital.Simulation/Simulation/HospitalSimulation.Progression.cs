@@ -1,5 +1,8 @@
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Data.Models;
+using BlueprintHospital.Simulation.Hospital;
+using BlueprintHospital.Simulation.Medical;
+using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Staff;
 
 namespace BlueprintHospital.Simulation.Simulation;
@@ -115,13 +118,93 @@ public sealed partial class HospitalSimulation
     /// <summary>The worst a patient can start before red patients are unlocked.</summary>
     public const double MaxSeverityBeforeRedPatients = 0.4;
 
+    /// <summary>The age from which patients count as adults: before children are unlocked, nobody younger comes in.</summary>
+    public const int AdultAge = 16;
+
     /// <summary>
-    /// Whether patients with a condition come in at this level: only conditions of departments the
-    /// hospital can open, and no one who starts very ill until red patients are unlocked.
+    /// Whether patients with a condition come in at this level: conditions of departments the hospital
+    /// has opened (A&amp;E always is), or ones A&amp;E can sort out and send home with only tests this
+    /// level has unlocked (a broken wrist once X-ray is unlocked); no one who starts very ill until red
+    /// patients are unlocked, and no conditions only children get until children are unlocked.
     /// </summary>
     private bool CanArriveAtThisLevel(ConditionDefinition condition) =>
-        !IsCareer || (IsDepartmentAvailable(condition.Department)
-                      && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients));
+        !IsCareer || ((IsDepartmentOpen(condition.Department) || CanBeSentHomeFromEmergency(condition))
+                      && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients)
+                      && (IsFeatureOn(LevelFeatures.Children) || condition.AgeRange.Length < 2 || condition.AgeRange[1] >= AdultAge));
+
+    /// <summary>A condition A&amp;E treats and sends home, whose tests all need only rooms unlocked at this level.</summary>
+    private bool CanBeSentHomeFromEmergency(ConditionDefinition condition) =>
+        condition.Disposition == Disposition.Discharge
+        && condition.KeyInvestigations.All(id => !Database.Investigations.TryGetValue(id, out var test) || test.Room is not { } room
+                                                 || Database.RoomTemplates.Values.Any(t => t.Kind == room && IsRoomUnlocked(t.Id)));
+
+    /// <summary>
+    /// Whether a newly made patient suits this level: an adult until children are unlocked, and no
+    /// sicker on arrival than the hospital can look after (green until amber patients are unlocked,
+    /// then amber until red ones are), judged the way the triage nurse will judge them.
+    /// </summary>
+    private bool SuitsThisLevel(Patient patient)
+    {
+        if (!IsCareer)
+        {
+            return true;
+        }
+
+        if (!IsFeatureOn(LevelFeatures.Children) && patient.Age < AdultAge)
+        {
+            return false;
+        }
+
+        var worst = WorstTriageAtThisLevel;
+        return worst == TriageCategory.Red
+               || !TriageSystem.Assess(patient.CurrentObservations(), patient.Symptoms, Database).Category.IsMoreUrgentThan(worst);
+    }
+
+    /// <summary>The most urgent triage category this level's hospital is set up for: green on a walk-in centre, amber once majors arrive, red once resus does.</summary>
+    public TriageCategory WorstTriageAtThisLevel =>
+        !IsFeatureOn(LevelFeatures.AmberPatients) ? TriageCategory.Green
+        : !IsFeatureOn(LevelFeatures.RedPatients) ? TriageCategory.Amber
+        : TriageCategory.Red;
+
+    /// <summary>A triage decision kept within what this level's hospital is set up for (see <see cref="WorstTriageAtThisLevel"/>).</summary>
+    private TriageDecision ForThisLevel(TriageDecision decision) =>
+        decision.Category.IsMoreUrgentThan(WorstTriageAtThisLevel) ? decision with { Category = WorstTriageAtThisLevel } : decision;
+
+    /// <summary>
+    /// The worst a patient can get while in the hospital at this level: on a walk-in centre nobody gets
+    /// worse than they came in; before red patients nobody gets very ill; before the crash team, nobody's
+    /// heart stops.
+    /// </summary>
+    private double WorstSeverityAtThisLevel(Patient patient)
+    {
+        var condition = patient.Condition;
+        var worst = condition.CanBeFatal && IsFeatureOn(LevelFeatures.Arrests) ? 1.0
+            : IsFeatureOn(LevelFeatures.RedPatients) ? 0.9
+            : MaxSeverityBeforeRedPatients + 0.1;
+        return IsFeatureOn(LevelFeatures.AmberPatients) ? worst : Math.Min(worst, patient.InitialSeverity);
+    }
+
+    /// <summary>
+    /// The kinds of space a triage category is looked after in. In a Career game a category whose rooms
+    /// aren't unlocked yet uses the most acute kind that is, so no one waits for a room that can't be built.
+    /// </summary>
+    private CareSpaceKind[] SpacePreference(TriageCategory category)
+    {
+        var kinds = BaseSpacePreference(category);
+        if (!IsCareer || kinds.Any(KindUnlocked))
+        {
+            return kinds;
+        }
+
+        return new[] { CareSpaceKind.Majors, CareSpaceKind.Minors }.Where(KindUnlocked).Take(1).DefaultIfEmpty(CareSpaceKind.Minors).ToArray();
+
+        bool KindUnlocked(CareSpaceKind kind) => kind switch
+        {
+            CareSpaceKind.Resus => IsRoomUnlocked("resus_bay"),
+            CareSpaceKind.Majors => IsRoomUnlocked("majors_cubicle"),
+            _ => true,
+        };
+    }
 
     private int FirstLevel(Func<LevelDefinition, bool> unlocks) =>
         Database.Levels.FirstOrDefault(unlocks)?.Number ?? 0;
