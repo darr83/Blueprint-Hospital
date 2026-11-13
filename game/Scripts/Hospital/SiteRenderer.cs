@@ -19,6 +19,7 @@ public partial class SiteRenderer : Node2D
         [TileKind.Road] = new Color("#55595E"),
         [TileKind.AmbulanceBay] = new Color("#62666B"),
         [TileKind.Parking] = new Color("#6D7176"),
+        [TileKind.TaxiRank] = new Color("#5E6267"),
         [TileKind.BuildingFloor] = new Color("#E7E3DA"),
     };
 
@@ -110,7 +111,6 @@ public partial class SiteRenderer : Node2D
         return kind switch
         {
             TileKind.BuildingFloor => ((tile.X / 2) + (tile.Y / 2)) % 2 == 0 ? colour : colour.Darkened(0.035f),
-            TileKind.Parking when tile.X % 6 == 0 => new Color("#E9E9E9"),
             _ => new Color(colour.R + noise, colour.G + noise, colour.B + noise),
         };
     }

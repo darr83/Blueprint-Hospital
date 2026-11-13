@@ -591,6 +591,7 @@ public sealed partial class HospitalSimulation
                 TileKind.AmbulanceBay => "ambulance bay",
                 TileKind.Parking => "car park",
                 TileKind.Road => "road",
+                TileKind.TaxiRank => "taxi rank",
                 _ => "existing building",
             };
             problems.Add($"Can't build over the {what}.");

@@ -139,6 +139,7 @@ public static class EmergencyDepartmentLayout
                 TileKind.AmbulanceBay => 1,
                 TileKind.Parking => 2,
                 TileKind.Road => 3,
+                TileKind.TaxiRank => 3,
                 TileKind.Grass => 4,
                 _ => 1,
             });
