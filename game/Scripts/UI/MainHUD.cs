@@ -966,6 +966,7 @@ public partial class MainHUD : CanvasLayer
         TileKind.Road => "Road",
         TileKind.AmbulanceBay => "Ambulance bay",
         TileKind.Parking => "Car park",
+        TileKind.TaxiRank => "Taxi rank",
         TileKind.BuildingFloor => "Building",
         _ => kind.ToString(),
     };

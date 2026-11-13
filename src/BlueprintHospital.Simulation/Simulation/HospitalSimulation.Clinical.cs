@@ -429,7 +429,7 @@ public sealed partial class HospitalSimulation
             : $"{diagnosed.DispositionNote} (Missed diagnosis: actually {patient.Condition.Name.ToLowerInvariant()}.)";
         patient.Log(Now, $"Discharged by {nurse.Name}. {diagnosed.DispositionNote}");
         EndVisit(patient, PatientOutcome.Discharged);
-        WalkTo(patient, WalkInSpawn);
+        WalkTo(patient, WayOut(patient));
         OfferPrescription(patient);
 
         if (!correct)

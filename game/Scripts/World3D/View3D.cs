@@ -35,6 +35,7 @@ public partial class View3D : Node3D
     /// <summary>Everything inside: turned with the view and shifted so the floor in view sits on the grounds.</summary>
     private Node3D _root = null!;
 
+    private Outside3D _outside = null!;
     private Ground3D _ground = null!;
     private FloorPainter _floors = null!;
     private Walls3D _walls = null!;
@@ -51,6 +52,9 @@ public partial class View3D : Node3D
 
     /// <summary>Where 3D parts that belong to the floor in view go (in raw grid coordinates).</summary>
     public Node3D Root => _root;
+
+    /// <summary>The grounds' dressing: the outside walls, signs, car park and planting.</summary>
+    public Outside3D Outside => _outside;
 
     public WorldLayer World => _world;
 
@@ -121,6 +125,10 @@ public partial class View3D : Node3D
         _ground = new Ground3D { Name = "Ground" };
         _groundRoot.AddChild(_ground);
         _ground.Initialise(_sim);
+
+        _outside = new Outside3D { Name = "Outside" };
+        _groundRoot.AddChild(_outside);
+        _outside.Initialise(this, _sim);
 
         _floors = new FloorPainter { Name = "Floors" };
         _root.AddChild(_floors);
@@ -215,6 +223,7 @@ public partial class View3D : Node3D
         {
             _builtVersion = _world.StaticVersion;
             _ground.Rebuild();
+            _outside.Rebuild(_walls.Cutaway);
             _floors.Repaint();
             _walls.Rebuild();
             _beds.Rebuild();
@@ -229,6 +238,7 @@ public partial class View3D : Node3D
         _beds.Sync(delta);
         _furniture.Sync();
         _decor.Sync();
+        _outside.Sync();
         _agents.Sync(delta);
         _life.Sync();
         PlaceCamera();

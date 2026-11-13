@@ -9,6 +9,7 @@ public enum TileKind : byte
     AmbulanceBay,
     Parking,
     BuildingFloor,
+    TaxiRank,
 }
 
 /// <summary>An entrance in a building's outer wall. <see cref="Tile"/> is the floor tile just inside.</summary>
