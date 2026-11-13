@@ -50,6 +50,9 @@ public sealed record SiteLayout(SitePlan Plan, IReadOnlyList<GridRect> Ambulance
     /// <summary>The whole car park (null when there is none).</summary>
     public GridRect? CarPark { get; init; }
 
+    /// <summary>The bigger car park on the far side of the front road (null when there is no room).</summary>
+    public GridRect? MainCarPark { get; init; }
+
     /// <summary>Every road on the site, each running the full width or length of it.</summary>
     public IReadOnlyList<GridRect> Roads { get; init; } = Array.Empty<GridRect>();
 
@@ -114,8 +117,14 @@ public static class StarterSite
     /// <summary>Each car park space is 2.5 m wide (and as deep as the strip between the paving and the road).</summary>
     public const int ParkingBayWidth = 5;
 
-    /// <summary>The car park has up to eight spaces, and no fewer than four.</summary>
-    private static readonly int[] CarParkLengths = { 8 * ParkingBayWidth, 6 * ParkingBayWidth, 4 * ParkingBayWidth };
+    /// <summary>The car park by the entrance has up to five spaces, without reaching past the building's corners.</summary>
+    private static readonly int[] CarParkLengths = { 5 * ParkingBayWidth, 4 * ParkingBayWidth, 3 * ParkingBayWidth, 2 * ParkingBayWidth };
+
+    /// <summary>The main car park across the road has up to eight spaces.</summary>
+    private static readonly int[] MainCarParkLengths = { 8 * ParkingBayWidth, 6 * ParkingBayWidth, 4 * ParkingBayWidth };
+
+    /// <summary>Spaces across the road are 5 m deep.</summary>
+    private const int MainCarParkDepth = 10;
 
     /// <summary>The taxi rank holds two taxis nose to tail (5 m each) in a 2.5 m lay-by.</summary>
     public const int TaxiRankLength = 20;
@@ -206,6 +215,13 @@ public static class StarterSite
             site.Fill(p, TileKind.Parking);
         }
 
+        // The main car park, across the front road where nothing can be built, reached by the crossing.
+        var mainPark = MainCarPark(site, b, plan, block);
+        if (mainPark is { } mp)
+        {
+            site.Fill(mp, TileKind.Parking);
+        }
+
         // The taxi rank: a lay-by off the road on the other side of the path, with pavement behind it.
         var rank = TaxiRank(site, b, plan, block);
         if (rank is { } r)
@@ -218,10 +234,14 @@ public static class StarterSite
         building.AddEntrance(new Entrance("main_entrance", "Main entrance", DoorTile(b, plan.EntranceSide, plan.EntranceAt), plan.EntranceSide, DoorWidth, false));
         building.AddEntrance(new Entrance("ambulance_entrance", "Ambulance entrance", DoorTile(b, plan.AmbulanceSide, plan.AmbulanceAt), plan.AmbulanceSide, DoorWidth, true));
         site.AddBuilding(building);
+        var spaces = new[] { park, mainPark }.Where(r => r.HasValue).SelectMany(r => ParkingBays(r!.Value, b, plan)).ToArray();
         site.Layout = new SiteLayout(plan, Bays(block, plan.AmbulanceSide), Lane(b, plan), WalkInSpawn(b, plan))
         {
-            ParkingBays = park is { } cp ? ParkingBays(cp, b, plan) : Array.Empty<GridRect>(),
-            DisabledBays = park is null ? 0 : 2,
+            ParkingBays = spaces,
+
+            // One blue badge space for every four, up to two.
+            DisabledBays = Math.Min(2, spaces.Length / 4),
+            MainCarPark = mainPark,
             TaxiRank = rank,
             TaxiStands = rank is { } tr ? Stands(tr, plan) : Array.Empty<GridCoord>(),
             CarLane = CarLane(b, plan),
@@ -295,11 +315,35 @@ public static class StarterSite
     private static GridRect? CarPark(SiteMap site, GridRect b, SitePlan plan, GridRect bays)
     {
         var depth = RoadOffsetFor(plan, plan.EntranceSide);
-        foreach (var length in CarParkLengths)
+        foreach (var before in new[] { true, false })
         {
-            foreach (var along in new[] { plan.EntranceAt - length - 2, plan.EntranceAt + DoorWidth + 2 })
+            foreach (var length in CarParkLengths)
             {
+                var along = before ? plan.EntranceAt - length - 2 : plan.EntranceAt + DoorWidth + 2;
                 var park = Outside(b, plan.EntranceSide, along, length, Apron, depth);
+                var pastCorner = along < -Apron || along + length > WallLength(plan.EntranceSide) + Apron;
+                if (!pastCorner && Clear(site, park, bays))
+                {
+                    return park;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The main car park: a row of spaces on the far side of the front road, beside the crossing. Ground
+    /// out there can never be built on, so it takes nothing from the hospital. Null when the site edge is too close.
+    /// </summary>
+    private static GridRect? MainCarPark(SiteMap site, GridRect b, SitePlan plan, GridRect bays)
+    {
+        var from = RoadOffsetFor(plan, plan.EntranceSide) + RoadWidth;
+        foreach (var length in MainCarParkLengths)
+        {
+            foreach (var along in new[] { plan.EntranceAt + DoorWidth + 2, plan.EntranceAt - length - 2 })
+            {
+                var park = Outside(b, plan.EntranceSide, along, length, from, from + MainCarParkDepth);
                 if (Clear(site, park, bays))
                 {
                     return park;

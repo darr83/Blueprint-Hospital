@@ -377,7 +377,7 @@ public sealed partial class HospitalSimulation
                     Notifications.Add(Now, NotificationLevel.Warning, $"{patient.FullName} left without being seen after waiting {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", patient.Id, null, patient.Triage);
                     patient.OutcomeNote = "Left without being seen.";
                     EndVisit(patient, PatientOutcome.LeftWithoutBeingSeen);
-                    WalkTo(patient, WalkInSpawn);
+                    WalkTo(patient, WayOut(patient));
                     break;
 
                 case PatientStage.AwaitingTransfer when patient.TransferAmbulanceDueAt is { } due && Now >= due:

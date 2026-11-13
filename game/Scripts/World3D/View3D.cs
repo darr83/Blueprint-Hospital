@@ -53,6 +53,9 @@ public partial class View3D : Node3D
     /// <summary>Where 3D parts that belong to the floor in view go (in raw grid coordinates).</summary>
     public Node3D Root => _root;
 
+    /// <summary>The grounds' dressing: the outside walls, signs, car park and planting.</summary>
+    public Outside3D Outside => _outside;
+
     public WorldLayer World => _world;
 
     /// <summary>How bright the enhanced lighting's fill light is now (0 with enhanced lighting off).</summary>

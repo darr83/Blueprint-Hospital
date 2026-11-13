@@ -367,7 +367,7 @@ public sealed partial class HospitalSimulation
         switch (trip.Person)
         {
             case Patient p when p.Stage == PatientStage.Leaving:
-                WalkTo(p, WalkInSpawn);
+                WalkTo(p, WayOut(p));
                 break;
             case Outpatient o when _outpatients.Contains(o):
                 o.StatusText = "Going home";

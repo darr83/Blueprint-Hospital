@@ -66,6 +66,11 @@ public partial class Agents3D : Node3D
             present.Add(a);
         }
 
+        foreach (var c in sim.Cars)
+        {
+            present.Add(c);
+        }
+
         foreach (var gone in _views.Keys.Where(a => !present.Contains(a)).ToList())
         {
             _views[gone].Node.QueueFree();
@@ -108,6 +113,7 @@ public partial class Agents3D : Node3D
         private Node3D? _chair;
         private Alert3D? _alert;
         private Ambulance3D? _ambulance;
+        private Car3D? _car;
 
         private Person3D[]? _crew;
 
@@ -172,6 +178,14 @@ public partial class Agents3D : Node3D
                 _ambulance ??= Ambulance3D.Make(Node);
                 _ambulance.Sync(world, sim, vehicle);
                 SyncCrew(world, sim, vehicle);
+                return;
+            }
+
+            if (_agent is CarVehicle driven)
+            {
+                Node.Visible = IsoDraw.ViewFloor == 0;
+                _car ??= Car3D.Make(Node, driven);
+                _car.Sync(world, driven);
                 return;
             }
 

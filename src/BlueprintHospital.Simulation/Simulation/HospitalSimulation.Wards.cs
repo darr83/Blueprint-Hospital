@@ -382,7 +382,7 @@ public sealed partial class HospitalSimulation
         {
             SendBabiesHomeWith(patient);
         }
-        WalkTo(patient, WalkInSpawn);
+        WalkTo(patient, WayOut(patient));
     }
 
     // ---------------------------------------------------------------- ward teams

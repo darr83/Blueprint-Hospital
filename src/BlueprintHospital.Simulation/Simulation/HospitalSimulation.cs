@@ -26,6 +26,9 @@ public sealed class SimulationOptions
 
     public bool AutomaticArrivals { get; init; } = true;
 
+    /// <summary>Some walk-in patients come by car or taxi rather than on foot.</summary>
+    public bool CarArrivals { get; init; } = true;
+
     /// <summary>What the player starts with.</summary>
     public StartingHospital Start { get; init; } = StartingHospital.SmallEmergency;
 
@@ -83,6 +86,7 @@ public sealed partial class HospitalSimulation
         Site = site;
         _options = options ?? new SimulationOptions();
         Random = new GameRandom(_options.Seed);
+        _carRandom = new GameRandom(unchecked(_options.Seed * 31) + 7);
         Notifications = new NotificationLog(events);
 
         var building = site.Buildings[0];
@@ -225,6 +229,11 @@ public sealed partial class HospitalSimulation
             ambulance.Move(dt);
         }
 
+        foreach (var car in _cars)
+        {
+            car.Move(dt);
+        }
+
         foreach (var patient in _patients.Values)
         {
             patient.Move(dt);
@@ -238,6 +247,7 @@ public sealed partial class HospitalSimulation
         KeepPushersWithPatients();
 
         UpdateAmbulances();
+        UpdateCars();
         UpdatePhysiology(dt);
         UpdateArrests();
         UpdateWardEmergencies();
@@ -288,7 +298,7 @@ public sealed partial class HospitalSimulation
             {
                 PreAlert(patient);
             }
-            else
+            else if (patient.ArrivalMethod != ArrivalMethod.WalkIn || !TryArriveByCar(patient))
             {
                 AdmitNewPatient(patient);
             }
@@ -303,14 +313,14 @@ public sealed partial class HospitalSimulation
         return patient;
     }
 
-    private void AdmitNewPatient(Patient patient)
+    private void AdmitNewPatient(Patient patient, GridCoord? from = null)
     {
         _patients[patient.Id] = patient;
         Stats.RecordArrival(patient);
 
         if (patient.ArrivalMethod == ArrivalMethod.WalkIn)
         {
-            patient.PlaceAt(WalkInSpawn);
+            patient.PlaceAt(from ?? WalkInSpawn);
             patient.Stage = PatientStage.WalkingIn;
             _receptionQueue.Add(patient.Id);
             patient.Log(Now, $"Walked in to A&E: \"{Database.Symptoms[patient.PresentingComplaint].PatientDescription}\"");

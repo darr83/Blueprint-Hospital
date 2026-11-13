@@ -130,3 +130,47 @@ public static class Cars3D
     public static Transform3D Place(double x, double y, double dx, double dy) =>
         new(new Basis(Vector3.Up, Kit3D.Yaw(dx, dy)), Kit3D.At(x, y));
 }
+
+/// <summary>A visitor's car or a taxi driving about the site, drawn where the simulation has it.</summary>
+public partial class Car3D : Node3D
+{
+    // How fast the body swings round to a new heading (radians per second of real time).
+    private const float TurnRate = 4f;
+
+    private static readonly System.Collections.Generic.Dictionary<(CarKind, Color), ArrayMesh> Meshes = new();
+
+    private float _yaw = float.NaN;
+    private double _lastTime = double.NaN;
+
+    public static Car3D Make(Node3D parent, BlueprintHospital.Simulation.Transport.CarVehicle car)
+    {
+        var kind = car.IsTaxi ? CarKind.Taxi : car.Id % 2 == 0 ? CarKind.Saloon : CarKind.Hatchback;
+        var paint = car.IsTaxi ? Cars3D.TaxiBlack : Cars3D.PaintFor(car.Id);
+        if (!Meshes.TryGetValue((kind, paint), out var mesh))
+        {
+            var batch = new MeshBatch();
+            Cars3D.Build(batch, kind, paint);
+            mesh = batch.Build()!;
+            Meshes[(kind, paint)] = mesh;
+        }
+
+        var node = new Car3D { Name = "Car" };
+        node.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = Kit3D.VertexColours });
+        parent.AddChild(node);
+        return node;
+    }
+
+    public void Sync(BlueprintHospital.Hospital.WorldLayer world, BlueprintHospital.Simulation.Transport.CarVehicle car)
+    {
+        var (x, y) = world.Interpolated(car);
+        var (dx, dy) = car.Heading;
+        Position = Kit3D.At(x, y);
+
+        // Swing round to a new heading over a moment rather than snapping.
+        var target = Kit3D.Yaw(dx, dy);
+        var step = double.IsNaN(_lastTime) ? 0 : System.Math.Clamp(world.Time - _lastTime, 0, 0.25);
+        _lastTime = world.Time;
+        _yaw = float.IsNaN(_yaw) ? target : _yaw + System.Math.Clamp(Mathf.Wrap(target - _yaw, -Mathf.Pi, Mathf.Pi), -(float)(TurnRate * step), (float)(TurnRate * step));
+        Rotation = new Vector3(0, _yaw, 0);
+    }
+}

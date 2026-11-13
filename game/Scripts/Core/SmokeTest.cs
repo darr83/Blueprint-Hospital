@@ -481,6 +481,10 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.Visible, "The 3D world did not show.");
                 Check(hospital.View3D.Root.GetNode("Walls").GetChildCount() > 0, "The 3D world has no walls.");
                 Check(hospital.View3D.People.Count > 0, "Nobody is standing in the 3D world.");
+                Check(hospital.View3D.Outside.SignTexts.Contains(hospital.Session.HospitalName), "The hospital's name is not on the sign over the main entrance.");
+                Check(hospital.View3D.Outside.SignTexts.Contains("Accident & Emergency"), "There is no Accident & Emergency sign.");
+                Check(hospital.View3D.Outside.SignTexts.Contains("TAXI"), "The taxi rank has no sign.");
+                CheckCarArrival(hospital);
                 Check(hospital.View3D.Beds.Count > 0, "The 3D world has no beds.");
                 Check(hospital.View3D.Furniture.Count > 0, "The 3D world has no furniture.");
                 Check(hospital.View3D.Decor.WallArtCount > 0, "The 3D world has no pictures on the walls.");
@@ -1979,6 +1983,24 @@ public partial class SmokeTest : Node
         {
             hospital.Camera.SnapTo(hospital.World.FootPosition(_ambulance) + new Vector2(0, -40), 1.2f);
         }
+    }
+
+    /// <summary>A taxi brings a patient to the rank: it is drawn on its way in, and the patient gets out.</summary>
+    private void CheckCarArrival(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var patient = sim.GenerateWalkIn();
+        Check(sim.SpawnCarArrival(patient, Simulation.Transport.CarTrip.Taxi), "A taxi had nowhere to stop.");
+        hospital.Session.Clock.Step();
+        hospital.View3D._Process(0.016);
+        Check(hospital.View3D.People.FindChild("Car", true, false) is not null, "The taxi is not drawn.");
+        for (var i = 0; i < 2000 && !sim.Patients.Contains(patient); i++)
+        {
+            hospital.Session.Clock.Step();
+        }
+
+        Check(sim.Patients.Contains(patient), "The taxi's passenger never got out.");
+        GD.Print($"[smoke] Outside: signs {string.Join(" | ", hospital.View3D.Outside.SignTexts.Distinct())}; taxi delivered {patient.FullName}.");
     }
 
     private void Screenshot(string name)

@@ -27,10 +27,8 @@ public enum ExteriorStyle
 /// </summary>
 public partial class Outside3D : Node3D
 {
-    public static ExteriorStyle Style { get; set; } = ExteriorStyle.Brick;
-
-    /// <summary>For mock-up pictures: stand a few cars and taxis about (--outside-cars).</summary>
-    public static bool SampleCars { get; set; } = OS.GetCmdlineUserArgs().Contains("--outside-cars");
+    /// <summary>Darren chose the modern white and blue finish (2026-11-13).</summary>
+    public static ExteriorStyle Style { get; set; } = ExteriorStyle.Modern;
 
     private static readonly Color HospitalBlue = new("#005EB8");
     private static readonly Color EmergencyRed = new("#D5281B");
@@ -56,9 +54,9 @@ public partial class Outside3D : Node3D
     {
         _view = view;
         _sim = simulation;
-        if (OS.GetCmdlineUserArgs().Contains("--outside-modern"))
+        if (OS.GetCmdlineUserArgs().Contains("--outside-brick"))
         {
-            Style = ExteriorStyle.Modern;
+            Style = ExteriorStyle.Brick;
         }
     }
 
@@ -102,36 +100,6 @@ public partial class Outside3D : Node3D
         }
 
         Planting(solid, site);
-        if (layout is not null && SampleCars)
-        {
-            // Mock-up only: a few parked cars and taxis, to show the car park and rank in use.
-            var (ca, _) = Axes(layout.Plan.EntranceSide);
-            var (ox, oy) = Axes(layout.Plan.EntranceSide).Out;
-            foreach (var i in new[] { 0, 2, 3, 5, 6 }.Where(i => i < layout.ParkingBays.Count))
-            {
-                var bay = layout.ParkingBays[i];
-                solid.Frame = Cars3D.Place(bay.X + (bay.Width / 2.0), bay.Y + (bay.Length / 2.0), -ox, -oy);
-                Cars3D.Build(solid, i % 2 == 0 ? CarKind.Hatchback : CarKind.Saloon, Cars3D.PaintFor(i + 3));
-            }
-
-            var (dx, dy) = StarterSite.CarDirection(layout.Plan.EntranceSide);
-            foreach (var stand in layout.TaxiStands)
-            {
-                solid.Frame = Cars3D.Place(stand.X + 0.5, stand.Y + 0.5, dx, dy);
-                Cars3D.Build(solid, CarKind.Taxi, Cars3D.TaxiBlack);
-            }
-
-            if (layout.CarLane is { } lane)
-            {
-                var on = lane.At(30);
-                solid.Frame = Cars3D.Place(on.X + 0.5, on.Y + 0.5, dx, dy);
-                Cars3D.Build(solid, CarKind.Saloon, Cars3D.PaintFor(1));
-            }
-
-            solid.Frame = Transform3D.Identity;
-            _ = ca;
-        }
-
         solid.AddTo(this);
         flat.AddTo(this, shadow: false);
         glass.AddTo(this, alpha: true, shadow: false);
@@ -147,6 +115,9 @@ public partial class Outside3D : Node3D
             AddChild(new MeshInstance3D { Mesh = lit, MaterialOverride = _lampGlow, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
     }
+
+    /// <summary>The words on the signs outside (the hospital's name, Accident &amp; Emergency, TAXI...), for checks.</summary>
+    public System.Collections.Generic.IEnumerable<string> SignTexts => GetChildren().OfType<Label3D>().Select(l => l.Text);
 
     /// <summary>Street lamps come on as it gets dark.</summary>
     public void Sync()
@@ -535,11 +506,6 @@ public partial class Outside3D : Node3D
 
     private void CarPark(MeshBatch m, MeshBatch flat, SiteMap site, SiteLayout layout)
     {
-        if (layout.CarPark is not { } park)
-        {
-            return;
-        }
-
         var (a, o) = Axes(layout.Plan.EntranceSide);
         var across = a.X != 0;
         var bays = layout.ParkingBays.Where(b => b.Tiles().All(t => site[t] == TileKind.Parking)).ToList();
@@ -567,23 +533,57 @@ public partial class Outside3D : Node3D
             var cx = bay.X + (bay.Width / 2.0);
             var cy = bay.Y + (bay.Length / 2.0);
             var half = (across ? bay.Length : bay.Width) / 2.0;
-            var sx = cx - (o.X * (half - 0.7));
-            var sy = cy - (o.Y * (half - 0.7));
+            var away = layout.MainCarPark is { } over && over.Intersects(bay) ? -1 : 1;
+            var sx = cx - (o.X * away * (half - 0.7));
+            var sy = cy - (o.Y * away * (half - 0.7));
             m.Block(sx - (across ? 1.5 : 0.15), sy - (across ? 0.15 : 1.5), across ? 3 : 0.3, across ? 0.3 : 3, 0.14f, new Color("#D8D5CC"));
 
             if (i < layout.DisabledBays)
             {
                 // Blue badge space: a blue square with the wheelchair symbol, and yellow hatching at the road end.
-                var bx = cx + (o.X * 0.4);
-                var by = cy + (o.Y * 0.4);
+                var bx = cx + (o.X * away * 0.4);
+                var by = cy + (o.Y * away * 0.4);
                 flat.Floor(bx - 1.5, by - 1.5, 3, 3, 0.005f, HospitalBlue);
                 Wheelchair(flat, bx, by, o.X, o.Y);
                 for (var s = 0; s < 4; s++)
                 {
                     var d = half - 0.5 - (s * 0.45);
-                    flat.Floor(cx + (o.X * d) - (across ? 2.0 : 0.1), cy + (o.Y * d) - (across ? 0.1 : 2.0), across ? 4 : 0.2, across ? 0.2 : 4, 0.005f, Yellow);
+                    flat.Floor(cx + (o.X * away * d) - (across ? 2.0 : 0.1), cy + (o.Y * away * d) - (across ? 0.1 : 2.0), across ? 4 : 0.2, across ? 0.2 : 4, 0.005f, Yellow);
                 }
             }
+        }
+
+        void HedgeRun(double x, double y, double w, double l)
+        {
+            var tiles = new GridRect((int)Math.Floor(x), (int)Math.Floor(y), (int)Math.Ceiling(w), (int)Math.Ceiling(l)).Tiles();
+            if (tiles.All(t => Is(site, t.X, t.Y, TileKind.Grass)))
+            {
+                HedgeBlock(m, x, y, w, l);
+            }
+        }
+
+        // A hedge round the back and ends of the main car park across the road, and its own P sign.
+        if (layout.MainCarPark is { } main)
+        {
+            if (across)
+            {
+                HedgeRun(main.X - 1.4, o.Y > 0 ? main.Bottom + 0.4 : main.Y - 1.4, main.Width + 2.8, 1);
+                HedgeRun(main.X - 1.4, main.Y + 1, 1, main.Length - 1);
+                HedgeRun(main.Right + 0.4, main.Y + 1, 1, main.Length - 1);
+                PSign(m, site, main.Right + 0.9, o.Y > 0 ? main.Y + 0.5 : main.Bottom - 0.5, o, across);
+            }
+            else
+            {
+                HedgeRun(o.X > 0 ? main.Right + 0.4 : main.X - 1.4, main.Y - 1.4, 1, main.Length + 2.8);
+                HedgeRun(main.X + 1, main.Y - 1.4, main.Width - 1, 1);
+                HedgeRun(main.X + 1, main.Bottom + 0.4, main.Width - 1, 1);
+                PSign(m, site, o.X > 0 ? main.X + 0.5 : main.Right - 0.5, main.Bottom + 0.9, o, across);
+            }
+        }
+
+        if (layout.CarPark is not { } park)
+        {
+            return;
         }
 
         // The P sign on the grass at the far end from the path, and a pay machine on the paving behind the spaces.
@@ -599,13 +599,7 @@ public partial class Outside3D : Node3D
             ? (X: pathSide > 0 ? park.X - 1.0 : park.Right + 1.0, Y: park.Y + (park.Length / 2.0) + (o.Y * ((park.Length / 2.0) - 1.2)))
             : (X: park.X + (park.Width / 2.0) + (o.X * ((park.Width / 2.0) - 1.2)), Y: pathSide > 0 ? park.Y - 1.0 : park.Bottom + 1.0);
         _ = far;
-        if (Is(site, (int)Math.Floor(end.X), (int)Math.Floor(end.Y), TileKind.Grass))
-        {
-            m.Cylinder(Kit3D.At(end.X, end.Y, 1.1f), 0.06f, 2.2f, 0.06f, Steel);
-            m.Box(Kit3D.At(end.X, end.Y, 2.25f), new Vector3(across ? 1.1f : 0.1f, 1.1f, across ? 0.1f : 1.1f), HospitalBlue);
-            Lettering("P", Kit3D.At(end.X + (o.X * 0.06), end.Y + (o.Y * 0.06), 2.25f), o.X, o.Y, 0.9f, 1.0f, White);
-            Lettering("P", Kit3D.At(end.X - (o.X * 0.06), end.Y - (o.Y * 0.06), 2.25f), -o.X, -o.Y, 0.9f, 1.0f, White);
-        }
+        PSign(m, site, end.X, end.Y, o, across);
 
         // Pay machine: on the paving just behind the space nearest the path.
         var mx = near.X + (near.Width / 2.0) - (o.X * ((across ? near.Length : near.Width) / 2.0 + 0.9));
@@ -618,14 +612,6 @@ public partial class Outside3D : Node3D
         }
 
         // A hedge closing the gap between the car park and the path, and one along its far end.
-        void HedgeRun(double x, double y, double w, double l)
-        {
-            var tiles = new GridRect((int)Math.Floor(x), (int)Math.Floor(y), (int)Math.Ceiling(w), (int)Math.Ceiling(l)).Tiles();
-            if (tiles.All(t => Is(site, t.X, t.Y, TileKind.Grass)))
-            {
-                HedgeBlock(m, x, y, w, l);
-            }
-        }
 
         if (across)
         {
@@ -637,6 +623,20 @@ public partial class Outside3D : Node3D
             HedgeRun(park.X + 0.5, pathSide > 0 ? park.Bottom + 0.4 : park.Y - 1.4, park.Width - 4, 1);
             HedgeRun(park.X + 0.5, pathSide > 0 ? park.Y - 2.4 : park.Bottom + 1.4, park.Width - 4, 1);
         }
+    }
+
+    /// <summary>A blue P on a pole, readable from the road and from the hospital.</summary>
+    private void PSign(MeshBatch m, SiteMap site, double x, double y, (int X, int Y) o, bool across)
+    {
+        if (!Is(site, (int)Math.Floor(x), (int)Math.Floor(y), TileKind.Grass))
+        {
+            return;
+        }
+
+        m.Cylinder(Kit3D.At(x, y, 1.1f), 0.06f, 2.2f, 0.06f, Steel);
+        m.Box(Kit3D.At(x, y, 2.25f), new Vector3(across ? 1.1f : 0.1f, 1.1f, across ? 0.1f : 1.1f), HospitalBlue);
+        Lettering("P", Kit3D.At(x + (o.X * 0.06), y + (o.Y * 0.06), 2.25f), o.X, o.Y, 0.9f, 1.0f, White);
+        Lettering("P", Kit3D.At(x - (o.X * 0.06), y - (o.Y * 0.06), 2.25f), -o.X, -o.Y, 0.9f, 1.0f, White);
     }
 
     private static void HedgeBlock(MeshBatch m, double x, double y, double w, double l)

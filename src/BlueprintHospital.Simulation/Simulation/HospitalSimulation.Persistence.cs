@@ -260,6 +260,26 @@ public sealed class BreakState
     public bool Requested { get; init; }
 }
 
+/// <summary>A visitor's car or taxi on the site, with the patient still inside it if it has not stopped yet.</summary>
+public sealed class CarSave
+{
+    public int Id { get; init; }
+
+    public CarTrip Trip { get; init; }
+
+    public int PatientId { get; init; }
+
+    public PatientState? Passenger { get; init; }
+
+    public CarState State { get; init; }
+
+    public int Slot { get; init; }
+
+    public DateTime? StoppedAt { get; init; }
+
+    public PositionState Position { get; init; } = new(0, 0);
+}
+
 public sealed class AmbulanceSave
 {
     public int Id { get; init; }
@@ -338,6 +358,10 @@ public sealed class PeopleState
     public List<ClinicalTask> Tasks { get; init; } = new();
 
     public List<AmbulanceSave> Ambulances { get; init; } = new();
+
+    public List<CarSave> Cars { get; init; } = new();
+
+    public int NextCarId { get; init; }
 
     public List<int> ReceptionQueue { get; init; } = new();
 
@@ -452,6 +476,12 @@ public sealed partial class HospitalSimulation
             Id = a.Id, CallSign = a.CallSign, Purpose = a.Purpose, PatientId = a.PatientId, State = a.State, BaySlot = a.BaySlot,
             ArrivedAtBayAt = a.ArrivedAtBayAt, HandoverCompletedAt = a.HandoverCompletedAt, Position = PositionOf(a),
         }).ToList(),
+        Cars = _cars.Select(c => new CarSave
+        {
+            Id = c.Id, Trip = c.Trip, PatientId = c.PatientId, Passenger = c.Passenger is { } inside ? SavePatient(inside) : null,
+            State = c.State, Slot = c.Slot, StoppedAt = c.StoppedAt, Position = PositionOf(c),
+        }).ToList(),
+        NextCarId = _nextCarId,
         ReceptionQueue = _receptionQueue.ToList(),
         OutcomeReviews = _pendingOutcomeReviews.Select(r => new OutcomeReviewState(r.Due, r.Patient.Id)).ToList(),
         Spaces = _spaces.Values.OrderBy(s => s.Id, StringComparer.Ordinal)
@@ -511,6 +541,7 @@ public sealed partial class HospitalSimulation
         _staff.Clear();
         _tasks.Clear();
         _ambulances.Clear();
+        _cars.Clear();
         _receptionQueue.Clear();
         _pendingOutcomeReviews.Clear();
         _activeCapacityAlerts.Clear();
@@ -551,6 +582,12 @@ public sealed partial class HospitalSimulation
             ambulance.PlaceAt(new GridCoord(saved.Position.X, saved.Position.Y));
             _ambulances.Add(ambulance);
             ResumeAmbulance(ambulance);
+        }
+
+        _nextCarId = Math.Max(state.NextCarId, 1);
+        foreach (var saved in state.Cars)
+        {
+            ResumeCar(saved);
         }
 
         _receptionQueue.AddRange(state.ReceptionQueue.Where(_patients.ContainsKey));
@@ -913,6 +950,41 @@ public sealed partial class HospitalSimulation
                 agent.PlaceAt(new GridCoord(x, y));
             }
         }
+    }
+
+    /// <summary>Puts a saved car back where it was: on its way in, parked, or driving off.</summary>
+    private void ResumeCar(CarSave saved)
+    {
+        var parks = saved.Trip == CarTrip.Parks;
+        if (CarLane is null || saved.Slot < 0 || saved.Slot >= (parks ? ParkingBays.Count : TaxiStands.Count))
+        {
+            return;
+        }
+
+        var passenger = saved.Passenger is { } inside ? LoadPatient(inside) : null;
+        var car = new CarVehicle { Id = saved.Id, Trip = saved.Trip, PatientId = saved.PatientId, Passenger = passenger, State = saved.State, Slot = saved.Slot, StoppedAt = saved.StoppedAt };
+        car.PlaceAt(new GridCoord(saved.Position.X, saved.Position.Y));
+        switch (car.State)
+        {
+            case CarState.Arriving when passenger is not null:
+                DriveIn(car);
+                break;
+            case CarState.Parked:
+                var stop = StoppingTile(car);
+                var road = CarLane.Beside(stop);
+                var (dx, dy) = parks ? (Math.Sign(stop.X - road.X), Math.Sign(stop.Y - road.Y)) : StarterSite.CarDirection(Site.Layout!.Plan.EntranceSide);
+                car.PlaceAt(stop);
+                car.FollowAt(stop.X + 0.5, stop.Y + 0.5, (dx, dy));
+                break;
+            case CarState.BackingOut or CarState.Leaving:
+                car.State = CarState.Leaving;
+                car.FollowPath(StraightRoute(car.Tile, new[] { CarLane.Beside(car.Tile), CarLane.Exit }));
+                break;
+            default:
+                return;
+        }
+
+        _cars.Add(car);
     }
 
     /// <summary>Puts an ambulance back on the road it was taking.</summary>

@@ -110,6 +110,40 @@ public partial class ArtShots : Node
                     GD.Print($"[art] Ambulances: {string.Join(", ", sim.Ambulances.Select(a => $"{a.CallSign} {a.State} {a.X:0.0},{a.Y:0.0}"))}");
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cars") >= 0)
+                {
+                    // A busy front of house: cars in the car park, one arriving, and taxis at the rank.
+                    var sim = h.Session.Simulation;
+                    for (var i = 0; i < 5; i++)
+                    {
+                        sim.SpawnCarArrival(sim.GenerateWalkIn(), Simulation.Transport.CarTrip.Parks);
+                        for (var t = 0; t < 40; t++)
+                        {
+                            clock.Step();
+                        }
+                    }
+
+                    for (var i = 0; i < 4000 && sim.Cars.Any(c => c.State != Simulation.Transport.CarState.Parked); i++)
+                    {
+                        clock.Step();
+                    }
+
+                    sim.SpawnCarArrival(sim.GenerateWalkIn(), Simulation.Transport.CarTrip.Taxi);
+                    sim.SpawnCarArrival(sim.GenerateWalkIn(), Simulation.Transport.CarTrip.DropOff);
+                    for (var i = 0; i < 4000 && sim.Cars.Any(c => c.State != Simulation.Transport.CarState.Parked); i++)
+                    {
+                        clock.Step();
+                    }
+
+                    sim.SpawnCarArrival(sim.GenerateWalkIn(), Simulation.Transport.CarTrip.Parks);
+                    for (var i = 0; i < 12; i++)
+                    {
+                        clock.Step();
+                    }
+
+                    GD.Print($"[art] Cars: {string.Join(", ", sim.Cars.Select(c => $"{c.Trip} {c.State} {c.X:0.0},{c.Y:0.0}"))}");
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-corridor") >= 0)
                 {
                     // Busy night: more ambulances than cubicles, so the overflow goes into corridor care.
