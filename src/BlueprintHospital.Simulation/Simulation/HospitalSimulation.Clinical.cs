@@ -212,6 +212,12 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        if (IsPlayer(doctor) && !_delegating)
+        {
+            // Be A Doctor: the player decides which tests to request and what the diagnosis is.
+            return;
+        }
+
         var decision = _diagnosis.Decide(patient, doctor.Skill, doctor.Fatigue, doctor.Caseload.Count, Random);
         IReadOnlyList<DifferentialEntry> entries = decision switch
         {

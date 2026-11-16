@@ -163,8 +163,20 @@ public sealed partial class HospitalSimulation
     private void UpdateStaff(double dt)
     {
         HandleShiftChange();
+        if (PlayerDoctorId is not null && PlayerDoctor is null)
+        {
+            // The doctor being played has been let go.
+            ReleaseControl();
+        }
+
+        RescueUndecidedPatients();
         foreach (var member in _staff)
         {
+            if (UpdatePlayerDoctor(member, dt))
+            {
+                continue;
+            }
+
             if (UpdateCrashResponder(member))
             {
                 continue;
