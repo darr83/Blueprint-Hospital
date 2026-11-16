@@ -160,7 +160,7 @@ public partial class View3D : Node3D
 
         _firstPerson = new FirstPerson3D { Name = "FirstPerson", Visible = false };
         _root.AddChild(_firstPerson);
-        _firstPerson.Initialise(_sim);
+        _firstPerson.Initialise(_sim, _world);
     }
 
     public Agents3D People => _agents;

@@ -28,8 +28,20 @@ public partial class FirstPerson3D : Node3D
     /// <summary>How many rooms and corridors have a ceiling over them now (for the smoke test).</summary>
     public int CeilingCount => _ceiling.GetChildCount();
 
-    public void Initialise(HospitalSimulation simulation)
+    /// <summary>
+    /// How much taller the rooms are in first person than the walls drawn from above, in metres. The
+    /// extra is a plain band of wall above the usual walls and doors, with the ceiling on top of it.
+    /// </summary>
+    public static double ExtraHeightMetres { get; set; } = 0.3;
+
+    /// <summary>The band of wall above the usual walls: plain white, like a bulkhead under the ceiling.</summary>
+    private static readonly Color Coving = new("#D3D9DF");
+
+    private WorldLayer? _world;
+
+    public void Initialise(HospitalSimulation simulation, WorldLayer? world = null)
     {
+        _world = world;
         _sim = simulation;
         AddChild(_ceiling);
         _trail.MaterialOverride = new StandardMaterial3D { AlbedoColor = UI.UiStyle.Blue, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded };
@@ -49,13 +61,13 @@ public partial class FirstPerson3D : Node3D
     private static StandardMaterial3D CeilingMaterial()
     {
         var image = Image.CreateEmpty(64, 64, true, Image.Format.Rgb8);
-        image.Fill(new Color("#E9EDF1"));
+        image.Fill(new Color("#DFE4E9"));
         for (var i = 0; i < 64; i++)
         {
-            image.SetPixel(i, 0, new Color("#CAD2DA"));
-            image.SetPixel(0, i, new Color("#CAD2DA"));
-            image.SetPixel(i, 1, new Color("#DBE1E7"));
-            image.SetPixel(1, i, new Color("#DBE1E7"));
+            image.SetPixel(i, 0, new Color("#C3CBD3"));
+            image.SetPixel(0, i, new Color("#C3CBD3"));
+            image.SetPixel(i, 1, new Color("#D3DAE0"));
+            image.SetPixel(1, i, new Color("#D3DAE0"));
         }
 
         image.GenerateMipmaps();
@@ -64,7 +76,7 @@ public partial class FirstPerson3D : Node3D
             AlbedoTexture = ImageTexture.CreateFromImage(image),
             Uv1Triplanar = true,
             Uv1WorldTriplanar = true,
-            Uv1Scale = new Vector3(0.5f, 0.5f, 0.5f),
+            Uv1Scale = new Vector3(1f / 0.6f, 1f / 0.6f, 1f / 0.6f),
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
             CullMode = BaseMaterial3D.CullModeEnum.Disabled,
             TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
@@ -80,19 +92,107 @@ public partial class FirstPerson3D : Node3D
             _ceiling.RemoveChild(child);
         }
 
-        var height = Walls3D.FullHeight + 0.01f;
-        foreach (var space in _sim.Spaces.Where(s => _sim.FloorOf(s) == IsoDraw.ViewFloor))
+        var extra = Kit3D.M(ExtraHeightMetres);
+        var height = Walls3D.FullHeight + extra + 0.01f;
+        if (extra > 0 && _world is not null)
         {
-            var r = space.Rect;
-            _ceiling.AddChild(new MeshInstance3D
+            // The band of wall between the tops of the usual walls (and doorways) and the raised ceiling.
+            const float t = (float)WorldLayer.WallThickness;
+            var band = new MeshBatch();
+            foreach (var (x, y, horizontal) in _world.WallEdges.Concat(_world.DoorEdges))
             {
-                Mesh = new PlaneMesh { Size = new Vector2(r.Width, r.Length), FlipFaces = true },
-                MaterialOverride = _ceilingMaterial,
-                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-                Position = new Vector3(r.X + (r.Width / 2f), height, r.Y + (r.Length / 2f)),
-            });
+                if (horizontal)
+                {
+                    band.Block(x - (t / 2), y - (t / 2), 1 + t, t, extra, Coving, Walls3D.FullHeight);
+                }
+                else
+                {
+                    band.Block(x - (t / 2), y - (t / 2), t, 1 + t, extra, Coving, Walls3D.FullHeight);
+                }
+            }
+
+            if (band.AddTo(_ceiling, shadow: false) is { } bulkhead)
+            {
+                // Evenly lit, like the ceiling it meets: shaded, it read as a dark beam round every room.
+                bulkhead.MaterialOverride = new StandardMaterial3D { AlbedoColor = Coving, ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded };
+            }
         }
+
+        // One ceiling over everything indoors on this floor, rooms or not, so no sky shows from inside.
+        // Runs of indoor tiles along each row become one strip each.
+        var site = _sim.Site;
+        var baseY = IsoDraw.ViewFloor * site.FloorStride;
+        var indoor = new HashSet<(int X, int Y)>();
+        for (var y = 0; y < site.Length; y++)
+        {
+            var from = -1;
+            for (var x = 0; x <= site.Width; x++)
+            {
+                var inside = x < site.Width && site.IsIndoors(new GridCoord(x, baseY + y));
+                if (inside)
+                {
+                    indoor.Add((x, baseY + y));
+                }
+
+                if (inside && from < 0)
+                {
+                    from = x;
+                }
+                else if (!inside && from >= 0)
+                {
+                    var width = x - from;
+                    _ceiling.AddChild(new MeshInstance3D
+                    {
+                        Mesh = new PlaneMesh { Size = new Vector2(width, 1), FlipFaces = true },
+                        MaterialOverride = _ceilingMaterial,
+                        CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                        Position = new Vector3(from + (width / 2f), height, baseY + y + 0.5f),
+                    });
+                    from = -1;
+                }
+            }
+        }
+
+        // Light panels: one ceiling tile in every third, both ways, wherever all of it is indoors.
+        var lights = 0;
+        for (var cy = 0; (cy + 1) * CeilingTile <= site.Length; cy += LightEvery)
+        {
+            for (var cx = 0; (cx + 1) * CeilingTile <= site.Width; cx += LightEvery)
+            {
+                var (x0, y0) = (cx * CeilingTile, baseY + (cy * CeilingTile));
+                var corners = new[] { (x0 + 0.05, y0 + 0.05), (x0 + CeilingTile - 0.05, y0 + 0.05), (x0 + 0.05, y0 + CeilingTile - 0.05), (x0 + CeilingTile - 0.05, y0 + CeilingTile - 0.05) };
+                if (!corners.All(c => indoor.Contains(((int)Math.Floor(c.Item1), (int)Math.Floor(c.Item2)))))
+                {
+                    continue;
+                }
+
+                _ceiling.AddChild(new MeshInstance3D
+                {
+                    Mesh = _lightMesh,
+                    MaterialOverride = _lightMaterial,
+                    CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                    Position = new Vector3((float)(x0 + (CeilingTile / 2)), height - 0.012f, (float)(y0 + (CeilingTile / 2))),
+                });
+                lights++;
+            }
+        }
+
+        LightCount = lights;
     }
+
+    /// <summary>A ceiling tile is 60 cm square: 1.2 grid tiles.</summary>
+    private const double CeilingTile = 1.2;
+    private const int LightEvery = 3;
+    private readonly PlaneMesh _lightMesh = new() { Size = new Vector2((float)CeilingTile - 0.14f, (float)CeilingTile - 0.14f), FlipFaces = true };
+    private readonly StandardMaterial3D _lightMaterial = new()
+    {
+        AlbedoColor = new Color("#FFFFFF"),
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+    };
+
+    /// <summary>How many light panels are in the ceiling now (for the smoke test).</summary>
+    public int LightCount { get; private set; }
 
     /// <summary>
     /// Lays arrows along <paramref name="route"/> (tiles, in walking order) on the floor in view, with a

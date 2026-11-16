@@ -34,7 +34,82 @@ public partial class DoctorShots : Node
             }
         }
 
+        foreach (var arg in OS.GetCmdlineUserArgs())
+        {
+            if (arg.StartsWith("--doctor-review=", StringComparison.Ordinal))
+            {
+                var shots = new DoctorShots { Name = "DoctorShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--doctor-review=".Length..], _review = true };
+                foreach (var other in OS.GetCmdlineUserArgs().Where(a => a.StartsWith("--wall-extra=", StringComparison.Ordinal)))
+                {
+                    World3D.FirstPerson3D.ExtraHeightMetres = double.Parse(other["--wall-extra=".Length..], System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                GameManager.Instance.AddChild(shots);
+                Callable.From(() => GameManager.Instance.StartNewGame("Blueprint General Hospital")).CallDeferred();
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    private bool _review;
+    private System.Collections.Generic.List<(string Name, Simulation.World.GridCoord At, float Yaw, float Pitch)>? _views;
+
+    /// <summary>The graphics review: stands the doctor in each kind of room and looks around, with no panel in the way.</summary>
+    private void Review(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        if (_views is null)
+        {
+            var doctor = sim.PlayableDoctors.OrderBy(d => d.Id).First();
+            hospital.EnterDoctorMode(doctor);
+            hospital.DoctorHud.Visible = false;
+            _views = new();
+            foreach (var kind in new[] { Simulation.Hospital.CareSpaceKind.Corridor, Simulation.Hospital.CareSpaceKind.Waiting, Simulation.Hospital.CareSpaceKind.Triage, Simulation.Hospital.CareSpaceKind.Majors, Simulation.Hospital.CareSpaceKind.Resus, Simulation.Hospital.CareSpaceKind.StaffRoom, Simulation.Hospital.CareSpaceKind.NursesStation, Simulation.Hospital.CareSpaceKind.DoctorsOffice })
+            {
+                var space = sim.Spaces.Where(sp => sp.Kind == kind).OrderByDescending(sp => sp.Rect.Width * sp.Rect.Length).FirstOrDefault();
+                if (space is null)
+                {
+                    continue;
+                }
+
+                var r = space.Rect;
+                var centre = new Simulation.World.GridCoord(r.X + (r.Width / 2), r.Y + (r.Length / 2));
+                var spot = Enumerable.Range(0, 6).SelectMany(d => new[] { new Simulation.World.GridCoord(centre.X + d, centre.Y), new Simulation.World.GridCoord(centre.X - d, centre.Y), new Simulation.World.GridCoord(centre.X, centre.Y + d), new Simulation.World.GridCoord(centre.X, centre.Y - d) })
+                    .FirstOrDefault(c => r.Contains(c) && sim.Nav.IsWalkable(c), centre);
+                var along = r.Width >= r.Length ? 90f : 0f;
+                _views.Add(($"{kind}_a", spot, along, -3));
+                _views.Add(($"{kind}_b", spot, along + 180, -3));
+                _views.Add(($"{kind}_c", spot, along + 90, -3));
+                _views.Add(($"{kind}_up", spot, along + 45, 28));
+            }
+
+            _frame = -6;
+            return;
+        }
+
+        var index = _step / 2;
+        if (index >= _views.Count)
+        {
+            GD.Print("[doctor] Review done.");
+            GetTree().Quit(0);
+            return;
+        }
+
+        var (name, at, yaw, pitch) = _views[index];
+        if (_step % 2 == 0)
+        {
+            sim.PlayerDoctor?.PlaceAt(at);
+            hospital.Doctor.LookForTest(yaw, pitch);
+        }
+        else
+        {
+            Save($"{index:00}_{name}");
+        }
+
+        _step++;
+        _frame = -4;
     }
 
     private void Save(string name)
@@ -79,6 +154,12 @@ public partial class DoctorShots : Node
 
         if (_frame < 0)
         {
+            return;
+        }
+
+        if (_review)
+        {
+            Review(_hospital);
             return;
         }
 
