@@ -441,6 +441,12 @@ public sealed partial class HospitalSimulation
         var urgent = patient.Investigations.Any(o => o.Status == InvestigationStatus.Resulted && !o.Reviewed && o.Abnormal);
         if ((!waitingFor || urgent) && unreviewed && patient.WorkingDiagnosis is null && !HasTask(patient, TaskKind.DoctorReview) && patient.HistoryTaken)
         {
+            // The player's own patients wait for the player: the results show on their Be A Doctor panel instead.
+            if (IsPlayersPatient(patient))
+            {
+                return;
+            }
+
             AddTask(TaskKind.DoctorReview, StaffRole.Doctor, patient, 8, "Review results");
         }
     }

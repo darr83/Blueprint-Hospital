@@ -289,4 +289,59 @@ public class BeADoctorTests
             Assert.NotEmpty(hint.Tests);
         }
     }
+
+    [Fact]
+    public void The_player_can_take_a_job_a_colleague_is_still_walking_to()
+    {
+        var h = new SimulationHarness(4321);
+        var doctors = h.Sim.Staff.Where(s => s.Role == StaffRole.Doctor && s.Shift == h.Sim.CurrentShift).ToList();
+        Assert.True(doctors.Count >= 2, "the starter team should have two doctors on shift");
+        var me = doctors[0];
+        Assert.True(h.Sim.TakeControl(me.Id).Ok);
+        var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
+
+        // A colleague picks the assessment up and sets off; it still shows on the player's list.
+        ClinicalTask? Theirs() => h.Sim.Tasks.FirstOrDefault(t => t.PatientId == patient.Id && t.Kind == TaskKind.DoctorAssessment && h.Sim.OnTheirWay(t) is not null);
+        h.RunUntil(() => Theirs() is not null, TimeSpan.FromHours(3), "a colleague to set off for the assessment");
+        var task = Theirs()!;
+        var colleague = h.Sim.OnTheirWay(task)!;
+        Assert.Contains(task, h.Sim.PlayerTasks());
+
+        Assert.True(h.Sim.PlayerClaim(task.Id).Ok);
+        Assert.Equal(me.Id, task.AssignedStaffId);
+        Assert.Null(colleague.CurrentTaskId);
+        Assert.False(colleague.IsMoving);
+
+        // Once the player has it, nobody takes it back.
+        h.RunFor(TimeSpan.FromMinutes(10));
+        Assert.Equal(me.Id, task.AssignedStaffId);
+    }
+
+    [Fact]
+    public void The_players_patients_wait_for_the_player_then_a_colleague_steps_in()
+    {
+        var h = new SimulationHarness(4321);
+        var doctors = h.Sim.Staff.Where(s => s.Role == StaffRole.Doctor && s.Shift == h.Sim.CurrentShift).ToList();
+        Assert.True(doctors.Count >= 2);
+        var me = doctors[0];
+        Assert.True(h.Sim.TakeControl(me.Id).Ok);
+        var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia");
+        ClinicalTask? Assessment() => h.Sim.PlayerTasks().FirstOrDefault(t => t.PatientId == patient.Id && t.Kind == TaskKind.DoctorAssessment);
+        h.RunUntil(() => Assessment() is not null && patient.Stage == PatientStage.InTreatmentSpace && !patient.IsMoving, TimeSpan.FromHours(3), "the patient to be waiting for a doctor");
+        WalkToAndDo(h, me, Assessment()!);
+        Assert.True(h.Sim.IsPlayersPatient(patient));
+
+        var tests = h.Sim.TestOptionsFor(patient).Where(o => o.Available).Take(2).Select(o => o.Test.Id).ToList();
+        Assert.True(h.Sim.PlayerOrderTests(patient.Id, tests).Ok);
+        h.RunUntil(() => h.Sim.PlayerDecisionsWaiting().Contains(patient), TimeSpan.FromHours(4), "the results to come back to the player");
+
+        // The other doctors leave the decision alone...
+        Assert.DoesNotContain(h.Sim.Tasks, t => t.PatientId == patient.Id && t.Kind == TaskKind.DoctorReview);
+        h.RunFor(TimeSpan.FromMinutes(30));
+        Assert.Null(patient.WorkingDiagnosis);
+
+        // ...until the patient has waited too long, when one of them reviews and decides.
+        h.RunUntil(() => patient.WorkingDiagnosis is not null || !patient.IsInDepartment, HospitalSimulation.PlayerDecisionPatience + TimeSpan.FromHours(3), "a colleague to step in");
+        Assert.False(h.Sim.IsPlayersPatient(patient));
+    }
 }

@@ -110,6 +110,8 @@ public sealed partial class HospitalSimulation
 
         PlayerDoctorId = null;
         _undecidedSweepDue = true;
+        _decisionWaitingSince.Clear();
+        _handedOn.Clear();
     }
 
     /// <summary>
@@ -137,6 +139,42 @@ public sealed partial class HospitalSimulation
         && patient.Investigations.All(o => o.Status == InvestigationStatus.Resulted)
         && !HasTask(patient, TaskKind.DoctorReview) && !HasTask(patient, TaskKind.DoctorAssessment);
 
+    /// <summary>How long a patient waits for the player's decision before a colleague is asked to step in.</summary>
+    public static readonly TimeSpan PlayerDecisionPatience = TimeSpan.FromMinutes(90);
+
+    private readonly Dictionary<int, DateTime> _decisionWaitingSince = new();
+
+    /// <summary>True for a patient the player's doctor has seen: their results and decisions wait for the player.</summary>
+    public bool IsPlayersPatient(Patient patient) =>
+        PlayerDoctor is { } member && member.Caseload.Contains(patient.Id) && !_handedOn.Contains(patient.Id);
+
+    private readonly HashSet<int> _handedOn = new();
+
+    /// <summary>A patient the player has left undecided for too long is put on the board for any doctor to review.</summary>
+    private void HandOnForgottenDecisions()
+    {
+        var waiting = PlayerDecisionsWaiting();
+        foreach (var gone in _decisionWaitingSince.Keys.Where(id => waiting.All(p => p.Id != id)).ToList())
+        {
+            _decisionWaitingSince.Remove(gone);
+        }
+
+        foreach (var patient in waiting)
+        {
+            if (!_decisionWaitingSince.TryGetValue(patient.Id, out var since))
+            {
+                _decisionWaitingSince[patient.Id] = Now;
+            }
+            else if (Now - since >= PlayerDecisionPatience)
+            {
+                _decisionWaitingSince.Remove(patient.Id);
+                _handedOn.Add(patient.Id);
+                AddTask(TaskKind.DoctorReview, StaffRole.Doctor, patient, 8, "Review and decide");
+                Notifications.Add(Now, NotificationLevel.Warning, $"{patient.FullName} has waited {PlayerDecisionPatience.TotalMinutes:0} minutes for your decision, so a colleague has been asked to review.", patient.Id);
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- each tick
 
     /// <summary>Runs the player's doctor for one tick. Returns true when the staff AI should leave them alone.</summary>
@@ -154,6 +192,7 @@ public sealed partial class HospitalSimulation
             return false;
         }
 
+        HandOnForgottenDecisions();
         var task = member.CurrentTaskId is { } id && _tasks.TryGetValue(id, out var found) ? found : null;
         if (task is null)
         {
@@ -355,13 +394,23 @@ public sealed partial class HospitalSimulation
         }
 
         return _tasks.Values
-            .Where(t => t.AssignedStaffId == member.Id || (t.AssignedStaffId is null && IsPlayerWork(t, member)))
+            .Where(t => t.AssignedStaffId == member.Id || ((t.AssignedStaffId is null || OnTheirWay(t) is not null) && IsPlayerWork(t, member)))
             .Where(t => _patients.TryGetValue(t.PatientId, out var p) && p.IsInDepartment)
             .OrderByDescending(t => t.AssignedStaffId == member.Id)
             .ThenByDescending(t => t.Priority)
             .ThenBy(t => t.Id)
             .ToList();
     }
+
+    /// <summary>
+    /// The doctor who has picked up <paramref name="task"/> but not started it (still walking there), if any.
+    /// The player may take such a job over: otherwise a well-staffed team leaves them nothing to do.
+    /// </summary>
+    public StaffMember? OnTheirWay(ClinicalTask task) =>
+        !task.Started && task.AssignedStaffId is { } id && id != PlayerDoctorId && FindStaff(id) is { Role: StaffRole.Doctor, CrashPatientId: null } other
+        && other.CurrentTaskId == task.Id
+            ? other
+            : null;
 
     private bool IsPlayerWork(ClinicalTask task, StaffMember member) =>
         task.Role == StaffRole.Doctor && ServiceRoomKind(task) is null && IsForMember(task, member);
@@ -393,6 +442,31 @@ public sealed partial class HospitalSimulation
     public GridCoord? PlayerTaskSpot(ClinicalTask task) =>
         _patients.TryGetValue(task.PatientId, out var patient) ? StaffPositionFor(task, patient) : null;
 
+    /// <summary>Where the player's doctor stands to be at <paramref name="patient"/>'s side.</summary>
+    public GridCoord PlayerBedsideSpot(Patient patient)
+    {
+        if (patient.CorridorSpot is { } parked && patient.Tile == parked && !patient.IsMoving)
+        {
+            return CorridorStaffSpot(parked);
+        }
+
+        if (BedOf(patient) is { } bed && bed.PatientSpot == patient.Tile)
+        {
+            return bed.StaffSpot;
+        }
+
+        if (patient.CareSpaceId is { } spaceId && FindSpace(spaceId) is { } space && space.PatientSpot == patient.Tile)
+        {
+            return space.StaffSpot;
+        }
+
+        return BesideTile(patient.Tile);
+    }
+
+    /// <summary>True when the player's doctor is close enough to start <paramref name="task"/>.</summary>
+    public bool PlayerCanReach(ClinicalTask task) =>
+        PlayerDoctor is { } member && _patients.TryGetValue(task.PatientId, out var patient) && WithinReach(member, StaffPositionFor(task, patient), PlayerReach);
+
     /// <summary>The player picks <paramref name="taskId"/> as their next job, so no other doctor takes it.</summary>
     public PlayerResult PlayerClaim(int taskId)
     {
@@ -406,15 +480,25 @@ public sealed partial class HospitalSimulation
             return PlayerResult.Fail("That job has gone.");
         }
 
-        if (task.AssignedStaffId is { } other && other != member.Id)
+        var colleague = OnTheirWay(task);
+        if (task.AssignedStaffId is { } other && other != member.Id && colleague is null)
         {
-            return PlayerResult.Fail("Someone else has already picked that up.");
+            return PlayerResult.Fail("Someone else has already started that.");
         }
 
         var allowed = IsPlayerWork(task, member) || PlayerExtraTasksFor(patient).Contains(task) || task.AssignedStaffId == member.Id;
         if (!allowed)
         {
             return PlayerResult.Fail("That isn't a job for this doctor.");
+        }
+
+        if (colleague is not null)
+        {
+            // The colleague who was walking there turns back and finds something else.
+            ReleaseFromTask(colleague, task);
+            colleague.StopMoving();
+            colleague.Activity = StaffActivity.Idle;
+            colleague.StatusText = "Available";
         }
 
         if (member.CurrentTaskId is { } currentId && currentId != taskId && _tasks.TryGetValue(currentId, out var current))

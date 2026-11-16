@@ -775,6 +775,7 @@ public partial class SmokeTest : Node
                     }
                 }
 
+                CheckDoctorMode(hospital);
                 CheckCheatConsole(hospital);
                 hospital.Hud.ToggleFinances();
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
@@ -2001,6 +2002,58 @@ public partial class SmokeTest : Node
 
         Check(sim.Patients.Contains(patient), "The taxi's passenger never got out.");
         GD.Print($"[smoke] Outside: signs {string.Join(" | ", hospital.View3D.Outside.SignTexts.Distinct())}; taxi delivered {patient.FullName}.");
+    }
+
+    /// <summary>Be A Doctor: pick a doctor, see through their eyes, walk, open a patient's card and a hint, and hand them back.</summary>
+    private static void CheckDoctorMode(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var doctors = sim.PlayableDoctors.ToList();
+        Check(doctors.Count > 0, "No doctor on shift could be played.");
+        hospital.Hud.ToggleDoctors();
+        Check(hospital.Hud.Doctors.Visible && hospital.Hud.Doctors.RowsShown == doctors.Count, $"The Be a doctor list shows {hospital.Hud.Doctors.RowsShown} doctors, not {doctors.Count}.");
+        var nurse = sim.Staff.First(m => m.Role == Simulation.Staff.StaffRole.Nurse);
+        Check(!hospital.EnterDoctorMode(nurse) && !hospital.Doctor.Active, "A nurse should not be playable.");
+
+        var doctor = doctors[0];
+        Check(hospital.EnterDoctorMode(doctor), $"{doctor.Name} could not be played.");
+        Check(hospital.Doctor.Active && sim.PlayerDoctorId == doctor.Id, "Doctor mode did not start.");
+        Check(hospital.View3D.FirstPerson is { } eye && ReferenceEquals(eye.Body, doctor), "The view did not move to the doctor's eyes.");
+        Check(hospital.View3D.FirstPersonParts.Visible, "The ceiling and floor arrows are not shown in first person.");
+        Check(hospital.DoctorHud.Visible && !hospital.Hud.Visible, "The Be A Doctor screen did not take over from the main screen.");
+        Check(!hospital.Hud.Doctors.Visible, "The list of doctors stayed open.");
+
+        // Walking: at least one of the four ways is free, and the eye follows.
+        var (startX, startY) = (doctor.X, doctor.Y);
+        foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
+        {
+            hospital.Doctor.LookForTest(yaw, 0);
+            hospital.Doctor.StepForwardForTest(0.6);
+        }
+
+        _ = (startX, startY);
+        hospital.Doctor.LookForTest(0, 0);
+        Check(hospital.View3D.FirstPerson is { } moved && Math.Abs(moved.X - doctor.X) < 0.01 && Math.Abs(moved.Y - doctor.Y) < 0.01, "The eye did not follow the doctor.");
+
+        // A patient's card and the Hint card.
+        var patient = sim.Patients.FirstOrDefault(p => p.IsInDepartment && p.IsInEmergency);
+        if (patient is not null)
+        {
+            hospital.DoctorHud.OpenCard(patient);
+            Check(hospital.DoctorHud.OpenPatient == patient, "The patient's card did not open.");
+            Check(hospital.DoctorHud.ToggleHint() && hospital.DoctorHud.HintOpen, "The Hint card did not open.");
+            hospital.DoctorHud.CloseHint();
+            Check(!hospital.DoctorHud.HintOpen, "The Hint card did not close.");
+        }
+
+        hospital.Doctor.Exit();
+        Check(!hospital.Doctor.Active && sim.PlayerDoctorId is null, "Leaving doctor mode did not hand the doctor back.");
+        Check(hospital.View3D.FirstPerson is null && !hospital.View3D.FirstPersonParts.Visible, "The view did not go back above the hospital.");
+        Check(hospital.Hud.Visible && !hospital.DoctorHud.Visible, "The main screen did not come back.");
+        Check(Input.MouseMode == Input.MouseModeEnum.Visible, "The mouse pointer was not given back.");
+        hospital.Hud.HideRightPanels();
+        hospital.ClearSelectionForTest();
+        GD.Print($"[smoke] Be A Doctor: played {doctor.Name}, walked, opened a hint and handed back.");
     }
 
     private void Screenshot(string name)

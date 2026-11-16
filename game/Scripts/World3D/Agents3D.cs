@@ -30,6 +30,14 @@ public partial class Agents3D : Node3D
 
     public int Count => _views.Count;
 
+    /// <summary>Someone not drawn at all: the doctor the player is looking out of in first person.</summary>
+    public Agent? Hidden { get; set; }
+
+    /// <summary>In first person: where the player's eyes are. Anyone standing right on top of them is left out, so nobody fills the screen.</summary>
+    public (double X, double Y)? Eye { get; set; }
+
+    private const double TooCloseTiles = 0.75;
+
     /// <summary>The animation clock, in real seconds; it stands still while the game is paused.</summary>
     public double AnimTime { get; internal set; }
 
@@ -86,6 +94,18 @@ public partial class Agents3D : Node3D
             }
 
             view.Sync(world, sim, delta);
+            if (ReferenceEquals(agent, Hidden))
+            {
+                view.Node.Visible = false;
+            }
+            else if (Eye is { } eye && (agent is BlueprintHospital.Simulation.Staff.StaffMember || (agent is BlueprintHospital.Simulation.Patients.Patient lying && !world.IsLying(lying))))
+            {
+                var (ax, ay) = world.FootGrid(agent);
+                if (System.Math.Abs(ax - eye.X) < TooCloseTiles && System.Math.Abs(ay - eye.Y) < TooCloseTiles)
+                {
+                    view.Node.Visible = false;
+                }
+            }
         }
     }
 
