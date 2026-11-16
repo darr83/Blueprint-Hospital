@@ -157,6 +157,10 @@ public partial class View3D : Node3D
         _agents = new Agents3D { Name = "People" };
         _root.AddChild(_agents);
         _agents.Initialise(this);
+
+        _firstPerson = new FirstPerson3D { Name = "FirstPerson", Visible = false };
+        _root.AddChild(_firstPerson);
+        _firstPerson.Initialise(_sim);
     }
 
     public Agents3D People => _agents;
@@ -230,6 +234,10 @@ public partial class View3D : Node3D
             _furniture.Rebuild();
             _decor.Rebuild(_walls.Cutaway);
             _life.Rebuild();
+            if (_eye is not null)
+            {
+                _firstPerson.RebuildCeiling();
+            }
         }
 
         Daylight();
@@ -331,8 +339,81 @@ public partial class View3D : Node3D
         _root.Transform = Turn(IsoDraw.FloorShift);
     }
 
+    /// <summary>
+    /// Be A Doctor: where the player's eyes are (in grid tiles), which way they look (degrees; yaw 0
+    /// looks towards smaller y) and whose body to leave out. Null for the usual view from above.
+    /// </summary>
+    public sealed record Eye(double X, double Y, float Yaw, float Pitch, BlueprintHospital.Simulation.Agents.Agent? Body);
+
+    private Eye? _eye;
+    private bool _cutawayBeforeFirstPerson;
+    private FirstPerson3D _firstPerson = null!;
+
+    /// <summary>Eye height of someone standing, in metres.</summary>
+    public const double EyeHeightMetres = 1.55;
+
+    public Eye? FirstPerson
+    {
+        get => _eye;
+        set
+        {
+            if ((_eye is null) != (value is null))
+            {
+                if (value is not null)
+                {
+                    // Walls stand at full height in first person; the cutaway comes back afterwards.
+                    _cutawayBeforeFirstPerson = _walls.Cutaway;
+                    _walls.Cutaway = false;
+                }
+                else
+                {
+                    _walls.Cutaway = _cutawayBeforeFirstPerson;
+                    _camera.Projection = Camera3D.ProjectionType.Orthogonal;
+                    _camera.Near = 0.5f;
+                    _sun.DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal;
+                }
+
+                _builtVersion = -1;
+            }
+
+            _eye = value;
+            _agents.Hidden = value?.Body;
+            _agents.Eye = value is null ? null : (value.X, value.Y);
+            _firstPerson.Visible = value is not null;
+        }
+    }
+
+    /// <summary>The ceiling and the arrows on the floor that only show in first person.</summary>
+    public FirstPerson3D FirstPersonParts => _firstPerson;
+
+    /// <summary>The 3D camera, for placing labels over things in first person.</summary>
+    public Camera3D Camera => _camera;
+
+    /// <summary>Where a grid point at a height (in world units) is in the 3D world.</summary>
+    public Vector3 WorldPoint(double x, double y, float height) => _root.GlobalTransform * Kit3D.At(x, y, height);
+
+    private static readonly Color DaySky = new("#BFD9F2");
+    private static readonly Color NightSky = new("#1B2A44");
+
     private void PlaceCamera()
     {
+        if (_eye is { } eye)
+        {
+            _camera.Projection = Camera3D.ProjectionType.Perspective;
+            _camera.Fov = 72;
+            _camera.Near = 0.05f;
+            var local = new Transform3D(
+                Basis.FromEuler(new Vector3(Mathf.DegToRad(eye.Pitch), Mathf.DegToRad(eye.Yaw), 0)),
+                Kit3D.At(eye.X, eye.Y, Kit3D.M(EyeHeightMetres)));
+            _camera.GlobalTransform = _root.GlobalTransform * local;
+            _sun.GlobalRotationDegrees = new Vector3(-52, -72, 0);
+            _fill.GlobalRotationDegrees = new Vector3(-35, 110, 0);
+            _sun.DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel4Splits;
+            _sun.DirectionalShadowMaxDistance = 70f;
+            _environment.Environment.BackgroundColor = NightSky.Lerp(DaySky, 1 - Night);
+            return;
+        }
+
         var camera = _scene.Camera;
         var centre = camera.GetScreenCenterPosition();
         var zoom = camera.Zoom.X;

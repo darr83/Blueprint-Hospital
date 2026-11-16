@@ -206,6 +206,9 @@ public partial class MainHUD : CanvasLayer
 
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
+    /// <summary>Be A Doctor: the doctors on shift, to pick one to play.</summary>
+    public DoctorChooserPanel Doctors { get; } = new() { Name = "Doctors", Visible = false };
+
     /// <summary>The Career level badge in the top bar and its goals card (Career games only).</summary>
     public LevelBadge Level { get; } = new();
 
@@ -246,7 +249,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -257,7 +260,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = false;
         RoomInfo.Close();
         Decorate.Close();
         ItemInfo.Close();
@@ -279,6 +282,17 @@ public partial class MainHUD : CanvasLayer
         if (show)
         {
             Clinics.ShowToday();
+        }
+    }
+
+    /// <summary>Opens the list of doctors to play, or closes it.</summary>
+    public void ToggleDoctors()
+    {
+        var show = !Doctors.Visible;
+        HideRightPanels();
+        if (show)
+        {
+            Doctors.Open();
         }
     }
 
@@ -402,6 +416,10 @@ public partial class MainHUD : CanvasLayer
         Recruitment.Initialise(sim);
         DockRight(Recruitment, 440);
         root.AddChild(Recruitment);
+        Doctors.Initialise(sim);
+        DockRight(Doctors, 440);
+        Doctors.CloseRequested += HideRightPanels;
+        root.AddChild(Doctors);
         Clinics.Initialise(sim);
         DockRight(Clinics, 480);
         root.AddChild(Clinics);
@@ -733,6 +751,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
+        column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, "Be a doctor: play one of your doctors in first person (O)"));
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
@@ -799,6 +818,7 @@ public partial class MainHUD : CanvasLayer
         }
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
         Set("Staff", Rota.Visible || (Roster.Visible && _rosterShowsStaff));
+        Set("Doctor", Doctors.Visible);
         Set("Clinics", Clinics.Visible);
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);

@@ -44,6 +44,8 @@ public partial class HospitalScene : Node2D
     private SelectionHighlight _highlight = null!;
     private SelectionHighlight _itemHighlight = null!;
     private BlueprintHospital.World3D.View3D _view3D = null!;
+    private DoctorMode _doctor = null!;
+    private BlueprintHospital.UI.DoctorHud _doctorHud = null!;
 
     /// <summary>Play (people and beds) or Build (rooms and items).</summary>
     public GameMode Mode { get; private set; } = GameMode.Play;
@@ -56,6 +58,57 @@ public partial class HospitalScene : Node2D
     public WorldLayer World => _world;
 
     public MainHUD Hud => _hud;
+
+    /// <summary>Be A Doctor: playing one of the doctors in first person.</summary>
+    public DoctorMode Doctor => _doctor;
+
+    public BlueprintHospital.UI.DoctorHud DoctorHud => _doctorHud;
+
+    /// <summary>The player becomes this doctor: the view drops to their eyes and the Be A Doctor panel takes over the screen.</summary>
+    public bool EnterDoctorMode(StaffMember member)
+    {
+        SetMode(GameMode.Play);
+        if (PlanView)
+        {
+            SetPlanView(false);
+        }
+
+        var result = _doctor.Enter(member);
+        if (!result.Ok)
+        {
+            _hud.Doctors.Say(result.Message);
+        }
+
+        return result.Ok;
+    }
+
+    private bool _routesBeforeDoctor;
+
+    private void OnDoctorModeChanged(bool playing)
+    {
+        if (playing)
+        {
+            ClearSelection();
+            _hud.HideRightPanels();
+            _routesBeforeDoctor = _routes.ShowAll;
+            _routes.ShowAll = false;
+        }
+        else
+        {
+            _routes.ShowAll = _routesBeforeDoctor;
+        }
+
+        // Everything drawn for the view from above steps aside: the map's labels, cursor and outlines, and the main screen.
+        _hud.Visible = !playing;
+        foreach (var layer in new CanvasItem[] { _overlay, _routes, _cursor, _highlight, _itemHighlight })
+        {
+            layer.Visible = !playing;
+        }
+
+        _cursor.SetProcess(!playing);
+        _camera.SetProcess(!playing);
+        _camera.SetProcessUnhandledInput(!playing);
+    }
 
     public override void _Ready()
     {
@@ -153,6 +206,17 @@ public partial class HospitalScene : Node2D
             _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
         _hud.ModeRequested += SetMode;
+
+        // Be A Doctor: its own screen, and the controller that turns keys and mouse into walking and looking.
+        _doctorHud = new BlueprintHospital.UI.DoctorHud { Name = "DoctorHud", Visible = false };
+        AddChild(_doctorHud);
+        _doctorHud.Initialise(_session);
+        _doctor = new DoctorMode { Name = "DoctorMode" };
+        AddChild(_doctor);
+        _doctor.Initialise(this, _session, _doctorHud);
+        _doctor.Changed += OnDoctorModeChanged;
+        _hud.Doctors.PlayRequested += m => EnterDoctorMode(m);
+        _hud.StaffInfo.PlayRequested += m => EnterDoctorMode(m);
         _hud.ItemInfo.RoomRequested += room => _hud.ShowRoom(room);
         _hud.ItemInfo.PatientRequested += p => SelectPatient(p, centre: true);
         _hud.GridToggled += ToggleGrid;
@@ -314,6 +378,13 @@ public partial class HospitalScene : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (_doctor.Active)
+        {
+            _doctor.HandleInput(@event);
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (_build.HandleInput(@event))
         {
             GetViewport().SetInputAsHandled();
@@ -334,7 +405,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Record.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible:
+            case Key.Escape when _hud.Doctors.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -367,6 +438,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.I:
                 _hud.ToggleStats();
+                break;
+            case Key.O:
+                _hud.ToggleDoctors();
                 break;
             case Key.Space:
                 _session.Clock.SetSpeed(_session.Clock.IsPaused ? SimulationSpeed.Normal : SimulationSpeed.Paused);

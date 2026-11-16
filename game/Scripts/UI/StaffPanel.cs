@@ -38,6 +38,11 @@ public partial class StaffPanel : PanelContainer
     /// <summary>Raised when the player asks to see this member of staff on the map.</summary>
     public event Action<StaffMember>? FocusRequested;
 
+    /// <summary>Raised when the player asks to play this doctor (Be A Doctor).</summary>
+    public event Action<StaffMember>? PlayRequested;
+
+    private Button _play = null!;
+
     public StaffMember? Member => _member;
 
     public void Initialise(HospitalSimulation simulation)
@@ -113,6 +118,15 @@ public partial class StaffPanel : PanelContainer
         // The age, pay and shift line wraps: on one line it made the panel wider than the screen.
         _footer.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         column.AddChild(_footer);
+        _play = UiStyle.Button("Be this doctor", () =>
+        {
+            if (_member is not null)
+            {
+                PlayRequested?.Invoke(_member);
+            }
+        });
+        _play.CustomMinimumSize = new Vector2(0, 44);
+        column.AddChild(_play);
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 8);
         var find = UiStyle.Button("Find on map", () =>
@@ -204,6 +218,9 @@ public partial class StaffPanel : PanelContainer
         }
 
         _name.Text = m.Name;
+        _play.Visible = m.Role == StaffRole.Doctor;
+        _play.Disabled = !_sim.CanBePlayed(m);
+        _play.TooltipText = _play.Disabled ? "Only a doctor who is on shift can be played." : "See the hospital through this doctor's eyes and do their work yourself.";
         var place = m.BaseRoomId is { } roomId && _sim.Spaces.FirstOrDefault(s => s.Id == roomId) is { } room ? room.Name : "A&E";
         _role.Text = $"{m.Grade} · {place}";
         var uniform = Looks.UniformColour(m);

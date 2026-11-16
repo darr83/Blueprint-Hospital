@@ -11,6 +11,7 @@ public partial class NavIcon : Control
         Build,
         Patients,
         Staff,
+        Doctor,
         Hire,
         Clinics,
         Finances,
@@ -64,6 +65,15 @@ public partial class NavIcon : Control
                 DrawRect(new Rect2(4, 3, 16, 18), c, false, w);
                 DrawArc(new Vector2(12, 10), 3, 0, Mathf.Tau, 20, c, w, true);
                 L(8, 17, 16, 17);
+                break;
+            case Kind.Doctor:
+                // A stethoscope: two ear tubes meeting in a loop, with the chest piece on the end.
+                L(7, 3, 7, 10);
+                L(15, 3, 15, 10);
+                DrawArc(new Vector2(11, 10), 4, 0, Mathf.Pi, 16, c, w, true);
+                L(11, 14, 11, 17);
+                DrawArc(new Vector2(15, 17), 4, Mathf.Pi / 2, Mathf.Pi, 12, c, w, true);
+                DrawArc(new Vector2(19, 18), 2.6f, 0, Mathf.Tau, 16, c, w, true);
                 break;
             case Kind.Hire:
                 // A person with a plus beside them.

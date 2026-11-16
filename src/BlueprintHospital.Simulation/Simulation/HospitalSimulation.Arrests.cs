@@ -336,7 +336,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>Clinical staff who can be called away to an arrest right now.</summary>
     private bool CanRespond(StaffMember s, Patient patient) =>
-        s.IsOnDuty && !s.IsOnBreak && s.CrashPatientId is null && s.AssistingTaskId is null && s.PushingPatientId is null
+        !IsPlayer(s) && s.IsOnDuty && !s.IsOnBreak && s.CrashPatientId is null && s.AssistingTaskId is null && s.PushingPatientId is null
         && (s.BedsidePatientId is null || s.BedsidePatientId == patient.Id)
         && s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.OutreachNurse or StaffRole.Doctor or StaffRole.Anaesthetist
         && !IsClinicStaff(s)
