@@ -231,6 +231,7 @@ public partial class View3D : Node3D
         {
             _surfaces = SurfaceDetail.Enabled;
             _builtVersion = -1;
+            Reflections();
         }
 
         // Walls, doors and floors follow the 2D world's layout: rebuilt whenever it is.
@@ -287,6 +288,7 @@ public partial class View3D : Node3D
         env.AdjustmentContrast = 1.1f;
         env.AdjustmentBrightness = 0.97f;
         _sun.ShadowBlur = on ? 0.6f : 1.0f;
+        Reflections();
         if (DisplayServer.GetName() == "headless")
         {
             return;
@@ -391,8 +393,26 @@ public partial class View3D : Node3D
             _agents.Hidden = value?.Body;
             _agents.Eye = value is null ? null : (value.X, value.Y);
             _firstPerson.Visible = value is not null;
+            Reflections();
         }
     }
+
+    /// <summary>
+    /// Floors and glazed tiles mirror the lights and walls in first person (screen-space reflections,
+    /// with enhanced lighting on). From the usual camera above they would barely show, so they stay off.
+    /// </summary>
+    private void Reflections()
+    {
+        var env = _environment.Environment;
+        env.SsrEnabled = _eye is not null && _enhanced == true && SurfaceDetail.Enabled;
+        env.SsrMaxSteps = 64;
+        env.SsrFadeIn = 0.15f;
+        env.SsrFadeOut = 2.0f;
+        env.SsrDepthTolerance = 0.3f;
+    }
+
+    /// <summary>Whether floors show reflections now (for the smoke test).</summary>
+    public bool Reflecting => _environment.Environment.SsrEnabled;
 
     /// <summary>The ceiling and the arrows on the floor that only show in first person.</summary>
     public FirstPerson3D FirstPersonParts => _firstPerson;

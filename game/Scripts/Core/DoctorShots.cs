@@ -44,6 +44,12 @@ public partial class DoctorShots : Node
                     World3D.FirstPerson3D.ExtraHeightMetres = double.Parse(other["--wall-extra=".Length..], System.Globalization.CultureInfo.InvariantCulture);
                 }
 
+                if (OS.GetCmdlineUserArgs().Contains("--art-no-surfaces"))
+                {
+                    // For before/after shots of surface textures and ceiling lights (not saved).
+                    GameManager.Instance.Settings.SurfaceTextures = false;
+                }
+
                 GameManager.Instance.AddChild(shots);
                 Callable.From(() => GameManager.Instance.StartNewGame("Blueprint General Hospital")).CallDeferred();
                 return true;

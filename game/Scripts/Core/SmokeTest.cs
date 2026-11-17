@@ -2037,6 +2037,10 @@ public partial class SmokeTest : Node
         Check(hospital.Doctor.Active && sim.PlayerDoctorId == doctor.Id, "Doctor mode did not start.");
         Check(hospital.View3D.FirstPerson is { } eye && ReferenceEquals(eye.Body, doctor), "The view did not move to the doctor's eyes.");
         Check(hospital.View3D.FirstPersonParts.Visible, "The ceiling and floor arrows are not shown in first person.");
+        var parts = hospital.View3D.FirstPersonParts;
+        parts.RebuildCeiling();
+        Check(parts.LampCount == parts.LightCount && parts.LampCount > 0, $"Only {parts.LampCount} of {parts.LightCount} ceiling light panels give off light.");
+        Check(hospital.View3D.Reflecting == (GameManager.Instance?.Settings.EnhancedLighting ?? true), "Floor reflections do not follow the lighting setting in first person.");
         Check(hospital.DoctorHud.Visible && !hospital.Hud.Visible, "The Be A Doctor screen did not take over from the main screen.");
         Check(!hospital.Hud.Doctors.Visible, "The list of doctors stayed open.");
 
