@@ -96,6 +96,12 @@ public partial class FirstPerson3D : Node3D
             material.NormalEnabled = true;
             material.NormalTexture = GD.Load<Texture2D>(normal);
             material.NormalScale = 0.8f;
+            // A little glow of its own, as light bounces off the floor: lit only by the panels, the
+            // ceiling read grey and gloomy next to the evenly lit ceiling it replaces.
+            material.EmissionEnabled = true;
+            material.Emission = Colors.White;
+            material.EmissionTexture = material.AlbedoTexture;
+            material.EmissionEnergyMultiplier = 0.1f;
         }
 
         return material;
