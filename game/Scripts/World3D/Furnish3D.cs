@@ -90,6 +90,13 @@ public static partial class Furnish3D
         "clinical_cupboard" => new Vector3(2.0f, Kit3D.M(1.1), 1.0f),
         "office_desk" or "triage_desk" => new Vector3(2.0f, Kit3D.M(0.75), 1.6f),
         "staff_table" => new Vector3(2.0f, Kit3D.M(0.7), 1.6f),
+        "hand_basin" => new Vector3(1.2f, Kit3D.M(0.9), 0.9f),
+        "plaster_sink" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "kitchenette" => new Vector3(3.0f, Kit3D.M(0.9), 1.2f),
+        "drug_fridge" => new Vector3(1.2f, Kit3D.M(1.8), 1.2f),
+        "medicine_shelves" => new Vector3(3.0f, Kit3D.M(2.0), 0.8f),
+        "instrument_trolley" => new Vector3(2.0f, Kit3D.M(0.9), 1.0f),
+        "oxygen_cylinder" => new Vector3(0.5f, Kit3D.M(1.2), 0.5f),
         _ => null,
     };
 
@@ -103,6 +110,11 @@ public static partial class Furnish3D
     {
         if (KitMade(id) is { } made && b.Kit("furniture_kit", id == "triage_desk" ? "office_desk" : id, made, new Vector3(w, h, d), colour))
         {
+            if (id == "drug_fridge")
+            {
+                glass.Kit("furniture_kit", "drug_fridge_glass", made, new Vector3(w, h, d), new Color("#A9D3E8", 0.45f));
+            }
+
             return true;
         }
 
