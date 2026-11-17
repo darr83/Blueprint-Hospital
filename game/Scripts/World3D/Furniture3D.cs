@@ -43,7 +43,7 @@ public partial class Furniture3D : Node3D
         _count = 0;
         var world = _view.World;
         var sim = _view.Simulation;
-        var solid = new MeshBatch();
+        var solid = new MeshBatch { Kind = SurfaceKind.Laminate };
         var glass = new MeshBatch();
         foreach (var space in world.ViewSpaces)
         {

@@ -13,6 +13,10 @@ public sealed class MeshBatch
     private readonly List<Vector3> _normals = new();
     private readonly List<Color> _colours = new();
     private readonly List<int> _indices = new();
+    private readonly List<Vector2> _uvs = new();
+
+    /// <summary>What everything added from now on is made of (see <see cref="SurfaceDetail"/>).</summary>
+    public SurfaceKind Kind { get; set; } = SurfaceKind.Plain;
 
     private static readonly Dictionary<Mesh, (Vector3[] V, Vector3[] N, int[] I)> Cache = new();
 
@@ -42,6 +46,7 @@ public sealed class MeshBatch
             _vertices.Add(xf * data.V[k]);
             _normals.Add((normalBasis * data.N[k]).Normalized());
             _colours.Add(colour);
+            _uvs.Add(new Vector2((float)Kind, 0));
         }
 
         foreach (var index in data.I)
@@ -101,6 +106,7 @@ public sealed class MeshBatch
                 _vertices.Add(xf * surface.Vertices[k]);
                 _normals.Add((normalBasis * surface.Normals[k]).Normalized());
                 _colours.Add(paint);
+                _uvs.Add(new Vector2((float)(surface.Kind ?? Kind), 0));
             }
 
             foreach (var index in surface.Indices)
@@ -184,6 +190,7 @@ public sealed class MeshBatch
         {
             _normals.Add((f.Basis * Vector3.Up).Normalized());
             _colours.Add(colour);
+            _uvs.Add(new Vector2((float)Kind, 0));
         }
 
         _indices.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
@@ -200,6 +207,7 @@ public sealed class MeshBatch
         {
             _normals.Add(k < 3 ? n : -n);
             _colours.Add(colour);
+            _uvs.Add(new Vector2((float)Kind, 0));
         }
 
         _indices.AddRange(new[] { start, start + 2, start + 1, start + 3, start + 5, start + 4 });
@@ -219,6 +227,10 @@ public sealed class MeshBatch
         arrays[(int)Mesh.ArrayType.Normal] = _normals.ToArray();
         arrays[(int)Mesh.ArrayType.Color] = _colours.ToArray();
         arrays[(int)Mesh.ArrayType.Index] = _indices.ToArray();
+        if (_uvs.Count == _vertices.Count)
+        {
+            arrays[(int)Mesh.ArrayType.TexUV] = _uvs.ToArray();
+        }
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         return mesh;
@@ -235,7 +247,7 @@ public sealed class MeshBatch
         var instance = new MeshInstance3D
         {
             Mesh = mesh,
-            MaterialOverride = alpha ? Kit3D.VertexColoursAlpha : Kit3D.VertexColours,
+            MaterialOverride = alpha ? Kit3D.VertexColoursAlpha : SurfaceDetail.Batch,
             CastShadow = shadow ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off,
         };
         parent.AddChild(instance);

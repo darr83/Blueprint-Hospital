@@ -82,7 +82,7 @@ public partial class Walls3D : Node3D
         const float t = (float)WorldLayer.WallThickness;
         var skirt = Kit3D.H(4);
 
-        var walls = new MeshBatch();
+        var walls = new MeshBatch { Kind = SurfaceKind.Paint };
         var points = new HashSet<(int X, int Y)>();
         foreach (var (x, y, horizontal) in world.WallEdges)
         {
@@ -223,7 +223,7 @@ public partial class Walls3D : Node3D
         var doorH = Kit3D.H(RoomSigns.DoorHeight);
         var wallH = FullHeight;
         var steel = new Color("#7F8C96");
-        var frame = new MeshBatch();
+        var frame = new MeshBatch { Kind = SurfaceKind.Laminate };
         void Along(double s0, double len, double thick, float from, float to, Color colour)
         {
             if (horizontal)
@@ -441,7 +441,7 @@ public partial class Walls3D : Node3D
             hinge.Rotation = new Vector3(0, yaw, 0);
 
             var leafH = doorH - Kit3D.H(2);
-            var leaf = new MeshBatch();
+            var leaf = new MeshBatch { Kind = SurfaceKind.Laminate };
             leaf.Box(new Vector3(width / 2, leafH / 2, 0), new Vector3(width, leafH, 0.07f), LeafFace);
             leaf.Box(new Vector3(width / 2, Kit3D.H(5), 0), new Vector3(width * 0.76f, Kit3D.H(8), 0.08f), KickPlate);
             leaf.Box(new Vector3(width - 0.03f, leafH / 2, 0), new Vector3(0.05f, leafH, 0.075f), LeafEdge);

@@ -219,6 +219,8 @@ public partial class SmokeTest : Node
                 // Enhanced lighting can be switched off and on while playing (checked over the next two stages).
                 _lightingWas = manager.Settings.EnhancedLighting;
                 manager.Settings.EnhancedLighting = false;
+                // Surface textures too.
+                manager.Settings.SurfaceTextures = false;
                 // Close up on a bed with a patient in it, if there is one.
                 var sim = hospital.Session.Simulation;
                 var bay = sim.Spaces.Where(sp => sp.IsTreatmentSpace).OrderBy(sp => sp.IsFree).ThenBy(sp => sp.Id).First().Rect;
@@ -231,6 +233,8 @@ public partial class SmokeTest : Node
                 Screenshot("03_close_up");
                 Check(hospital.View3D.FillEnergy == 0f, "Turning enhanced lighting off left the fill light on.");
                 manager.Settings.EnhancedLighting = true;
+                Check(!hospital.View3D.Floors.Detailed, "Turning surface textures off left the floor detailed.");
+                manager.Settings.SurfaceTextures = true;
                 LookAtWaitingRoom(hospital);
                 _frame = 0;
                 _stage = Stage.WaitingRoom;
@@ -241,6 +245,19 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.FillEnergy > 0f, "Turning enhanced lighting on did not light the fill light.");
                 manager.Settings.EnhancedLighting = _lightingWas;
                 GD.Print("[smoke] Enhanced lighting switches off and on.");
+                Check(hospital.View3D.Floors.Detailed, "Turning surface textures on did not detail the floor.");
+                _ = World3D.SurfaceDetail.Detail;
+                _ = World3D.SurfaceDetail.Normals;
+                Check(World3D.SurfaceDetail.Missing == 0, $"{World3D.SurfaceDetail.Missing} surface texture files are missing.");
+                var finishes = hospital.View3D.Floors.Finishes;
+                var waiting = hospital.Session.Simulation.Spaces.FirstOrDefault(sp => sp.Kind == Simulation.Hospital.CareSpaceKind.Waiting && IsoDraw.OnViewFloor(sp.Rect.Y));
+                if (finishes is not null && waiting is not null && hospital.Session.Simulation.DecorOf(waiting).Floor == Simulation.Hospital.FloorFinish.Terrazzo)
+                {
+                    var kinds = Enumerable.Range(0, finishes.GetWidth()).SelectMany(x => Enumerable.Range(0, finishes.GetHeight()).Select(y => (int)Math.Round(finishes.GetPixel(x, y).R * 255))).ToHashSet();
+                    Check(kinds.Contains((int)World3D.SurfaceKind.Terrazzo), "The waiting room's terrazzo floor is not in the floor finish map.");
+                }
+
+                GD.Print("[smoke] Surface textures switch off and on, every texture loads, floors know their finish.");
                 hospital.RotateView(1);
                 LookAtWaitingRoom(hospital);
                 _frame = 0;

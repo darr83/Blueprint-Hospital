@@ -20,6 +20,10 @@ public partial class ArtShots : Node
     private int _shot;
     private HospitalScene? _hospital;
 
+    /// <summary>How much closer the room shots are (--art-zoom=N, default 1).</summary>
+    private static float Zoom => OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith("--art-zoom=", StringComparison.Ordinal)) is { } z
+        && float.TryParse(z["--art-zoom=".Length..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 1f;
+
     public static void Begin(Node menu)
     {
         foreach (var arg in OS.GetCmdlineUserArgs())
@@ -53,6 +57,12 @@ public partial class ArtShots : Node
                 {
                     // For before/after shots of the lighting setting (not saved).
                     GameManager.Instance.Settings.EnhancedLighting = false;
+                }
+
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-no-surfaces") >= 0)
+                {
+                    // For before/after shots of surface textures (not saved).
+                    GameManager.Instance.Settings.SurfaceTextures = false;
                 }
 
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
@@ -217,7 +227,7 @@ public partial class ArtShots : Node
                 ("corridor_close_c", h => CorridorCloseUp(h, 4)),
             }
             : _rooms.Length > 0
-            ? _rooms.Select(r => (Name: r.Name, Frame: (Func<HospitalScene, (Vector2 At, float Zoom)>)(_ => (IsoDraw.ToScreen(r.X, r.Y) + new Vector2(0, -24), 1.75f)))).ToArray()
+            ? _rooms.Select(r => (Name: r.Name, Frame: (Func<HospitalScene, (Vector2 At, float Zoom)>)(_ => (IsoDraw.ToScreen(r.X, r.Y) + new Vector2(0, -24), 1.75f * Zoom)))).ToArray()
             : _wing
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {

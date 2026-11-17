@@ -27,6 +27,9 @@ public sealed class GameSettings
     /// </summary>
     public bool EnhancedLighting { get; set; } = true;
 
+    /// <summary>Walls, floors and furniture drawn with surface detail (paint, vinyl, wood grain, fabric...).</summary>
+    public bool SurfaceTextures { get; set; } = true;
+
     public static GameSettings Load()
     {
         var settings = new GameSettings();
@@ -39,6 +42,7 @@ public sealed class GameSettings
         settings.Fullscreen = (bool)config.GetValue("display", "fullscreen", settings.Fullscreen);
         settings.VSync = (bool)config.GetValue("display", "vsync", settings.VSync);
         settings.EnhancedLighting = (bool)config.GetValue("display", "enhanced_lighting", settings.EnhancedLighting);
+        settings.SurfaceTextures = (bool)config.GetValue("display", "surface_textures", settings.SurfaceTextures);
         settings.UiScale = Mathf.Clamp((float)config.GetValue("display", "ui_scale", settings.UiScale), 0.75f, 1.5f);
         settings.CameraPanSpeed = Mathf.Clamp((float)config.GetValue("camera", "pan_speed", settings.CameraPanSpeed), 0.25f, 3f);
         settings.EdgeScrolling = (bool)config.GetValue("camera", "edge_scrolling", settings.EdgeScrolling);
@@ -52,6 +56,7 @@ public sealed class GameSettings
         config.SetValue("display", "fullscreen", Fullscreen);
         config.SetValue("display", "vsync", VSync);
         config.SetValue("display", "enhanced_lighting", EnhancedLighting);
+        config.SetValue("display", "surface_textures", SurfaceTextures);
         config.SetValue("display", "ui_scale", UiScale);
         config.SetValue("camera", "pan_speed", CameraPanSpeed);
         config.SetValue("camera", "edge_scrolling", EdgeScrolling);
