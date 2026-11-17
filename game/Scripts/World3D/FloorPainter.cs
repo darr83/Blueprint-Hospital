@@ -24,6 +24,48 @@ public partial class FloorPainter : Node3D
     private GridLines _grid = null!;
     private MeshInstance3D _quad = null!;
     private StandardMaterial3D _material = null!;
+    private ShaderMaterial? _detailed;
+    private Texture2D? _painted;
+
+    /// <summary>Which finish each tile is laid with (one texel per tile), for the surface detail.</summary>
+    public Image? Finishes { get; private set; }
+
+    /// <summary>Whether the floor is drawn with surface detail now.</summary>
+    public bool Detailed => _quad.MaterialOverride is ShaderMaterial;
+
+    private void SetPainted(Texture2D texture)
+    {
+        _painted = texture;
+        _material.AlbedoTexture = texture;
+        _detailed?.SetShaderParameter("painted", texture);
+    }
+
+    /// <summary>The surface each tile of the area is laid with: the finish of the room on it, sealed vinyl in corridors.</summary>
+    private Image PaintFinishes()
+    {
+        var image = Image.CreateEmpty(_area.Size.X, _area.Size.Y, false, Image.Format.R8);
+        var shift = (int)Math.Round(IsoDraw.FloorShift);
+        foreach (var space in _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).OrderByDescending(s => s.Rect.Area))
+        {
+            var kind = space.IsShaft ? SurfaceKind.Metal : SurfaceDetail.Of(DecorArt.LookOf(_sim, space).Floor);
+            var value = new Color((int)kind / 255f, 0, 0);
+            var r = space.Rect;
+            for (var ty = r.Y; ty < r.Bottom; ty++)
+            {
+                var py = ty - shift - _area.Position.Y;
+                for (var tx = r.X; tx < r.Right; tx++)
+                {
+                    var px = tx - _area.Position.X;
+                    if (px >= 0 && py >= 0 && px < _area.Size.X && py < _area.Size.Y)
+                    {
+                        image.SetPixel(px, py, value);
+                    }
+                }
+            }
+        }
+
+        return image;
+    }
     private Rect2I _area;
     private bool _waiting;
 
@@ -114,8 +156,26 @@ public partial class FloorPainter : Node3D
         _quad.Scale = new Vector3(_area.Size.X, 1, _area.Size.Y);
         _quad.Visible = true;
 
+        // Surface detail: each tile's finish, and the detailed material (or the plain one, with Surface textures off).
+        Finishes = PaintFinishes();
+        if (SurfaceDetail.Enabled)
+        {
+            _detailed ??= SurfaceDetail.Floor();
+            _detailed.SetShaderParameter("finishes", ImageTexture.CreateFromImage(Finishes));
+            if (_painted is not null)
+            {
+                _detailed.SetShaderParameter("painted", _painted);
+            }
+
+            _quad.MaterialOverride = _detailed;
+        }
+        else
+        {
+            _quad.MaterialOverride = _material;
+        }
+
         // Until the new texture has been copied with mipmaps, show the live one.
-        _material.AlbedoTexture = _viewport.GetTexture();
+        SetPainted(_viewport.GetTexture());
         if (!_waiting)
         {
             _waiting = true;
@@ -140,7 +200,7 @@ public partial class FloorPainter : Node3D
         }
 
         image.GenerateMipmaps();
-        _material.AlbedoTexture = ImageTexture.CreateFromImage(image);
+        SetPainted(ImageTexture.CreateFromImage(image));
     }
 
     /// <summary>Grid lines every metre inside the buildings, for building (G).</summary>

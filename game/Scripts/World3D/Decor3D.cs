@@ -24,6 +24,13 @@ public partial class Decor3D : Node3D
     private SubViewport _viewport = null!;
     private AtlasCanvas _canvas = null!;
     private StandardMaterial3D _material = null!;
+    private ShaderMaterial? _detailed;
+
+    private void SetAtlas(Texture2D texture)
+    {
+        _material.AlbedoTexture = texture;
+        (_detailed ??= SurfaceDetail.Atlas()).SetShaderParameter("atlas", texture);
+    }
     private bool _waiting;
     private Node3D? _puddles;
     private string _puddleKey = "";
@@ -73,7 +80,7 @@ public partial class Decor3D : Node3D
     }
 
     /// <summary>A picture quad: from <see cref="Origin"/> (its bottom left as seen from the front) along <see cref="Right"/> and <see cref="Up"/>, showing the bottom <see cref="Show"/> of its cell.</summary>
-    private readonly record struct Quad(Vector3 Origin, Vector3 Right, Vector3 Up, int Cell, float Show = 1f);
+    private readonly record struct Quad(Vector3 Origin, Vector3 Right, Vector3 Up, int Cell, float Show = 1f, SurfaceKind Kind = SurfaceKind.Plain);
 
     public void Rebuild(bool cutaway)
     {
@@ -181,6 +188,7 @@ public partial class Decor3D : Node3D
             {
                 st.SetNormal(n);
                 st.SetUV(corners[k].Item2);
+                st.SetUV2(new Vector2((float)q.Kind, 0));
                 st.AddVertex(corners[k].Item1);
             }
         }
@@ -189,7 +197,7 @@ public partial class Decor3D : Node3D
         {
             Name = "Pictures",
             Mesh = st.Commit(),
-            MaterialOverride = _material,
+            MaterialOverride = SurfaceDetail.Enabled ? (_detailed ??= SurfaceDetail.Atlas()) : _material,
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
         AddChild(instance);
@@ -202,7 +210,7 @@ public partial class Decor3D : Node3D
         _canvas.Cells = cells.Select(c => (c.At, c.Scale, c.Draw)).ToList();
         _canvas.QueueRedraw();
         _viewport.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
-        _material.AlbedoTexture = _viewport.GetTexture();
+        SetAtlas(_viewport.GetTexture());
         if (!_waiting)
         {
             _waiting = true;
@@ -226,7 +234,7 @@ public partial class Decor3D : Node3D
         }
 
         image.GenerateMipmaps();
-        _material.AlbedoTexture = ImageTexture.CreateFromImage(image);
+        SetAtlas(ImageTexture.CreateFromImage(image));
     }
 
     /// <summary>The 2D art drawn into the atlas, each cell under its own offset and scale.</summary>
@@ -375,7 +383,7 @@ public partial class Decor3D : Node3D
         var full = Walls3D.FullHeight;
         var shown = cutaway ? Kit3D.H(12) / full : 1f;
         var half = (float)(WorldLayer.WallThickness / 2) + 0.006f;
-        int? Swatch(GridCoord at)
+        (int Cell, SurfaceKind Kind)? Swatch(GridCoord at)
         {
             if (!roomAt.TryGetValue(at, out var room) || DecorArt.LookOf(sim, room) is not { Walls: not WallFinish.Standard } look)
             {
@@ -384,16 +392,16 @@ public partial class Decor3D : Node3D
 
             var (finish, colour, accent) = (look.Walls, DecorArt.WallColour(look), DecorArt.WallAccent(room, look));
             var h = WorldLayer.WallHeight;
-            return cellFor($"finish:{finish}:{colour.ToHtml()}:{accent?.ToHtml()}", tile, h,
-                c => DecorArt.DrawWallFace(c, new Vector2(0, h), new Vector2(tile, h), h, 0f, finish, colour, accent, Walls3D.Skirting));
+            return (cellFor($"finish:{finish}:{colour.ToHtml()}:{accent?.ToHtml()}", tile, h,
+                c => DecorArt.DrawWallFace(c, new Vector2(0, h), new Vector2(tile, h), h, 0f, finish, colour, accent, Walls3D.Skirting)), SurfaceDetail.Of(finish));
         }
 
-        void Face(Vector3 linePoint, Vector3 n, int cell)
+        void Face(Vector3 linePoint, Vector3 n, (int Cell, SurfaceKind Kind) swatch)
         {
             var right = RightOf(n);
             var start = linePoint + (n * half);
             var origin = right.X + right.Z > 0 ? start : start - right;
-            quads.Add(new Quad(origin, right, new Vector3(0, full * shown, 0), cell, shown));
+            quads.Add(new Quad(origin, right, new Vector3(0, full * shown, 0), swatch.Cell, shown, swatch.Kind));
         }
 
         foreach (var (x, y, horizontal) in world.WallEdges)

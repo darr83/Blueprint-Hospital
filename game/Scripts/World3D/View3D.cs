@@ -163,6 +163,8 @@ public partial class View3D : Node3D
         _firstPerson.Initialise(_sim, _world);
     }
 
+    public FloorPainter Floors => _floors;
+
     public Agents3D People => _agents;
 
     public Beds3D Beds => _beds;
@@ -206,6 +208,8 @@ public partial class View3D : Node3D
         set => _floors.ShowGrid = value;
     }
 
+    private bool _surfaces = SurfaceDetail.Enabled;
+
     public override void _Process(double delta)
     {
         if (!Visible)
@@ -219,6 +223,13 @@ public partial class View3D : Node3D
             _floor = IsoDraw.ViewFloor;
             _plan = IsoDraw.Plan;
             PlaceRoots();
+            _builtVersion = -1;
+        }
+
+        // Turning surface textures on or off in Settings redraws everything built from batches.
+        if (_surfaces != SurfaceDetail.Enabled)
+        {
+            _surfaces = SurfaceDetail.Enabled;
             _builtVersion = -1;
         }
 

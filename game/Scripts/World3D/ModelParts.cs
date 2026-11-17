@@ -16,7 +16,7 @@ public static class ModelParts
     /// One surface of a part: its triangles, and its own colour when it is not tinted. A tinted surface's
     /// <paramref name="Shade"/> darkens (below zero) or lightens the game's colour, for "TintDark" and "TintLight".
     /// </summary>
-    public sealed record Surface(Vector3[] Vertices, Vector3[] Normals, int[] Indices, Color? Fixed, float Shade = 0)
+    public sealed record Surface(Vector3[] Vertices, Vector3[] Normals, int[] Indices, Color? Fixed, float Shade = 0, SurfaceKind? Kind = null)
     {
         /// <summary>The colour this surface is painted when the game asks for <paramref name="tint"/>.</summary>
         public Color Paint(Color tint)
@@ -86,7 +86,8 @@ public static class ModelParts
                     arrays[(int)Mesh.ArrayType.Normal].AsVector3Array().Select(n => (normalBasis * n).Normalized()).ToArray(),
                     arrays[(int)Mesh.ArrayType.Index].AsInt32Array(),
                     tinted ? null : material!.AlbedoColor,
-                    !tinted || material is null ? 0 : material.ResourceName.StartsWith("TintDark", StringComparison.Ordinal) ? -0.14f : material.ResourceName.StartsWith("TintLight", StringComparison.Ordinal) ? 0.22f : 0));
+                    !tinted || material is null ? 0 : material.ResourceName.StartsWith("TintDark", StringComparison.Ordinal) ? -0.14f : material.ResourceName.StartsWith("TintLight", StringComparison.Ordinal) ? 0.22f : 0,
+                    SurfaceDetail.FromMaterialName(material?.ResourceName ?? "")));
             }
 
             parts[instance.Name.ToString()] = surfaces.ToArray();

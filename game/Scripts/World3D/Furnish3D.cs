@@ -33,12 +33,21 @@ public static partial class Furnish3D
     private static void Blk(MeshBatch b, float x, float z, float w, float d, float y0, float h, Color c) =>
         b.Box(new Vector3(x, y0 + (h / 2), z), new Vector3(w, h, d), c);
 
-    private static void Bar(MeshBatch b, Vector3 from, Vector3 to, float r, Color c) => b.Rod(from, to, r, c, small: true);
+    private static void Bar(MeshBatch b, Vector3 from, Vector3 to, float r, Color c)
+    {
+        var was = b.Kind;
+        b.Kind = SurfaceKind.Metal;
+        b.Rod(from, to, r, c, small: true);
+        b.Kind = was;
+    }
 
     private static void Castor(MeshBatch b, float x, float z)
     {
         Bar(b, new Vector3(x, H(2), z), new Vector3(x, H(4.5f), z), 0.02f, new Color("#6E7A84"));
+        var was = b.Kind;
+        b.Kind = SurfaceKind.Rubber;
         b.Cylinder(new Vector3(x, H(2), z), 0.065f, 0.05f, 0.065f, Tyre, new Basis(Vector3.Forward, Mathf.Pi / 2));
+        b.Kind = was;
     }
 
     private static void Castors(MeshBatch b, float w, float d, float inset = 0.08f)
@@ -157,7 +166,10 @@ public static partial class Furnish3D
     private static void Desk(MeshBatch b, float w, float d, float h, Color colour, bool triage)
     {
         var top = colour.Lightened(0.12f);
+        var was = b.Kind;
+        b.Kind = SurfaceKind.Wood;
         Blk(b, 0, 0, w, d, h - H(2.2f), H(2.2f), top);
+        b.Kind = was;
 
         // A pedestal of drawers at one end on the staff side, legs at the other, a modesty panel at the front.
         var ped = Math.Min(0.6f, w * 0.4f);
@@ -198,7 +210,10 @@ public static partial class Furnish3D
 
     private static void Table(MeshBatch b, float w, float d, float h, Color colour, int seed)
     {
+        var was = b.Kind;
+        b.Kind = SurfaceKind.Wood;
         Blk(b, 0, 0, w, d, h - H(2.2f), H(2.2f), colour.Lightened(0.1f));
+        b.Kind = was;
         foreach (var (x, z) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
         {
             Blk(b, x * ((w / 2) - 0.08f), z * ((d / 2) - 0.08f), 0.08f, 0.08f, 0, h - H(2.2f), colour.Darkened(0.25f));
@@ -538,6 +553,20 @@ public static partial class Furnish3D
     /// and arms on visitor and lounge chairs. Staff chairs are office chairs on a five-spoke base.
     /// </summary>
     public static void Chair(MeshBatch b, string id, Color colour)
+    {
+        var was = b.Kind;
+        b.Kind = SurfaceKind.Fabric;
+        try
+        {
+            ChairBody(b, id, colour);
+        }
+        finally
+        {
+            b.Kind = was;
+        }
+    }
+
+    private static void ChairBody(MeshBatch b, string id, Color colour)
     {
         var seat = H(14);
         var frame = new Color("#5E6770");

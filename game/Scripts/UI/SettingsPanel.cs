@@ -15,6 +15,7 @@ public partial class SettingsPanel : ModalPanel
         var fullscreen = new CheckBox { Text = "Fullscreen", ButtonPressed = settings.Fullscreen };
         var vsync = new CheckBox { Text = "VSync", ButtonPressed = settings.VSync };
         var lighting = new CheckBox { Text = "Enhanced lighting (turn off on slower computers)", ButtonPressed = settings.EnhancedLighting };
+        var surfaces = new CheckBox { Text = "Surface textures on walls, floors and furniture", ButtonPressed = settings.SurfaceTextures };
         var edge = new CheckBox { Text = "Scroll the camera at screen edges", ButtonPressed = settings.EdgeScrolling };
         var grid = new CheckBox { Text = "Show building grid when a game starts", ButtonPressed = settings.ShowGridByDefault };
 
@@ -22,6 +23,7 @@ public partial class SettingsPanel : ModalPanel
         Content.AddChild(fullscreen);
         Content.AddChild(vsync);
         Content.AddChild(lighting);
+        Content.AddChild(surfaces);
         var uiScale = AddSlider("Interface size", 0.75, 1.5, 0.05, settings.UiScale, v => $"{v * 100:0}%");
 
         Content.AddChild(UiStyle.Body("Camera", muted: true));
@@ -46,6 +48,7 @@ public partial class SettingsPanel : ModalPanel
             settings.Fullscreen = fullscreen.ButtonPressed;
             settings.VSync = vsync.ButtonPressed;
             settings.EnhancedLighting = lighting.ButtonPressed;
+            settings.SurfaceTextures = surfaces.ButtonPressed;
             settings.UiScale = (float)uiScale.Value;
             settings.CameraPanSpeed = (float)pan.Value;
             settings.EdgeScrolling = edge.ButtonPressed;
