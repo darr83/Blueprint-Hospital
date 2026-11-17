@@ -42,6 +42,9 @@ public partial class Decor3D : Node3D
 
     public int PropCount { get; private set; }
 
+    /// <summary>How many bed-head service panels are on the walls (for tests).</summary>
+    public int BedHeadCount { get; private set; }
+
     /// <summary>Screen pixels a tile covers along a wall in the old 2D drawing (the art's own scale).</summary>
     private static float TilePx => (IsoDraw.ToScreen(1, 0) - IsoDraw.ToScreen(0, 0)).Length();
 
@@ -115,6 +118,12 @@ public partial class Decor3D : Node3D
         {
             AddWallPieces(quads, CellFor);
             AddNameBoards(solid, quads, CellFor);
+            solid.Frame = Transform3D.Identity;
+            BedHeadCount = _view.World.ViewSpaces.Sum(space => SetDressing.BedHeads(solid, space));
+        }
+        else
+        {
+            BedHeadCount = 0;
         }
 
         AddWallFinishes(quads, CellFor, cutaway);

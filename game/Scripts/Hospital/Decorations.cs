@@ -384,6 +384,30 @@ public static class Decorations
                 }
             }
 
+            // Not over the service panel at the head of a bed (World3D.SetDressing puts one there).
+            foreach (var bed in space.Beds)
+            {
+                if (World3D.SetDressing.HeadWall(space, bed) is not { } head)
+                {
+                    continue;
+                }
+
+                var headSide = bed.HeadSouth ? WallSide.South : WallSide.North;
+                if (side != headSide)
+                {
+                    continue;
+                }
+
+                var at = head.X - r.X;
+                for (var t = (int)Math.Floor(at - 1.6); t < (int)Math.Ceiling(at + 1.6); t++)
+                {
+                    if (t >= 0 && t < length)
+                    {
+                        free[t] = false;
+                    }
+                }
+            }
+
             // Not over waiting chairs standing against this wall: the picture would sort in front of their backs.
             foreach (var chair in sim.Chairs.Where(c => r.Contains(c.Tile)))
             {
