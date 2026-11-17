@@ -54,11 +54,18 @@ public partial class FirstPerson3D : Node3D
             Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
         };
         AddChild(_marker);
-        _ceilingMaterial = CeilingMaterial();
+        _ceilingMaterial = CeilingMaterial(false);
+        _ceilingShaded = CeilingMaterial(true);
     }
 
-    /// <summary>Ceiling tiles: pale squares with a thin grid, mapped in world space so every room lines up.</summary>
-    private static StandardMaterial3D CeilingMaterial()
+    private StandardMaterial3D _ceilingShaded = null!;
+
+    /// <summary>
+    /// Ceiling tiles: pale squares with a thin grid, mapped in world space so every room lines up.
+    /// With surface textures on they are shaded, with the fissured mineral-fibre tile as a normal map,
+    /// and the light panels light them; otherwise evenly lit as before.
+    /// </summary>
+    private static StandardMaterial3D CeilingMaterial(bool shaded)
     {
         var image = Image.CreateEmpty(64, 64, true, Image.Format.Rgb8);
         image.Fill(new Color("#DFE4E9"));
@@ -71,7 +78,7 @@ public partial class FirstPerson3D : Node3D
         }
 
         image.GenerateMipmaps();
-        return new StandardMaterial3D
+        var material = new StandardMaterial3D
         {
             AlbedoTexture = ImageTexture.CreateFromImage(image),
             Uv1Triplanar = true,
@@ -81,6 +88,17 @@ public partial class FirstPerson3D : Node3D
             CullMode = BaseMaterial3D.CullModeEnum.Disabled,
             TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
         };
+        const string normal = SurfaceDetail.Folder + "/6_ceiling_normal.png";
+        if (shaded && ResourceLoader.Exists(normal))
+        {
+            material.ShadingMode = BaseMaterial3D.ShadingModeEnum.PerPixel;
+            material.Roughness = 0.95f;
+            material.NormalEnabled = true;
+            material.NormalTexture = GD.Load<Texture2D>(normal);
+            material.NormalScale = 0.8f;
+        }
+
+        return material;
     }
 
     /// <summary>Puts a ceiling over every room and corridor on the floor in view.</summary>
@@ -92,6 +110,8 @@ public partial class FirstPerson3D : Node3D
             _ceiling.RemoveChild(child);
         }
 
+        var lit = SurfaceDetail.Enabled;
+        var ceiling = lit ? _ceilingShaded : _ceilingMaterial;
         var extra = Kit3D.M(ExtraHeightMetres);
         var height = Walls3D.FullHeight + extra + 0.01f;
         if (extra > 0 && _world is not null)
@@ -144,7 +164,7 @@ public partial class FirstPerson3D : Node3D
                     _ceiling.AddChild(new MeshInstance3D
                     {
                         Mesh = new PlaneMesh { Size = new Vector2(width, 1), FlipFaces = true },
-                        MaterialOverride = _ceilingMaterial,
+                        MaterialOverride = ceiling,
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                         Position = new Vector3(from + (width / 2f), height, baseY + y + 0.5f),
                     });
@@ -155,6 +175,7 @@ public partial class FirstPerson3D : Node3D
 
         // Light panels: one ceiling tile in every third, both ways, wherever all of it is indoors.
         var lights = 0;
+        var lamps = 0;
         for (var cy = 0; (cy + 1) * CeilingTile <= site.Length; cy += LightEvery)
         {
             for (var cx = 0; (cx + 1) * CeilingTile <= site.Width; cx += LightEvery)
@@ -173,12 +194,33 @@ public partial class FirstPerson3D : Node3D
                     CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                     Position = new Vector3((float)(x0 + (CeilingTile / 2)), height - 0.012f, (float)(y0 + (CeilingTile / 2))),
                 });
+                if (lit)
+                {
+                    // Each panel lights the room under it: pools of light on the floor and the
+                    // ceiling tiles round it, as on a real ward. No shadows, so dozens stay cheap.
+                    _ceiling.AddChild(new OmniLight3D
+                    {
+                        Position = new Vector3((float)(x0 + (CeilingTile / 2)), height - 0.25f, (float)(y0 + (CeilingTile / 2))),
+                        OmniRange = 4.5f,
+                        OmniAttenuation = 1.2f,
+                        LightEnergy = 0.28f,
+                        LightColor = new Color("#FFF6EA"),
+                        ShadowEnabled = false,
+                        LightSpecular = 0.6f,
+                    });
+                    lamps++;
+                }
+
                 lights++;
             }
         }
 
         LightCount = lights;
+        LampCount = lamps;
     }
+
+    /// <summary>How many of the light panels give off light (all of them with surface textures on, for the smoke test).</summary>
+    public int LampCount { get; private set; }
 
     /// <summary>A ceiling tile is 60 cm square: 1.2 grid tiles.</summary>
     private const double CeilingTile = 1.2;
