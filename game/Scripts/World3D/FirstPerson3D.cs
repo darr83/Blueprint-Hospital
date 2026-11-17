@@ -101,7 +101,7 @@ public partial class FirstPerson3D : Node3D
             material.EmissionEnabled = true;
             material.Emission = Colors.White;
             material.EmissionTexture = material.AlbedoTexture;
-            material.EmissionEnergyMultiplier = 0.1f;
+            material.EmissionEnergyMultiplier = 0.16f;
         }
 
         return material;
