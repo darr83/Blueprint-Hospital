@@ -509,7 +509,9 @@ public partial class SmokeTest : Node
                 Check(hospital.View3D.Decor.PropCount > 0, "The 3D world has no plants or props.");
                 var bedHeads = hospital.View3D.World.ViewSpaces.Sum(s => s.Beds.Count(b => World3D.SetDressing.HeadWall(s, b) is not null));
                 Check(bedHeads > 0 && hospital.View3D.Decor.BedHeadCount == bedHeads, $"{hospital.View3D.Decor.BedHeadCount} bed-head panels for {bedHeads} beds against a wall.");
-                GD.Print($"[smoke] Set dressing: {bedHeads} bed-head panels.");
+                var decor = hospital.View3D.Decor;
+                Check(decor.RailCount > 0 && decor.GuardCount > 0 && decor.DoorKitCount > 0, $"Corridors have {decor.RailCount} handrails and {decor.GuardCount} corner guards; {decor.DoorKitCount} doors have gel and gloves.");
+                GD.Print($"[smoke] Set dressing: {bedHeads} bed-head panels, {decor.RailCount} handrail pieces, {decor.GuardCount} corner guards, {decor.DoorKitCount} doors with gel and gloves.");
                 CheckActs(hospital);
                 hospital.RotateView(1);
                 hospital.ToggleWalls();
