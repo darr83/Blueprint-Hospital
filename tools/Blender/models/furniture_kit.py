@@ -674,7 +674,7 @@ def toilet_pan(m, part="toilet_pan", accessible=False):
     cube(f"{part}Cistern", P(0, 10 * PX + 4.5 * PX, back + 0.1), S(w * 0.85, 9 * PX, 0.18), m["ceramic"], part=part, bevel=0.03, bevel_segments=2)
     cube(f"{part}CisternLid", P(0, 19.5 * PX, back + 0.1), S(w * 0.88, PX, 0.2), m["ceramic"], part=part, bevel=0.012)
     cube(f"{part}Flush", P(0, 16 * PX, back + 0.012), S(0.1, 2 * PX, 0.01), m["chrome"], part=part, bevel=0.004)
-    lathe(f"{part}Foot", [(0.0, 0.0), (0.9, 0.0), (0.75, 0.5), (0.85, 1.0), (0.0, 1.0)], m["ceramic"], loc=P(0, 0, back + 0.42), sx=w * 0.3, sy=0.24, seg=20, part=part)
+    lathe(f"{part}Foot", [(0.0, 0.0), (0.9, 0.0), (0.75, 4 * PX), (0.85, 8 * PX), (0.0, 8 * PX)], m["ceramic"], loc=P(0, 0, back + 0.42), sx=w * 0.3, sy=0.24, seg=20, part=part)
     lathe(f"{part}Bowl", [(0.55, 8 * PX), (0.8, 8 * PX), (1.0, 10.5 * PX), (1.0, 11 * PX), (0.75, 11 * PX), (0.6, 9.5 * PX)], m["ceramic"], loc=P(0, 0, back + 0.48), sx=w * 0.38, sy=0.3, seg=24, part=part)
     lathe(f"{part}Seat", [(0.72, 0), (1.0, 0), (1.0, 0.6 * PX), (0.72, 0.6 * PX)], mat("Seat_plastic", "#E9EEF2", 0.35), loc=P(0, 11 * PX, back + 0.5), sx=w * 0.36, sy=0.29, seg=24, part=part)
     lid = cube(f"{part}Lid", P(0, 14.5 * PX, back + 0.21), S(w * 0.66, 7 * PX, 0.03), mat("Seat_plastic", "#E9EEF2", 0.35), part=part, bevel=0.06, bevel_segments=3)
@@ -697,7 +697,7 @@ def wash_basin(m):
     back = -d / 2
     lathe(f"{part}Bowl", [(0.0, -0.06), (0.7, -0.06), (0.95, -0.02), (1.0, 0.0), (1.0, 0.04), (0.0, 0.04)], m["ceramic"], loc=P(0, 22 * PX, back + 0.26), sx=w * 0.42, sy=d * 0.42, seg=24, part=part)
     lathe(f"{part}Water", [(0.0, 0.0), (0.75, 0.0), (0.75, 0.002), (0.0, 0.002)], m["steel"], loc=P(0, 22 * PX + 0.042, back + 0.28), sx=w * 0.3, sy=d * 0.3, seg=20, part=part)
-    lathe(f"{part}Shroud", [(0.0, 0.0), (1.0, 0.0), (0.8, 1.0), (0.0, 1.0)], m["ceramic"], loc=P(0, 10 * PX, back + 0.1), sx=0.07, sy=0.07, seg=14, part=part)
+    lathe(f"{part}Shroud", [(0.0, 0.0), (1.0, 0.0), (0.8, 12 * PX - 0.06), (0.0, 12 * PX - 0.06)], m["ceramic"], loc=P(0, 10 * PX, back + 0.1), sx=0.07, sy=0.07, seg=14, part=part)
     tube(f"{part}Tap", [P(0, 23 * PX, back + 0.06), P(0, 27 * PX, back + 0.06), P(0, 26.5 * PX, back + 0.16)], 0.018, m["chrome"], sides=2, part=part)
     cube(f"{part}MirrorFrame", P(0, 40 * PX, back + 0.012), S(w * 0.85, 16 * PX, 0.02), m["frame"], part=part, bevel=0.006)
     cube(f"{part}Mirror", P(0, 40 * PX, back + 0.024), S(w * 0.78, 14.5 * PX, 0.006), mat("Mirror", "#DDEBF2", 0.05, metal=0.3), part=part, smooth=False)
@@ -710,6 +710,240 @@ def hand_dryer(m):
     cube(f"{part}Case", P(0, 38 * PX, -0.06), S(0.28, 8 * PX, 0.14), m["lam"], part=part, bevel=0.035, bevel_segments=3)
     cube(f"{part}Slot", P(0, 34.5 * PX, 0.005), S(0.2, PX, 0.03), m["black"], part=part, smooth=False)
     sphere(f"{part}Light", P(0.08, 40 * PX, 0.012), 0.012, m["led"], part=part)
+
+
+# ------------------------------------------------------------------ café
+
+_SNACKS = ("box_red", "box_yellow", "box_green", "box_blue", "box_orange", "box_purple", "box_white")
+
+
+def vending_machine(m, kind):
+    """A vending machine: kind 0 snacks (red), 1 cold drinks (blue), 2 hot drinks (brown).
+    Glass front with spiral rows of stock, payment panel with keypad and card reader, delivery flap, lit header."""
+    part = f"vending_machine_{kind}"
+    w, d, h = 1.8, 1.6, 1.85 * M
+    cabinet = mat(f"Vend{kind}_metal", ("#C8402F", "#1F6FC4", "#4A342B")[kind], 0.4, metal=0.15)
+    header = mat(f"Vend{kind}Header_plastic", ("#F07A64", "#6FB0F0", "#A07E6C")[kind], 0.3)
+    front = d / 2
+    cube(f"{part}Plinth", P(0, 1 * PX, -0.02), S(w - 0.06, 2 * PX, d - 0.08), m["black"], part=part)
+    cube(f"{part}Body", P(0, 2 * PX + (h - 2 * PX) / 2, 0), S(w, h - 2 * PX, d), cabinet, part=part, bevel=0.03, bevel_segments=2)
+    cube(f"{part}Header", P(0, h - 4.5 * PX, front + 0.006), S(w * 0.92, 5 * PX, 0.014), header, part=part, bevel=0.008)
+    cube(f"{part}HeaderGlow", P(0, h - 4.5 * PX, front + 0.014), S(w * 0.7, 1.4 * PX, 0.004), mat("VendText", "#FFFFFF", 0.3), part=part, smooth=False)
+    wx = -0.16
+    if kind == 2:
+        # Hot drinks: a big picture of a steaming cup, buttons down the side and the cup bay.
+        cube(f"{part}Poster", P(wx, h * 0.62, front + 0.008), S(w * 0.6, h * 0.42, 0.012), mat("Coffee_print", "#7B5B4B", 0.4), part=part, bevel=0.01)
+        cyl(f"{part}Cup", P(wx, h * 0.6, front + 0.016), 0.2, 0.012, m["mug2"], rot=(math.pi / 2, 0, 0), verts=24, part=part)
+        cyl(f"{part}Coffee", P(wx, h * 0.6, front + 0.024), 0.15, 0.006, mat("Coffee", "#5D4037", 0.3), rot=(math.pi / 2, 0, 0), verts=24, part=part)
+        for i in range(3):
+            tube(f"{part}Steam{i}", [P(wx - 0.08 + i * 0.08, h * 0.6 + 0.24, front + 0.02), P(wx - 0.05 + i * 0.08, h * 0.6 + 0.32, front + 0.02), P(wx - 0.08 + i * 0.08, h * 0.6 + 0.4, front + 0.02)], 0.012, m["mug2"], part=part)
+        cube(f"{part}Bay", P(wx, h * 0.22 + 4 * PX, front - 0.03), S(0.36, 8 * PX, 0.08), m["black"], part=part, bevel=0.01)
+        cube(f"{part}Drip", P(wx, h * 0.22 + 0.5 * PX, front - 0.02), S(0.3, PX, 0.1), m["chrome"], part=part)
+    else:
+        cube(f"{part}Window", P(wx, h * 0.57, front - 0.05), S(w * 0.66, h * 0.68, 0.06), mat("VendInside", "#1A2128", 0.6), part=part, smooth=False)
+        cube(f"{part}Surround", P(wx, h * 0.57, front + 0.004), S(w * 0.7, h * 0.72, 0.006), m["black"], part=part, smooth=False)
+        for row in range(5):
+            y = h * 0.26 + row * h * 0.13
+            cube(f"{part}Shelf{row}", P(wx, y - 0.6 * PX, front - 0.05), S(w * 0.64, 0.5 * PX, 0.1), m["chrome"], part=part, smooth=False)
+            for col in range(4):
+                x = wx - w * 0.33 + 0.08 + col * w * 0.165
+                c = m[_SNACKS[(row * 3 + col + kind) % len(_SNACKS)]]
+                if kind == 1:
+                    cyl(f"{part}Bottle{row}{col}", P(x, y + 3 * PX, front - 0.04), 0.04, 6 * PX, c, verts=10, part=part)
+                    cyl(f"{part}BCap{row}{col}", P(x, y + 6.5 * PX, front - 0.04), 0.022, PX, m["white"], verts=8, part=part)
+                else:
+                    cube(f"{part}Snack{row}{col}", P(x, y + 2.5 * PX, front - 0.035), S(0.12, 5 * PX, 0.04), c, part=part, bevel=0.008)
+                tube(f"{part}Coil{row}{col}", [P(x - 0.06, y + 0.4 * PX, front - 0.02), P(x + 0.06, y + 0.4 * PX, front - 0.02)], 0.006, m["chrome"], part=part)
+        cube(f"{part}Glass", P(wx, h * 0.57, front + 0.01), S(w * 0.68, h * 0.7, 0.008), m["glass"], part=f"{part}_glass", smooth=False)
+        cube(f"{part}Flap", P(wx, h * 0.1 + 2 * PX, front + 0.008), S(w * 0.5, h * 0.08, 0.012), m["black"], part=part, bevel=0.008)
+    # Payment panel: display, keypad, card reader, coin slot.
+    px = w * 0.35
+    cube(f"{part}Panel", P(px, h * 0.55, front + 0.006), S(w * 0.2, h * 0.45, 0.012), m["black"], part=part, bevel=0.008)
+    cube(f"{part}Display", P(px, h * 0.71, front + 0.014), S(w * 0.14, 3 * PX, 0.004), m["glow"], part=part, smooth=False)
+    for r in range(3):
+        for c in range(3):
+            cube(f"{part}Key{r}{c}", P(px - 0.06 + c * 0.06, h * 0.6 - r * 1.8 * PX, front + 0.016), S(0.045, 1.3 * PX, 0.008), m["white"], part=part, bevel=0.004)
+    cube(f"{part}Card", P(px, h * 0.44, front + 0.02), S(0.12, 4 * PX, 0.02), mat("Reader_plastic", "#37474F", 0.4), part=part, bevel=0.006)
+    sphere(f"{part}CardLed", P(px + 0.04, h * 0.44 + 1.4 * PX, front + 0.032), 0.008, m["led"], part=part)
+
+
+def water_cooler(m):
+    """A water cooler: white cabinet, blue and red taps over a drip tray, cup dispenser on the side, and the big water bottle on top."""
+    part = "water_cooler"
+    h = 1.3 * M
+    body = h * 0.65
+    cube(f"{part}Body", P(0, body / 2, 0), S(0.62, body, 0.6), m["white"], part=part, bevel=0.04, bevel_segments=2)
+    cube(f"{part}Recess", P(0, body * 0.68, 0.27), S(0.36, body * 0.24, 0.08), mat("Recess_plastic", "#90A4AE", 0.5), part=part, bevel=0.02)
+    cube(f"{part}Drip", P(0, body * 0.57, 0.3), S(0.32, PX, 0.12), m["chrome"], part=part)
+    for i, (x, c) in enumerate(((-0.08, "box_blue"), (0.08, "box_red"))):
+        cube(f"{part}Tap{i}", P(x, body * 0.76, 0.27), S(0.05, 2 * PX, 0.07), m[c], part=part, bevel=0.01)
+    cyl(f"{part}Cups", P(0.36, body * 0.6, 0.05), 0.04, body * 0.45, m["white"], verts=12, part=part)
+    cyl(f"{part}Collar", P(0, body + PX, 0), 0.2, 2 * PX, m["white"], verts=24, part=part)
+    lathe(f"{part}Bottle", [(r, z * h * 0.34) for r, z in ((0.0, 0.0), (0.28, 0.0), (0.3, 0.04), (1.0, 0.12), (1.0, 0.9), (0.95, 1.0), (0.0, 1.0))], m["glass"], loc=P(0, body + 2 * PX, 0), sx=0.27, sy=0.27, seg=24, part="water_cooler_glass")
+
+
+def food_counter(m):
+    """A café servery: a wood-fronted counter with a steel top, trays of food under a glass sneeze guard and the till at one end."""
+    part = "food_counter"
+    w, d, h = 4.8, 1.6, 1.0 * M
+    top = h * 0.8
+    cube(f"{part}Plinth", P(0, 1.5 * PX, 0.02), S(w - 0.08, 3 * PX, d - 0.12), m["plinth"], part=part)
+    cube(f"{part}Body", P(0, 3 * PX + (top - 3 * PX) / 2, 0), S(w, top - 3 * PX, d), m["wood"], part=part, bevel=0.015)
+    for i in range(6):
+        x = -w / 2 + (i + 0.5) * w / 6
+        cube(f"{part}Panel{i}", P(x, 3 * PX + (top - 3 * PX) / 2, d / 2 + 0.006), S(w / 6 - 0.06, top - 8 * PX, 0.012), m["wood_dark"], part=part, bevel=0.006)
+    cube(f"{part}Top", P(0, top + PX, 0), S(w + 0.08, 2 * PX, d + 0.08), m["steel"], part=part, bevel=0.012)
+    cube(f"{part}TrayRail", P(0, top - 3 * PX, d / 2 + 0.12), S(w - 0.2, PX, 0.2), m["chrome"], part=part, bevel=0.01)
+    foods = ("Food_beans", "Food_chips", "Food_salad", "Food_curry", "Food_pasta", "Food_peas")
+    cols = ("#C8553D", "#E9C46A", "#81B29A", "#D08C3A", "#F2D7A3", "#7CB342")
+    trays = 6
+    for i in range(trays):
+        x = -w / 2 + 0.4 + i * (w - 1.3) / (trays - 1)
+        cube(f"{part}Well{i}", P(x, top + 2.4 * PX, 0.02), S(0.5, PX, d * 0.5), m["steel"], part=part, bevel=0.01)
+        cube(f"{part}Food{i}", P(x, top + 2.8 * PX, 0.02), S(0.44, 0.8 * PX, d * 0.44), mat(foods[i], cols[i], 0.6), part=part, bevel=0.03, bevel_segments=2)
+        tube(f"{part}Ladle{i}", [P(x + 0.15, top + 3 * PX, 0.1), P(x + 0.18, top + 7 * PX, -0.2)], 0.008, m["chrome"], part=part)
+    gx0, gx1 = -w / 2 + 0.1, w / 2 - 0.9
+    for x in (gx0, gx1):
+        tube(f"{part}Post{x}", [P(x, top + 2 * PX, d / 2 - 0.15), P(x, top + 15 * PX, d / 2 - 0.15)], 0.018, m["chrome"], part=part)
+    tube(f"{part}GuardRail", [P(gx0, top + 15 * PX, d / 2 - 0.15), P(gx1, top + 15 * PX, d / 2 - 0.15)], 0.014, m["chrome"], part=part)
+    guard = cube(f"{part}Guard", P((gx0 + gx1) / 2, top + 10 * PX, d / 2 - 0.12), S(gx1 - gx0, 10 * PX, 0.012), m["glass"], part="food_counter_glass", smooth=False)
+    guard.rotation_euler = (0.25, 0, 0)
+    # The till, facing the server at the back, and a tray of cakes under a dome.
+    cube(f"{part}Till", P(w / 2 - 0.45, top + 4 * PX, -0.15), S(0.4, 4 * PX, 0.35), m["black"], part=part, bevel=0.02)
+    till = cube(f"{part}TillScreen", P(w / 2 - 0.45, top + 9 * PX, -0.2), S(0.34, 5 * PX, 0.02), m["screen"], part=part, bevel=0.006)
+    till.rotation_euler = (0.25, 0, 0)
+    cube(f"{part}CardMachine", P(w / 2 - 0.25, top + 2.8 * PX, 0.4), S(0.1, PX, 0.16), mat("Reader_plastic", "#37474F", 0.4), part=part, bevel=0.01)
+    cyl(f"{part}CakeStand", P(w / 2 - 0.65, top + 2.4 * PX, 0.45), 0.18, 0.4 * PX, m["mug2"], verts=24, part=part)
+    for i in range(3):
+        a = i * math.tau / 3
+        cube(f"{part}Cake{i}", P(w / 2 - 0.65 + math.sin(a) * 0.08, top + 3.4 * PX, 0.45 + math.cos(a) * 0.08), S(0.09, 1.6 * PX, 0.09), mat("Cake", "#C68A54", 0.7), part=part, bevel=0.015)
+    sphere(f"{part}Dome", P(w / 2 - 0.65, top + 2.6 * PX, 0.45), 0.19, m["glass"], scale=(1, 1, 0.75), part="food_counter_glass")
+
+
+def cafe_table(m):
+    """A round café table: heavy black disc foot, chrome column, a wood-effect top with an edge band, a menu stand and a cup."""
+    part = "cafe_table"
+    w, h = 1.6, 0.75 * M
+    cyl(f"{part}Foot", P(0, 0.012, 0), w * 0.3, 0.024, m["black"], verts=28, part=part)
+    lathe(f"{part}Boss", [(0.0, 0.0), (1.0, 0.0), (0.35, 0.05), (0.0, 0.05)], m["chrome"], loc=P(0, 0.024, 0), sx=0.12, sy=0.12, seg=20, part=part)
+    tube(f"{part}Column", [P(0, 0.05, 0), P(0, h - 2 * PX, 0)], 0.035, m["chrome"], part=part)
+    cyl(f"{part}Top", P(0, h - PX, 0), w * 0.47, 2 * PX - 0.006, m["wood"], verts=40, part=part)
+    cyl(f"{part}Edge", P(0, h - PX, 0), w * 0.48, 2 * PX - 0.012, m["black"], verts=40, part=part)
+    cube(f"{part}Menu", P(-0.15, h + 2.5 * PX, -0.1), S(0.14, 5 * PX, 0.02), m["paper"], part=part, bevel=0.004)
+    cyl(f"{part}Cup", P(0.2, h + 1.6 * PX, 0.1), 0.05, 3 * PX, m["mug2"], verts=14, part=part)
+    cyl(f"{part}Saucer", P(0.2, h + 0.2 * PX, 0.1), 0.09, 0.008, m["mug2"], verts=18, part=part)
+
+
+def cafe_chair(m):
+    """A bistro chair: four splayed metal legs, a moulded seat and a curved slatted back (seat centred at the origin)."""
+    part = "cafe_chair"
+    seat = 14 * PX
+    w, d = 0.74, 0.7
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        tube(f"{part}Leg{i}", [P(x * (w / 2 - 0.08), seat - 1.5 * PX, z * (d / 2 - 0.1)), P(x * (w / 2 - 0.02), 0.01, z * (d / 2 - 0.03))], 0.02, m["frame"], part=part)
+        sphere(f"{part}Glide{i}", P(x * (w / 2 - 0.02), 0.01, z * (d / 2 - 0.03)), 0.022, m["rubber"], seg=8, rings=5, part=part)
+    tube(f"{part}Ring", [P(-w / 2 + 0.06, seat * 0.45, -d / 2 + 0.07), P(w / 2 - 0.06, seat * 0.45, -d / 2 + 0.07), P(w / 2 - 0.06, seat * 0.45, d / 2 - 0.07), P(-w / 2 + 0.06, seat * 0.45, d / 2 - 0.07), P(-w / 2 + 0.06, seat * 0.45, -d / 2 + 0.07)], 0.012, m["frame"], sides=1, part=part)
+    cube(f"{part}Seat", P(0, seat - 0.8 * PX, 0.02), S(w - 0.06, 1.6 * PX, d - 0.08), m["lam"], part=part, bevel=0.05, bevel_segments=3)
+    for s in (-1, 1):
+        tube(f"{part}BackPost{s}", [P(s * (w / 2 - 0.08), seat - PX, -d / 2 + 0.1), P(s * (w / 2 - 0.06), seat + 16 * PX, -d / 2 + 0.03)], 0.018, m["frame"], part=part)
+    for i, y in enumerate((seat + 9 * PX, seat + 14 * PX)):
+        rail = cube(f"{part}Slat{i}", P(0, y, -d / 2 + 0.04 + (0.012 if i == 0 else 0)), S(w - 0.1, 3.2 * PX, 0.03), m["lam"], part=part, bevel=0.012)
+        rail.rotation_euler = (-0.12, 0, 0)
+
+
+# ------------------------------------------------------------------ cleaning room
+
+_CODES = ("box_red", "box_blue", "box_green", "box_yellow")
+
+
+def cleaners_sink(m):
+    """A cleaner's sink: low deep steel bucket sink on a cupboard, bucket grid, tall swan-neck taps, tiled splashback and a hazard notice."""
+    part = "cleaners_sink"
+    w, d, h = 1.2, 1.0, 0.9 * M
+    top = h * 0.62
+    _base_unit(m, part, w, d, top, 2)
+    cube(f"{part}Bowl", P(0, top + 3.5 * PX, 0), S(w + 0.04, 7 * PX, d + 0.02), m["steel"], part=part, bevel=0.02)
+    cube(f"{part}Inside", P(0, top + 6.5 * PX, 0.03), S(w - 0.12, PX, d - 0.16), mat("SinkDark_steel", "#4D5A63", 0.4, metal=0.3), part=part, smooth=False)
+    for i in range(-2, 3):
+        cube(f"{part}Grid{i}", P(i * (w - 0.2) / 5, top + 7.1 * PX, 0.03), S(0.025, 0.4 * PX, d - 0.2), m["chrome"], part=part, smooth=False)
+    tiles = mat("Tile_ceramic", "#F4F7F8", 0.25)
+    cube(f"{part}Splash", P(0, top + 7 * PX + 11 * PX, -d / 2 + 0.015), S(w + 0.04, 22 * PX, 0.03), tiles, part=part, smooth=False)
+    for r in range(1, 4):
+        cube(f"{part}Grout{r}", P(0, top + 7 * PX + r * 5.5 * PX, -d / 2 + 0.032), S(w + 0.04, 0.3 * PX, 0.004), mat("Grout", "#C9D3D9", 0.8), part=part, smooth=False)
+    for i, (x, c) in enumerate(((-w / 4, "box_blue"), (w / 4, "box_red"))):
+        tube(f"{part}Tap{i}", [P(x, top + 10 * PX, -d / 2 + 0.04), P(x, top + 17 * PX, -d / 2 + 0.07), P(x, top + 17 * PX, -d / 2 + 0.22), P(x, top + 13 * PX, -d / 2 + 0.25)], 0.018, m["chrome"], sides=2, part=part)
+        cyl(f"{part}TapHead{i}", P(x, top + 18 * PX, -d / 2 + 0.07), 0.035, 1.2 * PX, m[c], verts=12, part=part)
+    cube(f"{part}Notice", P(0, top + 26 * PX, -d / 2 + 0.034), S(0.26, 7 * PX, 0.004), m["paper"], part=part, smooth=False)
+    cube(f"{part}NoticeBand", P(0, top + 29 * PX, -d / 2 + 0.037), S(0.22, 1.5 * PX, 0.003), m["box_red"], part=part, smooth=False)
+    cyl(f"{part}Bottle", P(w / 2 - 0.08, top + 11 * PX, -d / 2 + 0.12), 0.04, 8 * PX, m["box_yellow"], verts=12, part=part)
+    cube(f"{part}Trigger", P(w / 2 - 0.08, top + 16 * PX, -d / 2 + 0.13), S(0.04, 2.5 * PX, 0.06), m["white"], part=part, bevel=0.008)
+
+
+def cleaning_shelves(m):
+    """Chrome wire shelving: colour-coded spray bottles, toilet rolls, blue paper rolls, bin-bag cartons and gloves."""
+    part = "cleaning_shelves"
+    w, d, h = 1.8, 0.8, 1.8 * M
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        tube(f"{part}Post{i}", [P(x * (w / 2 - 0.03), 0.0, z * (d / 2 - 0.03)), P(x * (w / 2 - 0.03), h, z * (d / 2 - 0.03))], 0.016, m["chrome"], part=part)
+    for i in range(4):
+        y = 3 * PX + i * (h - 4 * PX) / 3.2
+        cube(f"{part}Shelf{i}", P(0, y, 0), S(w, 0.8 * PX, d), mat("Tint_metal", "#FFFFFF", 0.45, metal=0.2), part=part, smooth=False)
+        for k in range(1, 8):
+            cube(f"{part}Wire{i}{k}", P(-w / 2 + k * w / 8, y + 0.45 * PX, 0), S(0.008, 0.2 * PX, d - 0.02), m["chrome"], part=part, smooth=False)
+        for k in range(6):
+            x = -w / 2 + 0.16 + k * (w - 0.32) / 5
+            pick = 4 if i == 0 else (k + i * 2) % 5
+            if pick < 2:
+                c = m[_CODES[(k + i) % 4]]
+                cyl(f"{part}Spray{i}{k}", P(x, y + 4.5 * PX, 0.05), 0.045, 8 * PX, c, verts=12, part=part)
+                cube(f"{part}SprayHead{i}{k}", P(x, y + 9.4 * PX, 0.07), S(0.04, 2 * PX, 0.08), m["white"], part=part, bevel=0.008)
+            elif pick == 2:
+                for j in range(2):
+                    cyl(f"{part}Roll{i}{k}{j}", P(x, y + 3.6 * PX + j * 6.8 * PX, 0), 0.06, 6.6 * PX, m["paper"], verts=14, part=part)
+            elif pick == 3:
+                cyl(f"{part}Blue{i}{k}", P(x, y + 5 * PX, 0), 0.085, 9 * PX, mat("BluePaper", "#4F8FD8", 0.85), verts=16, part=part)
+            else:
+                c = mat("BinBags", "#3A3F44", 0.6) if k % 2 == 0 else mat("Cloths_fabric", "#E8C547", 0.9)
+                cube(f"{part}Carton{i}{k}", P(x, y + 3 * PX, 0), S(0.22, 5 * PX, d * 0.7), c, part=part, bevel=0.015)
+
+
+def broom_rack(m):
+    """A wall rail holding colour-coded mops (red, blue, green, yellow) and a yard brush, heads down."""
+    part = "broom_rack"
+    w, d, h = 1.2, 0.3, 1.6 * M
+    back = -d / 2
+    cube(f"{part}Rail", P(0, h * 0.8, back + 0.02), S(w, 2.5 * PX, 0.04), mat("TintDark_metal", "#CCCCCC", 0.45, metal=0.2), part=part, bevel=0.01)
+    for i in range(4):
+        x = -w / 2 + (i + 0.5) * w / 4
+        brush = i == 3
+        handle = m["box_red"] if brush else m[_CODES[i]]
+        tube(f"{part}Handle{i}", [P(x, 6 * PX, back + 0.1), P(x, h * 0.86, back + 0.06)], 0.018, handle, part=part)
+        sphere(f"{part}Clip{i}", P(x, h * 0.81, back + 0.06), 0.03, m["black"], part=part)
+        if brush:
+            cube(f"{part}Stock", P(x, 3 * PX, back + 0.1), S(0.32, 2.5 * PX, 0.07), mat("Brush_wood", "#8D6E4E", 0.6), part=part, bevel=0.012)
+            for k in range(8):
+                cube(f"{part}Bristle{k}", P(x - 0.14 + k * 0.04, PX, back + 0.1), S(0.03, 2 * PX, 0.06), m["rubber"], part=part, smooth=False)
+        else:
+            sphere(f"{part}Mop{i}", P(x, 3 * PX, back + 0.1), 0.08, mat("Mop_fabric", "#ECEFF1", 0.95), scale=(1, 0.8, 0.9), part=part)
+            cube(f"{part}Band{i}", P(x, 6.2 * PX, back + 0.1), S(0.06, 1.5 * PX, 0.05), m[_CODES[i]], part=part, bevel=0.008)
+
+
+def mop_bucket(m):
+    """The yellow wheeled mop bucket: water in the tub, a grey wringer with a red lever, a mop in it leaning on the wall."""
+    part = "mop_bucket"
+    w, d, h = 0.9, 0.7, 0.9 * M
+    bw, bd = w * 0.82, d * 0.82
+    tub = h * 0.36
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        cyl(f"{part}Wheel{i}", P(x * (bw / 2 - 0.05), 0.03, z * (bd / 2 - 0.05)), 0.03, 0.025, m["rubber"], rot=(0, math.pi / 2, 0), verts=10, part=part)
+    cube(f"{part}Tub", P(0, 2 * PX + tub / 2, 0), S(bw, tub, bd), m["lam"], part=part, bevel=0.04, bevel_segments=2)
+    cube(f"{part}Water", P(0, 2 * PX + tub - 0.01, 0.05), S(bw - 0.07, 0.006, bd * 0.5), mat("Dirty_water", "#6E8C99", 0.1), part=part, smooth=False)
+    tube(f"{part}Handle", [P(-bw / 2, 2 * PX + tub, bd / 2 - 0.02), P(-bw / 2 + 0.05, 2 * PX + tub + 3 * PX, bd / 2 + 0.03), P(bw / 2 - 0.05, 2 * PX + tub + 3 * PX, bd / 2 + 0.03), P(bw / 2, 2 * PX + tub, bd / 2 - 0.02)], 0.012, mat("TintDark_plastic", "#CCCCCC", 0.4), part=part)
+    wz = -bd / 2 + bd * 0.2
+    cube(f"{part}Wringer", P(0, 2 * PX + tub + 2.5 * PX, wz), S(bw * 0.9, 5 * PX, bd * 0.36), mat("Wringer_plastic", "#7D8790", 0.5), part=part, bevel=0.02)
+    tube(f"{part}Lever", [P(bw * 0.35, 2 * PX + tub + 5 * PX, wz), P(bw * 0.35, h * 0.95, wz - 0.02)], 0.016, m["box_red"], part=part)
+    sphere(f"{part}Mop", P(0, 2 * PX + tub - 0.5 * PX, wz), 0.1, mat("Mop_fabric", "#ECEFF1", 0.95), scale=(1.3, 0.9, 0.6), part=part)
+    tube(f"{part}MopHandle", [P(0, 2 * PX + tub + 5 * PX, wz), P(0.03, h, -d / 2 + 0.01)], 0.018, m["box_blue"], part=part)
 
 
 def build():
@@ -747,3 +981,13 @@ def build():
     accessible_wc(m)
     wash_basin(m)
     hand_dryer(m)
+    for kind in range(3):
+        vending_machine(m, kind)
+    water_cooler(m)
+    food_counter(m)
+    cafe_table(m)
+    cafe_chair(m)
+    cleaners_sink(m)
+    cleaning_shelves(m)
+    broom_rack(m)
+    mop_bucket(m)
