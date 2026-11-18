@@ -8,7 +8,7 @@ import math
 
 from bhkit import cube, cyl, lathe, mat, sphere, tube
 
-BUDGET = 30000
+BUDGET = 45000
 
 PX = 1 / 39.191836
 M = 28 * PX
@@ -477,6 +477,123 @@ def anaesthetic_machine(m):
     tube(f"{part}Circuit", [P(0.3, h * 0.55, 0.3), P(0.42, h * 0.53, 0.45), P(0.5, h * 0.5, 0.6)], 0.03, mat("Tubing_plastic", "#5C9BD6", 0.4), sides=2, part=part)
 
 
+# ------------------------------------------------------------------ specialty kit
+
+def _castors(m, part, w, d, inset=0.08, r=0.04):
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        px, pz = x * (w / 2 - inset), z * (d / 2 - inset)
+        cyl(f"{part}Fork{i}", P(px, r + 0.035, pz), 0.016, 0.05, m["chrome"], verts=8, part=part)
+        cyl(f"{part}Wheel{i}", P(px, r, pz + 0.012), r, r * 0.8, m["rubber"], rot=(0, math.pi / 2, 0), verts=12, part=part)
+
+
+def _screen(m, part, centre, w, tall, tilt=0.0, picture="screen", glow=True):
+    """A flat screen: dark bezel, picture, a waveform line; tilt leans the top back (game +z is the front)."""
+    x, up, z = centre
+    for name, size, off, material in (("Bezel", (w, tall, 0.05), 0.0, "black"), ("Picture", (w * 0.88, tall * 0.82, 0.006), 0.027, picture)):
+        o = cube(f"{part}{name}", P(x, up, z + off), S(*size), m[material], part=part, bevel=0.01 if name == "Bezel" else 0.0, smooth=False)
+        o.rotation_euler = (tilt, 0, 0)
+    if glow:
+        for i, (dy, c) in enumerate(((0.12, "glow"), (-0.1, "led"))):
+            o = cube(f"{part}Line{i}", P(x, up + tall * dy, z + 0.032), S(w * 0.7, 0.012, 0.004), m[c], part=part, smooth=False)
+            o.rotation_euler = (tilt, 0, 0)
+
+
+def ultrasound_machine(m):
+    """Ultrasound cart: wheeled base, column, angled keyboard deck with a trackball and probe holders, monitor on an arm."""
+    part = "ultrasound_machine"
+    h = 1.4 * M
+    _castors(m, part, 1.1, 1.1, inset=0.1)
+    cube(f"{part}Base", P(0, 4 * PX + 5 * PX, 0), S(1.0, 10 * PX, 1.0), m["lam_dark"], part=part, bevel=0.04, bevel_segments=2)
+    cube(f"{part}Column", P(0, 14 * PX + h * 0.175, -0.05), S(0.4, h * 0.35, 0.4), m["lam_light"], part=part, bevel=0.03)
+    deck = cube(f"{part}Deck", P(0, h * 0.62, 0.06), S(1.2, 3 * PX, 0.84), m["lam"], part=part, bevel=0.03, bevel_segments=2)
+    deck.rotation_euler = (0.25, 0, 0)
+    keys = cube(f"{part}Keys", P(0, h * 0.62 + 1.6 * PX, 0.08), S(0.76, 0.5 * PX, 0.44), m["frame"], part=part, smooth=False)
+    keys.rotation_euler = (0.25, 0, 0)
+    sphere(f"{part}Trackball", P(0.2, h * 0.62 + 2 * PX, 0.2), 0.04, m["black"], part=part)
+    for x in (-0.66, 0.66):
+        cyl(f"{part}Holder{x}", P(x, h * 0.62, 0.2), 0.05, 0.1, m["lam_dark"], verts=12, part=part)
+        cyl(f"{part}Probe{x}", P(x, h * 0.62 + 0.09, 0.2), 0.03, 0.14, m["white"], verts=10, part=part)
+    tube(f"{part}Cable", [P(0.66, h * 0.62 + 0.15, 0.2), P(0.75, h * 0.5, 0.3), P(0.6, h * 0.42, 0.15)], 0.01, m["black"], part=part)
+    tube(f"{part}Arm", [P(0, h * 0.64, -0.36), P(0, h * 0.82, -0.36)], 0.025, m["black"], part=part)
+    _screen(m, part, (0, h * 0.9, -0.28), 1.0, h * 0.2)
+
+
+def eeg_machine(m):
+    """EEG trolley: castor base, pole, a tray with an open laptop, the head box and a rainbow of electrode leads."""
+    part = "eeg_machine"
+    w, d, h = 1.2, 1.0, 1.3 * M
+    _castors(m, part, w, d)
+    cube(f"{part}Base", P(0, 4 * PX + 1.5 * PX, 0), S(w, 3 * PX, d), m["lam"], part=part, bevel=0.02)
+    tube(f"{part}Pole", [P(0, 7 * PX, 0), P(0, h * 0.62, 0)], 0.035, m["chrome"], part=part)
+    top = h * 0.62
+    cube(f"{part}Tray", P(0, top + PX, 0), S(w, 2 * PX, d), m["lam_light"], part=part, bevel=0.02)
+    tube(f"{part}Rail", [P(-w / 2, top + 2.5 * PX, d / 2), P(-w / 2, top + 2.5 * PX, -d / 2), P(w / 2, top + 2.5 * PX, -d / 2), P(w / 2, top + 2.5 * PX, d / 2)], 0.01, m["chrome"], part=part)
+    cube(f"{part}Laptop", P(-0.05, top + 2 * PX + 0.01, 0.06), S(0.6, 0.02, 0.42), m["frame"], part=part, bevel=0.008)
+    _screen(m, part, (-0.05, top + 2 * PX + 0.2, -0.16), 0.6, 0.36, tilt=-0.2)
+    cube(f"{part}HeadBox", P(0.38, top + 2 * PX + 1.5 * PX, 0.28), S(0.26, 3 * PX, 0.2), m["white"], part=part, bevel=0.015)
+    for i, c in enumerate(("box_red", "box_yellow", "box_green", "box_blue", "box_purple")):
+        tube(f"{part}Lead{i}", [P(0.38, top + 3 * PX, 0.36), P(0.3 + i * 0.05, top - 0.15, 0.45), P(0.2 + i * 0.07, h * 0.35, 0.42)], 0.008, m[c], part=part)
+
+
+def endoscopy_stack(m):
+    """Endoscopy stack: a four-post trolley with four shelves of units (light source, processor, insufflator),
+    a big monitor on top, and the scope coiled on its hook at the side."""
+    part = "endoscopy_stack"
+    w, d, h = 1.4, 1.2, 1.7 * M
+    _castors(m, part, w, d)
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        tube(f"{part}Post{i}", [P(x * (w / 2 - 0.05), 4 * PX, z * (d / 2 - 0.05)), P(x * (w / 2 - 0.05), h * 0.75, z * (d / 2 - 0.05))], 0.022, m["chrome"], part=part)
+    units = ("white", "lam_light", "white", "lam")
+    for i in range(4):
+        y = 5 * PX + i * h * 0.17
+        cube(f"{part}Shelf{i}", P(0, y + 0.5 * PX, 0), S(w - 0.06, PX, d - 0.04), m["chrome"], part=part, smooth=False)
+        cube(f"{part}Unit{i}", P(0, y + PX + h * 0.06, -0.02), S(w - 0.16, h * 0.12, d - 0.14), m[units[i]], part=part, bevel=0.015)
+        cube(f"{part}UnitFace{i}", P(0, y + PX + h * 0.06, d / 2 - 0.085), S(w - 0.2, h * 0.09, 0.006), m["lam_dark"], part=part, smooth=False)
+        cube(f"{part}UnitLed{i}", P(-0.3, y + 3 * PX, d / 2 - 0.08), S(0.2, 1.2 * PX, 0.006), m["led"], part=part, smooth=False)
+        cyl(f"{part}Knob{i}", P(0.35, y + PX + h * 0.06, d / 2 - 0.075), 0.03, 0.02, m["chrome"], rot=(math.pi / 2, 0, 0), verts=10, part=part)
+    tube(f"{part}MonPole", [P(0, h * 0.72, -0.2), P(0, h * 0.82, -0.2)], 0.03, m["black"], part=part)
+    _screen(m, part, (0, h * 0.88, 0), w * 1.1, h * 0.22, picture="screen")
+    tube(f"{part}Hook", [P(w / 2 + 0.02, h * 0.7, 0), P(w / 2 + 0.1, h * 0.75, 0)], 0.02, m["chrome"], part=part)
+    for k in range(2):
+        tube(f"{part}Scope{k}", [P(w / 2 + 0.12 + 0.02 * k, h * 0.55 + 0.14 * math.sin(a), 0.14 * math.cos(a)) for a in [i * math.tau / 16 for i in range(17)]], 0.012, m["black"], part=part)
+
+
+def lead_screen(m):
+    """Mobile lead screen: a tall panel on a wheeled foot, a lead-glass window and a radiation trefoil."""
+    part = "lead_screen"
+    w, d, h = 2.0, 0.6, 1.9 * M
+    _castors(m, part, w, 0.5, inset=0.12)
+    cube(f"{part}Foot", P(0, 4 * PX + 1.5 * PX, 0), S(w, 3 * PX, 0.24), m["plinth"], part=part, bevel=0.015)
+    cube(f"{part}Panel", P(0, 7 * PX + (h - 7 * PX) / 2, 0), S(w, h - 7 * PX, 0.08), m["lam"], part=part, bevel=0.02)
+    cube(f"{part}Frame", P(0, h * 0.72, 0.03), S(w * 0.64, h * 0.29, 0.04), m["lam_dark"], part=part, bevel=0.01)
+    cyl(f"{part}Sign", P(0, h * 0.4, 0.045), 0.12, 0.01, m["box_yellow"], rot=(math.pi / 2, 0, 0), verts=24, part=part)
+    for i in range(3):
+        a = i * math.tau / 3
+        wedge = cube(f"{part}Blade{i}", P(0.06 * math.sin(a), h * 0.4 + 0.06 * math.cos(a), 0.052), S(0.06, 0.06, 0.004), m["black"], part=part, smooth=False)
+        wedge.rotation_euler = (0, a, 0)
+    cyl(f"{part}Hub", P(0, h * 0.4, 0.054), 0.025, 0.006, m["black"], rot=(math.pi / 2, 0, 0), verts=12, part=part)
+    for s in (-1, 1):
+        tube(f"{part}Handle{s}", [P(s * (w / 2 - 0.02), h * 0.5, 0.04), P(s * (w / 2 + 0.04), h * 0.5, 0.04), P(s * (w / 2 + 0.04), h * 0.62, 0.04), P(s * (w / 2 - 0.02), h * 0.62, 0.04)], 0.014, m["chrome"], part=part)
+    cube(f"{part}Window", P(0, h * 0.72, 0.035), S(w * 0.6, h * 0.25, 0.02), m["glass"], part="lead_screen_glass", smooth=False)
+
+
+def plaster_trolley(m):
+    """Plaster room trolley: four drawers on castors with bar handles, a lipped top and rolls of plaster bandage."""
+    part = "plaster_trolley"
+    w, d, h = 1.8, 1.2, 0.9 * M
+    _castors(m, part, w, d)
+    cube(f"{part}Body", P(0, 4 * PX + (h - 4 * PX) / 2, 0), S(w, h - 4 * PX, d), m["lam"], part=part, bevel=0.02)
+    for i in range(4):
+        y = 4 * PX + (h - 4 * PX) * (i + 0.5) / 4
+        cube(f"{part}Drawer{i}", P(0, y, d / 2 + 0.006), S(w - 0.08, (h - 4 * PX) / 4 - 0.025, 0.012), m["lam_light"], part=part, bevel=0.005)
+        tube(f"{part}Pull{i}", [P(-0.2, y + 0.02, d / 2 + 0.012), P(-0.2, y + 0.02, d / 2 + 0.04), P(0.2, y + 0.02, d / 2 + 0.04), P(0.2, y + 0.02, d / 2 + 0.012)], 0.01, m["chrome"], part=part)
+    cube(f"{part}Top", P(0, h - 0.01, 0), S(w + 0.03, 0.02, d + 0.03), m["white"], part=part, bevel=0.006)
+    tube(f"{part}Lip", [P(-w / 2, h + 0.015, d / 2), P(-w / 2, h + 0.015, -d / 2), P(w / 2, h + 0.015, -d / 2), P(w / 2, h + 0.015, d / 2)], 0.012, m["chrome"], part=part)
+    for i in range(4):
+        cyl(f"{part}Roll{i}", P(-w / 2 + 0.25 + i * 0.22, h + 0.06, 0), 0.06, 0.22, m["paper"], rot=(math.pi / 2, 0, 0), verts=14, part=part)
+    cube(f"{part}Bowl", P(w * 0.3, h + 0.05, 0.1), S(0.36, 0.1, 0.3), m["box_blue"], part=part, bevel=0.04, bevel_segments=3)
+
+
 def build():
     m = _mats()
     visitor_chair(m)
@@ -499,3 +616,8 @@ def build():
     pharmacy_counter(m)
     ventilator(m)
     anaesthetic_machine(m)
+    ultrasound_machine(m)
+    eeg_machine(m)
+    endoscopy_stack(m)
+    lead_screen(m)
+    plaster_trolley(m)
