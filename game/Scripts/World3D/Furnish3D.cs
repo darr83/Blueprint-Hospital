@@ -107,6 +107,23 @@ public static partial class Furnish3D
         "endoscopy_stack" => new Vector3(1.4f, Kit3D.M(1.7), 1.2f),
         "lead_screen" => new Vector3(2.0f, Kit3D.M(1.9), 0.6f),
         "plaster_trolley" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "ctg_monitor" => new Vector3(0.9f, Kit3D.M(1.3), 0.9f),
+        "resuscitaire" => new Vector3(1.6f, Kit3D.M(1.8), 1.4f),
+        "baby_changing_unit" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "breast_pump" => new Vector3(0.8f, Kit3D.M(1.0), 0.8f),
+        "toilet_pan" => new Vector3(0.8f, Kit3D.M(0.8), 1.4f),
+        "accessible_wc" => new Vector3(0.9f, Kit3D.M(0.8), 1.5f),
+        "wash_basin" => new Vector3(1.0f, Kit3D.M(0.85), 0.9f),
+        "hand_dryer" => new Vector3(0.6f, Kit3D.M(1.4), 0.5f),
+        _ => null,
+    };
+
+    /// <summary>The see-through part of a Blender-made piece (its own part, drawn with the glass), and its colour.</summary>
+    private static Color? GlassOf(string id) => id switch
+    {
+        "drug_fridge" => new Color("#A9D3E8", 0.45f),
+        "lead_screen" => new Color("#C8E6C9", 0.55f),
+        "breast_pump" => new Color("#FFFDE7", 0.7f),
         _ => null,
     };
 
@@ -120,9 +137,9 @@ public static partial class Furnish3D
     {
         if (KitMade(id) is { } made && b.Kit("furniture_kit", id == "triage_desk" ? "office_desk" : id, made, new Vector3(w, h, d), colour))
         {
-            if (id is "drug_fridge" or "lead_screen")
+            if (GlassOf(id) is { } pane)
             {
-                glass.Kit("furniture_kit", id + "_glass", made, new Vector3(w, h, d), id == "drug_fridge" ? new Color("#A9D3E8", 0.45f) : new Color("#C8E6C9", 0.55f));
+                glass.Kit("furniture_kit", id + "_glass", made, new Vector3(w, h, d), pane);
             }
 
             return true;

@@ -8,7 +8,7 @@ import math
 
 from bhkit import cube, cyl, lathe, mat, sphere, tube
 
-BUDGET = 45000
+BUDGET = 60000
 
 PX = 1 / 39.191836
 M = 28 * PX
@@ -594,6 +594,124 @@ def plaster_trolley(m):
     cube(f"{part}Bowl", P(w * 0.3, h + 0.05, 0.1), S(0.36, 0.1, 0.3), m["box_blue"], part=part, bevel=0.04, bevel_segments=3)
 
 
+# ------------------------------------------------------------------ maternity
+
+def _pole_stand(m, part, radius, top):
+    for i in range(5):
+        a = i * math.tau / 5
+        x, z = math.sin(a) * radius, math.cos(a) * radius
+        tube(f"{part}Leg{i}", [P(0, 4 * PX, 0), P(x, 3 * PX, z)], 0.022, m["frame"], part=part)
+        cyl(f"{part}Wheel{i}", P(x, 0.035, z), 0.035, 0.03, m["rubber"], rot=(0, math.pi / 2, a), verts=10, part=part)
+    tube(f"{part}Pole", [P(0, 4 * PX, 0), P(0, top, 0)], 0.025, m["chrome"], part=part)
+
+
+def ctg_monitor(m):
+    """CTG (fetal heart) monitor on a pole: the unit, a small screen, two transducers and the paper trace spilling out."""
+    part = "ctg_monitor"
+    h = 1.3 * M
+    _pole_stand(m, part, 0.2, h * 0.6)
+    cube(f"{part}Unit", P(0, h * 0.75, 0), S(0.4, h * 0.3, 0.3), m["white"], part=part, bevel=0.025, bevel_segments=2)
+    _screen(m, part, (0, h * 0.8, 0.16), 0.32, h * 0.14)
+    cube(f"{part}Slot", P(0, h * 0.63, 0.152), S(0.3, 0.012, 0.01), m["black"], part=part, smooth=False)
+    paper = cube(f"{part}Trace", P(0, h * 0.6 - PX, 0.24), S(0.24, 0.006, 0.16), m["paper"], part=part, smooth=False)
+    paper.rotation_euler = (-0.6, 0, 0)
+    for i, x in enumerate((-0.12, 0.12)):
+        cyl(f"{part}Probe{i}", P(x, h * 0.92, 0.05), 0.045, 0.03, m["box_purple" if i else "box_blue"], verts=14, part=part)
+    tube(f"{part}Lead", [P(0.12, h * 0.92, 0.05), P(0.2, h * 0.7, 0.12), P(0.16, h * 0.5, 0.1)], 0.008, m["black"], part=part)
+
+
+def resuscitaire(m):
+    """Newborn resuscitaire: cabinet on castors, padded cot with a raised edge, column with the controls and a radiant heater overhead."""
+    part = "resuscitaire"
+    w, d, h = 1.6, 1.4, 1.8 * M
+    _castors(m, part, w, d)
+    cube(f"{part}Cabinet", P(0, 4 * PX + h * 0.125, -0.05), S(w * 0.85, h * 0.25, d * 0.8), m["lam"], part=part, bevel=0.02)
+    cube(f"{part}Drawer", P(0, 4 * PX + h * 0.18, -0.05 + d * 0.4 + 0.006), S(w * 0.8, h * 0.08, 0.012), m["lam_light"], part=part, bevel=0.005)
+    deck = h * 0.25 + 4 * PX
+    cube(f"{part}Deck", P(0, deck + 3 * PX, 0), S(w, 6 * PX, d), m["white"], part=part, bevel=0.03)
+    cube(f"{part}Mattress", P(0, deck + 6.5 * PX, 0.02), S(w * 0.75, PX, d * 0.65), m["box_blue"], part=part, bevel=0.03, bevel_segments=2)
+    cube(f"{part}Column", P(0, deck + 10 * PX + h * 0.275, -d / 2 + 0.08), S(0.16, h * 0.55, 0.12), m["lam_light"], part=part, bevel=0.015)
+    _screen(m, part, (0, h * 0.62, -d / 2 + 0.16), 0.3, 7 * PX)
+    for i, c in enumerate(("box_green", "white")):
+        cyl(f"{part}Gauge{i}", P(-0.1 + i * 0.2, h * 0.52, -d / 2 + 0.15), 0.04, 0.02, m[c], rot=(math.pi / 2, 0, 0), verts=12, part=part)
+    tube(f"{part}HeaterArm", [P(0, deck + 10 * PX + h * 0.55, -d / 2 + 0.08), P(0, h * 0.9, -d / 2 + 0.08), P(0, h * 0.9, -0.1)], 0.03, m["lam_light"], part=part)
+    cube(f"{part}Heater", P(0, h * 0.88 + 2.5 * PX, 0), S(w * 0.85, 5 * PX, d * 0.6), m["white"], part=part, bevel=0.03)
+    cube(f"{part}Glow", P(0, h * 0.88 - 0.3 * PX, 0), S(w * 0.7, 0.6 * PX, d * 0.45), mat("Heater_glow", "#FF8A65", 0.4), part=part, smooth=False)
+
+
+def baby_changing_unit(m):
+    """Baby changing unit: a cupboard with a padded mat with raised sides, nappies and a bottle of wipes."""
+    part = "baby_changing_unit"
+    w, d, h = 1.8, 1.2, 0.9 * M
+    _base_unit(m, part, w, d, h, 2)
+    cube(f"{part}Top", P(0, h - 0.015, 0), S(w + 0.03, 0.03, d + 0.03), m["lam_light"], part=part, bevel=0.01)
+    cube(f"{part}Mat", P(0, h + PX, 0), S(w * 0.85, 2 * PX, d * 0.75), mat("Mat_plastic", "#80CBC4", 0.35), part=part, bevel=0.06, bevel_segments=3)
+    for s in (-1, 1):
+        cube(f"{part}Side{s}", P(s * w * 0.4, h + 2.5 * PX, 0), S(0.1, 3 * PX, d * 0.75), mat("Mat_plastic", "#80CBC4", 0.35), part=part, bevel=0.04, bevel_segments=3)
+    cube(f"{part}Nappies", P(-w * 0.32, h + 2 * PX, -d * 0.2), S(0.18, 4 * PX, 0.12), mat("Nappy_fabric", "#FFF9C4", 0.9), part=part, bevel=0.02)
+    cube(f"{part}Wipes", P(w * 0.32, h + PX, -d * 0.2), S(0.16, 2 * PX, 0.1), m["box_blue"], part=part, bevel=0.02)
+
+
+def breast_pump(m):
+    """Hospital breast pump on a pole stand: the pump unit with a teal panel and two collection bottles."""
+    part = "breast_pump"
+    h = 1.0 * M
+    _pole_stand(m, part, 0.18, h * 0.7)
+    cube(f"{part}Unit", P(0, h * 0.81, 0), S(0.3, h * 0.22, 0.24), m["white"], part=part, bevel=0.03, bevel_segments=2)
+    cube(f"{part}Panel", P(0, h * 0.84, 0.125), S(0.16, 3 * PX, 0.01), mat("Panel_plastic", "#26A69A", 0.4), part=part, bevel=0.004)
+    cyl(f"{part}Dial", P(0, h * 0.76, 0.125), 0.03, 0.02, m["chrome"], rot=(math.pi / 2, 0, 0), verts=12, part=part)
+    for x in (-0.08, 0.08):
+        cyl(f"{part}Bottle{x}", P(x, h * 0.62, 0.14), 0.03, 5 * PX, mat("Tint_glass", "#FFFFFF", 0.1), verts=12, part="breast_pump_glass")
+        cyl(f"{part}Cap{x}", P(x, h * 0.62 + 3 * PX, 0.14), 0.032, 0.02, m["white"], verts=12, part=part)
+
+
+# ------------------------------------------------------------------ toilets
+
+def toilet_pan(m, part="toilet_pan", accessible=False):
+    """A close-coupled WC: cistern with a chrome flush plate, the pan on its foot, seat and lid up; grab rails when accessible."""
+    w, d = (0.9, 1.5) if accessible else (0.8, 1.4)
+    back = -d / 2
+    cube(f"{part}Cistern", P(0, 10 * PX + 4.5 * PX, back + 0.1), S(w * 0.85, 9 * PX, 0.18), m["ceramic"], part=part, bevel=0.03, bevel_segments=2)
+    cube(f"{part}CisternLid", P(0, 19.5 * PX, back + 0.1), S(w * 0.88, PX, 0.2), m["ceramic"], part=part, bevel=0.012)
+    cube(f"{part}Flush", P(0, 16 * PX, back + 0.012), S(0.1, 2 * PX, 0.01), m["chrome"], part=part, bevel=0.004)
+    lathe(f"{part}Foot", [(0.0, 0.0), (0.9, 0.0), (0.75, 0.5), (0.85, 1.0), (0.0, 1.0)], m["ceramic"], loc=P(0, 0, back + 0.42), sx=w * 0.3, sy=0.24, seg=20, part=part)
+    lathe(f"{part}Bowl", [(0.55, 8 * PX), (0.8, 8 * PX), (1.0, 10.5 * PX), (1.0, 11 * PX), (0.75, 11 * PX), (0.6, 9.5 * PX)], m["ceramic"], loc=P(0, 0, back + 0.48), sx=w * 0.38, sy=0.3, seg=24, part=part)
+    lathe(f"{part}Seat", [(0.72, 0), (1.0, 0), (1.0, 0.6 * PX), (0.72, 0.6 * PX)], mat("Seat_plastic", "#E9EEF2", 0.35), loc=P(0, 11 * PX, back + 0.5), sx=w * 0.36, sy=0.29, seg=24, part=part)
+    lid = cube(f"{part}Lid", P(0, 14.5 * PX, back + 0.21), S(w * 0.66, 7 * PX, 0.03), mat("Seat_plastic", "#E9EEF2", 0.35), part=part, bevel=0.06, bevel_segments=3)
+    lid.rotation_euler = (0.15, 0, 0)
+    if accessible:
+        red = mat("Rail_plastic", "#C62828", 0.4)
+        tube(f"{part}RailR", [P(w / 2 + 0.1, 20 * PX, back + 0.05), P(w / 2 + 0.1, 20 * PX, back + 0.75)], 0.03, red, part=part)
+        tube(f"{part}RailL", [P(-w / 2 - 0.1, 20 * PX, back + 0.05), P(-w / 2 - 0.1, 20 * PX, back + 0.75)], 0.03, red, part=part)
+        tube(f"{part}Hinge", [P(-w / 2 - 0.1, 20 * PX, back + 0.05), P(-w / 2 - 0.1, 9 * PX, back + 0.05)], 0.02, m["chrome"], part=part)
+
+
+def accessible_wc(m):
+    toilet_pan(m, "accessible_wc", accessible=True)
+
+
+def wash_basin(m):
+    """Wall-hung basin with a pedestal shroud, mixer tap, a mirror above and a soap dispenser."""
+    part = "wash_basin"
+    w, d = 1.0, 0.9
+    back = -d / 2
+    lathe(f"{part}Bowl", [(0.0, -0.06), (0.7, -0.06), (0.95, -0.02), (1.0, 0.0), (1.0, 0.04), (0.0, 0.04)], m["ceramic"], loc=P(0, 22 * PX, back + 0.26), sx=w * 0.42, sy=d * 0.42, seg=24, part=part)
+    lathe(f"{part}Water", [(0.0, 0.0), (0.75, 0.0), (0.75, 0.002), (0.0, 0.002)], m["steel"], loc=P(0, 22 * PX + 0.042, back + 0.28), sx=w * 0.3, sy=d * 0.3, seg=20, part=part)
+    lathe(f"{part}Shroud", [(0.0, 0.0), (1.0, 0.0), (0.8, 1.0), (0.0, 1.0)], m["ceramic"], loc=P(0, 10 * PX, back + 0.1), sx=0.07, sy=0.07, seg=14, part=part)
+    tube(f"{part}Tap", [P(0, 23 * PX, back + 0.06), P(0, 27 * PX, back + 0.06), P(0, 26.5 * PX, back + 0.16)], 0.018, m["chrome"], sides=2, part=part)
+    cube(f"{part}MirrorFrame", P(0, 40 * PX, back + 0.012), S(w * 0.85, 16 * PX, 0.02), m["frame"], part=part, bevel=0.006)
+    cube(f"{part}Mirror", P(0, 40 * PX, back + 0.024), S(w * 0.78, 14.5 * PX, 0.006), mat("Mirror", "#DDEBF2", 0.05, metal=0.3), part=part, smooth=False)
+    cube(f"{part}Soap", P(w / 2 - 0.02, 31 * PX, back + 0.04), S(0.08, 6 * PX, 0.06), m["white"], part=part, bevel=0.012)
+
+
+def hand_dryer(m):
+    """Wall hand dryer: a rounded casing with a dark blade slot and a green ready light."""
+    part = "hand_dryer"
+    cube(f"{part}Case", P(0, 38 * PX, -0.06), S(0.28, 8 * PX, 0.14), m["lam"], part=part, bevel=0.035, bevel_segments=3)
+    cube(f"{part}Slot", P(0, 34.5 * PX, 0.005), S(0.2, PX, 0.03), m["black"], part=part, smooth=False)
+    sphere(f"{part}Light", P(0.08, 40 * PX, 0.012), 0.012, m["led"], part=part)
+
+
 def build():
     m = _mats()
     visitor_chair(m)
@@ -621,3 +739,11 @@ def build():
     endoscopy_stack(m)
     lead_screen(m)
     plaster_trolley(m)
+    ctg_monitor(m)
+    resuscitaire(m)
+    baby_changing_unit(m)
+    breast_pump(m)
+    toilet_pan(m)
+    accessible_wc(m)
+    wash_basin(m)
+    hand_dryer(m)
