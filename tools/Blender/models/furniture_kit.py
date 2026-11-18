@@ -370,6 +370,113 @@ def oxygen_cylinder(m):
     tube(f"{part}Handle", [P(-0.06, 0.06 + body + 0.08, 0), P(-0.06, 0.06 + body + 0.2, 0), P(0.06, 0.06 + body + 0.2, 0), P(0.06, 0.06 + body + 0.1, 0)], 0.012, m["black"], part=part)
 
 
+# ------------------------------------------------------------------ counters (visitors' side +z, staff side -z)
+
+def _counter(m, part, w, d, h, worktop, screens, bags=0):
+    """A desk-height counter: recessed plinth, wood-panelled front, staff worktop with computers facing
+    the staff side, and (when the worktop is lower) a raised ledge over the front for visitors."""
+    cube(f"{part}Plinth", P(0, 0.05, 0), S(w - 0.04, 0.1, d - 0.06), m["plinth"], part=part)
+    body = worktop - 0.1 - 0.05
+    cube(f"{part}Body", P(0, 0.1 + body / 2, 0), S(w, body, d), m["lam_dark"], part=part, bevel=0.01)
+    cube(f"{part}Worktop", P(0, worktop - 0.025, 0), S(w + 0.06, 0.05, d + 0.06), m["lam_light"], part=part, bevel=0.012)
+    if worktop < h - 0.01:
+        cube(f"{part}Upstand", P(0, (worktop + h - 2 * PX) / 2, d / 2 - 0.09), S(w, h - 2 * PX - worktop, 0.18), m["lam"], part=part, bevel=0.008)
+        cube(f"{part}Ledge", P(0, h - PX, d / 2 - 0.1), S(w + 0.08, 2 * PX, 0.3), m["wood"], part=part, bevel=0.012)
+    # The front: a light wood panel with a dark kick line, and a lower accessible section at one end.
+    cube(f"{part}FrontPanel", P(0, 0.1 + (h - 0.1) * 0.5, d / 2 + 0.006), S(w * 0.92, (h - 0.1) * 0.78, 0.012), m["wood"], part=part, bevel=0.004)
+    cube(f"{part}Kick", P(0, 0.115, d / 2 + 0.008), S(w * 0.92, 0.03, 0.012), m["black"], part=part)
+    for i in range(screens):
+        x = -w / 2 + (i + 0.5) * w / screens
+        cube(f"{part}MonBase{i}", P(x, worktop + 0.012, -0.05), S(0.22, 0.02, 0.16), m["black"], part=part, bevel=0.006)
+        tube(f"{part}MonNeck{i}", [P(x, worktop + 0.02, -0.02), P(x, worktop + 6 * PX, -0.02)], 0.02, m["black"], part=part)
+        mon = cube(f"{part}Monitor{i}", P(x, worktop + 8.5 * PX, -0.07), S(0.58, 8 * PX, 0.035), m["black"], part=part, bevel=0.01)
+        cube(f"{part}Picture{i}", P(x, worktop + 8.5 * PX, -0.09), S(0.53, 7 * PX, 0.004), m["screen"], part=part, smooth=False)
+        cube(f"{part}Bar{i}", P(x, worktop + 9.5 * PX, -0.093), S(0.4, 0.6 * PX, 0.003), m["glow"], part=part, smooth=False)
+        cube(f"{part}Keyboard{i}", P(x, worktop + 0.012, -0.3), S(0.45, 0.02, 0.14), m["black"], part=part, bevel=0.006)
+        cube(f"{part}Mouse{i}", P(x + 0.32, worktop + 0.015, -0.3), S(0.06, 0.03, 0.1), m["black"], part=part, bevel=0.012)
+    for i in range(bags):
+        x = w / 2 - 0.25 - i * 0.22
+        cube(f"{part}Bag{i}", P(x, h + 2.5 * PX, 0.1), S(0.16, 5 * PX, 0.12), m["paper"], part=part, bevel=0.01)
+        cube(f"{part}BagLabel{i}", P(x, h + 2 * PX, 0.162), S(0.06, 1.6 * PX, 0.004), m["green"], part=part, smooth=False)
+
+
+def reception_desk(m):
+    _counter(m, "reception_desk", 5.0, 1.2, 1.1 * M, 1.1 * M - 9 * PX, 3)
+
+
+def station_counter(m):
+    _counter(m, "station_counter", 2.0, 1.0, 0.9 * M, 0.9 * M - 5 * PX, 1)
+    # A phone and the ward's files.
+    part = "station_counter"
+    top = 0.9 * M - 5 * PX
+    cube(f"{part}Phone", P(0.7, top + 0.03, -0.1), S(0.2, 0.05, 0.16), m["black"], part=part, bevel=0.015)
+    for i, c in enumerate(("box_blue", "box_red", "box_yellow")):
+        cube(f"{part}File{i}", P(-0.75 + i * 0.07, top + 0.13, -0.3), S(0.05, 0.24, 0.3), m[c], part=part, bevel=0.005)
+
+
+def pharmacy_counter(m):
+    _counter(m, "pharmacy_counter", 3.0, 1.2, 0.9 * M, 0.9 * M, 2, bags=3)
+
+
+# ------------------------------------------------------------------ critical care equipment
+
+def ventilator(m):
+    """ICU ventilator on a five-castor pole stand: the unit, a tilted touch screen, humidifier and a blue breathing circuit."""
+    part = "ventilator"
+    h = 1.3 * M
+    for i in range(5):
+        a = i * math.tau / 5
+        x, z = math.sin(a) * 0.26, math.cos(a) * 0.26
+        tube(f"{part}Leg{i}", [P(0, 0.07, 0), P(x, 0.06, z)], 0.025, m["frame"], part=part)
+        cyl(f"{part}Wheel{i}", P(x, 0.035, z), 0.035, 0.03, m["rubber"], rot=(0, math.pi / 2, a), verts=10, part=part)
+    tube(f"{part}Pole", [P(0, 0.06, 0), P(0, h * 0.45, 0)], 0.04, m["chrome"], part=part)
+    cube(f"{part}Unit", P(0, h * 0.42 + h * 0.15, 0), S(0.5, h * 0.3, 0.42), m["white"], part=part, bevel=0.03, bevel_segments=2)
+    cube(f"{part}Face", P(0, h * 0.57, 0.212), S(0.44, h * 0.18, 0.01), m["lam"], part=part, bevel=0.004)
+    for i in range(3):
+        cyl(f"{part}Port{i}", P(-0.14 + i * 0.14, h * 0.5, 0.22), 0.025, 0.04, m["chrome"], rot=(math.pi / 2, 0, 0), verts=10, part=part)
+    scr = cube(f"{part}Screen", P(0, h * 0.86, 0.05), S(0.52, h * 0.24, 0.05), m["black"], part=part, bevel=0.015)
+    scr.rotation_euler = (-0.25, 0, 0)
+    pic = cube(f"{part}Picture", P(0, h * 0.86 + 0.006, 0.078), S(0.46, h * 0.2, 0.004), m["screen"], part=part, smooth=False)
+    pic.rotation_euler = (-0.25, 0, 0)
+    for i, y in enumerate((0.9, 0.84, 0.78)):
+        wave = cube(f"{part}Wave{i}", P(-0.03, h * y + 0.006, 0.081 + (0.9 - y) * 0.24), S(0.34, 0.012, 0.004), m["glow" if i != 1 else "led"], part=part, smooth=False)
+        wave.rotation_euler = (-0.25, 0, 0)
+    cyl(f"{part}Humidifier", P(0.3, h * 0.5, 0.12), 0.07, 5 * PX, m["jug"], verts=14, part=part)
+    tube(f"{part}Circuit", [P(0.22, h * 0.65, 0.2), P(0.4, h * 0.7, 0.4), P(0.3, h * 0.8, 0.7), P(0.05, h * 0.72, 0.9)], 0.035, mat("Tubing_plastic", "#5C9BD6", 0.4), sides=2, part=part)
+
+
+def anaesthetic_machine(m):
+    """Anaesthetic machine: cabinet of drawers on castors, worktop, gas tower with three vaporisers,
+    the bellows, two cylinders behind and the monitor on top (where the game draws its live picture)."""
+    part = "anaesthetic_machine"
+    w, d, h = 1.4, 1.2, 1.5 * M
+    for i, (x, z) in enumerate(((-1, -1), (1, -1), (1, 1), (-1, 1))):
+        px, pz = x * (w / 2 - 0.08), z * (d / 2 - 0.08)
+        cyl(f"{part}Wheel{i}", P(px, 0.045, pz), 0.045, 0.035, m["rubber"], rot=(0, math.pi / 2, 0), verts=12, part=part)
+        cyl(f"{part}Fork{i}", P(px, 0.09, pz), 0.02, 0.05, m["chrome"], verts=8, part=part)
+    base = 4 * PX
+    cube(f"{part}Cabinet", P(0, base + h * 0.225, 0), S(w, h * 0.45, d), m["lam"], part=part, bevel=0.02)
+    for i in range(3):
+        y = base + h * 0.45 * (i + 0.5) / 3
+        cube(f"{part}Drawer{i}", P(0, y, d / 2 + 0.006), S(w - 0.1, h * 0.45 / 3 - 0.03, 0.012), m["lam_light"], part=part, bevel=0.005)
+        cube(f"{part}DrawerPull{i}", P(0, y + 0.03, d / 2 + 0.016), S(0.3, 0.02, 0.012), m["chrome"], part=part, bevel=0.004)
+    top = base + h * 0.45
+    cube(f"{part}Worktop", P(0, top + PX, 0.05), S(w + 0.04, 2 * PX, d + 0.06), m["white"], part=part, bevel=0.01)
+    cube(f"{part}Tower", P(0, top + 2 * PX + h * 0.15, -0.08), S(w * 0.85, h * 0.3, d * 0.6), m["lam_light"], part=part, bevel=0.02)
+    for i, c in enumerate(("box_purple", "box_yellow", "box_blue")):
+        cube(f"{part}Vaporiser{i}", P(-0.2 + i * 0.14, top + 2 * PX + 7 * PX, 0.24), S(0.1, 6 * PX, 0.1), m[c], part=part, bevel=0.012)
+    cyl(f"{part}Bellows", P(0.27, top + 2 * PX + 4 * PX + 2 * PX, 0.2), 0.07, 8 * PX, m["jug"], verts=14, part=part)
+    for x in (-0.15, 0.15):
+        cyl(f"{part}Cylinder{x}", P(x, h * 0.55, -d / 2 - 0.08), 0.08, h * 0.5, m["white"], verts=14, part=part)
+        cyl(f"{part}Valve{x}", P(x, h * 0.81, -d / 2 - 0.08), 0.05, 2 * PX, m["chrome"], verts=10, part=part)
+    # The monitor: Life3D lays its live picture over this screen's face.
+    arm = h * 0.93
+    tube(f"{part}MonArm", [P(0, top + 2 * PX + h * 0.3, -0.1), P(0, arm - h * 0.09, -0.08)], 0.025, m["frame"], part=part)
+    scr = cube(f"{part}Monitor", P(0, arm, -0.05), S(w * 0.8, h * 0.18, 0.06), m["black"], part=part, bevel=0.015)
+    scr.rotation_euler = (-0.12, 0, 0)
+    tube(f"{part}Circuit", [P(0.3, h * 0.55, 0.3), P(0.42, h * 0.53, 0.45), P(0.5, h * 0.5, 0.6)], 0.03, mat("Tubing_plastic", "#5C9BD6", 0.4), sides=2, part=part)
+
+
 def build():
     m = _mats()
     visitor_chair(m)
@@ -387,3 +494,8 @@ def build():
     medicine_shelves(m)
     instrument_trolley(m)
     oxygen_cylinder(m)
+    reception_desk(m)
+    station_counter(m)
+    pharmacy_counter(m)
+    ventilator(m)
+    anaesthetic_machine(m)

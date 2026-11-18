@@ -97,6 +97,11 @@ public static partial class Furnish3D
         "medicine_shelves" => new Vector3(3.0f, Kit3D.M(2.0), 0.8f),
         "instrument_trolley" => new Vector3(2.0f, Kit3D.M(0.9), 1.0f),
         "oxygen_cylinder" => new Vector3(0.5f, Kit3D.M(1.2), 0.5f),
+        "reception_desk" => new Vector3(5.0f, Kit3D.M(1.1), 1.2f),
+        "station_counter" => new Vector3(2.0f, Kit3D.M(0.9), 1.0f),
+        "pharmacy_counter" => new Vector3(3.0f, Kit3D.M(0.9), 1.2f),
+        "ventilator" => new Vector3(1.0f, Kit3D.M(1.3), 1.0f),
+        "anaesthetic_machine" => new Vector3(1.4f, Kit3D.M(1.5), 1.2f),
         _ => null,
     };
 
