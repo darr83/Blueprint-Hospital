@@ -123,6 +123,17 @@ public static partial class Furnish3D
         "cleaning_shelves" => new Vector3(1.8f, Kit3D.M(1.8), 0.8f),
         "broom_rack" => new Vector3(1.2f, Kit3D.M(1.6), 0.3f),
         "mop_bucket" => new Vector3(0.9f, Kit3D.M(0.9), 0.7f),
+        "c_arm" => new Vector3(2.4f, Kit3D.M(2.1), 2.0f),
+        "exercise_mat" => new Vector3(2.0f, Kit3D.M(0.05), 4.0f),
+        "toilet_cubicle" => new Vector3(1.9f, Kit3D.M(1.9), 3.0f),
+        _ => null,
+    };
+
+    /// <summary>Long pieces made lengthways along z (parallel bars, practice stairs), and the size each was made at.</summary>
+    private static Vector3? LongKit(string id) => id switch
+    {
+        "parallel_bars" => new Vector3(1.6f, Kit3D.M(0.9), 6.0f),
+        "practice_stairs" => new Vector3(2.0f, Kit3D.M(0.8), 3.6f),
         _ => null,
     };
 
@@ -154,6 +165,18 @@ public static partial class Furnish3D
     /// <summary>Builds a piece of furniture by id; false for ids built elsewhere (beds, chairs, cots...).</summary>
     public static bool Build(MeshBatch b, MeshBatch glass, string id, float w, float d, float h, Color colour, int seed)
     {
+        if (LongKit(id) is { } along)
+        {
+            // Made lengthways along z; turned a quarter when the piece is placed the other way.
+            var alongZ = d >= w;
+            var size = alongZ ? new Vector3(w, h, d) : new Vector3(d, h, w);
+            var turn = alongZ ? Basis.Identity : new Basis(Vector3.Up, Mathf.Pi / 2);
+            if (b.Model("furniture_kit", id, new Transform3D(turn * Basis.FromScale(size / along), Vector3.Zero), colour))
+            {
+                return true;
+            }
+        }
+
         if (KitMade(id) is { } made && b.Kit("furniture_kit", KitPart(id, seed), made, new Vector3(w, h, d), colour))
         {
             if (GlassOf(KitPart(id, seed)) is { } pane)
