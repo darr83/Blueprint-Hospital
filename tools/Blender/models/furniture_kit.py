@@ -8,7 +8,7 @@ import math
 
 from bhkit import cube, cyl, lathe, mat, sphere, tube
 
-BUDGET = 60000
+BUDGET = 75000
 
 PX = 1 / 39.191836
 M = 28 * PX
@@ -946,6 +946,124 @@ def mop_bucket(m):
     tube(f"{part}MopHandle", [P(0, 2 * PX + tub + 5 * PX, wz), P(0.03, h, -d / 2 + 0.01)], 0.018, m["box_blue"], part=part)
 
 
+# ------------------------------------------------------------------ imaging, physio, cubicles
+
+def c_arm(m):
+    """Mobile C-arm: a wheeled base unit with handles and a monitor, the column and the big C with the X-ray tube below and the detector above."""
+    part = "c_arm"
+    w, d, h = 2.4, 2.0, 2.1 * M
+    body = mat("Tint_plastic", "#FFFFFF", 0.4)
+    _castors(m, part, w * 0.55, d * 0.75)
+    bz = -d * 0.22
+    cube(f"{part}Base", P(0, 4 * PX + h * 0.18, bz), S(w * 0.55, h * 0.36, d * 0.5), body, part=part, bevel=0.05, bevel_segments=2)
+    cube(f"{part}Stripe", P(0, 4 * PX + h * 0.3, bz + d * 0.25 + 0.004), S(w * 0.5, 1.2 * PX, 0.008), mat("Stripe_plastic", "#1E88E5", 0.4), part=part, smooth=False)
+    tube(f"{part}Handle", [P(-w * 0.22, 4 * PX + h * 0.36, bz - d * 0.25), P(-w * 0.22, 4 * PX + h * 0.4, bz - d * 0.3), P(w * 0.22, 4 * PX + h * 0.4, bz - d * 0.3), P(w * 0.22, 4 * PX + h * 0.36, bz - d * 0.25)], 0.02, m["chrome"], part=part)
+    cube(f"{part}Column", P(0, 4 * PX + h * 0.36 + h * 0.1, bz + 0.05), S(0.3, h * 0.2, 0.3), body, part=part, bevel=0.03)
+    cube(f"{part}Arm", P(0, h * 0.58, bz + 0.25), S(0.24, 0.2, 0.6), body, part=part, bevel=0.03)
+    cy, cz, r = h * 0.55, d * 0.12, h * 0.38
+    pts = []
+    for i in range(17):
+        a = -math.pi * 0.55 + i * math.pi * 1.1 / 16
+        pts.append(P(0, cy + math.sin(a) * r, cz + math.cos(a) * r * 0.9))
+    tube(f"{part}C", pts, 0.075, body, sides=3, part=part)
+    top = (cy + math.sin(math.pi * 0.55) * r, cz + math.cos(math.pi * 0.55) * r * 0.9)
+    bot = (cy - r, cz + math.cos(-math.pi * 0.55) * r * 0.9)
+    cyl(f"{part}Detector", P(0, top[0] - 2 * PX, top[1]), 0.24, 5 * PX, body, verts=28, part=part)
+    cyl(f"{part}DetectorFace", P(0, top[0] - 4.6 * PX, top[1]), 0.21, 0.01, mat("Detector", "#37474F", 0.5), verts=28, part=part)
+    cube(f"{part}Tube", P(0, bot[0] + 1 * PX, bot[1]), S(0.3, 6 * PX, 0.3), body, part=part, bevel=0.04, bevel_segments=2)
+    cube(f"{part}Collimator", P(0, bot[0] + 4.5 * PX, bot[1]), S(0.18, 1.5 * PX, 0.18), mat("Collimator", "#5C6670", 0.5), part=part, bevel=0.01)
+    # A monitor on the base for the radiographer.
+    _screen(m, part, (0, 4 * PX + h * 0.36 + 5 * PX, bz - 0.1), 0.42, 7 * PX, tilt=-0.2)
+    cube(f"{part}Trefoil", P(w * 0.18, 4 * PX + h * 0.2, bz + d * 0.25 + 0.006), S(0.1, 3.5 * PX, 0.006), m["box_yellow"], part=part, smooth=False)
+
+
+def parallel_bars(m):
+    """Physio parallel bars, made along game z: a wooden walking platform with a ramp at each end and two adjustable chrome rails."""
+    part = "parallel_bars"
+    w, d, h = 1.6, 6.0, 0.9 * M
+    wood = mat("Oak_wood", "#B98A55", 0.55)
+    cube(f"{part}Deck", P(0, 1.5 * PX, 0), S(w, 3 * PX, d - 0.5), wood, part=part, bevel=0.015)
+    cube(f"{part}Tread", P(0, 3.05 * PX, 0), S(w - 0.5, 0.1 * PX, d - 0.6), mat("Tread_rubber", "#6F8C9B", 0.85), part=part, smooth=False)
+    for e in (-1, 1):
+        ramp = cube(f"{part}Ramp{e}", P(0, 0.9 * PX, e * (d / 2 - 0.2)), S(w * 0.9, 1.2 * PX, 0.5), wood, part=part, bevel=0.01)
+        ramp.rotation_euler = (e * 0.12, 0, 0)
+    rail = mat("TintDark_metal", "#CCCCCC", 0.4, metal=0.2)
+    for s in (-1, 1):
+        x = s * (w / 2 - 0.1)
+        for i in range(5):
+            z = -d / 2 + 0.35 + i * (d - 0.7) / 4
+            tube(f"{part}Post{s}{i}", [P(x, 3 * PX, z), P(x, h - 1.5 * PX, z)], 0.03, m["chrome"], part=part)
+            cyl(f"{part}Collar{s}{i}", P(x, h * 0.62, z), 0.04, 1.5 * PX, m["black"], verts=10, part=part)
+            cube(f"{part}Plate{s}{i}", P(x, 3.2 * PX, z), S(0.14, 0.4 * PX, 0.14), m["chrome"], part=part, bevel=0.01)
+        tube(f"{part}Rail{s}", [P(x, h - 1.5 * PX, -d / 2 + 0.3), P(x, h, -d / 2 + 0.38), P(x, h, d / 2 - 0.38), P(x, h - 1.5 * PX, d / 2 - 0.3)], 0.04, rail, sides=2, part=part)
+
+
+def exercise_mat(m):
+    """A firm physio mat: a padded slab with rounded edges, a stitched border and a folded towel."""
+    part = "exercise_mat"
+    w, d = 2.0, 4.0
+    cube(f"{part}Pad", P(0, 1 * PX, 0), S(w, 2 * PX, d), mat("Tint_rubber", "#FFFFFF", 0.7), part=part, bevel=0.025, bevel_segments=2)
+    cube(f"{part}Border", P(0, 2.02 * PX, 0), S(w - 0.18, 0.05 * PX, d - 0.18), mat("TintLight_fabric", "#FFFFFF", 0.9), part=part, smooth=False)
+    cube(f"{part}Inner", P(0, 2.04 * PX, 0), S(w - 0.24, 0.05 * PX, d - 0.24), mat("Tint_rubber", "#FFFFFF", 0.7), part=part, smooth=False)
+    cube(f"{part}Towel", P(0.3, 2.6 * PX, -d / 2 + 0.4), S(0.5, 1 * PX, 0.3), mat("Towel_fabric", "#F4F1EA", 0.95), part=part, bevel=0.03, bevel_segments=2)
+
+
+def practice_stairs(m):
+    """Physio practice stairs, made along game z: four steps up each side to a small platform, non-slip nosings and handrails both sides."""
+    part = "practice_stairs"
+    w, d, h = 2.0, 3.6, 0.8 * M
+    steps = 4
+    run = d * 0.3 / steps
+    inner = w - 0.2
+    for i in range(steps):
+        rise = h * (i + 1) / steps
+        for e in (-1, 1):
+            z = e * (d / 2 - run * (i + 0.5))
+            cube(f"{part}Step{e}{i}", P(0, rise / 2, z), S(inner, rise, run), mat("Tint_wood", "#FFFFFF", 0.55), part=part, bevel=0.008)
+            cube(f"{part}Nose{e}{i}", P(0, rise + 0.004, z + e * (run / 2 - 0.03)), S(inner - 0.02, 0.008, 0.05), mat("Nosing_rubber", "#F2C230", 0.7), part=part, smooth=False)
+    cube(f"{part}Top", P(0, h / 2, 0), S(inner, h, d * 0.4), mat("TintLight_wood", "#FFFFFF", 0.55), part=part, bevel=0.008)
+    cube(f"{part}TopTread", P(0, h + 0.004, 0), S(inner - 0.1, 0.008, d * 0.38), mat("Tread_rubber", "#6F8C9B", 0.85), part=part, smooth=False)
+    rail = mat("TintDark_metal", "#CCCCCC", 0.4, metal=0.2)
+    for s in (-1, 1):
+        x = s * (w / 2 - 0.05)
+        for z in (-d / 2 + 0.05, -0.2 * d, 0.2 * d, d / 2 - 0.05):
+            base = h if abs(z) < d * 0.25 else 0.0
+            tube(f"{part}Post{s}{z:.2f}", [P(x, base, z), P(x, base + 18 * PX, z)], 0.022, m["chrome"], part=part)
+        tube(f"{part}Rail{s}", [P(x, 18 * PX, -d / 2 + 0.05), P(x, h + 18 * PX, -0.2 * d), P(x, h + 18 * PX, 0.2 * d), P(x, 18 * PX, d / 2 - 0.05)], 0.032, rail, sides=1, part=part)
+
+
+def toilet_cubicle(m):
+    """A toilet cubicle, open at the top: laminate side panels on chrome feet, a front pilaster, the door ajar with a lock showing green, a head rail and a coat hook."""
+    part = "toilet_cubicle"
+    w, d, h = 1.9, 3.0, 1.9 * M
+    foot = 4 * PX
+    panel = mat("Tint_laminate", "#FFFFFF", 0.4)
+    for s in (-1, 1):
+        x = s * (w / 2 - 0.02)
+        cube(f"{part}Side{s}", P(x, foot + (h - foot) / 2, 0), S(0.04, h - foot, d), panel, part=part, bevel=0.01)
+        for z in (-d / 2 + 0.08, d / 2 - 0.08):
+            cyl(f"{part}Foot{s}{z:.1f}", P(x, foot / 2, z), 0.025, foot, m["chrome"], verts=10, part=part)
+    fz = d / 2 - 0.02
+    cube(f"{part}Pilaster", P(-w / 2 + 0.1, foot + (h - foot) / 2, fz), S(0.16, h - foot, 0.04), panel, part=part, bevel=0.01)
+    door_w = w - 0.24
+    hinge_x = -w / 2 + 0.19
+    door = cube(f"{part}Door", P(hinge_x + door_w / 2 * math.cos(0.12), foot + 1 * PX + (h - foot - 2 * PX) / 2, fz + door_w / 2 * math.sin(0.12)), S(door_w, h - foot - 2 * PX, 0.035), mat("TintLight_laminate", "#FFFFFF", 0.4), part=part, bevel=0.01)
+    door.rotation_euler = (0, 0, -0.12)
+    for z in (h * 0.25, h * 0.75):
+        cube(f"{part}Hinge{z:.2f}", P(hinge_x, z, fz + 0.01), S(0.03, 3 * PX, 0.05), m["chrome"], part=part, bevel=0.005)
+    lx = hinge_x + (door_w - 0.12) * math.cos(0.12)
+    lz = fz + (door_w - 0.12) * math.sin(0.12) + 0.025
+    cube(f"{part}Lock", P(lx, h * 0.52, lz), S(0.07, 2 * PX, 0.02), m["chrome"], part=part, bevel=0.005)
+    cube(f"{part}Vacant", P(lx, h * 0.52 + 0.3 * PX, lz + 0.012), S(0.04, PX, 0.004), mat("Vacant", "#43A047", 0.4), part=part, smooth=False)
+    tube(f"{part}Pull", [P(lx - 0.02, h * 0.45, lz), P(lx - 0.02, h * 0.45, lz + 0.04), P(lx - 0.02, h * 0.58, lz + 0.04), P(lx - 0.02, h * 0.58, lz)], 0.01, m["chrome"], part=part)
+    tube(f"{part}HeadRail", [P(-w / 2, h + 0.5 * PX, fz), P(w / 2, h + 0.5 * PX, fz)], 0.025, m["chrome"], part=part)
+    for s in (-1, 1):
+        tube(f"{part}SideRail{s}", [P(s * (w / 2 - 0.02), h + 0.5 * PX, fz), P(s * (w / 2 - 0.02), h + 0.5 * PX, -d / 2)], 0.02, m["chrome"], part=part)
+    tube(f"{part}Hook", [P(w / 2 - 0.05, h * 0.8, -d / 2 + 0.4), P(w / 2 - 0.1, h * 0.8, -d / 2 + 0.4), P(w / 2 - 0.12, h * 0.84, -d / 2 + 0.4)], 0.012, m["chrome"], part=part)
+    cyl(f"{part}Roll", P(-w / 2 + 0.1, h * 0.38, -d / 2 + 0.75), 0.06, 0.11, m["paper"], rot=(0, math.pi / 2, 0), verts=14, part=part)
+    cube(f"{part}RollHolder", P(-w / 2 + 0.05, h * 0.38, -d / 2 + 0.75), S(0.03, 0.14, 0.18), m["chrome"], part=part, bevel=0.01)
+
+
 def build():
     m = _mats()
     visitor_chair(m)
@@ -991,3 +1109,8 @@ def build():
     cleaning_shelves(m)
     broom_rack(m)
     mop_bucket(m)
+    c_arm(m)
+    parallel_bars(m)
+    exercise_mat(m)
+    practice_stairs(m)
+    toilet_cubicle(m)
