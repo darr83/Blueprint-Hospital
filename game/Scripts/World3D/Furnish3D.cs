@@ -80,11 +80,44 @@ public static partial class Furnish3D
         b.Box(centre + (t * new Vector3(0, -h * 0.15f, 0.033f)), new Vector3(w * 0.7f, h * 0.05f, 0.005f), t, new Color("#8BE38F"));
     }
 
+    /// <summary>
+    /// The furniture modelled in Blender (tools/Blender/models/furniture_kit.py), and the size each was
+    /// made at (across, tall, deep in world units); null for pieces still built in code here.
+    /// </summary>
+    private static Vector3? KitMade(string id) => id switch
+    {
+        "bedside_locker" => new Vector3(0.9f, Kit3D.M(0.8), 0.9f),
+        "clinical_cupboard" => new Vector3(2.0f, Kit3D.M(1.1), 1.0f),
+        "office_desk" or "triage_desk" => new Vector3(2.0f, Kit3D.M(0.75), 1.6f),
+        "staff_table" => new Vector3(2.0f, Kit3D.M(0.7), 1.6f),
+        "hand_basin" => new Vector3(1.2f, Kit3D.M(0.9), 0.9f),
+        "plaster_sink" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "kitchenette" => new Vector3(3.0f, Kit3D.M(0.9), 1.2f),
+        "drug_fridge" => new Vector3(1.2f, Kit3D.M(1.8), 1.2f),
+        "medicine_shelves" => new Vector3(3.0f, Kit3D.M(2.0), 0.8f),
+        "instrument_trolley" => new Vector3(2.0f, Kit3D.M(0.9), 1.0f),
+        "oxygen_cylinder" => new Vector3(0.5f, Kit3D.M(1.2), 0.5f),
+        _ => null,
+    };
+
+    /// <summary>The chairs modelled in Blender, made at their game size.</summary>
+    private static bool KitChair(string id) => id is "visitor_chair" or "waiting_seat" or "staff_chair" or "lounge_chair";
+
     // ------------------------------------------------------------------ dispatch
 
     /// <summary>Builds a piece of furniture by id; false for ids built elsewhere (beds, chairs, cots...).</summary>
     public static bool Build(MeshBatch b, MeshBatch glass, string id, float w, float d, float h, Color colour, int seed)
     {
+        if (KitMade(id) is { } made && b.Kit("furniture_kit", id == "triage_desk" ? "office_desk" : id, made, new Vector3(w, h, d), colour))
+        {
+            if (id == "drug_fridge")
+            {
+                glass.Kit("furniture_kit", "drug_fridge_glass", made, new Vector3(w, h, d), new Color("#A9D3E8", 0.45f));
+            }
+
+            return true;
+        }
+
         switch (id)
         {
             case "office_desk":
@@ -554,6 +587,11 @@ public static partial class Furnish3D
     /// </summary>
     public static void Chair(MeshBatch b, string id, Color colour)
     {
+        if (KitChair(id) && b.Model("furniture_kit", id, Transform3D.Identity, colour))
+        {
+            return;
+        }
+
         var was = b.Kind;
         b.Kind = SurfaceKind.Fabric;
         try
