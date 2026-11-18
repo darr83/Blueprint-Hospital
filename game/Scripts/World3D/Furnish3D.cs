@@ -102,22 +102,63 @@ public static partial class Furnish3D
         "pharmacy_counter" => new Vector3(3.0f, Kit3D.M(0.9), 1.2f),
         "ventilator" => new Vector3(1.0f, Kit3D.M(1.3), 1.0f),
         "anaesthetic_machine" => new Vector3(1.4f, Kit3D.M(1.5), 1.2f),
+        "ultrasound_machine" => new Vector3(1.2f, Kit3D.M(1.4), 1.2f),
+        "eeg_machine" => new Vector3(1.2f, Kit3D.M(1.3), 1.0f),
+        "endoscopy_stack" => new Vector3(1.4f, Kit3D.M(1.7), 1.2f),
+        "lead_screen" => new Vector3(2.0f, Kit3D.M(1.9), 0.6f),
+        "plaster_trolley" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "ctg_monitor" => new Vector3(0.9f, Kit3D.M(1.3), 0.9f),
+        "resuscitaire" => new Vector3(1.6f, Kit3D.M(1.8), 1.4f),
+        "baby_changing_unit" => new Vector3(1.8f, Kit3D.M(0.9), 1.2f),
+        "breast_pump" => new Vector3(0.8f, Kit3D.M(1.0), 0.8f),
+        "toilet_pan" => new Vector3(0.8f, Kit3D.M(0.8), 1.4f),
+        "accessible_wc" => new Vector3(0.9f, Kit3D.M(0.8), 1.5f),
+        "wash_basin" => new Vector3(1.0f, Kit3D.M(0.85), 0.9f),
+        "hand_dryer" => new Vector3(0.6f, Kit3D.M(1.4), 0.5f),
+        "vending_machine" => new Vector3(1.8f, Kit3D.M(1.85), 1.6f),
+        "water_cooler" => new Vector3(0.8f, Kit3D.M(1.3), 0.8f),
+        "food_counter" => new Vector3(4.8f, Kit3D.M(1.0), 1.6f),
+        "cafe_table" => new Vector3(1.6f, Kit3D.M(0.75), 1.6f),
+        "cleaners_sink" => new Vector3(1.2f, Kit3D.M(0.9), 1.0f),
+        "cleaning_shelves" => new Vector3(1.8f, Kit3D.M(1.8), 0.8f),
+        "broom_rack" => new Vector3(1.2f, Kit3D.M(1.6), 0.3f),
+        "mop_bucket" => new Vector3(0.9f, Kit3D.M(0.9), 0.7f),
+        _ => null,
+    };
+
+    /// <summary>The see-through part of a Blender-made piece (its own part, drawn with the glass), and its colour.</summary>
+    private static Color? GlassOf(string part) => part switch
+    {
+        "drug_fridge" => new Color("#A9D3E8", 0.45f),
+        "vending_machine_0" or "vending_machine_1" => new Color("#CFE8F5", 0.25f),
+        "water_cooler" => new Color("#81D4FA", 0.6f),
+        "food_counter" => new Color("#DDEFFA", 0.35f),
+        "lead_screen" => new Color("#C8E6C9", 0.55f),
+        "breast_pump" => new Color("#FFFDE7", 0.7f),
         _ => null,
     };
 
     /// <summary>The chairs modelled in Blender, made at their game size.</summary>
-    private static bool KitChair(string id) => id is "visitor_chair" or "waiting_seat" or "staff_chair" or "lounge_chair";
+    private static bool KitChair(string id) => id is "visitor_chair" or "waiting_seat" or "staff_chair" or "lounge_chair" or "cafe_chair";
+
+    /// <summary>The kit part for an id: triage desks share the office desk, vending machines come in three kinds by seed.</summary>
+    private static string KitPart(string id, int seed) => id switch
+    {
+        "triage_desk" => "office_desk",
+        "vending_machine" => $"vending_machine_{((seed % 3) + 3) % 3}",
+        _ => id,
+    };
 
     // ------------------------------------------------------------------ dispatch
 
     /// <summary>Builds a piece of furniture by id; false for ids built elsewhere (beds, chairs, cots...).</summary>
     public static bool Build(MeshBatch b, MeshBatch glass, string id, float w, float d, float h, Color colour, int seed)
     {
-        if (KitMade(id) is { } made && b.Kit("furniture_kit", id == "triage_desk" ? "office_desk" : id, made, new Vector3(w, h, d), colour))
+        if (KitMade(id) is { } made && b.Kit("furniture_kit", KitPart(id, seed), made, new Vector3(w, h, d), colour))
         {
-            if (id == "drug_fridge")
+            if (GlassOf(KitPart(id, seed)) is { } pane)
             {
-                glass.Kit("furniture_kit", "drug_fridge_glass", made, new Vector3(w, h, d), new Color("#A9D3E8", 0.45f));
+                glass.Kit("furniture_kit", KitPart(id, seed) + "_glass", made, new Vector3(w, h, d), pane);
             }
 
             return true;
