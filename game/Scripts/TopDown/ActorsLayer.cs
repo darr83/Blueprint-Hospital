@@ -585,6 +585,24 @@ public partial class ActorsLayer : Node2D
                 break;
         }
 
+        // A clinic appointment: onto the couch for the examination, the clinician beside it (the 3D view's Clinic3D).
+        var clinic = agent switch
+        {
+            Outpatient seen => World3D.Clinic3D.For(seen, _sim, _world.Time),
+            StaffMember clinician => World3D.Clinic3D.For(clinician, _sim, _world.Time),
+            _ => null,
+        };
+        if (clinic is { OnCouch: true } && agent is Outpatient)
+        {
+            (x, y) = (clinic.CouchAt.X - (clinic.CouchFeet.X * 0.35), clinic.CouchAt.Y - (clinic.CouchFeet.Y * 0.35));
+            (facing, seated, snap) = (clinic.CouchFeet, false, true);
+        }
+        else if (clinic is { StaffAt: { } stand } && agent is StaffMember)
+        {
+            (x, y) = stand;
+            (facing, seated, snap) = (clinic.StaffFacing, false, true);
+        }
+
         if (seated)
         {
             facing = ChairArt.Direction(_world.SeatFacing(agent));
