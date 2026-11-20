@@ -423,6 +423,7 @@ function validate() {
         if (op.room && !["theatre", "cath_lab", "delivery_room"].includes(op.room)) err(K, c, "operation room", "must be theatre, cath lab or delivery room.");
         if (op.room === "delivery_room" && !c.maternity) err(K, c, "operation room", "only maternity illnesses can use the delivery room.");
         if (op.major && op.day_case) err(K, c, "operation", "can't be both major and a day case.");
+        if (op.urgency && !["immediate", "urgent", "soon"].includes(op.urgency)) err(K, c, "operation urgency", "must be immediate, urgent or soon.");
       }
     }
     if (c.maternity) {
@@ -789,7 +790,9 @@ function conditionForm(c) {
       numIn(c, o, "minutes", "Minutes in the room", { int: true, min: 10, max: 600 }),
       selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]].concat(c.maternity ? [["delivery_room", "Delivery room (a midwife-led birth)"]] : []), { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
       checkIn(c, o, "major", "Major (recovers on HDU first)"),
-      checkIn(c, o, "day_case", "Day case (home the same day)")));
+      checkIn(c, o, "day_case", "Day case (home the same day)"),
+      selectIn(c, o, "urgency", "How urgent", [["immediate", "Immediate (within 1 hour)"], ["urgent", "Urgent (within 6 hours)"], ["soon", "Soon (within 24 hours)"]], { emptyLabel: "Urgent (default)", emptyIsNone: true }),
+      numIn(c, o, "tariff", "Payment (£, 0 = standard £2,500)", { int: true, min: 0, max: 50000 })));
   } else if (op) {
     opCard = card("Operation", "Only used when the outcome is an operation.", h("button", { class: "danger small", onclick: () => { delete c.operation; touch(c); renderContent(); } }, "Remove operation details"));
   }

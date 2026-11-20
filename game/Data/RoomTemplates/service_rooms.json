@@ -106,6 +106,41 @@
     ]
   },
   {
+    "id": "anaesthetic_room",
+    "name": "Anaesthetic room",
+    "category": "Services",
+    "description": "Every operating theatre needs one. Build it against the theatre's wall: automatic doors join the two. The anaesthetist puts each patient to sleep here, then wheels them straight through onto the table, so the next patient can be got ready while the theatre is cleaned.",
+    "kind": "anaesthetic_room",
+    "department": "theatres",
+    "layout": "equipment",
+    "sizes": [
+      {
+        "name": "Standard",
+        "width_m": 3.5,
+        "length_m": 4
+      },
+      {
+        "name": "Large",
+        "width_m": 4.5,
+        "length_m": 4.5
+      }
+    ],
+    "min_width_m": 3,
+    "min_length_m": 3.5,
+    "max_width_m": 6,
+    "max_length_m": 8,
+    "door_width_m": 1.5,
+    "base_cost": 6000,
+    "cost_per_square_metre": 1000,
+    "staffing": "No staff of its own: the theatre's anaesthetist works here. Must share a wall with a theatre.",
+    "furniture": [
+      "obs_monitor",
+      "drip_stand",
+      "clinical_cupboard",
+      "hand_basin"
+    ]
+  },
+  {
     "id": "pharmacy",
     "name": "Pharmacy",
     "category": "Services",

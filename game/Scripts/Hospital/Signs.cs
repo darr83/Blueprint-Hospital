@@ -63,6 +63,7 @@ public static class Signs
         CareSpaceKind.XRay or CareSpaceKind.PlasterRoom => Pictogram.Bone,
         CareSpaceKind.CT => Pictogram.Radiation,
         CareSpaceKind.Theatre => Pictogram.Scalpel,
+        CareSpaceKind.AnaestheticRoom => Pictogram.Monitor,
         CareSpaceKind.Pharmacy => Pictogram.Pill,
         CareSpaceKind.Clinic => space.TemplateId switch
         {

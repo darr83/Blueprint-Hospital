@@ -27,14 +27,14 @@ public class ServiceTests
         Build(h.Sim.ExtendBuilding(new GridRect(B.X - 30, B.Y, 30, 34)), "extension");
         Build(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 30, B.Y + 10, 34, 6), WallSide.South)), "corridor");
         var x = B.X - 30;
-        foreach (var (template, w, d) in north)
+        foreach (var (template, w, d) in north.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 10 - d, w, d))), template);
             x += w;
         }
 
         x = B.X - 30;
-        foreach (var (template, w, d) in south)
+        foreach (var (template, w, d) in south.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 16, w, d))), template);
             x += w;
@@ -114,7 +114,7 @@ public class ServiceTests
     [Fact]
     public void Appendicitis_goes_to_theatre_then_recovers_on_a_ward()
     {
-        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("surgical_ward", 16, 10) }, "general_surgery");
+        var h = Wing(7, Array.Empty<(string, int, int)>(), new[] { ("operating_theatre", 12, 12), ("surgical_ward", 11, 10) }, "general_surgery");
         var theatre = h.Sim.Spaces.Single(s => s.Kind == CareSpaceKind.Theatre);
         var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
 
@@ -135,7 +135,7 @@ public class ServiceTests
         Assert.Contains("Laparoscopic appendicectomy performed by", journey);
         Assert.Equal(PatientStage.OnWard, patient.Stage);
         Assert.Equal(1, h.Sim.Stats.OperationsDone);
-        Assert.True(h.Sim.Today[MoneyCategory.Operations] == HospitalSimulation.OperationTariff);
+        Assert.Equal(h.Database.Conditions["acute_appendicitis"].Operation!.Tariff, h.Sim.Today[MoneyCategory.Operations]);
         Assert.Null(theatre.ReservedByStaffId);
     }
 

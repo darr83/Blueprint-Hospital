@@ -197,6 +197,8 @@
     ],
     "operation": {
       "name": "Hip hemiarthroplasty",
+      "urgency": "soon",
+      "tariff": 6800,
       "minutes": 90
     }
   },
@@ -519,6 +521,8 @@
     "disposition_note": "Orthopaedic team agree: tibial fracture needing a nail.",
     "operation": {
       "name": "Intramedullary nailing of the tibia",
+      "urgency": "urgent",
+      "tariff": 5900,
       "minutes": 120
     },
     "needs_physio": true,
@@ -625,6 +629,8 @@
     "disposition_note": "Orthopaedic team agree: infected knee needing a washout.",
     "operation": {
       "name": "Arthroscopic knee washout",
+      "urgency": "urgent",
+      "tariff": 3300,
       "minutes": 60
     },
     "length_of_stay_hours": [

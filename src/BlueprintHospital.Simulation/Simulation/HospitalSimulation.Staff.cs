@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
@@ -37,6 +38,11 @@ public sealed partial class HospitalSimulation
             Label = label,
             Detail = detail,
         };
+        if (kind == TaskKind.Surgery && OperationRoom(detail) == CareSpaceKind.Theatre)
+        {
+            BookSurgery(patient, detail);
+        }
+
         task.Priority = PriorityOf(task, patient);
         _tasks[task.Id] = task;
         return task;
@@ -122,6 +128,12 @@ public sealed partial class HospitalSimulation
                 {
                     // Planned lists wait behind every emergency, however long they have waited.
                     band = GreenRoutine - 160;
+                }
+
+                if (task.Kind == TaskKind.Surgery && patient.SurgeryUrgency == SurgeryUrgency.Immediate)
+                {
+                    // Life, limb or organ at risk: ahead of everything else in theatre.
+                    band = Math.Max(band, RedImmediate);
                 }
 
                 break;
@@ -431,6 +443,7 @@ public sealed partial class HospitalSimulation
         {
             TaskKind.Register => patient.Stage == PatientStage.WaitingToRegister && _receptionQueue.Count > 0 && _receptionQueue[0] == patient.Id,
             TaskKind.Triage => FreeTriageRoom() is not null && !patient.IsMoving,
+            TaskKind.Surgery when !ReadyForTheatre(patient) => false,
             // With every bay taken, the transfer crew come in and collect the patient from their cubicle,
             // so a full ambulance bay can't leave transfer patients (and their cubicles) stuck for good.
             TaskKind.EscortToTransfer => AmbulanceFor(patient) is { State: Transport.AmbulanceState.AtBay or Transport.AmbulanceState.WaitingForBay },
@@ -510,6 +523,7 @@ public sealed partial class HospitalSimulation
     {
         TaskKind.Register => QueueTile(0),
         TaskKind.Triage when task.SpaceId is { } id && FindSpace(id) is { } triage => triage.PatientSpot,
+        TaskKind.Surgery when task.Phase is SurgeryPhase.Waiting or SurgeryPhase.Anaesthetic && !task.Started && AnaestheticRoomFor(task) is { } anaesthetic => anaesthetic.PatientSpot,
         TaskKind.Imaging or TaskKind.Surgery or TaskKind.Procedure when task.SpaceId is { } id && FindSpace(id) is { IsServiceRoom: true } room => room.PatientSpot,
         _ => patient.PendingMove ?? patient.Destination ?? patient.Tile,
     };
@@ -546,6 +560,11 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        if (ProgressAnaesthetic(member, task, patient, dt))
+        {
+            return;
+        }
+
         if (!task.Started)
         {
             var staffSpot = StaffPositionFor(task, patient);
@@ -563,6 +582,7 @@ public sealed partial class HospitalSimulation
             task.Started = true;
             member.Activity = StaffActivity.Working;
             member.WorkRemainingSeconds = task.Minutes * 60 * member.DurationFactor * Random.Range(0.85, 1.15);
+            OperationStarted(task, patient);
         }
 
         member.WorkRemainingSeconds -= dt;

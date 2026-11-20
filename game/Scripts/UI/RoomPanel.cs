@@ -325,11 +325,16 @@ public partial class RoomPanel : PanelContainer
             return $"{waiting} clinic patients waiting\n[color=#5B6B79]On the desk[/color]  {(desk.Count > 0 ? string.Join(", ", desk) : "[color=#C4373D]no receptionist[/color]")}";
         }
 
-        if (room.Kind == CareSpaceKind.Theatre && !_sim.IsStaffed(room))
+        if (room.Kind == CareSpaceKind.Theatre && _sim.TheatreProblems(room) is { Count: > 0 } theatreProblems)
         {
-            var has = _sim.Staff.Where(s => s.BaseRoomId == room.Id).Select(s => s.Role).ToHashSet();
-            var missing = new[] { Simulation.Staff.StaffRole.Surgeon, Simulation.Staff.StaffRole.Anaesthetist }.Where(r => !has.Contains(r)).Select(r => $"a {Simulation.Staff.StaffGrades.RoleName(r)}");
-            return $"[color=#C4373D]Closed: needs {string.Join(" and ", missing)}[/color]";
+            return $"[color=#C4373D]Closed: needs {string.Join(" and ", theatreProblems)}[/color]";
+        }
+
+        if (room.Kind == CareSpaceKind.AnaestheticRoom)
+        {
+            return _sim.TheatreOf(room) is { } theatre
+                ? $"Joined to {theatre.Name} by automatic sliding doors"
+                : "[color=#C4373D]Not joined to a theatre: build it against a theatre wall[/color]";
         }
 
         var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => s.IsInBuilding && room.Rect.Contains(s.Tile));

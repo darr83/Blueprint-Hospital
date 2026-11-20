@@ -160,6 +160,7 @@ public static class RoomLayoutEngine
             SinkSpots = plan.Sinks,
             QueueTiles = plan.Queue,
             Furniture = plan.Items,
+            LaidOutFurniture = plan.Items,
             BuildCost = Cost(template, database, rect, plan.Items),
         };
 
@@ -184,7 +185,18 @@ public static class RoomLayoutEngine
 
         // Imaging rooms and theatres use their own table (the first item drawn as a bed).
         var table = template.Furniture.FirstOrDefault(i => plan.Database.Furniture.TryGetValue(i, out var d) && d.Style == FurnitureStyle.Bed) ?? "hospital_bed";
-        plan.AddWorld(table, bed.X, bed.Y, bed.W, bed.L);
+        if (template.Kind != CareSpaceKind.AnaestheticRoom)
+        {
+            plan.AddWorld(table, bed.X, bed.Y, bed.W, bed.L);
+        }
+        else
+        {
+            // No bed of its own: the patient stays on the trolley they came in on, and keep the space clear for it.
+            foreach (var t in new GridRect((int)Math.Floor(bed.X), (int)Math.Floor(bed.Y), (int)Math.Ceiling(bed.W), (int)Math.Ceiling(bed.L)).Tiles())
+            {
+                plan.Reserve(t);
+            }
+        }
 
         // A CT scanner's ring goes round the head end of the table.
         if (template.Furniture.Contains("ct_gantry"))

@@ -286,6 +286,7 @@
     "disposition_note": "Midwife and obstetrician agree: breech baby, for caesarean section.",
     "operation": {
       "name": "Caesarean section",
+      "urgency": "urgent",
       "minutes": 60
     },
     "length_of_stay_hours": [
@@ -395,6 +396,7 @@
     "disposition_note": "Obstetrician's review: severe pre-eclampsia. Blood pressure controlled; the baby needs delivering by caesarean section.",
     "operation": {
       "name": "Caesarean section for pre-eclampsia",
+      "urgency": "urgent",
       "minutes": 70
     },
     "length_of_stay_hours": [
@@ -501,6 +503,7 @@
     "disposition_note": "Obstetric emergency: placental abruption. Category 1 caesarean section.",
     "operation": {
       "name": "Emergency caesarean section",
+      "urgency": "immediate",
       "minutes": 45
     },
     "length_of_stay_hours": [
@@ -598,6 +601,7 @@
     "disposition_note": "Labour not progressing: for emergency caesarean section.",
     "operation": {
       "name": "Emergency caesarean section",
+      "urgency": "immediate",
       "minutes": 60
     },
     "length_of_stay_hours": [

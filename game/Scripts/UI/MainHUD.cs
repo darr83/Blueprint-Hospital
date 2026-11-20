@@ -101,6 +101,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The Stats screen: every figure for the last 24 hours, 7 days, 28 days and all time.</summary>
     public StatsPanel StatsScreen { get; } = new() { Name = "Stats", Visible = false };
 
+    /// <summary>The Surgery panel: the theatre board and the waiting list for operations.</summary>
+    public SurgeryPanel Surgery { get; } = new() { Name = "Surgery", Visible = false };
+
     /// <summary>The build bar along the bottom, shown in Build mode.</summary>
     public BuildBar Build { get; } = new() { Name = "BuildBar", Visible = false };
 
@@ -167,7 +170,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = false;
         RoomInfo.Close();
         Decorate.Close();
         ItemInfo.Close();
@@ -255,6 +258,18 @@ public partial class MainHUD : CanvasLayer
         if (show)
         {
             Rota.Rebuild();
+        }
+    }
+
+    /// <summary>Opens the Surgery panel on the theatre board, or closes it.</summary>
+    public void ToggleSurgery()
+    {
+        var show = !Surgery.Visible;
+        HideRightPanels();
+        Surgery.Visible = show;
+        if (show)
+        {
+            Surgery.ShowTab(waitingList: false);
         }
     }
 
@@ -355,6 +370,15 @@ public partial class MainHUD : CanvasLayer
         StatsScreen.OffsetBottom = -Gap;
         root.AddChild(StatsScreen);
 
+        // So is the Surgery panel.
+        Surgery.Initialise(sim);
+        Surgery.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        Surgery.OffsetLeft = NavWidth + Gap;
+        Surgery.OffsetTop = TopBarHeight + Gap;
+        Surgery.OffsetRight = -Gap;
+        Surgery.OffsetBottom = -Gap;
+        root.AddChild(Surgery);
+
         // The build bar and its pop-ups sit above the panels.
         Build.Initialise(sim, tool, buildMenu);
         root.AddChild(Build);
@@ -400,7 +424,7 @@ public partial class MainHUD : CanvasLayer
         // In Build mode everything docked to the bottom of the screen moves up above the build bar.
         var reserve = Build.Visible ? BuildBar.Reserve : 0;
         _left.OffsetBottom = -Gap - reserve;
-        foreach (var panel in RightPanels.Append(Rota).Append(StatsScreen).Where(p => p != ItemInfo))
+        foreach (var panel in RightPanels.Append(Rota).Append(StatsScreen).Append(Surgery).Where(p => p != ItemInfo))
         {
             panel.OffsetBottom = -Gap - reserve;
         }
@@ -638,6 +662,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
         column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, BlueprintHospital.Core.GameView.ThreeD ? "Be a doctor: play one of your doctors in first person (O)" : "Be a doctor: walk one of your doctors round the hospital yourself and do their work (O)"));
+        column.AddChild(NavButton("Surgery", NavIcon.Kind.Surgery, ToggleSurgery, "Surgery: the theatre board and who is waiting for an operation (U)"));
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
@@ -705,6 +730,7 @@ public partial class MainHUD : CanvasLayer
         Set("Patients", Roster.Visible && !_rosterShowsStaff);
         Set("Staff", Rota.Visible || (Roster.Visible && _rosterShowsStaff));
         Set("Doctor", Doctors.Visible);
+        Set("Surgery", Surgery.Visible);
         Set("Clinics", Clinics.Visible);
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);

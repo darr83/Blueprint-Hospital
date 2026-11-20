@@ -56,7 +56,7 @@ public static class RoomSigns
     public static DoorKind KindOf(CareSpace space) => space.Kind switch
     {
         _ when space.IsTreatmentSpace || space.IsWard => DoorKind.Double,
-        CareSpaceKind.Theatre or CareSpaceKind.CT or CareSpaceKind.XRay or CareSpaceKind.CathLab
+        CareSpaceKind.Theatre or CareSpaceKind.AnaestheticRoom or CareSpaceKind.CT or CareSpaceKind.XRay or CareSpaceKind.CathLab
             or CareSpaceKind.Endoscopy or CareSpaceKind.EndoscopyRecovery or CareSpaceKind.DeliveryRoom => DoorKind.Double,
         CareSpaceKind.Waiting or CareSpaceKind.Cafeteria or CareSpaceKind.VendingPoint or CareSpaceKind.OutpatientReception
             or CareSpaceKind.Lift => DoorKind.None,
