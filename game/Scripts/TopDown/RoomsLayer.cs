@@ -104,7 +104,7 @@ public partial class RoomsLayer : Node2D
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedSpot(space, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, Looks.WardBlanketFor(_sim, space, wardBed), true)
                         : null,
-                    _ => new BedSpot(space, space.PatientSpot, false, null, () => space.OccupantId, Looks.EdBlanket, false),
+                    _ => new BedSpot(space, space.PatientSpot, false, null, () => space.OccupantId, Looks.CubicleBlanket(_sim, space), false),
                 };
                 if (bed is not null)
                 {
@@ -151,6 +151,18 @@ public partial class RoomsLayer : Node2D
     /// <summary>How many bed-head service panels were drawn.</summary>
     public int BedHeadCount { get; private set; }
 
+    /// <summary>
+    /// Which way the head end (the chair back) of a parent's fold-out bed points, on the grid. The bed is drawn
+    /// facing its front (<see cref="FrontOf"/>) with the chair back at -y of its frame when it runs front to back,
+    /// otherwise at -x; a parent asleep on it lies with their head there.
+    /// </summary>
+    public static (double X, double Y) FoldOutHead(CareSpace ward, PlacedFurniture bed)
+    {
+        var front = FrontOf(ward, bed, "parent_bed");
+        var (across, deep) = front.X != 0 ? (bed.Length, bed.Width) : (bed.Width, bed.Length);
+        return deep >= across ? (-front.X, -front.Y) : (-front.Y, front.X);
+    }
+
     /// <summary>Which way a piece of furniture faces: the side people use it from.</summary>
     public static (int X, int Y) FrontOf(CareSpace space, PlacedFurniture item, string id)
     {
@@ -170,6 +182,13 @@ public partial class RoomsLayer : Node2D
         if (CafeArt.Draws(id))
         {
             return CafeArt.FrontOf(space, x, y, w, l);
+        }
+
+        // A parent's fold-out bed faces the aisle like the ward bed beside it, so its head is at the same end.
+        if (id == "parent_bed" && space.Beds.Count > 0)
+        {
+            var beside = space.Beds.MinBy(b => Math.Abs(b.PatientSpot.Y + 0.5 - (y + (l / 2))) + (Math.Abs(b.PatientSpot.X + 0.5 - (x + (w / 2))) * 0.1))!;
+            return beside.HeadSouth ? (0, -1) : (0, 1);
         }
 
         return FurnitureArt.FrontOf(space, item) switch

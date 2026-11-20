@@ -218,6 +218,11 @@ public sealed partial class HospitalSimulation
             needs.Add(new(ward.Name, ward.Id, carer, Math.Max(1, (ward.Beds.Count + perNurse - 1) / perNurse), Have(carer, ward.Id)));
             var doctor = children ? StaffRole.Paediatrician : unit == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
             needs.Add(new(ward.Name, ward.Id, doctor, 1, Have(doctor, ward.Id)));
+            if (children && unit == WardUnit.IntensiveCare)
+            {
+                // A children's ICU needs an anaesthetist as well as its paediatric doctor.
+                needs.Add(new(ward.Name, ward.Id, StaffRole.Anaesthetist, 1, Have(StaffRole.Anaesthetist, ward.Id)));
+            }
             if (unit != WardUnit.Neonatal)
             {
                 needs.Add(new(ward.Name, ward.Id, StaffRole.HealthcareAssistant, 1, Have(StaffRole.HealthcareAssistant, ward.Id)));

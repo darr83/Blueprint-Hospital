@@ -162,7 +162,12 @@ public class ProgressionTests
         }
 
         var reached = new List<LevelDefinition>();
-        h.Events.Subscribe<LevelReached>(e => reached.Add(e.Level));
+        var goalsOnArrival = new List<GoalProgress>();
+        h.Events.Subscribe<LevelReached>(e =>
+        {
+            reached.Add(e.Level);
+            goalsOnArrival.AddRange(h.Sim.Goals);
+        });
 
         h.RunFor(TimeSpan.FromDays(3));
         Assert.True(h.Sim.Level >= 2, "Still on level 1: " + string.Join("; ", h.Sim.Goals.Select(g => $"{g.Goal.Text}: {g.Detail}")));
@@ -170,7 +175,9 @@ public class ProgressionTests
         Assert.Equal(2, Assert.Single(reached).Number);
         Assert.Equal(h.Database.Levels[1].Grant, h.Sim.Today[MoneyCategory.Grants] + h.Sim.Accounts.Where(d => d != h.Sim.Today).Sum(d => d[MoneyCategory.Grants]));
         Assert.Contains(h.Sim.Notifications.Recent, n => n.Text.StartsWith("Level 2 reached", StringComparison.Ordinal));
-        Assert.All(h.Sim.Goals, g => Assert.False(g.Done));
+        // The new level's counts start afresh (a "keep it below" goal such as the average wait can be met straight away).
+        Assert.NotEmpty(goalsOnArrival);
+        Assert.All(goalsOnArrival.Where(g => g.Goal.Type == LevelGoalType.Count), g => Assert.False(g.Done, g.Detail));
     }
 
     [Fact]

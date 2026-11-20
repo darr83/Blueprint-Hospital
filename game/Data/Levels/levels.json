@@ -175,7 +175,7 @@
     "grant": 300000,
     "arrival_rate": 1.0,
     "departments": ["maternity", "paediatrics"],
-    "rooms": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "childrens_ward", "childrens_hdu"],
+    "rooms": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu"],
     "staff": ["midwife", "childrens_nurse", "paediatrician"],
     "grades": [],
     "features": ["maternity"],

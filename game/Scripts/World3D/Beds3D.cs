@@ -76,7 +76,7 @@ public partial class Beds3D : Node3D
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, Looks.WardBlanketFor(sim, space, wardBed), true)
                         : null,
-                    _ => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.EdBlanket, false),
+                    _ => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.CubicleBlanket(sim, space), false),
                 };
                 if (view is not null)
                 {

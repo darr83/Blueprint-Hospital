@@ -1,0 +1,16 @@
+[
+  {
+    "id": "red_eyes",
+    "name": "Red eyes",
+    "patient_description": "Both eyes have gone red, but there's no sticky discharge.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "not_using_arm",
+    "name": "Not using arm",
+    "patient_description": "They won't use their arm since it was pulled; they hold it still by their side.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  }
+]
