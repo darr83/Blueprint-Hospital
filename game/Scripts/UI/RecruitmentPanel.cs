@@ -8,18 +8,15 @@ using Godot;
 namespace BlueprintHospital.UI;
 
 /// <summary>
-/// Hiring. The recommended team for each place (a guide the player can ignore), then the latest
-/// candidates: each with their grade, skill, experience and pay, where they would work, and a Hire button.
-/// A new list of candidates, with at least one of every kind of staff, arrives every few game hours.
+/// Hiring: just the latest candidates, each with their grade, skill, experience and pay, where they
+/// would work, and a Hire button. A new list, with at least one of every kind of staff, arrives every
+/// few game hours. Who works where (and any gaps) lives on the Staff rota (T), not here.
 /// </summary>
 public partial class RecruitmentPanel : PanelContainer
 {
-    private readonly VBoxContainer _needs = new();
     private readonly VBoxContainer _candidates = new();
-    private readonly Label _needsSummary = UiStyle.Caption(string.Empty, 13);
     private readonly Label _candidatesNote = UiStyle.Caption(string.Empty, 13);
     private HospitalSimulation _sim = null!;
-    private string _needsSignature = string.Empty;
     private string _candidatesSignature = string.Empty;
     private double _refresh;
     private Button _hireTeam = null!;
@@ -57,21 +54,14 @@ public partial class RecruitmentPanel : PanelContainer
         scroll.AddChild(body);
         column.AddChild(scroll);
 
-        body.AddChild(HudWidgets.Section("Recommended team"));
-        _needsSummary.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        body.AddChild(_needsSummary);
-        _hireTeam = UiStyle.Button("Hire minimum team", HireTeam);
-        _hireTeam.TooltipText = "Fill every empty post in the recommended team with the cheapest candidate of that kind";
+        body.AddChild(HudWidgets.Section("New candidates"));
+        _candidatesNote.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        body.AddChild(_candidatesNote);
+        _hireTeam = UiStyle.SecondaryButton("Hire minimum team", HireTeam);
+        _hireTeam.TooltipText = "Fill every empty post in the recommended team with the cheapest candidate of that kind. See who works where on the Staff rota (T).";
         _hireTeam.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
         _hireTeam.FocusMode = FocusModeEnum.None;
         body.AddChild(_hireTeam);
-        _needs.AddThemeConstantOverride("separation", 4);
-        body.AddChild(_needs);
-
-        body.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) });
-        body.AddChild(HudWidgets.Section("Latest candidates"));
-        _candidatesNote.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        body.AddChild(_candidatesNote);
         _candidates.AddThemeConstantOverride("separation", 8);
         body.AddChild(_candidates);
     }
@@ -94,7 +84,9 @@ public partial class RecruitmentPanel : PanelContainer
     /// <summary>Rebuilds the lists straight away (after hiring, or when the panel opens).</summary>
     public void Refresh()
     {
-        RefreshNeeds();
+        var hireable = _sim.ShortagesHireable();
+        _hireTeam.Disabled = hireable == 0;
+        _hireTeam.Text = hireable == 0 ? "Hire minimum team" : $"Hire minimum team ({hireable})";
         RefreshCandidates();
     }
 
@@ -102,78 +94,8 @@ public partial class RecruitmentPanel : PanelContainer
     public void HireTeam()
     {
         _sim.HireForShortages();
-        _needsSignature = _candidatesSignature = string.Empty;
+        _candidatesSignature = string.Empty;
         Refresh();
-    }
-
-    private void RefreshNeeds()
-    {
-        var hireable = _sim.ShortagesHireable();
-        _hireTeam.Disabled = hireable == 0;
-        _hireTeam.Text = hireable == 0 ? "Hire minimum team" : $"Hire minimum team ({hireable})";
-        var needs = _sim.RecommendedStaffing();
-        var signature = string.Join("|", needs.Select(n => $"{n.Place}{n.Role}{n.Shift}{n.Have}/{n.Recommended}"));
-        if (signature == _needsSignature)
-        {
-            return;
-        }
-
-        _needsSignature = signature;
-        foreach (var child in _needs.GetChildren())
-        {
-            child.QueueFree();
-        }
-
-        var shortBy = needs.Sum(n => n.Short);
-        _needsSummary.Text = shortBy == 0
-            ? "You have the recommended day and night teams everywhere. It's a guide: hire more or fewer as you like."
-            : $"{shortBy} short of the recommended day and night teams. It's a guide: hire more or fewer as you like.";
-
-        foreach (var place in needs.GroupBy(n => n.Place))
-        {
-            var row = new PanelContainer();
-            row.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color("#F7F9FB"), 10, null, 10));
-            // Place name above its chips, so long chips have the panel's full width and never push it off screen.
-            var line = new VBoxContainer();
-            line.AddThemeConstantOverride("separation", 6);
-            row.AddChild(line);
-            var name = new Label { Text = place.Key, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
-            name.AddThemeFontSizeOverride("font_size", 14);
-            line.AddChild(name);
-            var counts = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-            counts.AddThemeConstantOverride("h_separation", 6);
-            counts.AddThemeConstantOverride("v_separation", 4);
-            foreach (var role in place.GroupBy(n => n.Role))
-            {
-                var chip = HudWidgets.Chip();
-                var day = role.FirstOrDefault(n => n.Shift == StaffShift.Day);
-                var night = role.FirstOrDefault(n => n.Shift == StaffShift.Night);
-                var recommended = Math.Max(day?.Recommended ?? 0, night?.Recommended ?? 0);
-                var parts = new List<string>();
-                if (day is not null)
-                {
-                    parts.Add($"days {day.Have}/{day.Recommended}");
-                }
-
-                if (night is not null)
-                {
-                    parts.Add($"nights {night.Have}/{night.Recommended}");
-                }
-
-                var text = $"{StaffGrades.RoleName(role.Key, plural: recommended != 1)}: {string.Join(" · ", parts)}";
-                var isShort = role.Any(n => n.Short > 0);
-                HudWidgets.SetChip(chip, text, isShort ? UiStyle.AmberTint : UiStyle.BlueTint);
-                if (isShort)
-                {
-                    chip.Text.AddThemeColorOverride("font_color", UiStyle.AmberText);
-                }
-
-                counts.AddChild(chip.Chip);
-            }
-
-            line.AddChild(counts);
-            _needs.AddChild(row);
-        }
     }
 
     private string NextCandidatesTime() =>
@@ -283,7 +205,7 @@ public partial class RecruitmentPanel : PanelContainer
         {
             var posting = postings[Math.Clamp(where.Selected, 0, postings.Count - 1)];
             _sim.Hire(candidate.Id, posting.RoomId, shift.Selected == 1 ? StaffShift.Night : StaffShift.Day);
-            _needsSignature = _candidatesSignature = string.Empty;
+            _candidatesSignature = string.Empty;
             Refresh();
         }, 90);
         action.AddChild(hire);
