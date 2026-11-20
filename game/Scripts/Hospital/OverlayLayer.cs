@@ -43,6 +43,14 @@ public partial class OverlayLayer : Node2D
             foreach (var monitor in _world.Monitors)
             {
                 var patient = _world.ConnectedPatient(monitor);
+                if (patient is null && _world.ConnectedBaby(monitor) is { } baby)
+                {
+                    // A baby on the neonatal unit: newborn vital signs, outlined by how poorly they are (no crash alarm: the unit looks after them).
+                    var level = baby.MonitorColour;
+                    Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, baby.CurrentObservations(), Looks.TriageRing(level), level == TriageCategory.Red ? 6 : level == TriageCategory.Amber ? 5 : 0, header: baby.FirstName.ToUpperInvariant());
+                    continue;
+                }
+
                 // The border follows the NEWS2 the screen shows (green 0-4, amber 5-6 or any single 3, red 7+), not the triage category.
                 var outline = patient is null ? (Color?)null : patient.MonitorColour is not { } colour ? new Color("#F2F4F6") : Looks.TriageRing(colour);
                 Figures.ObsScreen(this, monitor.X, monitor.Y, _world.Time, patient?.CurrentObservations(), outline, patient?.LiveNews2 ?? 0);

@@ -98,6 +98,30 @@ public sealed partial class HospitalSimulation
     public IEnumerable<Baby> BabiesIn(CareSpace unit) =>
         _babies.Where(b => b.IsInHospital && b.UnitId == unit.Id && b.CotIndex is not null);
 
+    /// <summary>The babies lying in a neonatal unit's incubators right now (not still on their way).</summary>
+    public IEnumerable<Baby> BabiesOnUnit(CareSpace unit) =>
+        _babies.Where(b => b.Place == BabyPlace.NeonatalUnit && b.UnitId == unit.Id && b.CotIndex is not null);
+
+    /// <summary>Which incubator (index into the unit's beds) a placed incubator is: the nearest bed space to it.</summary>
+    public static int IncubatorIndex(CareSpace unit, PlacedFurniture incubator)
+    {
+        if (unit.Beds.Count == 0)
+        {
+            return -1;
+        }
+
+        var (gx, gy) = (incubator.CentreX, incubator.CentreY);
+        return Enumerable.Range(0, unit.Beds.Count)
+            .MinBy(i => Math.Pow(unit.Beds[i].PatientSpot.X + 0.5 - gx, 2) + Math.Pow(unit.Beds[i].PatientSpot.Y + 0.5 - gy, 2));
+    }
+
+    /// <summary>The baby lying in incubator <paramref name="index"/> of a neonatal unit, if any.</summary>
+    public Baby? BabyInIncubator(CareSpace unit, int index) =>
+        index < 0 ? null : BabiesOnUnit(unit).FirstOrDefault(b => b.CotIndex == index);
+
+    /// <summary>The baby lying in a placed incubator, if any.</summary>
+    public Baby? BabyInIncubator(CareSpace unit, PlacedFurniture incubator) => BabyInIncubator(unit, IncubatorIndex(unit, incubator));
+
     /// <summary>What the maternity unit still needs before women can come, in plain words (empty when open).</summary>
     public IReadOnlyList<string> MaternityClosedReasons
     {

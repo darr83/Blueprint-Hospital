@@ -755,6 +755,25 @@ public partial class WorldLayer : Node2D
         return patient is not null && !patient.IsMoving && patient.Tile == bed.PatientSpot ? patient : null;
     }
 
+    /// <summary>The baby a neonatal unit monitor is showing: the one lying in the incubator beside it.</summary>
+    public Baby? ConnectedBaby(ObsMonitorInfo monitor) =>
+        monitor.Bed is { } bed && _sim.UnitOf(monitor.Space) == WardUnit.Neonatal
+            ? _sim.BabyInIncubator(monitor.Space, IndexOfBed(monitor.Space, bed))
+            : null;
+
+    private static int IndexOfBed(CareSpace space, WardBed bed)
+    {
+        for (var i = 0; i < space.Beds.Count; i++)
+        {
+            if (ReferenceEquals(space.Beds[i], bed))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     public Patient? ConnectedPatient(CareSpace space)
     {
         var patient = space.Kind == CareSpaceKind.Triage

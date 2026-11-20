@@ -470,6 +470,12 @@ public partial class HospitalScene : Node2D
             return null;
         }
 
+        if (b.Item.ItemId == "incubator")
+        {
+            var baby = _session.Simulation.BabyInIncubator(b.Room, b.Item);
+            return ($"Incubator · {b.Room.Name}", baby is null ? "Empty · click for details" : $"Baby {baby.FullName}");
+        }
+
         var occupant = ItemPanel.BedOccupant(b.Room, b.Item) is { } id ? _session.Simulation.FindPatient(id) : null;
         return ($"Bed · {b.Room.Name}", occupant is null ? "Empty · click for details" : occupant.FullName);
     }

@@ -141,6 +141,14 @@ public partial class ActorsLayer : Node2D
         {
             if (_world.ConnectedPatient(monitor) is not { } patient)
             {
+                // A baby in the incubator beside it.
+                if (_world.ConnectedBaby(monitor) is { } baby)
+                {
+                    p.Push(monitor.X, monitor.Y);
+                    FurnitureKit.MonitorStand(p, true, Looks.TriageRing(baby.MonitorColour));
+                    p.Pop();
+                }
+
                 continue;
             }
 
@@ -237,7 +245,7 @@ public partial class ActorsLayer : Node2D
             BabyLook? look = null;
             if (cot.Incubator)
             {
-                var baby = _sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.NeonatalUnit && b.UnitId == cot.Space.Id && b.CotIndex == cot.Index);
+                var baby = _sim.BabyInIncubator(cot.Space, cot.Index);
                 look = baby is null ? null : Looks.Baby(baby, _sim.FindPatient(baby.MotherId));
             }
             else if (cot.Bed?.OccupantId is { } id && _sim.IsMotherAndBabyWard(cot.Space) && _sim.FindPatient(id) is { } mother
