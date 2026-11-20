@@ -193,12 +193,12 @@ public sealed partial class HospitalSimulation
         }
 
         patient.EmergencyReviewed = true;
-        if (member.Role == StaffRole.Doctor && patient.MonitorIsRed && !patient.RedReviewed)
+        if (member.Role is StaffRole.Doctor or StaffRole.Paediatrician && patient.MonitorIsRed && !patient.RedReviewed)
         {
             MarkRedReviewed(member, patient);
         }
 
-        var who = member.Role == StaffRole.Doctor ? member.Name : $"{member.Name} ({member.Role.ToString().ToLowerInvariant()})";
+        var who = member.Role is StaffRole.Doctor or StaffRole.Paediatrician ? member.Name : $"{member.Name} ({member.Role.ToString().ToLowerInvariant()})";
         patient.Log(Now, $"{emergency.Review.Label} by {who}.");
         foreach (var line in emergency.Review.Log)
         {

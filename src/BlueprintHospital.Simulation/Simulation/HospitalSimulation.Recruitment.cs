@@ -92,6 +92,13 @@ public sealed partial class HospitalSimulation
     /// <summary>Where someone in this role could be based.</summary>
     public IReadOnlyList<StaffPosting> PostingsFor(StaffRole role)
     {
+        if (IsPaediatricRole(role))
+        {
+            // Children's nurses and paediatric doctors work on the children's wards.
+            var wards = PaediatricWards.Select(w => new StaffPosting(w.Id, w.Name)).ToList();
+            return wards.Count > 0 ? wards : new[] { new StaffPosting(null, "No children's ward yet") };
+        }
+
         if (IsSpecialist(role))
         {
             var rooms = RoomKindsFor(role).SelectMany(SpacesOfKind).Select(r => new StaffPosting(r.Id, r.Name)).ToList();
@@ -115,7 +122,7 @@ public sealed partial class HospitalSimulation
         var postings = new List<StaffPosting> { new(null, role is StaffRole.Porter or StaffRole.Receptionist or StaffRole.Cleaner ? "Whole hospital" : "A&E") };
         if (role is StaffRole.Nurse or StaffRole.Doctor or StaffRole.HealthcareAssistant)
         {
-            postings.AddRange(Wards.Select(w => new StaffPosting(w.Id, w.Name)));
+            postings.AddRange(Wards.Where(w => !IsPaediatricWard(w) || CanWorkOnChildrensWard(role)).Select(w => new StaffPosting(w.Id, w.Name)));
         }
 
         if (role == StaffRole.Nurse)
@@ -200,10 +207,16 @@ public sealed partial class HospitalSimulation
                 _ => PatientsPerWardNurse,
             };
 
-            // Mother and baby wards are run by midwives rather than nurses.
-            var carer = IsMotherAndBabyWard(ward) ? StaffRole.Midwife : StaffRole.Nurse;
+            // Mother and baby wards are run by midwives rather than nurses, children's wards by children's nurses.
+            var children = IsPaediatricWard(ward);
+            if (children && unit == WardUnit.None)
+            {
+                perNurse = PatientsPerChildrensNurse;
+            }
+
+            var carer = IsMotherAndBabyWard(ward) ? StaffRole.Midwife : children ? StaffRole.ChildrensNurse : StaffRole.Nurse;
             needs.Add(new(ward.Name, ward.Id, carer, Math.Max(1, (ward.Beds.Count + perNurse - 1) / perNurse), Have(carer, ward.Id)));
-            var doctor = unit == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
+            var doctor = children ? StaffRole.Paediatrician : unit == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
             needs.Add(new(ward.Name, ward.Id, doctor, 1, Have(doctor, ward.Id)));
             if (unit != WardUnit.Neonatal)
             {
@@ -336,7 +349,7 @@ public sealed partial class HospitalSimulation
         return new JobCandidate
         {
             Id = _nextCandidateId++,
-            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist or StaffRole.Anaesthetist ? "Dr " : string.Empty)}{first} {surname}",
+            Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist or StaffRole.Anaesthetist or StaffRole.Paediatrician ? "Dr " : string.Empty)}{first} {surname}",
             Role = grade.Role,
             Grade = grade.Title,
             Specialty = grade.Role == StaffRole.Surgeon ? PickSpecialty() : null,
@@ -502,7 +515,7 @@ public sealed partial class HospitalSimulation
     private void Join(StaffMember member)
     {
         _staff.Add(member);
-        if (member.BaseRoomId is null && IsSpecialist(member.Role))
+        if (member.BaseRoomId is null && (IsSpecialist(member.Role) || IsPaediatricRole(member.Role)))
         {
             PostSpecialists();
         }
@@ -587,7 +600,7 @@ public sealed partial class HospitalSimulation
             member.BaseRoomId = null;
             if (member.Role is StaffRole.Nurse or StaffRole.Doctor)
             {
-                var ward = Wards.FirstOrDefault(w => !_staff.Any(s => s.BaseRoomId == w.Id && s.Role == member.Role));
+                var ward = Wards.Where(w => !IsPaediatricWard(w)).FirstOrDefault(w => !_staff.Any(s => s.BaseRoomId == w.Id && s.Role == member.Role));
                 member.BaseRoomId = ward?.Id;
             }
         }
@@ -608,11 +621,26 @@ public sealed partial class HospitalSimulation
                 member.BaseRoomId = room.Id;
             }
         }
+
+        // Children's nurses and paediatric doctors without a ward go to the children's ward with fewest of them.
+        foreach (var member in _staff.Where(s => s.BaseRoomId is null && IsPaediatricRole(s.Role)).ToList())
+        {
+            var ward = PaediatricWards
+                .OrderBy(w => UnitOf(w) == WardUnit.None ? 0 : 1)
+                .ThenBy(w => _staff.Count(s => s.BaseRoomId == w.Id && s.Role == member.Role))
+                .ThenBy(w => w.Id, StringComparer.Ordinal)
+                .FirstOrDefault();
+            if (ward is not null)
+            {
+                member.BaseRoomId = ward.Id;
+            }
+        }
     }
 
     /// <summary>A ward with nobody of the task's role of its own at work is covered by the A&amp;E team.</summary>
     private bool CoveredByEmergencyTeam(ClinicalTask task, StaffMember member) =>
         member.BaseRoomId is null && TeamFor(task) is { } ward
+        && !(FindSpace(ward) is { } wardSpace && IsPaediatricWard(wardSpace))
         && !_staff.Any(s => s.BaseRoomId == ward && s.IsOnDuty && (s.Role == task.Role || (task.Role == StaffRole.Doctor && s.Role == StaffRole.Anaesthetist)
                                                                    || (task.Role == StaffRole.Nurse && s.Role == StaffRole.Midwife)));
 }

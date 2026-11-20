@@ -59,7 +59,7 @@ public sealed partial class HospitalSimulation
 
         var level = diagnosed.NeedsIntensiveCare && !patient.HadSurgery ? 3 : LevelFor(patient.Severity);
         patient.CareLevel = Math.Max(patient.CareLevel, level);
-        if (patient.CareLevel == 2 && !HasHighDependencyBeds)
+        if (patient.CareLevel == 2 && !HasHighDependencyBedsFor(patient))
         {
             // No HDU or ICU here: they are looked after on an ordinary ward, as before.
             patient.CareLevel = 0;

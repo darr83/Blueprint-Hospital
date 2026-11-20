@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using Godot;
 
@@ -83,6 +84,23 @@ public sealed class MeshBatch
         }
 
         Surfaces(surfaces, xf ?? new Transform3D(Basis.FromScale(Models3D.MetreScale), Vector3.Zero), tint ?? Colors.White);
+        return true;
+    }
+
+    /// <summary>
+    /// A model part with its most colourful fixed-colour surface (such as a blanket) painted
+    /// <paramref name="colour"/> instead; the rest keep their own colours.
+    /// </summary>
+    public bool ModelRecoloured(string model, string part, Color colour)
+    {
+        if (ModelParts.Part(model, part) is not { } surfaces)
+        {
+            return false;
+        }
+
+        var brightest = surfaces.Where(s => s.Fixed is not null).OrderByDescending(s => s.Fixed!.Value.S).FirstOrDefault();
+        var painted = surfaces.Select(s => ReferenceEquals(s, brightest) ? s with { Fixed = colour } : s).ToArray();
+        Surfaces(painted, new Transform3D(Basis.FromScale(Models3D.MetreScale), Vector3.Zero), Colors.White);
         return true;
     }
 

@@ -120,6 +120,16 @@
     "opening_cost": 300000
   },
   {
+    "id": "paediatrics",
+    "name": "Paediatrics",
+    "short_name": "PAED",
+    "description": "The children's department. Children under 16 who need to stay in hospital go to the children's ward, looked after by children's nurses and paediatric doctors, and very poorly children to the children's HDU. Without a children's ward, children are transferred to another hospital.",
+    "colour": "#F4B400",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 225000
+  },
+  {
     "id": "maternity",
     "name": "Maternity",
     "short_name": "MAT",

@@ -49,6 +49,12 @@ public enum StaffRole
 
     /// <summary>Theatre nurse who scrubs in for every operation: lays out and counts the instruments and passes them to the surgeon.</summary>
     ScrubNurse,
+
+    /// <summary>Children's nurse (RN Child): the only nurses who look after children on the children's wards.</summary>
+    ChildrensNurse,
+
+    /// <summary>Paediatric doctor: clerks, reviews and discharges children on the children's wards.</summary>
+    Paediatrician,
 }
 
 public enum StaffActivity

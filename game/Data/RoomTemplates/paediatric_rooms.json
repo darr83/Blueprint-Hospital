@@ -1,0 +1,64 @@
+[
+  {
+    "id": "childrens_ward",
+    "name": "Children's ward",
+    "category": "Paediatrics",
+    "description": "Children under 16 who need to stay in hospital, each with a fold-out bed beside them so a parent can stay the night. Run by children's nurses (one for every four beds) and a paediatric doctor.",
+    "kind": "ward",
+    "department": "paediatrics",
+    "layout": "ward",
+    "sizes": [
+      { "name": "4 beds", "width_m": 12.5, "length_m": 5.5 },
+      { "name": "8 beds", "width_m": 12.5, "length_m": 8 },
+      { "name": "12 beds", "width_m": 18, "length_m": 8 }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 20000,
+    "cost_per_square_metre": 1350,
+    "staffing": "Hire a children's nurse for every 4 beds and a paediatric doctor from Recruitment (H), posted to this ward. Adult nurses and doctors can't work here.",
+    "furniture": [
+      "hospital_bed",
+      "parent_bed",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "toy_box",
+      "resus_trolley"
+    ]
+  },
+  {
+    "id": "childrens_hdu",
+    "name": "Children's HDU",
+    "category": "Paediatrics",
+    "description": "High dependency beds for very poorly children: bad asthma, sepsis, after a big operation. A children's nurse for every two beds. Children who need intensive care go to the regional children's ICU.",
+    "kind": "ward",
+    "department": "paediatrics",
+    "layout": "ward",
+    "unit": "high_dependency",
+    "sizes": [
+      { "name": "2 beds", "width_m": 9, "length_m": 5.5 },
+      { "name": "4 beds", "width_m": 14, "length_m": 5.5 },
+      { "name": "8 beds", "width_m": 14, "length_m": 8 }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 35000,
+    "cost_per_square_metre": 1800,
+    "staffing": "Hire a children's nurse for every two beds and a paediatric doctor, posted to the unit.",
+    "furniture": [
+      "hospital_bed",
+      "obs_monitor",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "resus_trolley"
+    ]
+  }
+]

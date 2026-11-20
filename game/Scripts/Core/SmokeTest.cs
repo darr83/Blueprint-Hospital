@@ -991,6 +991,7 @@ public partial class SmokeTest : Node
             case Stage.ExampleSecondFloor when scene is HospitalScene example && _frame >= 10:
                 Screenshot("11_example_second_floor");
                 Check(example.ViewFloor == 2, "Could not look at the example hospital's second floor.");
+                CheckPaediatrics(example);
                 example.ShowFloor(0);
                 GD.Print("[smoke] PASSED");
                 _stage = Stage.Done;
@@ -1010,6 +1011,23 @@ public partial class SmokeTest : Node
     /// Every kind of staff member's panel must fit inside its dock and the screen: a long role, place or
     /// footer line used to push the receptionist's panel off the right-hand edge.
     /// </summary>
+    /// <summary>The example's children's ward has a parent bed beside every bed, and only children's staff (and HCAs) work on the children's wards.</summary>
+    private static void CheckPaediatrics(HospitalScene example)
+    {
+        var sim = example.Session.Simulation;
+        var ward = sim.PaediatricWards.FirstOrDefault(w => w.TemplateId == "childrens_ward");
+        Check(ward is not null, "The example hospital has no children's ward.");
+        var parentBeds = ward!.Furniture.Count(f => f.ItemId == "parent_bed");
+        Check(ward.Beds.Count >= 2 && parentBeds == ward.Beds.Count, $"The children's ward has {ward.Beds.Count} beds and {parentBeds} parent beds.");
+        var wrong = sim.Staff.Where(s => s.BaseRoomId is { } id && sim.FindSpace(id) is { } room && sim.IsPaediatricWard(room)
+                                         && s.Role is not (StaffRole.ChildrensNurse or StaffRole.Paediatrician or StaffRole.HealthcareAssistant)).ToList();
+        Check(wrong.Count == 0, "Adult staff are posted to a children's ward: " + string.Join(", ", wrong.Select(s => s.Grade)));
+        Check(sim.Staff.Any(s => s.Role == StaffRole.Paediatrician) && sim.Staff.Any(s => s.Role == StaffRole.ChildrensNurse), "The example hospital has no children's nurses or paediatric doctors.");
+        CheckStaffPanelsFit(example);
+        example.Hud.HideRightPanels();
+        GD.Print($"[smoke] Children's ward: {ward.Beds.Count} beds, {parentBeds} parent beds.");
+    }
+
     private static void CheckStaffPanelsFit(HospitalScene hospital)
     {
         var panel = hospital.Hud.StaffInfo;

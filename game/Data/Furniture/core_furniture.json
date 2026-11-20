@@ -625,5 +625,27 @@
   "colour": "#C7D3DC",
   "cost": 1200,
   "is_equipment": true
+ },
+ {
+  "id": "parent_bed",
+  "name": "Parent fold-out bed",
+  "width_m": 0.75,
+  "depth_m": 1.9,
+  "height_m": 0.45,
+  "style": "box",
+  "colour": "#5C6BC0",
+  "cost": 450,
+  "is_equipment": false
+ },
+ {
+  "id": "toy_box",
+  "name": "Toy box",
+  "width_m": 0.9,
+  "depth_m": 0.6,
+  "height_m": 0.55,
+  "style": "box",
+  "colour": "#E57373",
+  "cost": 120,
+  "is_equipment": false
  }
 ]

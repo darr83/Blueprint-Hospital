@@ -61,9 +61,9 @@ public sealed partial class HospitalSimulation
     public bool IsIntensiveCareOpen(CareSpace ward) =>
         UnitOf(ward) == WardUnit.IntensiveCare && _staff.Any(s => s.Role == StaffRole.Anaesthetist && s.BaseRoomId == ward.Id);
 
-    private IEnumerable<CareSpace> OpenIntensiveCareUnits => Wards.Where(IsIntensiveCareOpen);
+    private IEnumerable<CareSpace> OpenIntensiveCareUnits => Wards.Where(w => IsIntensiveCareOpen(w) && !IsPaediatricWard(w));
 
-    private IEnumerable<CareSpace> HighDependencyUnits => Wards.Where(w => UnitOf(w) == WardUnit.HighDependency);
+    private IEnumerable<CareSpace> HighDependencyUnits => Wards.Where(w => UnitOf(w) == WardUnit.HighDependency && !IsPaediatricWard(w));
 
     /// <summary>Whether there is anywhere for high dependency patients: an HDU, or an open ICU.</summary>
     private bool HasHighDependencyBeds => HighDependencyUnits.Any() || OpenIntensiveCareUnits.Any();
@@ -202,7 +202,7 @@ public sealed partial class HospitalSimulation
     private bool EscalateOnWardRound(StaffMember doctor, Patient patient)
     {
         var level = LevelFor(patient.Severity);
-        if (level <= patient.CareLevel || CriticalUnitOfPatient(patient) is not null || !HasHighDependencyBeds)
+        if (level <= patient.CareLevel || CriticalUnitOfPatient(patient) is not null || !HasHighDependencyBedsFor(patient))
         {
             return false;
         }
@@ -262,7 +262,7 @@ public sealed partial class HospitalSimulation
         }
 
         var level = Math.Max(2, LevelFor(patient.Severity));
-        if (!HasHighDependencyBeds)
+        if (!HasHighDependencyBedsFor(patient))
         {
             patient.Log(Now, $"Outreach review by {nurse.Name}: needs {LevelName(level)}, but there is no critical care unit here. Closer observations on the ward.", important: true);
             if (level >= 3)

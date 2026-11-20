@@ -378,7 +378,7 @@ public sealed partial class HospitalSimulation
                 break;
             case "critical_care":
                 RecordComplication(patient, entry.Complication);
-                var level = OpenIntensiveCareUnits.Any() ? 3 : HasHighDependencyBeds ? 2 : 0;
+                var level = HasIntensiveCareFor(patient) ? 3 : HasHighDependencyBedsFor(patient) ? 2 : 0;
                 patient.CareLevel = Math.Max(patient.CareLevel, level);
                 patient.Severity = Math.Min(1, patient.Severity + 0.15);
                 patient.Log(Now, level > 0

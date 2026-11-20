@@ -45,6 +45,14 @@ public static class StaffGrades
         new Grade(StaffRole.Midwife, "Band 6 midwife", 0.60, 0.72, 2, 8, 39_000, 3),
         new Grade(StaffRole.Midwife, "Band 7 midwife", 0.72, 0.85, 6, 15, 48_000, 1.5),
         new Grade(StaffRole.Midwife, "Band 8 consultant midwife", 0.85, 0.97, 12, 30, 62_000, 0.5),
+        new Grade(StaffRole.ChildrensNurse, "Band 5 children's nurse", 0.45, 0.60, 0, 3, 31_000, 3),
+        new Grade(StaffRole.ChildrensNurse, "Band 6 children's nurse", 0.60, 0.72, 3, 7, 39_000, 3),
+        new Grade(StaffRole.ChildrensNurse, "Band 7 children's sister", 0.72, 0.85, 6, 12, 48_000, 1.5),
+        new Grade(StaffRole.ChildrensNurse, "Band 8 children's matron", 0.85, 0.97, 10, 25, 60_000, 0.5),
+        new Grade(StaffRole.Paediatrician, "Paediatric junior doctor", 0.45, 0.60, 0, 2, 38_000, 3),
+        new Grade(StaffRole.Paediatrician, "Paediatric doctor", 0.60, 0.72, 2, 5, 55_000, 2.5),
+        new Grade(StaffRole.Paediatrician, "Paediatric registrar", 0.72, 0.85, 4, 9, 66_000, 1.5),
+        new Grade(StaffRole.Paediatrician, "Consultant paediatrician", 0.85, 0.97, 9, 25, 110_000, 0.8),
     };
 
     public static IEnumerable<Grade> For(StaffRole role) => All.Where(g => g.Role == role);
@@ -100,6 +108,10 @@ public static class StaffGrades
         (StaffRole.Cleaner, true) => "cleaners",
         (StaffRole.ScrubNurse, false) => "scrub nurse",
         (StaffRole.ScrubNurse, true) => "scrub nurses",
+        (StaffRole.ChildrensNurse, false) => "children's nurse",
+        (StaffRole.ChildrensNurse, true) => "children's nurses",
+        (StaffRole.Paediatrician, false) => "paediatric doctor",
+        (StaffRole.Paediatrician, true) => "paediatric doctors",
         _ => "healthcare assistants",
     };
 }

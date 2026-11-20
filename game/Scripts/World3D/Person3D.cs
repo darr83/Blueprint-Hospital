@@ -179,6 +179,15 @@ public partial class Person3D : Node3D
             Wear("tie", tie);
         }
 
+        if (look.BowTie is { } bow)
+        {
+            // Two little wings and a knot at the collar.
+            var collar = new Vector3(0, torsoTop - V(2.4f * s), (depth / 2) + 0.012f);
+            body.Box(collar + new Vector3(-W(2.2f), 0, 0), new Vector3(W(3.6f), V(2.6f), 0.03f), bow);
+            body.Box(collar + new Vector3(W(2.2f), 0, 0), new Vector3(W(3.6f), V(2.6f), 0.03f), bow);
+            body.Box(collar + new Vector3(0, 0, 0.006f), new Vector3(W(1.4f), V(1.6f), 0.035f), bow.Darkened(0.25f));
+        }
+
         if (look.Epaulettes is { } ep)
         {
             body.Box(new Vector3(-shW, torsoTop - V(1), 0), new Vector3(W(5), V(1.6f), depth * 0.6f), ep);

@@ -165,7 +165,7 @@ public static class Looks
         var female = member.Role switch
         {
             StaffRole.Midwife => Roll(seed, 3, 10) != 0,
-            StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.ScrubNurse or StaffRole.Receptionist => Roll(seed, 3, 10) < 7,
+            StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.ScrubNurse or StaffRole.Receptionist or StaffRole.ChildrensNurse => Roll(seed, 3, 10) < 7,
             StaffRole.Porter => Roll(seed, 3, 10) < 3,
             _ => Roll(seed, 3, 2) == 0,
         };
@@ -203,6 +203,21 @@ public static class Looks
             // Midwives wear plum; senior and consultant midwives a deep aubergine with epaulettes.
             StaffRole.Midwife when Is("Band 7") || Is("Band 8") => Tunic("#4A1F55", "#E7C6E0", "#24182B") with { FobWatch = true, Epaulettes = new Color("#E7C6E0") },
             StaffRole.Midwife => Tunic("#A23B86", "#F2D5EC", "#2A1E33") with { FobWatch = true, Pocket = true },
+
+            // Children's nurses: a coral tunic that deepens with the band; the matron's has gold epaulettes.
+            StaffRole.ChildrensNurse when Is("Band 8") || Is("Matron") => Tunic("#7E2E2A", "#F2C230", "#201A1E") with { FobWatch = true, Epaulettes = new Color("#F2C230") },
+            StaffRole.ChildrensNurse when Is("Band 7") || Is("Sister") => Tunic("#B8483E", "#FFFFFF", "#24202A") with { FobWatch = true, Pocket = true },
+            StaffRole.ChildrensNurse when Is("Band 6") => Tunic("#EF7D62", "#F2C230", "#2A2E3A") with { FobWatch = true, Pocket = true },
+            StaffRole.ChildrensNurse => Tunic("#EF7D62", "#FFFFFF", "#2A2E3A") with { FobWatch = true, Pocket = true },
+
+            // Paediatric doctors: periwinkle scrubs that darken with seniority; consultants a cream shirt and a bow tie.
+            StaffRole.Paediatrician when Is("Consultant") => new PersonLook(new Color("#F4F1E6"), new Color("#3A3F4A"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, BowTie = Pick(seed, 15, new Color("#2F6FD0"), new Color("#D03A3A"), new Color("#2E7D4F")), Stethoscope = true, Lanyard = true, ShoeColour = new Color("#3A2A1E"),
+            },
+            StaffRole.Paediatrician when Is("Registrar") => Scrubs("#4C5BC0") with { Stethoscope = true, Pocket = true },
+            StaffRole.Paediatrician when Is("Junior") => Scrubs("#9AA6EA") with { Stethoscope = true, Pocket = true },
+            StaffRole.Paediatrician => Scrubs("#6C79D2") with { Stethoscope = true, Pocket = true },
 
             // Theatre and procedure staff: scrubs, a cap and a mask.
             StaffRole.Surgeon => Scrubs("#4E9C6F") with { Cap = new Color("#3E7F5A"), Mask = true, Lanyard = false, ShoeColour = new Color("#E8ECEF") },
@@ -443,6 +458,15 @@ public static class Looks
 
     /// <summary>Ward patients have an ordinary hospital blanket: the ward isn't triaged.</summary>
     public static readonly Color WardBlanket = new("#5C8FC4");
+
+    /// <summary>Bright blankets on the children's wards, a different one on each bed.</summary>
+    public static readonly Color[] ChildrensBlankets = { new("#4FC3F7"), new("#F48FB1"), new("#AED581"), new("#FFB74D"), new("#CE93D8") };
+
+    /// <summary>The blanket on a ward bed: lilac for mothers, bright colours for children, otherwise ward blue.</summary>
+    public static Color WardBlanketFor(BlueprintHospital.Simulation.Simulation.HospitalSimulation sim, BlueprintHospital.Simulation.Hospital.CareSpace ward, BlueprintHospital.Simulation.Hospital.WardBed bed) =>
+        sim.IsMotherAndBabyWard(ward) ? MaternityBlanket
+        : sim.IsPaediatricWard(ward) ? ChildrensBlankets[Math.Max(0, System.Linq.Enumerable.ToList(ward.Beds).IndexOf(bed)) % ChildrensBlankets.Length]
+        : WardBlanket;
 
     public static Color TriageRing(TriageCategory? category) => category switch
     {

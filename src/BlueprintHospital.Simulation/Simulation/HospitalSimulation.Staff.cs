@@ -282,7 +282,7 @@ public sealed partial class HospitalSimulation
         var candidates = _tasks.Values
             .Where(t => t.AssignedStaffId is null && CanStart(t) && (bedside is not null
                 ? IsBedsideWork(t, member, bedside)
-                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member) || MidwifeCanCover(t, member)) && IsForMember(t, member)))
+                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member) || MidwifeCanCover(t, member) || ChildrensNurseCanCover(t, member) || PaediatricianCanCover(t, member)) && IsForMember(t, member)))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 

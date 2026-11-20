@@ -95,6 +95,17 @@ public sealed partial class HospitalSimulation
     /// </summary>
     private List<CareSpace> WardsFor(Patient patient)
     {
+        if (IsChildPatient(patient))
+        {
+            return WardsForChild(patient);
+        }
+
+        // Adults never go to the children's wards.
+        return AdultWardsFor(patient).Where(w => !IsPaediatricWard(w)).ToList();
+    }
+
+    private List<CareSpace> AdultWardsFor(Patient patient)
+    {
         if (patient.SameDay)
         {
             return Wards.Where(IsSameDayUnit).ToList();
@@ -144,6 +155,11 @@ public sealed partial class HospitalSimulation
     /// <summary>Why a patient who needs admitting can't be: their specialty has no ward here.</summary>
     private string NoWardReason(Patient patient)
     {
+        if (IsChildPatient(patient))
+        {
+            return NoWardReasonForChild(patient);
+        }
+
         if (patient.CareLevel >= 3)
         {
             return Wards.Any(w => UnitOf(w) == WardUnit.IntensiveCare)
