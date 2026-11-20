@@ -28,6 +28,8 @@ public partial class SmokeTest : Node
     private CameraState? _overview;
     private AmbulanceVehicle? _ambulance;
     private string? _screenshotDirectory;
+
+    private UI.SettingsPanel? _settings;
     private int _savedRooms;
     private long _savedBalance;
     private int _savedPatients;
@@ -50,6 +52,7 @@ public partial class SmokeTest : Node
     private enum Stage
     {
         WaitForMenu,
+        Settings,
         NewGameChoice,
         EmptyBuilding,
         WaitForHospital,
@@ -154,13 +157,29 @@ public partial class SmokeTest : Node
         {
             case Stage.WaitForMenu when _frame >= 10:
                 Screenshot("01_main_menu");
-                foreach (var panel in new UI.ModalPanel[] { new UI.SettingsPanel(), new UI.LoadGamePanel() })
-                {
-                    scene.AddChild(panel);
-                    panel.Close();
-                }
+                _settings = new UI.SettingsPanel();
+                scene.AddChild(_settings);
+                _frame = 0;
+                _stage = Stage.Settings;
+                break;
 
-                GD.Print("[smoke] Settings and Load Game panels open and close.");
+            case Stage.Settings when _frame >= 5 && _settings is not null:
+            {
+                // The "new rooms come with their minimum staff" choice is there, off unless the player turned it on, and the panel fits the screen.
+                Check(_settings.AutoStaff.ButtonPressed == manager.Settings.AutoStaffNewRooms, "The minimum staff setting does not show what is saved.");
+                Check(new GameSettings().AutoStaffNewRooms == false, "New rooms should come empty unless the player asks for staff.");
+                var screen = _settings.GetViewportRect().Size;
+                var box = _settings.AutoStaff.GetGlobalRect();
+                Check(box.Position.Y >= 0 && box.End.Y <= screen.Y, $"The minimum staff setting is off the screen ({box}, screen {screen}).");
+                var save = _settings.SaveButton.GetGlobalRect();
+                Check(save.Position.Y >= 0 && save.End.Y <= screen.Y && save.End.X <= screen.X, $"The Settings Save button is off the screen ({save}, screen {screen}).");
+                Screenshot("01a_settings");
+                _settings.Close();
+                _settings = null;
+                var load = new UI.LoadGamePanel();
+                scene.AddChild(load);
+                load.Close();
+                GD.Print("[smoke] Settings (with the minimum staff choice) and Load Game panels open and close.");
                 foreach (var name in World3D.Models3D.All())
                 {
                     var model = World3D.Models3D.Make(name);
@@ -188,6 +207,7 @@ public partial class SmokeTest : Node
                 _frame = 0;
                 _stage = Stage.NewGameChoice;
                 break;
+            }
 
             case Stage.NewGameChoice when _frame >= 5:
                 Screenshot("01b_new_game");

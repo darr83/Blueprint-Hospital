@@ -18,6 +18,12 @@ public sealed class GameSettings
 
     public bool ShowGridByDefault { get; set; } = true;
 
+    /// <summary>
+    /// Each newly built room comes with the minimum staff it needs (hired on the lowest grade and paid
+    /// as normal). Off by default: rooms come empty and the player hires everyone.
+    /// </summary>
+    public bool AutoStaffNewRooms { get; set; }
+
     /// <summary>Scale applied to the whole interface, for readability on large or small screens.</summary>
     public float UiScale { get; set; } = 1.0f;
 
@@ -54,6 +60,7 @@ public sealed class GameSettings
         settings.CameraPanSpeed = Mathf.Clamp((float)config.GetValue("camera", "pan_speed", settings.CameraPanSpeed), 0.25f, 3f);
         settings.EdgeScrolling = (bool)config.GetValue("camera", "edge_scrolling", settings.EdgeScrolling);
         settings.ShowGridByDefault = (bool)config.GetValue("gameplay", "show_grid", settings.ShowGridByDefault);
+        settings.AutoStaffNewRooms = (bool)config.GetValue("gameplay", "auto_staff_new_rooms", settings.AutoStaffNewRooms);
         return settings;
     }
 
@@ -69,6 +76,7 @@ public sealed class GameSettings
         config.SetValue("camera", "pan_speed", CameraPanSpeed);
         config.SetValue("camera", "edge_scrolling", EdgeScrolling);
         config.SetValue("gameplay", "show_grid", ShowGridByDefault);
+        config.SetValue("gameplay", "auto_staff_new_rooms", AutoStaffNewRooms);
         return config.Save(FilePath);
     }
 

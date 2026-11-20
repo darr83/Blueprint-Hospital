@@ -18,32 +18,50 @@ public partial class SettingsPanel : ModalPanel
         var surfaces = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Surface textures on walls, floors and furniture" : "Fine detail on the grounds and floors", ButtonPressed = settings.SurfaceTextures };
         var edge = new CheckBox { Text = "Scroll the camera at screen edges", ButtonPressed = settings.EdgeScrolling };
         var grid = new CheckBox { Text = "Show building grid when a game starts", ButtonPressed = settings.ShowGridByDefault };
+        AutoStaff = new CheckBox { Text = "New rooms come with their minimum staff", ButtonPressed = settings.AutoStaffNewRooms };
 
-        Content.AddChild(UiStyle.Body("Display", muted: true));
-        Content.AddChild(fullscreen);
-        Content.AddChild(vsync);
-        Content.AddChild(lighting);
-        Content.AddChild(surfaces);
-        var uiScale = AddSlider("Interface size", 0.75, 1.5, 0.05, settings.UiScale, v => $"{v * 100:0}%");
+        // Two columns, so the whole panel (and its Save button) fits a 900-pixel-high screen.
+        var columns = new HBoxContainer();
+        columns.AddThemeConstantOverride("separation", 28);
+        var left = new VBoxContainer { CustomMinimumSize = new Vector2(440, 0) };
+        var right = new VBoxContainer { CustomMinimumSize = new Vector2(400, 0) };
+        left.AddThemeConstantOverride("separation", 12);
+        right.AddThemeConstantOverride("separation", 12);
+        columns.AddChild(left);
+        columns.AddChild(right);
+        Content.AddChild(columns);
 
-        Content.AddChild(UiStyle.Body("Camera", muted: true));
-        var pan = AddSlider("Pan speed", 0.25, 3, 0.05, settings.CameraPanSpeed, v => $"{v:0.00}x");
-        Content.AddChild(edge);
-        Content.AddChild(grid);
+        left.AddChild(UiStyle.Body("Display", muted: true));
+        left.AddChild(fullscreen);
+        left.AddChild(vsync);
+        left.AddChild(lighting);
+        left.AddChild(surfaces);
+        var uiScale = AddSlider(left, "Interface size", 0.75, 1.5, 0.05, settings.UiScale, v => $"{v * 100:0}%");
+
+        left.AddChild(UiStyle.Body("Camera", muted: true));
+        var pan = AddSlider(left, "Pan speed", 0.25, 3, 0.05, settings.CameraPanSpeed, v => $"{v:0.00}x");
+        left.AddChild(edge);
+        left.AddChild(grid);
+
+        right.AddChild(UiStyle.Body("Gameplay", muted: true));
+        right.AddChild(AutoStaff);
+        var autoStaffNote = UiStyle.Body("Each room you build hires the staff it needs to open, on the lowest grade and paid as normal. Off: rooms come empty and you hire everyone (H).", muted: true);
+        autoStaffNote.CustomMinimumSize = new Vector2(400, 0);
+        right.AddChild(autoStaffNote);
 
         var audio = BlueprintHospital.Audio.AudioSettings.Current;
-        Content.AddChild(UiStyle.Body("Sound", muted: true));
-        var master = AddSlider("Master volume", 0, 1, 0.05, audio.Master, Percent);
-        var ambience = AddSlider("Ambience", 0, 1, 0.05, audio.Ambience, Percent);
-        var effects = AddSlider("Effects", 0, 1, 0.05, audio.Effects, Percent);
-        var interfaceSounds = AddSlider("Interface", 0, 1, 0.05, audio.Interface, Percent);
-        var music = AddSlider("Music", 0, 1, 0.05, audio.Music, Percent);
-        var announcements = AddSlider("Announcements", 0, 1, 0.05, audio.Announcements, v => v <= 0.001 ? "Off" : Percent(v));
+        right.AddChild(UiStyle.Body("Sound", muted: true));
+        var master = AddSlider(right, "Master volume", 0, 1, 0.05, audio.Master, Percent);
+        var ambience = AddSlider(right, "Ambience", 0, 1, 0.05, audio.Ambience, Percent);
+        var effects = AddSlider(right, "Effects", 0, 1, 0.05, audio.Effects, Percent);
+        var interfaceSounds = AddSlider(right, "Interface", 0, 1, 0.05, audio.Interface, Percent);
+        var music = AddSlider(right, "Music", 0, 1, 0.05, audio.Music, Percent);
+        var announcements = AddSlider(right, "Announcements", 0, 1, 0.05, audio.Announcements, v => v <= 0.001 ? "Off" : Percent(v));
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
         buttons.AddChild(UiStyle.SecondaryButton("Cancel", Close, 120));
-        buttons.AddChild(UiStyle.Button("Save", () =>
+        buttons.AddChild(SaveButton = UiStyle.Button("Save", () =>
         {
             settings.Fullscreen = fullscreen.ButtonPressed;
             settings.VSync = vsync.ButtonPressed;
@@ -53,6 +71,7 @@ public partial class SettingsPanel : ModalPanel
             settings.CameraPanSpeed = (float)pan.Value;
             settings.EdgeScrolling = edge.ButtonPressed;
             settings.ShowGridByDefault = grid.ButtonPressed;
+            settings.AutoStaffNewRooms = AutoStaff.ButtonPressed;
             GameManager.Instance.SaveSettings();
             audio.Master = (float)master.Value;
             audio.Ambience = (float)ambience.Value;
@@ -67,9 +86,14 @@ public partial class SettingsPanel : ModalPanel
         Content.AddChild(buttons);
     }
 
+    /// <summary>The "New rooms come with their minimum staff" tick box.</summary>
+    public CheckBox AutoStaff { get; }
+
+    public Button SaveButton { get; private set; } = null!;
+
     private static string Percent(double v) => $"{v * 100:0}%";
 
-    private HSlider AddSlider(string label, double min, double max, double step, double value, System.Func<double, string> format)
+    private static HSlider AddSlider(Container column, string label, double min, double max, double step, double value, System.Func<double, string> format)
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 10);
@@ -85,7 +109,7 @@ public partial class SettingsPanel : ModalPanel
         row.AddChild(name);
         row.AddChild(slider);
         row.AddChild(readout);
-        Content.AddChild(row);
+        column.AddChild(row);
         return slider;
     }
 }

@@ -488,7 +488,7 @@ public partial class BuildTool : Node2D
                 return;
             case BuildMode.Room:
             case BuildMode.Corridor:
-                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null));
+                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null), withStaff: Mode == BuildMode.Room && (BlueprintHospital.Core.GameManager.Instance?.Settings.AutoStaffNewRooms ?? false));
                 what = $"Built {Template.Name.ToLowerInvariant()}";
                 break;
             default:
