@@ -374,6 +374,57 @@ public partial class ActorsLayer : Node2D
 
                 break;
             }
+
+            case World3D.Care.Obs when worker is not null:
+            {
+                // The cuff on the arm, its tube to the little machine on its stand, a heart beating on the screen.
+                double side = World3D.Procedure3D.Side(patient, worker, _sim);
+                var arm = (X: side * 0.5 * k, Y: chestY + 0.05);
+                var stand = (X: side * ((width / 2) + 0.55), Y: headY + (1.9 * k));
+                p.Path(new Color("#607D8B"), 0.04, (arm.X, arm.Y), (side * (width / 2), arm.Y + 0.3), (stand.X, stand.Y));
+                p.Round(arm.X - 0.13, arm.Y - 0.16, 0.26, 0.32, 0.08, new Color("#1F3A5F"));
+                p.Box(stand.X - 0.26, stand.Y - 0.22, 0.52, 0.44, 0.08, new Color("#F2F4F5"));
+                p.Round(stand.X - 0.2, stand.Y - 0.16, 0.4, 0.3, 0.04, new Color("#0B1F17"));
+                var beat = Mathf.PosMod((float)_world.Time * 1.2f, 1f) < 0.25f ? 0.085 : 0.06;
+                p.Circle(stand.X - 0.1, stand.Y - 0.05, beat, new Color("#FF5252"));
+                p.Line(stand.X, stand.Y - 0.05, stand.X + 0.14, stand.Y - 0.05, new Color("#5CFF8A"), 0.05);
+                break;
+            }
+
+            case World3D.Care.Bloods or World3D.Care.FingerPrick when worker is not null:
+            {
+                // A tourniquet on the arm and the tray of tubes on the bed.
+                double side = World3D.Procedure3D.Side(patient, worker, _sim);
+                if (care == World3D.Care.Bloods)
+                {
+                    p.Round((side * 0.5 * k) - 0.13, chestY - 0.04, 0.26, 0.12, 0.05, new Color("#1E88E5"));
+                }
+
+                var tray = (X: side * 0.3, Y: headY + (2.5 * k));
+                p.Round(tray.X - 0.2, tray.Y - 0.13, 0.4, 0.26, 0.08, new Color("#D9D2C3"), new Color("#9C9484"), 0.03);
+                var caps = new[] { "#8E24AA", "#FDD835", "#1E88E5" };
+                for (var i = 0; i < caps.Length; i++)
+                {
+                    p.Circle(tray.X - 0.1 + (i * 0.1), tray.Y, 0.04, new Color(caps[i]));
+                }
+
+                break;
+            }
+
+            case World3D.Care.PeakFlow:
+                // The meter held up to the mouth.
+                p.Round(-0.07, headY + (0.2 * k), 0.14, 0.46, 0.05, Colors.White, new Color("#90A4AE"), 0.03);
+                p.Circle(0, headY + (0.24 * k), 0.07, new Color("#4FC3F7"));
+                break;
+            case World3D.Care.AsciticTap or World3D.Care.JointAspiration or World3D.Care.LumbarPuncture when worker is not null:
+            {
+                // The sterile drape with its window: on the tummy, the knee, or low on the back.
+                double side = World3D.Procedure3D.Side(patient, worker, _sim);
+                var at = care == World3D.Care.JointAspiration ? (X: side * 0.2, Y: headY + (2.6 * k)) : (X: side * 0.22 * k, Y: chestY + (0.6 * k));
+                p.Round(at.X - 0.24, at.Y - 0.24, 0.48, 0.48, 0.06, new Color("#3F8FD6"), new Color("#2A6CB0"), 0.03);
+                p.Circle(at.X, at.Y, 0.09, look.Skin);
+                break;
+            }
         }
     }
 

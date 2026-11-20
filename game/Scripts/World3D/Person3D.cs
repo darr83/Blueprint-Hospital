@@ -67,6 +67,12 @@ public partial class Person3D : Node3D
     private Node3D? _roll;
     private Node3D? _probe;
     private Node3D? _scope;
+    private Node3D? _syringe;
+    private Node3D? _meter;
+    private Node3D? _samplePot;
+    private Node3D? _strip;
+    private Node3D? _swab;
+    private Node3D? _thermometer;
     private Node3D? _kit;
     private Node3D _bucket = null!;
     private Node3D _mopHead = null!;
@@ -958,6 +964,66 @@ public partial class Person3D : Node3D
                 break;
             }
 
+            case Act.Needle:
+            {
+                // Bent over the arm (or the back, the tummy, the knee) with the syringe, drawing back slowly.
+                var draw = Mathf.PosMod(f, 6f) / 6f;
+                lean = 0.34f;
+                left = new Vector3(-0.85f, 0, 0.3f);
+                right = new Vector3(-0.95f + (0.1f * draw), 0, -0.3f);
+                _syringe = Prop(_syringe, _armR, Syringe);
+                break;
+            }
+
+            case Act.Prick:
+            {
+                // The meter in one hand; the other holds the patient's finger, pricks it and brings the drop to the strip.
+                var cycle = Mathf.PosMod(f, 5f);
+                lean = 0.24f;
+                left = new Vector3(-1.0f, 0, 0.32f);
+                right = cycle < 3f ? new Vector3(-0.95f + (0.04f * S(8)), 0, -0.3f) : new Vector3(-1.05f, 0, 0.12f);
+                _meter = Prop(_meter, _armL, Meter);
+                break;
+            }
+
+            case Act.Dip:
+            {
+                // The sample pot in one hand: dip the strip in, lift it out, hold it up and read it against the chart.
+                var cycle = Mathf.PosMod(f, 8f);
+                var dip = cycle < 3f ? Mathf.Abs(Mathf.Sin(cycle * Mathf.Pi / 1.5f)) : 0f;
+                left = new Vector3(-0.95f, 0, 0.3f);
+                right = cycle < 3f ? new Vector3(-0.95f + (0.14f * dip), 0, 0.05f) : new Vector3(-1.5f + (0.03f * S(2)), 0, -0.1f);
+                lean = 0.05f;
+                _samplePot = Prop(_samplePot, _armL, SamplePot);
+                _strip = Prop(_strip, _armR, Strip);
+                break;
+            }
+
+            case Act.Swab:
+            {
+                // Reach up to the patient's face with the swab, a few turns, then drop it in its tube.
+                var cycle = Mathf.PosMod(f, 7f);
+                lean = cycle < 4.5f ? 0.28f : 0.08f;
+                left = cycle < 4.5f ? new Vector3(-0.5f, 0, 0.1f) : new Vector3(-1.0f, 0, 0.3f);
+                right = cycle < 4.5f ? new Vector3(-1.3f + (0.05f * S(7)), 0, -0.12f + (0.04f * S(9))) : new Vector3(-1.0f, 0, 0.1f);
+                _swab = Prop(_swab, _armR, SwabStick);
+                break;
+            }
+
+            case Act.Thermometer:
+                // The thermometer held in the patient's ear until it beeps.
+                lean = 0.26f;
+                left = new Vector3(-0.4f, 0, 0.08f);
+                right = new Vector3(-1.32f + (0.02f * S(1.5f)), 0, -0.1f);
+                _thermometer = Prop(_thermometer, _armR, Thermometer);
+                break;
+            case Act.Write:
+                // Writing the numbers on the chart.
+                lean = 0.05f;
+                left = new Vector3(-1.05f, 0, 0.35f);
+                right = new Vector3(-1.0f + (0.05f * S(14)), 0, -0.25f + (0.04f * S(9)));
+                _clipboard = Prop(_clipboard, _armL, Clipboard);
+                break;
             case Act.Carry:
                 // Both arms out and bent in, cradling the baby.
                 lean = 0.1f;
@@ -1028,9 +1094,35 @@ public partial class Person3D : Node3D
     /// <summary>Hides the props that don't belong to <paramref name="act"/>.</summary>
     private void Show(Act act)
     {
-        if (act != Act.Examine)
+        if (act is not (Act.Examine or Act.Write))
         {
             Hide(_clipboard);
+        }
+
+        if (act != Act.Needle)
+        {
+            Hide(_syringe);
+        }
+
+        if (act != Act.Prick)
+        {
+            Hide(_meter);
+        }
+
+        if (act != Act.Dip)
+        {
+            Hide(_samplePot);
+            Hide(_strip);
+        }
+
+        if (act != Act.Swab)
+        {
+            Hide(_swab);
+        }
+
+        if (act != Act.Thermometer)
+        {
+            Hide(_thermometer);
         }
 
         if (act is not Act.Observations)
@@ -1382,6 +1474,58 @@ public partial class Person3D : Node3D
         b.Rod(new Vector3(0, -W(3), W(1)), new Vector3(0, -W(8), W(5)), W(0.55f), black, small: true);
         b.Rod(new Vector3(0, -W(8), W(5)), new Vector3(-W(3), -W(11), W(11)), W(0.55f), black, small: true);
         b.Rod(new Vector3(0, W(2), W(1)), new Vector3(W(4), W(7), -W(3)), W(0.5f), new Color("#37474F"), small: true);
+    }
+
+    /// <summary>A syringe: clear barrel with dark blood in it, the plunger out behind, the needle in front.</summary>
+    private static void Syringe(MeshBatch b)
+    {
+        b.Capsule(new Vector3(0, -W(1), W(1.2f)), new Vector3(0, -W(4.5f), W(1.2f)), W(0.8f), new Color("#F4F6F7"));
+        b.Capsule(new Vector3(0, -W(2.6f), W(1.2f)), new Vector3(0, -W(4.3f), W(1.2f)), W(0.85f), new Color("#9B1B30"));
+        b.Rod(new Vector3(0, -W(4.5f), W(1.2f)), new Vector3(0, -W(7), W(1.2f)), W(0.18f), new Color("#B0BEC5"), small: true);
+        b.Box(new Vector3(0, W(0.6f), W(1.2f)), new Vector3(W(2.2f), W(0.4f), W(1.2f)), new Color("#ECEFF1"));
+    }
+
+    /// <summary>A blood glucose meter: a small grey handset with a lit screen and the test strip sticking out.</summary>
+    private static void Meter(MeshBatch b)
+    {
+        b.Box(new Vector3(0, -W(2.5f), W(1.6f)), new Vector3(W(4), W(6.5f), W(1)), new Color("#455A64"));
+        b.Box(new Vector3(0, -W(1.6f), W(2.15f)), new Vector3(W(3), W(2.6f), W(0.2f)), new Color("#B9FFCF"));
+        b.Box(new Vector3(0, -W(6.6f), W(1.6f)), new Vector3(W(1), W(2), W(0.25f)), Colors.White);
+    }
+
+    /// <summary>A sample pot: clear with a white lid, the sample in the bottom.</summary>
+    private static void SamplePot(MeshBatch b)
+    {
+        var up = Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0));
+        b.Cylinder(new Vector3(0, -W(1.5f), W(2.4f)), W(1.9f), W(4.4f), W(1.9f), new Color("#F2F6F8"), up);
+        b.Cylinder(new Vector3(0, -W(1.5f), W(1.5f)), W(1.95f), W(2.4f), W(1.95f), new Color("#F2D45C"), up);
+        b.Cylinder(new Vector3(0, -W(1.5f), W(4.8f)), W(2.1f), W(0.7f), W(2.1f), Colors.White, up);
+    }
+
+    /// <summary>A dipstick: a thin white strip with its row of coloured pads.</summary>
+    private static void Strip(MeshBatch b)
+    {
+        b.Box(new Vector3(0, -W(4), W(1.2f)), new Vector3(W(0.9f), W(9), W(0.2f)), Colors.White);
+        var pads = new[] { "#F2D45C", "#8BC34A", "#F4511E", "#7E57C2" };
+        for (var i = 0; i < pads.Length; i++)
+        {
+            b.Box(new Vector3(0, -W(5.2f + (i * 1.1f)), W(1.3f)), new Vector3(W(0.9f), W(0.8f), W(0.25f)), new Color(pads[i]));
+        }
+    }
+
+    /// <summary>A swab: a long thin stick with a cotton tip.</summary>
+    private static void SwabStick(MeshBatch b)
+    {
+        b.Rod(new Vector3(0, 0, W(1.2f)), new Vector3(0, -W(9), W(1.2f)), W(0.22f), new Color("#F4F6F7"), small: true);
+        b.Ball(new Vector3(0, -W(9.3f), W(1.2f)), new Vector3(W(1), W(1.6f), W(1)), Colors.White, small: true);
+    }
+
+    /// <summary>An ear thermometer: a white handle with a blue cone on the end.</summary>
+    private static void Thermometer(MeshBatch b)
+    {
+        b.Capsule(new Vector3(0, W(0.5f), W(1.2f)), new Vector3(0, -W(4), W(1.2f)), W(1.1f), new Color("#F4F6F7"));
+        b.Ball(new Vector3(0, -W(5.4f), W(1.2f)), new Vector3(W(1.6f), W(2.4f), W(1.6f)), new Color("#4FC3F7"), small: true);
+        b.Box(new Vector3(0, -W(1.5f), W(2.3f)), new Vector3(W(1.4f), W(1.8f), W(0.2f)), new Color("#B9FFCF"));
     }
 
     private static void Pot(MeshBatch b)
