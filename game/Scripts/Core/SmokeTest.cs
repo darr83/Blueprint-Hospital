@@ -1020,7 +1020,9 @@ public partial class SmokeTest : Node
         var parentBeds = ward!.Furniture.Count(f => f.ItemId == "parent_bed");
         Check(ward.Beds.Count >= 2 && parentBeds == ward.Beds.Count, $"The children's ward has {ward.Beds.Count} beds and {parentBeds} parent beds.");
         var wrong = sim.Staff.Where(s => s.BaseRoomId is { } id && sim.FindSpace(id) is { } room && sim.IsPaediatricWard(room)
-                                         && s.Role is not (StaffRole.ChildrensNurse or StaffRole.Paediatrician or StaffRole.HealthcareAssistant)).ToList();
+                                         && s.Role is not (StaffRole.ChildrensNurse or StaffRole.Paediatrician or StaffRole.HealthcareAssistant)
+                                         // The PICU needs an anaesthetist, as every intensive care unit does.
+                                         && !(s.Role == StaffRole.Anaesthetist && room.TemplateId == "picu")).ToList();
         Check(wrong.Count == 0, "Adult staff are posted to a children's ward: " + string.Join(", ", wrong.Select(s => s.Grade)));
         Check(sim.Staff.Any(s => s.Role == StaffRole.Paediatrician) && sim.Staff.Any(s => s.Role == StaffRole.ChildrensNurse), "The example hospital has no children's nurses or paediatric doctors.");
         CheckStaffPanelsFit(example);

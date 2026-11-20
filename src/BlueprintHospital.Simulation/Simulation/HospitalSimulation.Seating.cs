@@ -91,6 +91,11 @@ public sealed partial class HospitalSimulation
             }
         }
 
+        foreach (var parent in _parents.Values)
+        {
+            Add(parent);
+        }
+
         foreach (var trip in _trips.Values)
         {
             if (trip.Table is { } table && trip.Person != except)

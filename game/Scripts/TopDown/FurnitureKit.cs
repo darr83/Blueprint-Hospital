@@ -787,6 +787,8 @@ public static class FurnitureKit
     /// <summary>A parent's fold-out bed, opened flat: a padded frame with a raised back at the head and a folded blanket.</summary>
     public static void ParentBed(Pen p, double w, double d, Color colour)
     {
+        // The chair back (the head end) is at -y when the bed runs front to back, else at -x
+        // (see RoomsLayer.FoldOutHead, which the sleeping parent follows).
         var (l, t) = (-w / 2, -d / 2);
         p.Box(l, t, w, d, 0.12, Pen.Dark(colour, 0.15f));
         if (d >= w)

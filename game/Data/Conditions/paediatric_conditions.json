@@ -1,0 +1,1216 @@
+[
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": true,
+    "id": "acute_asthma_child",
+    "name": "Acute asthma (child)",
+    "description": "An asthma attack in a child: tight chest, wheeze and struggling to speak. Burst of nebulisers and a short course of steroids; a bad attack needs a night on the children's ward.",
+    "prevalence": 2,
+    "age_range": [
+      2,
+      15
+    ],
+    "ambulance_probability": 0.35,
+    "crew_assessment": "child with asthma attack",
+    "presenting_complaint": "wheeze",
+    "symptoms": [
+      {
+        "symptom": "wheeze",
+        "probability": 1.0
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.8
+      },
+      {
+        "symptom": "chest_pain",
+        "probability": 0.2
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        128,
+        14
+      ],
+      "systolic_bp": [
+        104,
+        8
+      ],
+      "diastolic_bp": [
+        64,
+        6
+      ],
+      "respiratory_rate": [
+        34,
+        5
+      ],
+      "oxygen_saturation": [
+        93,
+        2
+      ],
+      "temperature": [
+        37.1,
+        0.4
+      ],
+      "pain_score": [
+        1,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.55
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": 0,
+      "respiratory_rate": 14,
+      "oxygen_saturation": -8,
+      "temperature": 0
+    },
+    "key_investigations": [
+      "peak_flow"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "salbutamol_nebuliser",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ipratropium_nebuliser",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "prednisolone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.03,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward for regular salbutamol, weaning over the next day.",
+    "length_of_stay_hours": [
+      18,
+      36
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "viral_wheeze",
+    "name": "Viral wheeze",
+    "description": "A preschool child who wheezes with every cold. Salbutamol through a spacer settles it and they go home once they can go four hours between doses.",
+    "prevalence": 2,
+    "age_range": [
+      1,
+      5
+    ],
+    "ambulance_probability": 0.1,
+    "crew_assessment": "toddler wheezy with a cold",
+    "presenting_complaint": "wheeze",
+    "symptoms": [
+      {
+        "symptom": "wheeze",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.9
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.4
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        140,
+        14
+      ],
+      "systolic_bp": [
+        98,
+        8
+      ],
+      "diastolic_bp": [
+        60,
+        6
+      ],
+      "respiratory_rate": [
+        38,
+        5
+      ],
+      "oxygen_saturation": [
+        95,
+        1.5
+      ],
+      "temperature": [
+        37.6,
+        0.4
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": 0,
+      "respiratory_rate": 12,
+      "oxygen_saturation": -6,
+      "temperature": 0
+    },
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "salbutamol_nebuliser",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "prednisolone",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Settled on salbutamol. Home with a weaning plan and a spacer.",
+    "observe_hours": [
+      2,
+      4
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": true,
+    "id": "childhood_pneumonia",
+    "name": "Chest infection (child)",
+    "description": "Pneumonia in a child: high fever, fast breathing and a cough. Oral or IV antibiotics; some need oxygen on the children's ward.",
+    "prevalence": 2,
+    "age_range": [
+      0,
+      15
+    ],
+    "ambulance_probability": 0.2,
+    "crew_assessment": "child with fever and fast breathing",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.9
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "poor_feeding",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        145,
+        15
+      ],
+      "systolic_bp": [
+        98,
+        8
+      ],
+      "diastolic_bp": [
+        60,
+        6
+      ],
+      "respiratory_rate": [
+        40,
+        6
+      ],
+      "oxygen_saturation": [
+        93,
+        2
+      ],
+      "temperature": [
+        38.9,
+        0.5
+      ],
+      "pain_score": [
+        1,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.5
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -10,
+      "respiratory_rate": 12,
+      "oxygen_saturation": -8,
+      "temperature": 0.4
+    },
+    "key_investigations": [
+      "chest_xray",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "amoxicillin",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward for antibiotics and oxygen if needed.",
+    "length_of_stay_hours": [
+      24,
+      72
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": true,
+    "id": "fever_under_three_months",
+    "name": "Fever in a baby under 3 months",
+    "description": "Any baby under three months with a temperature of 38 or more needs a full septic screen and IV antibiotics until the cultures come back clear.",
+    "prevalence": 1,
+    "age_range": [
+      0,
+      0
+    ],
+    "ambulance_probability": 0.2,
+    "crew_assessment": "young baby with a high temperature",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "poor_feeding",
+        "probability": 0.8
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.5
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        170,
+        14
+      ],
+      "systolic_bp": [
+        80,
+        8
+      ],
+      "diastolic_bp": [
+        48,
+        6
+      ],
+      "respiratory_rate": [
+        50,
+        6
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        38.4,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.45
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -15,
+      "respiratory_rate": 12,
+      "oxygen_saturation": -4,
+      "temperature": 0.4
+    },
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein",
+      "blood_cultures",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ceftriaxone",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Septic screen and cannula",
+        "performed_by": "doctor",
+        "minutes": 20,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward on IV antibiotics for 48 hours until cultures are clear.",
+    "length_of_stay_hours": [
+      48,
+      60
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": true,
+    "id": "paediatric_sepsis",
+    "name": "Sepsis (child)",
+    "description": "A child with a serious infection that is making them very unwell: fast heart, cold hands, drowsy. Fluid boluses and IV antibiotics within the hour; some need HDU or PICU.",
+    "prevalence": 1,
+    "age_range": [
+      0,
+      15
+    ],
+    "ambulance_probability": 0.6,
+    "crew_assessment": "floppy child with a high temperature",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.9
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.4
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.4
+      },
+      {
+        "symptom": "rash",
+        "probability": 0.3
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        170,
+        15
+      ],
+      "systolic_bp": [
+        82,
+        10
+      ],
+      "diastolic_bp": [
+        48,
+        8
+      ],
+      "respiratory_rate": [
+        42,
+        6
+      ],
+      "oxygen_saturation": [
+        95,
+        2
+      ],
+      "temperature": [
+        39.2,
+        0.5
+      ],
+      "pain_score": [
+        2,
+        4
+      ]
+    },
+    "initial_severity": [
+      0.5,
+      0.75
+    ],
+    "deterioration_per_hour": 0.06,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -30,
+      "respiratory_rate": 12,
+      "oxygen_saturation": -6,
+      "temperature": 0.5
+    },
+    "key_investigations": [
+      "blood_cultures",
+      "venous_blood_gas",
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ceftriaxone",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.015,
+    "disposition": "admit",
+    "disposition_note": "Admitted after fluid boluses and IV antibiotics.",
+    "length_of_stay_hours": [
+      48,
+      96
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "infant_uti",
+    "name": "Urine infection (baby)",
+    "description": "A urine infection in a baby or toddler, often just fever and poor feeding. A clean catch urine sample, then IV antibiotics for the youngest.",
+    "prevalence": 1,
+    "age_range": [
+      0,
+      2
+    ],
+    "ambulance_probability": 0.1,
+    "crew_assessment": "baby with fever, not feeding",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "poor_feeding",
+        "probability": 0.7
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        160,
+        14
+      ],
+      "systolic_bp": [
+        88,
+        8
+      ],
+      "diastolic_bp": [
+        52,
+        6
+      ],
+      "respiratory_rate": [
+        40,
+        5
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        38.8,
+        0.4
+      ],
+      "pain_score": [
+        1,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.25,
+      0.4
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 25,
+      "systolic_bp": -10,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -2,
+      "temperature": 0.4
+    },
+    "key_investigations": [
+      "urine_dipstick",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "co_amoxiclav",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.03,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward for IV antibiotics and a kidney scan later.",
+    "length_of_stay_hours": [
+      36,
+      60
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "kawasaki_disease",
+    "name": "Kawasaki disease",
+    "description": "Five days of fever in a young child with red eyes, a rash, cracked lips and swollen hands. Immunoglobulin and aspirin protect the heart; an echo checks the coronary arteries.",
+    "prevalence": 1,
+    "age_range": [
+      0,
+      5
+    ],
+    "ambulance_probability": 0.05,
+    "crew_assessment": "child with prolonged fever and rash",
+    "presenting_complaint": "fever",
+    "symptoms": [
+      {
+        "symptom": "fever",
+        "probability": 1.0
+      },
+      {
+        "symptom": "red_eyes",
+        "probability": 0.9
+      },
+      {
+        "symptom": "rash",
+        "probability": 0.9
+      },
+      {
+        "symptom": "swelling",
+        "probability": 0.7
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        150,
+        14
+      ],
+      "systolic_bp": [
+        96,
+        8
+      ],
+      "diastolic_bp": [
+        58,
+        6
+      ],
+      "respiratory_rate": [
+        32,
+        4
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        39.0,
+        0.4
+      ],
+      "pain_score": [
+        2,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.45
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -5,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -1,
+      "temperature": 0.3
+    },
+    "key_investigations": [
+      "full_blood_count",
+      "c_reactive_protein"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "aspirin",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Immunoglobulin infusion",
+        "performed_by": "nurse",
+        "minutes": 30,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward for immunoglobulin, aspirin and a heart scan.",
+    "length_of_stay_hours": [
+      48,
+      96
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "dehydration_gastroenteritis",
+    "name": "Gastroenteritis with dehydration",
+    "description": "A toddler with a tummy bug who has stopped drinking. A fluid challenge with little and often sips, sometimes a nasogastric tube; most go home once they are keeping it down.",
+    "prevalence": 2,
+    "age_range": [
+      0,
+      4
+    ],
+    "ambulance_probability": 0.1,
+    "crew_assessment": "toddler with vomiting and diarrhoea",
+    "presenting_complaint": "vomiting",
+    "symptoms": [
+      {
+        "symptom": "vomiting",
+        "probability": 1.0
+      },
+      {
+        "symptom": "diarrhoea",
+        "probability": 0.9
+      },
+      {
+        "symptom": "reduced_urine",
+        "probability": 0.7
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      },
+      {
+        "symptom": "fever",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        150,
+        14
+      ],
+      "systolic_bp": [
+        92,
+        8
+      ],
+      "diastolic_bp": [
+        56,
+        6
+      ],
+      "respiratory_rate": [
+        32,
+        4
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.6,
+        0.4
+      ],
+      "pain_score": [
+        1,
+        3
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.4
+    ],
+    "deterioration_per_hour": 0.03,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -15,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -1,
+      "temperature": 0
+    },
+    "key_investigations": [
+      "capillary_glucose"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Oral fluid challenge",
+        "performed_by": "nurse",
+        "minutes": 15,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.25,
+    "disposition": "discharge",
+    "disposition_note": "Keeping fluids down after the fluid challenge. Home with advice on little and often.",
+    "observe_hours": [
+      3,
+      6
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": true,
+    "id": "intussusception",
+    "name": "Intussusception",
+    "description": "The bowel telescopes into itself in a baby or toddler: spasms of screaming, drawing up the legs, vomiting, and redcurrant-jelly stools. An ultrasound finds it and an air enema pushes it back.",
+    "prevalence": 1,
+    "age_range": [
+      0,
+      2
+    ],
+    "ambulance_probability": 0.3,
+    "crew_assessment": "baby screaming with tummy pain",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1.0
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.9
+      },
+      {
+        "symptom": "rectal_bleeding",
+        "probability": 0.5
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        165,
+        15
+      ],
+      "systolic_bp": [
+        86,
+        8
+      ],
+      "diastolic_bp": [
+        52,
+        6
+      ],
+      "respiratory_rate": [
+        38,
+        5
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        37.4,
+        0.4
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.55
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 30,
+      "systolic_bp": -20,
+      "respiratory_rate": 8,
+      "oxygen_saturation": -2,
+      "temperature": 0.3
+    },
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Air enema reduction",
+        "performed_by": "doctor",
+        "minutes": 40,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "sodium_chloride",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.05,
+    "disposition": "admit",
+    "disposition_note": "Reduced with an air enema. Admitted to the children's ward to watch for it coming back.",
+    "length_of_stay_hours": [
+      18,
+      30
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "pulled_elbow",
+    "name": "Pulled elbow",
+    "description": "A toddler swung by the arm who now won't use it. A quick twist of the forearm pops it back in and they are using it again in minutes.",
+    "prevalence": 2,
+    "age_range": [
+      1,
+      5
+    ],
+    "ambulance_probability": 0.0,
+    "crew_assessment": "toddler not using arm",
+    "presenting_complaint": "not_using_arm",
+    "symptoms": [
+      {
+        "symptom": "not_using_arm",
+        "probability": 1.0
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.7
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        120,
+        12
+      ],
+      "systolic_bp": [
+        98,
+        8
+      ],
+      "diastolic_bp": [
+        60,
+        6
+      ],
+      "respiratory_rate": [
+        26,
+        3
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.05,
+      0.15
+    ],
+    "deterioration_per_hour": 0.0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Reduction of pulled elbow",
+        "performed_by": "doctor",
+        "minutes": 5,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 1.0,
+    "disposition": "discharge",
+    "disposition_note": "Elbow reduced and using the arm again. Home.",
+    "observe_hours": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "new_type1_diabetes",
+    "name": "New type 1 diabetes",
+    "description": "A child who has been drinking and weeing a lot and losing weight, with a high blood sugar but not yet in DKA. Started on insulin, and the family learn to manage it with the diabetes nurses.",
+    "prevalence": 1,
+    "age_range": [
+      2,
+      15
+    ],
+    "ambulance_probability": 0.05,
+    "crew_assessment": "child, high blood sugar",
+    "presenting_complaint": "excessive_thirst",
+    "symptoms": [
+      {
+        "symptom": "excessive_thirst",
+        "probability": 1.0
+      },
+      {
+        "symptom": "urinary_frequency",
+        "probability": 0.9
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.8
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        110,
+        12
+      ],
+      "systolic_bp": [
+        104,
+        8
+      ],
+      "diastolic_bp": [
+        64,
+        6
+      ],
+      "respiratory_rate": [
+        24,
+        4
+      ],
+      "oxygen_saturation": [
+        99,
+        1
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        1
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 15,
+      "systolic_bp": -10,
+      "respiratory_rate": 8,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "key_investigations": [
+      "capillary_glucose",
+      "blood_ketones",
+      "urine_dipstick"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Start insulin and diabetes teaching",
+        "performed_by": "nurse",
+        "minutes": 30,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.02,
+    "disposition": "admit",
+    "disposition_note": "Admitted to the children's ward to start insulin; the family learn injections and finger-prick checks.",
+    "length_of_stay_hours": [
+      48,
+      72
+    ]
+  },
+  {
+    "department": "paediatrics",
+    "female_fraction": 0.45,
+    "can_be_fatal": false,
+    "id": "first_seizure_child",
+    "name": "First seizure (child)",
+    "description": "A child who has had a fit for the first time, without a fever. Back to normal now; checked over, watched for a few hours and referred to the first-fit clinic for an EEG.",
+    "prevalence": 1,
+    "age_range": [
+      2,
+      15
+    ],
+    "ambulance_probability": 0.7,
+    "crew_assessment": "child post seizure, now alert",
+    "presenting_complaint": "seizures",
+    "symptoms": [
+      {
+        "symptom": "seizures",
+        "probability": 1.0
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.8
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        115,
+        12
+      ],
+      "systolic_bp": [
+        104,
+        8
+      ],
+      "diastolic_bp": [
+        64,
+        6
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.9,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.15,
+      0.3
+    ],
+    "deterioration_per_hour": 0.01,
+    "deterioration_effects": {
+      "heart_rate": 10,
+      "systolic_bp": 0,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "key_investigations": [
+      "capillary_glucose",
+      "ecg"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Neurological examination",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Back to normal after a few hours. Home with first-fit clinic and EEG booked.",
+    "observe_hours": [
+      3,
+      5
+    ]
+  }
+]

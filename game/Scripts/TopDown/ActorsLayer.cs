@@ -282,7 +282,7 @@ public partial class ActorsLayer : Node2D
     private void People(Pen p)
     {
         var tasks = _sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
-        var agents = _world.AgentsInView().Where(a => a is Patient or StaffMember or Outpatient).ToList();
+        var agents = _world.AgentsInView().Where(a => a is Patient or StaffMember or Outpatient or Parent).ToList();
 
         // Whoever is lying down goes underneath whoever is standing over them.
         foreach (var patient in agents.OfType<Patient>())
@@ -294,7 +294,21 @@ public partial class ActorsLayer : Node2D
             }
         }
 
-        foreach (var agent in agents.OrderBy(a => _world.IsSeated(a) ? 0 : 1))
+        // A parent asleep on the fold-out bed is drawn lying under their blanket, beneath anyone standing by.
+        foreach (var parent in agents.OfType<Parent>().Where(a => a.Activity == ParentActivity.Sleeping && a.FoldOutBed is not null))
+        {
+            var bed = parent.FoldOutBed!;
+            var child = _sim.FindPatient(parent.ChildId);
+            var head = child?.CareSpaceId is { } wardId && _sim.FindSpace(wardId) is { } ward ? RoomsLayer.FoldOutHead(ward, bed) : (X: 0.0, Y: -1.0);
+
+            // Head at the chair back.
+            p.Push(bed.CentreX, bed.CentreY, Pen.Facing(head.X, head.Y));
+            PeopleArt.LyingFigure(p, Looks.Parent(parent, child), Looks.ParentBlanket, null, null, Math.Min(bed.Width, bed.Length) * 0.9, Math.Max(bed.Width, bed.Length) * 0.92);
+            p.Pop();
+            PeopleDrawn++;
+        }
+
+        foreach (var agent in agents.Where(a => a is not Parent { Activity: ParentActivity.Sleeping, FoldOutBed: not null }).OrderBy(a => _world.IsSeated(a) || a is Parent { Activity: ParentActivity.SittingByBed } ? 0 : 1))
         {
             if (agent is Patient { } done && _inBeds.Contains(done.Id))
             {
@@ -527,6 +541,7 @@ public partial class ActorsLayer : Node2D
             Patient patient => Looks.Patient(patient),
             StaffMember member => Looks.Staff(member),
             Outpatient outpatient => Looks.Outpatient(outpatient, _sim.FindAppointment(outpatient.AppointmentId)),
+            Parent parent => Looks.Parent(parent, _sim.FindPatient(parent.ChildId)),
             _ => null,
         };
         if (look is null)
@@ -537,6 +552,18 @@ public partial class ActorsLayer : Node2D
         var (x, y) = _world.FootGrid(agent);
         var facing = agent.Facing;
         var seated = _world.IsSeated(agent);
+        var onFoldOut = false;
+
+        // A parent on the ward sits on the fold-out bed, turned to their child.
+        if (agent is Parent { Activity: ParentActivity.SittingByBed, FoldOutBed: { } foldOut } sitter && _sim.FindPatient(sitter.ChildId) is { } child)
+        {
+            (x, y) = (foldOut.CentreX, foldOut.CentreY);
+            var (dx, dy) = (child.X - x, child.Y - y);
+            facing = Math.Abs(dx) >= Math.Abs(dy) ? (Math.Sign(dx), 0) : (0, Math.Sign(dy));
+            var edge = (Math.Abs(facing.X) > 0 ? foldOut.Width : foldOut.Length) / 2 - 0.25;
+            (x, y) = (x + (facing.X * edge), y + (facing.Y * edge));
+            (seated, onFoldOut) = (true, true);
+        }
         var walking = agent.IsMoving || (PlayerWalking && ReferenceEquals(agent, Player));
         var pushing = false;
         double? cpr = null;
@@ -585,9 +612,13 @@ public partial class ActorsLayer : Node2D
                 break;
         }
 
-        if (seated)
+        if (seated && !onFoldOut)
         {
             facing = ChairArt.Direction(_world.SeatFacing(agent));
+            snap = true;
+        }
+        else if (onFoldOut)
+        {
             snap = true;
         }
 

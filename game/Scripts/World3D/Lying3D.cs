@@ -60,12 +60,14 @@ public static class Lying3D
     /// backrest (a table, the floor) they lie flat with no pillow.
     /// </summary>
     public static Node3D Build(PersonLook look, Color blanket, Color? band, BabyLook[]? onChest = null, bool awake = false, InBed doing = InBed.None, float cast = 0,
-        Carriers3D.Backrest? rest = null, float angle = 0, Care care = Care.None, float careSide = 1, Wear wear = Wear.None)
+        Carriers3D.Backrest? rest = null, float angle = 0, Care care = Care.None, float careSide = 1, Wear wear = Wear.None,
+        bool ownClothes = false)
     {
         var node = new Node3D { Name = "Lying" };
         var sz = Mathf.Clamp(look.Scale, 0.5f, 1f);
         var kid = sz < 0.8f;
-        var gown = kid ? ChildGown : Gown;
+        // A visitor (a parent asleep on the fold-out bed) wears their own top, with no gown print or ID band.
+        var gown = ownClothes ? look.Top : kid ? ChildGown : Gown;
         var skin = look.Skin;
         var raised = rest is not null && angle > 0.05f;
         var cuddling = onChest is { Length: > 0 };
@@ -124,7 +126,7 @@ public static class Lying3D
         // ---- shoulders and chest in the gown, the neck tucked in
         var torsoLen = (hipZ - shZ) + 0.25f;
         u.Shape("torso", new Vector3(0, 0.12f, shZ + (torsoLen / 2) - 0.08f), new Vector3(shW * 2.15f, torsoLen, 0.36f * Mathf.Lerp(sz, 1f, 0.4f)), gown, new Basis(Vector3.Right, -Mathf.Pi / 2));
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < (ownClothes ? 0 : 3); i++)
         {
             // A little print on the gown, so it reads as a hospital gown.
             u.Ball(new Vector3((-0.18f + (i * 0.18f)) * sz, 0.3f * Mathf.Lerp(sz, 1f, 0.4f), shZ + 0.14f), new Vector3(0.05f, 0.012f, 0.05f), kid ? ChildPrint : GownPrint, small: true);
@@ -414,7 +416,7 @@ public static class Lying3D
 
             if (doing == InBed.None)
             {
-                Forearm(1, elbowR, restR, true);
+                Forearm(1, elbowR, restR, !ownClothes);
                 if (cast > 0.01f)
                 {
                     // A fresh plaster cast, wrapped on from the wrist up the forearm.
