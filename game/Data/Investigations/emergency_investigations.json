@@ -2267,6 +2267,21 @@
     "No fracture or dislocation. Joint spaces and alignment are normal. Soft tissues unremarkable."
    ]
   },
+  "normal_pictures": {
+   "fall_older_person": "hip_normal",
+   "gout": "knee_normal",
+   "cellulitis": "tibia_normal",
+   "deep_vein_thrombosis": "tibia_normal",
+   "planned_knee_arthroscopy": "knee_normal",
+   "ankle_sprain": "ankle_normal",
+   "shortened_rotated_leg": "hip_normal",
+   "wrist_deformity": "wrist_normal",
+   "shoulder_deformity": "shoulder_normal",
+   "leg_deformity": "tibia_normal",
+   "hot_swollen_joint": "knee_normal",
+   "calf_swelling": "tibia_normal",
+   "unable_to_weight_bear": "ankle_normal"
+  },
   "false_positive_rate": 0.03,
   "false_positive": {
    "summaries": [
