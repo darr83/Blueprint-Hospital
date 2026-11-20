@@ -472,6 +472,10 @@ public partial class SmokeTest : Node
 
             case Stage.Rota when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("06d_rota");
+                var rota = hospital.Hud.Rota;
+                Check(rota.GetCombinedMinimumSize().X <= rota.Size.X + 1, $"The rota is wider than the screen ({rota.GetCombinedMinimumSize().X:0} > {rota.Size.X:0}).");
+                Check(rota.DepartmentKeys().FirstOrDefault() == "ae" && rota.DepartmentKeys().Count >= 3, "The rota should list A&E, the ward and the rest down the left.");
+                Check(rota.SelectedDepartment is not null, "The rota should open on a department.");
                 hospital.Hud.Rota.ShowBreaksForTest();
                 _frame = 0;
                 _stage = Stage.RotaBreaks;

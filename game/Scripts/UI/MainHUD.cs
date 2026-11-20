@@ -344,6 +344,7 @@ public partial class MainHUD : CanvasLayer
         Rota.OffsetRight = -Gap;
         Rota.OffsetBottom = -Gap;
         root.AddChild(Rota);
+        Rota.HireRequested += _ => ToggleRecruitment();
 
         // The Stats screen is as big as the rota.
         StatsScreen.Initialise(sim);
