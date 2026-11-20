@@ -20,6 +20,9 @@ public partial class Agents3D : Node3D
 {
     private static readonly Color SelectedRing = new("#FFEB3B");
 
+    /// <summary>The ring under whoever the mouse is over in play mode (a click would pick them).</summary>
+    internal static readonly Color HoverRing = new("#2A6FD6");
+
     private View3D _view = null!;
     private readonly Dictionary<Agent, AgentView> _views = new();
 
@@ -611,7 +614,8 @@ public partial class Agents3D : Node3D
         private void Ring(WorldLayer world, bool upright)
         {
             var selected = ReferenceEquals(world.Selected, _agent);
-            Color? colour = selected ? SelectedRing : !upright ? null : _agent switch
+            var hovered = ReferenceEquals(world.Hovered, _agent);
+            Color? colour = selected ? SelectedRing : hovered ? HoverRing : !upright ? null : _agent switch
             {
                 Patient p => Looks.TriageRing(p.Triage),
                 Outpatient => Looks.OutpatientRing,

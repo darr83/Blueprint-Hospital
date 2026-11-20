@@ -90,6 +90,8 @@ public partial class HospitalScene : Node2D
         if (playing)
         {
             ClearSelection();
+            _world.Hovered = null;
+            _hud.ShowPickTag(null, Vector2.Zero);
             _hud.HideRightPanels();
             _routesBeforeDoctor = _routes.ShowAll;
             _routes.ShowAll = false;
@@ -385,6 +387,7 @@ public partial class HospitalScene : Node2D
         _itemHighlight.ItemHeight = ThreeD && shown.item is not null && _session.Database.Furniture.TryGetValue(shown.item.ItemId, out var shownDef)
             ? (float)System.Math.Min(System.Math.Max(shownDef.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
             : 0;
+        UpdatePlayHover();
         if (_layoutDirty)
         {
             _layoutDirty = false;
@@ -395,6 +398,79 @@ public partial class HospitalScene : Node2D
 
             _hud.SetFloorShown(ViewFloor, _session.Simulation.FloorCount);
         }
+    }
+
+    private Vector2 _hoverMouse = new(float.NaN, float.NaN);
+    private int _hoverAge;
+    private bool _pointingHand;
+
+    /// <summary>In play mode: whoever or whatever a click would pick right now (for the review shots and the smoke test).</summary>
+    public (Agent? Agent, (CareSpace Room, PlacedFurniture Item)? Bed) PlayHover { get; private set; }
+
+    /// <summary>
+    /// Play mode's pointer: the person under the mouse gets a blue ring, or failing that the bed gets a
+    /// light frame, and a name tag follows the mouse; over bare floor the tile square shows instead.
+    /// Looked up again when the mouse moves, and a few times a second while it is still (people walk on).
+    /// </summary>
+    private void UpdatePlayHover()
+    {
+        var mouse = GetViewport().GetMousePosition();
+        var active = Mode == GameMode.Play && !_doctor.Active && _hud.Visible && !PlanView
+            && GetViewport().GuiGetHoveredControl() is null && GetViewport().GetVisibleRect().HasPoint(mouse);
+        if (active && mouse == _hoverMouse && ++_hoverAge < 6)
+        {
+            _hud.MovePickTag(mouse);
+            return;
+        }
+
+        _hoverMouse = mouse;
+        _hoverAge = 0;
+        Agent? agent = null;
+        (CareSpace Room, PlacedFurniture Item)? bed = null;
+        if (active)
+        {
+            var world = GetGlobalMousePosition();
+            agent = AgentAt(world);
+            bed = agent is null ? ItemAt(world, bedsOnly: true) : null;
+        }
+
+        PlayHover = (agent, bed);
+        _world.Hovered = agent;
+        _itemHighlight.HoverItem = bed is { } b ? Footprint(b.Room, b.Item) : null;
+        _itemHighlight.HoverItemHeight = ThreeD && bed is { } hb && _session.Database.Furniture.TryGetValue(hb.Item.ItemId, out var def)
+            ? (float)System.Math.Min(System.Math.Max(def.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
+            : 0;
+        _cursor.OverPick = agent is not null || bed is not null;
+        if (_cursor.OverPick != _pointingHand)
+        {
+            _pointingHand = _cursor.OverPick;
+            Input.SetDefaultCursorShape(_pointingHand ? Input.CursorShape.PointingHand : Input.CursorShape.Arrow);
+        }
+
+        _hud.ShowPickTag(agent is not null && ReferenceEquals(agent, _world.Selected) ? null : PickTag(agent, bed), mouse);
+    }
+
+    /// <summary>The name tag beside the mouse: who a click would pick, or whose bed it is.</summary>
+    private (string Name, string Detail)? PickTag(Agent? agent, (CareSpace Room, PlacedFurniture Item)? bed)
+    {
+        switch (agent)
+        {
+            case Patient p:
+                var triage = p.Triage is { } t ? $"{t} triage" : "Not triaged yet";
+                return (p.FullName, $"Patient · {triage}");
+            case StaffMember m:
+                return (m.Name, m.Grade);
+            case Outpatient o:
+                return (_session.Simulation.FindAppointment(o.AppointmentId)?.FullName ?? "Outpatient", "Clinic patient");
+        }
+
+        if (bed is not { } b)
+        {
+            return null;
+        }
+
+        var occupant = ItemPanel.BedOccupant(b.Room, b.Item) is { } id ? _session.Simulation.FindPatient(id) : null;
+        return ($"Bed · {b.Room.Name}", occupant is null ? "Empty · click for details" : occupant.FullName);
     }
 
     public override void _UnhandledInput(InputEvent @event)

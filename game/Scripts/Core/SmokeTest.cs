@@ -1581,7 +1581,7 @@ public partial class SmokeTest : Node
     /// like a player: drag out the room, place the desk, the entrance on the front path, a door onto the
     /// corridor, then rows of chairs.
     /// </summary>
-    private static void FitOutWaitingRoom(HospitalScene hospital)
+    internal static void FitOutWaitingRoom(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var b = Simulation.World.StarterSite.MainBuildingFootprint;

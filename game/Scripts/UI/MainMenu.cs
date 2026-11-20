@@ -59,7 +59,7 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin())
+        else if (!BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.CursorShots.Begin())
         {
             ArtShots.Begin(this);
         }

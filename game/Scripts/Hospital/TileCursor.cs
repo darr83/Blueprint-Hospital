@@ -15,6 +15,25 @@ public partial class TileCursor : Node2D
 
     public GridCoord? HoveredTile => _hovered;
 
+    private bool _overPick;
+
+    /// <summary>
+    /// True while the mouse is over a person or bed that a click would pick: they are ringed or framed
+    /// instead, so the square steps aside.
+    /// </summary>
+    public bool OverPick
+    {
+        get => _overPick;
+        set
+        {
+            if (value != _overPick)
+            {
+                _overPick = value;
+                QueueRedraw();
+            }
+        }
+    }
+
     public void Initialise(SiteMap site, IsoProjection projection)
     {
         _site = site;
@@ -44,18 +63,23 @@ public partial class TileCursor : Node2D
 
     public override void _Draw()
     {
-        if (_hovered is not { } t)
+        if (_hovered is not { } t || _overPick)
         {
             return;
         }
 
+        // A blue square with a white edge round it, so it shows on light floors and dark ones alike.
         var corners = new[]
         {
             Point(t.X, t.Y), Point(t.X + 1, t.Y), Point(t.X + 1, t.Y + 1), Point(t.X, t.Y + 1),
         };
-        DrawColoredPolygon(corners, new Color(1, 1, 1, 0.25f));
-        DrawPolyline(new[] { corners[0], corners[1], corners[2], corners[3], corners[0] }, new Color("#005EB8"), 2f);
+        var loop = new[] { corners[0], corners[1], corners[2], corners[3], corners[0] };
+        DrawColoredPolygon(corners, new Color(Blue, 0.28f));
+        DrawPolyline(loop, new Color(1, 1, 1, 0.9f), 5f, true);
+        DrawPolyline(loop, Blue, 2.5f, true);
     }
+
+    private static readonly Color Blue = new("#1F5FBF");
 
     private Vector2 Point(double x, double y)
     {
