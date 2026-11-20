@@ -38,6 +38,9 @@ public static class StaffGrades
         new Grade(StaffRole.HealthcareAssistant, "Healthcare assistant (Band 3)", 0.35, 0.60, 0, 15, 25_000, 2.5),
         new Grade(StaffRole.Receptionist, "Receptionist", 0.40, 0.60, 0, 15, 24_000, 1.5),
         new Grade(StaffRole.Cleaner, "Cleaner", 0.30, 0.55, 0, 20, 23_000, 2),
+        new Grade(StaffRole.ScrubNurse, "Band 5 scrub nurse", 0.45, 0.65, 0, 4, 31_000, 3),
+        new Grade(StaffRole.ScrubNurse, "Band 6 senior scrub nurse", 0.65, 0.85, 3, 12, 39_000, 2),
+        new Grade(StaffRole.ScrubNurse, "Band 7 theatre sister", 0.85, 0.97, 8, 25, 48_000, 0.6),
         new Grade(StaffRole.Midwife, "Band 5 midwife", 0.45, 0.60, 0, 3, 31_000, 3),
         new Grade(StaffRole.Midwife, "Band 6 midwife", 0.60, 0.72, 2, 8, 39_000, 3),
         new Grade(StaffRole.Midwife, "Band 7 midwife", 0.72, 0.85, 6, 15, 48_000, 1.5),
@@ -95,6 +98,8 @@ public static class StaffGrades
         (StaffRole.Midwife, true) => "midwives",
         (StaffRole.Cleaner, false) => "cleaner",
         (StaffRole.Cleaner, true) => "cleaners",
+        (StaffRole.ScrubNurse, false) => "scrub nurse",
+        (StaffRole.ScrubNurse, true) => "scrub nurses",
         _ => "healthcare assistants",
     };
 }

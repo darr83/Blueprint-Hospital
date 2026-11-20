@@ -59,6 +59,7 @@ public sealed partial class HospitalSimulation
         StaffRole.PlasterTechnician => new[] { CareSpaceKind.PlasterRoom },
         StaffRole.Physiotherapist => new[] { CareSpaceKind.PhysioGym },
         StaffRole.Anaesthetist => new[] { CareSpaceKind.Theatre },
+        StaffRole.ScrubNurse => new[] { CareSpaceKind.Theatre },
         StaffRole.OutreachNurse => new[] { CareSpaceKind.OutreachOffice },
         StaffRole.Midwife => new[] { CareSpaceKind.DeliveryRoom },
         _ => Array.Empty<CareSpaceKind>(),
@@ -217,6 +218,7 @@ public sealed partial class HospitalSimulation
             if (room.Kind == CareSpaceKind.Theatre)
             {
                 needs.Add(new(room.Name, room.Id, StaffRole.Anaesthetist, 1, Have(StaffRole.Anaesthetist, room.Id)));
+                needs.Add(new(room.Name, room.Id, StaffRole.ScrubNurse, 1, Have(StaffRole.ScrubNurse, room.Id)));
             }
         }
 

@@ -96,7 +96,7 @@
     "door_width_m": 2.0,
     "base_cost": 40000,
     "cost_per_square_metre": 2500,
-    "staffing": "Hire a consultant surgeon from Recruitment (H). Tick which departments may use it in the room panel.",
+    "staffing": "Hire a surgeon, an anaesthetist and a scrub nurse from Recruitment (H). Tick which departments may use it in the room panel.",
     "furniture": [
       "operating_table",
       "anaesthetic_machine",

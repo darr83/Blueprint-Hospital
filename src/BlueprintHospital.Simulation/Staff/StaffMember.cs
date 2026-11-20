@@ -46,6 +46,9 @@ public enum StaffRole
 
     /// <summary>Keeps the hospital clean: mops up spills and sweeps and mops the floors, with kit from the cleaning room.</summary>
     Cleaner,
+
+    /// <summary>Theatre nurse who scrubs in for every operation: lays out and counts the instruments and passes them to the surgeon.</summary>
+    ScrubNurse,
 }
 
 public enum StaffActivity

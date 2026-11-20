@@ -443,7 +443,7 @@ public partial class StaffRotaPanel : PanelContainer
         {
             var role = HospitalSimulation.RoleForRoom(room.Kind);
             places.Add(room.Kind == CareSpaceKind.Theatre
-                ? new(room.Id, room.Name, "Surgeons and anaesthetists", new[] { role, StaffRole.Anaesthetist })
+                ? new(room.Id, room.Name, "Surgeons, anaesthetists and scrub nurses", new[] { role, StaffRole.Anaesthetist, StaffRole.ScrubNurse })
                 : new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
         }
 

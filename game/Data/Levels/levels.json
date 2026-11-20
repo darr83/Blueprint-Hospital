@@ -86,7 +86,7 @@
     "arrival_rate": 1.0,
     "departments": ["general_surgery", "theatres"],
     "rooms": ["operating_theatre", "anaesthetic_room", "theatre_recovery", "surgical_assessment_unit", "surgical_ward", "ct_scanner"],
-    "staff": ["surgeon", "anaesthetist"],
+    "staff": ["surgeon", "anaesthetist", "scrub_nurse"],
     "grades": ["Consultant"],
     "features": [],
     "goals": [

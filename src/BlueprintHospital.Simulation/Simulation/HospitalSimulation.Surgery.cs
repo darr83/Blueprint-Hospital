@@ -185,6 +185,11 @@ public sealed partial class HospitalSimulation
             problems.Add("an anaesthetist");
         }
 
+        if (!_staff.Any(s => s.BaseRoomId == theatre.Id && s.Role == StaffRole.ScrubNurse))
+        {
+            problems.Add("a scrub nurse");
+        }
+
         if (AnaestheticRoomOf(theatre) is null)
         {
             problems.Add("an anaesthetic room built against it");
@@ -323,12 +328,14 @@ public sealed partial class HospitalSimulation
         }
 
         surgeon.StatusText = task.Phase == SurgeryPhase.Anaesthetic ? $"Scrubbing for {task.Label.ToLowerInvariant()}: {patient.FullName}" : $"{task.Label}: {patient.FullName}";
-        var anaesthetist = _staff.FirstOrDefault(s => s.AssistingTaskId == task.Id);
+        var anaesthetist = _staff.FirstOrDefault(s => s.AssistingTaskId == task.Id && s.Role == StaffRole.Anaesthetist);
         if (anaesthetist is null)
         {
             JoinAnaesthetist(task, theatre, patient);
             return true;
         }
+
+        JoinScrubNurse(task, theatre, patient);
 
         if (task.Phase == SurgeryPhase.Anaesthetic)
         {
@@ -537,11 +544,11 @@ public sealed partial class HospitalSimulation
             surgeon.StatusText = "Available";
         }
 
-        if (_staff.FirstOrDefault(s => s.AssistingTaskId == task.Id) is { } anaesthetist)
+        foreach (var helper in _staff.Where(s => s.AssistingTaskId == task.Id))
         {
-            anaesthetist.AssistingTaskId = null;
-            anaesthetist.Activity = StaffActivity.Idle;
-            anaesthetist.StatusText = "Available";
+            helper.AssistingTaskId = null;
+            helper.Activity = StaffActivity.Idle;
+            helper.StatusText = "Available";
         }
 
         if (task.SpaceId is { } id && FindSpace(id) is { } theatre && theatre.ReservedByStaffId == task.AssignedStaffId)

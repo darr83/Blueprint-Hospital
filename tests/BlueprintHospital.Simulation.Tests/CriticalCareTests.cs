@@ -120,7 +120,7 @@ public class CriticalCareTests
         h.RunUntil(() => patient.Stage is PatientStage.AwaitingTransfer or PatientStage.Gone or PatientStage.OnWard, TimeSpan.FromHours(16), "appendicitis to be dealt with");
         if (patient.WorkingDiagnosis?.ConditionId == "acute_appendicitis")
         {
-            Assert.Contains("needs both a surgeon and an anaesthetist", h.Journey(patient));
+            Assert.Contains("needs a surgeon, an anaesthetist and a scrub nurse", h.Journey(patient));
         }
     }
 

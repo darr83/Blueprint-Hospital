@@ -154,7 +154,7 @@
     "door_width_m": 2.0,
     "base_cost": 45000,
     "cost_per_square_metre": 2500,
-    "staffing": "Hire a surgeon and an anaesthetist from Recruitment (H), posted to this theatre.",
+    "staffing": "Hire a surgeon, an anaesthetist and a scrub nurse from Recruitment (H), posted to this theatre.",
     "furniture": [
       "operating_table",
       "anaesthetic_machine",
