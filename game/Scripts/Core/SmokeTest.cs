@@ -106,6 +106,9 @@ public partial class SmokeTest : Node
         Ambulance,
         Finances,
         WaitForLoad,
+        ExampleHospital,
+        ExampleFirstFloor,
+        ExampleSecondFloor,
         Done,
     }
 
@@ -913,6 +916,40 @@ public partial class SmokeTest : Node
                 GD.Print($"[smoke] {_savedPatients} patients restored, {_savedOnWard} on the ward.");
                 SaveManager.Delete(SlotName);
                 GD.Print("[smoke] Save reloaded and verified.");
+                manager.LoadExampleHospital();
+                _frame = 0;
+                _stage = Stage.ExampleHospital;
+                break;
+
+            // The ready-made example hospital in Load Game: three floors, every department, every post filled.
+            case Stage.ExampleHospital when scene is HospitalScene example && example.IsNodeReady()
+                                            && example.Session.HospitalName == Simulation.Simulation.ExampleHospital.HospitalName && _frame >= 20:
+            {
+                var exampleSim = example.Session.Simulation;
+                Check(exampleSim.FloorCount == 3, $"The example hospital has {exampleSim.FloorCount} floors, not 3.");
+                var missing = manager.Database!.RoomTemplates.Keys.Where(t => exampleSim.Spaces.All(r => r.TemplateId != t)).ToList();
+                Check(missing.Count == 0, "The example hospital is missing " + string.Join(", ", missing) + ".");
+                Check(exampleSim.RecommendedStaffing().All(n => n.Short == 0), "The example hospital is short of staff.");
+                Check(exampleSim.IsEmergencyOpen, "The example hospital's A&E is not open.");
+                Screenshot("09_example_ground_floor");
+                example.ShowFloor(1);
+                GD.Print($"[smoke] Example hospital loaded: {exampleSim.Spaces.Count()} rooms, {exampleSim.Staff.Count} staff, {exampleSim.Patients.Count()} patients.");
+                _frame = 0;
+                _stage = Stage.ExampleFirstFloor;
+                break;
+            }
+
+            case Stage.ExampleFirstFloor when scene is HospitalScene example && _frame >= 10:
+                Screenshot("10_example_first_floor");
+                example.ShowFloor(2);
+                _frame = 0;
+                _stage = Stage.ExampleSecondFloor;
+                break;
+
+            case Stage.ExampleSecondFloor when scene is HospitalScene example && _frame >= 10:
+                Screenshot("11_example_second_floor");
+                Check(example.ViewFloor == 2, "Could not look at the example hospital's second floor.");
+                example.ShowFloor(0);
                 GD.Print("[smoke] PASSED");
                 _stage = Stage.Done;
                 GetTree().Quit(0);

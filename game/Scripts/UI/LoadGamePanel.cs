@@ -6,7 +6,10 @@ using Godot;
 
 namespace BlueprintHospital.UI;
 
-/// <summary>Lists saved games and loads or deletes the chosen one.</summary>
+/// <summary>
+/// Lists saved games and loads or deletes the chosen one. The ready-built example hospital is always first in the
+/// list; it can be loaded but not deleted.
+/// </summary>
 public partial class LoadGamePanel : ModalPanel
 {
     private readonly ItemList _list = new()
@@ -19,6 +22,9 @@ public partial class LoadGamePanel : ModalPanel
     private readonly Button _load;
     private readonly Button _delete;
     private IReadOnlyList<SaveSlotInfo> _slots = Array.Empty<SaveSlotInfo>();
+
+    /// <summary>The first row of the list: the example hospital that ships with the game.</summary>
+    public const string ExampleRowText = "Example hospital  —  3 floors, every department, fully staffed (ready-made)";
 
     public LoadGamePanel()
     {
@@ -45,6 +51,8 @@ public partial class LoadGamePanel : ModalPanel
     {
         _slots = SaveManager.ListSlots();
         _list.Clear();
+        _list.AddItem(ExampleRowText);
+        _list.SetItemTooltip(0, "A finished hospital to explore: A&E, wards, ICU and HDU, theatres, maternity, clinics, scans, pharmacy, café and more over three floors, with every post filled.");
         foreach (var slot in _slots)
         {
             var saved = slot.SavedAtUtc.ToLocalTime();
@@ -52,10 +60,7 @@ public partial class LoadGamePanel : ModalPanel
         }
 
         _status.Text = _slots.Count == 0 ? "No saved games yet. Save from the pause menu (Esc) while playing." : string.Empty;
-        if (_slots.Count > 0)
-        {
-            _list.Select(0);
-        }
+        _list.Select(_slots.Count > 0 ? 1 : 0);
 
         UpdateButtons();
     }
@@ -64,25 +69,32 @@ public partial class LoadGamePanel : ModalPanel
     {
         var hasSelection = _list.GetSelectedItems().Length > 0;
         _load.Disabled = !hasSelection;
-        _delete.Disabled = !hasSelection;
+        _delete.Disabled = Selected() is null;
     }
 
     private SaveSlotInfo? Selected()
     {
         var selected = _list.GetSelectedItems();
-        return selected.Length == 0 ? null : _slots[selected[0]];
+        return selected.Length == 0 || selected[0] == 0 ? null : _slots[selected[0] - 1];
     }
 
     private void LoadSelected()
     {
-        if (Selected() is not { } slot)
+        var selected = _list.GetSelectedItems();
+        if (selected.Length == 0)
         {
             return;
         }
 
         try
         {
-            GameManager.Instance.LoadGame(slot.SlotName);
+            if (selected[0] == 0)
+            {
+                GameManager.Instance.LoadExampleHospital();
+                return;
+            }
+
+            GameManager.Instance.LoadGame(_slots[selected[0] - 1].SlotName);
         }
         catch (Exception ex)
         {
