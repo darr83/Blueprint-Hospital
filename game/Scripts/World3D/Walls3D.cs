@@ -134,6 +134,12 @@ public partial class Walls3D : Node3D
             }
         }
 
+        // Lifts and stairwells are roofed over at wall height (or the cut-down height in the cutaway).
+        foreach (var space in _view.Simulation.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y) && RoomSigns.Roofed(s)))
+        {
+            AddRoof(walls, space.Rect, h);
+        }
+
         walls.AddTo(this);
 
         if (Cutaway)
@@ -152,6 +158,25 @@ public partial class Walls3D : Node3D
             {
                 AddEntrance(entrance);
             }
+        }
+    }
+
+    private static readonly Color RoofFace = new("#CDD5DC");
+    private static readonly Color RoofTrim = new("#B8C2CB");
+    private static readonly Color HatchFace = new("#E2E7EC");
+
+    /// <summary>
+    /// A flat roof over a lift or stairwell, a touch under the wall tops so they frame it, with a small
+    /// raised access hatch in the middle when the room is big enough to take one.
+    /// </summary>
+    private static void AddRoof(MeshBatch m, Simulation.World.GridRect r, float h)
+    {
+        m.Block(r.X, r.Y, r.Width, r.Length, 0.02f, RoofFace, h - 0.03f);
+        if (r.Width >= 2 && r.Length >= 2)
+        {
+            var (cx, cy) = (r.X + (r.Width / 2.0), r.Y + (r.Length / 2.0));
+            m.Block(cx - 0.42, cy - 0.42, 0.84, 0.84, 0.05f, RoofTrim, h - 0.01f);
+            m.Block(cx - 0.36, cy - 0.36, 0.72, 0.72, 0.07f, HatchFace, h - 0.01f);
         }
     }
 

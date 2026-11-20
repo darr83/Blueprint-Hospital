@@ -69,6 +69,12 @@ public static class RoomSigns
     /// </summary>
     public static bool OpenGap(CareSpace space) => space.Kind == CareSpaceKind.Waiting;
 
+    /// <summary>
+    /// Lifts and stairwells have a roof over them: nothing inside needs looking at, so they read as
+    /// closed shafts. Their name signs and doors stay on the walls as before.
+    /// </summary>
+    public static bool Roofed(CareSpace space) => space.HasWalls && space.Kind is CareSpaceKind.Lift or CareSpaceKind.Stairs;
+
     /// <summary>The wall edges a doorway opens through (a horizontal edge runs from (X, Y) to (X + 1, Y)).</summary>
     public static IEnumerable<(int X, int Y, bool Horizontal)> DoorwayEdges(GridRect r, Doorway d)
     {
