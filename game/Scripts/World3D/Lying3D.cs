@@ -60,7 +60,7 @@ public static class Lying3D
     /// backrest (a table, the floor) they lie flat with no pillow.
     /// </summary>
     public static Node3D Build(PersonLook look, Color blanket, Color? band, BabyLook[]? onChest = null, bool awake = false, InBed doing = InBed.None, float cast = 0,
-        Carriers3D.Backrest? rest = null, float angle = 0, Care care = Care.None, float careSide = 1)
+        Carriers3D.Backrest? rest = null, float angle = 0, Care care = Care.None, float careSide = 1, Wear wear = Wear.None)
     {
         var node = new Node3D { Name = "Lying" };
         var sz = Mathf.Clamp(look.Scale, 0.5f, 1f);
@@ -76,6 +76,19 @@ public static class Lying3D
 
         var ecg = care == Care.Ecg;
         var birth = care == Care.Birth && rest is not null;
+        if (cuddling || scanOrBirth(care))
+        {
+            wear &= Wear.Oxygen;
+        }
+
+        static bool scanOrBirth(Care c) => Procedure3D.OnScanner(c) || c is Care.Birth or Care.Endoscopy or Care.LumbarPuncture or Care.Eeg;
+        var entonox = wear.HasFlag(Wear.Entonox) && care == Care.None;
+        var sling = wear.HasFlag(Wear.Sling) && care == Care.None && !entonox;
+        if (entonox || sling)
+        {
+            doing = InBed.None;
+        }
+
         var lumbar = care == Care.LumbarPuncture;
         var scan = Procedure3D.OnScanner(care) || care == Care.Endoscopy || lumbar;
         var chestBare = ecg || care == Care.Echo;
@@ -303,6 +316,18 @@ public static class Lying3D
             restR = head + new Vector3(0.05f, (headR * 0.95f) + 0.2f, (headR * 0.42f) + 0.07f);
             elbowR = new Vector3(shW + 0.06f, 0.36f, shZ + 0.3f);
         }
+        else if (entonox)
+        {
+            // One hand up holding the mouthpiece.
+            restR = head + new Vector3(0.05f, (headR * 0.95f) + 0.16f, (headR * 0.42f) + 0.07f);
+            elbowR = new Vector3(shW + 0.06f, 0.36f, shZ + 0.3f);
+        }
+        else if (sling)
+        {
+            // The arm bent across the chest, resting in the sling.
+            elbowR = new Vector3(shW + 0.02f, 0.3f, Mathf.Lerp(shZ, hipZ, 0.62f));
+            restR = new Vector3(-0.14f, 0.38f, Mathf.Lerp(shZ, hipZ, 0.42f));
+        }
         else if (scan)
         {
             restL = new Vector3(-(shW + 0.06f), 0.1f, hipZ - 0.02f);
@@ -313,6 +338,24 @@ public static class Lying3D
 
         UpperArm(shoulderL, elbowL);
         UpperArm(shoulderR, elbowR);
+        Worn(u, wear, entonox, sling, skin, head, headR, shW, shZ, hipZ, Mathf.Lerp(sz, 1f, 0.4f), elbowL, restL, elbowR, restR, foreR, down, raised ? hinge : hipZ);
+        if (wear.HasFlag(Wear.Nebuliser))
+        {
+            // The mist drifting up from the mask, moved by the bed (see Beds3D).
+            var mist = new Node3D { Name = "Mist", Position = head + new Vector3(0, headR * 1.25f, headR * 0.5f) };
+            for (var i = 0; i < 3; i++)
+            {
+                var puff = new MeshBatch();
+                puff.Ball(Vector3.Zero, new Vector3(0.13f, 0.13f, 0.13f), new Color(1, 1, 1, 0.55f), small: true);
+                var one = new Node3D { Name = "Puff" + i };
+                mist.AddChild(one);
+                var mesh = puff.AddTo(one, alpha: true, shadow: false)!;
+                mesh.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+            }
+
+            upper.AddChild(mist);
+        }
+
         var (nearShoulder, nearElbow, nearHand) = careSide > 0 ? (shoulderR, elbowR, restR) : (shoulderL, elbowL, restL);
         if (care == Care.Obs)
         {
@@ -483,6 +526,102 @@ public static class Lying3D
 
         b.AddTo(node);
         return node;
+    }
+
+    /// <summary>What treatment has left on them: a mask, a tube in the nose, a sling, a dressing, pads on the chest.</summary>
+    private static void Worn(MeshBatch u, Wear wear, bool entonox, bool sling, Color skin, Vector3 head, float headR, float shW, float shZ, float hipZ, float deep,
+        Vector3 elbowL, Vector3 handL, Vector3 elbowR, Vector3 handR, float foreR, Transform3D down, float waistZ)
+    {
+        var mouth = head + new Vector3(0, headR * 0.95f, headR * 0.42f);
+        var tubing = new Color("#BFE8D2");
+        if ((wear & (Wear.Oxygen | Wear.Nebuliser)) != 0)
+        {
+            // A soft green mask over the nose and mouth, its elastic round the head, the tube running off the side of the bed.
+            var mask = new Color("#BFE8D2");
+            u.Ball(mouth + new Vector3(0, 0.0f, -headR * 0.12f), new Vector3(headR * 1.0f, headR * 0.62f, headR * 1.05f), mask);
+            u.Ball(mouth + new Vector3(0, headR * 0.3f, -headR * 0.05f), new Vector3(headR * 0.4f, headR * 0.3f, headR * 0.4f), mask.Darkened(0.12f), small: true);
+            foreach (var s in new[] { -1f, 1f })
+            {
+                u.Rod(mouth + new Vector3(s * headR * 0.45f, -headR * 0.1f, -headR * 0.2f), head + new Vector3(s * headR * 0.98f, headR * 0.1f, -headR * 0.1f), 0.012f, new Color("#7FC8A6"), small: true);
+            }
+
+            var from = mouth + new Vector3(0, headR * 0.2f, headR * 0.35f);
+            if (wear.HasFlag(Wear.Nebuliser))
+            {
+                // The nebuliser chamber hanging under the mask.
+                u.Capsule(from, from + new Vector3(0, 0.02f, 0.14f), 0.05f, new Color("#F4F6F7"));
+                from += new Vector3(0, 0.02f, 0.16f);
+            }
+
+            var chest = new Vector3(-0.08f, 0.12f + (0.2f * deep), shZ + 0.3f);
+            var off = down * new Vector3(-0.72f, 0.02f, waistZ - 0.35f);
+            u.Rod(from, chest, 0.014f, tubing, small: true);
+            u.Rod(chest, off, 0.014f, tubing, small: true);
+        }
+
+        if (entonox)
+        {
+            // The gas and air mouthpiece and its blue hose.
+            u.Box(mouth + new Vector3(0, 0.05f, 0), new Vector3(0.07f, 0.08f, 0.06f), new Color("#F7F9FA"));
+            u.Box(mouth + new Vector3(0, 0.15f, 0), new Vector3(0.1f, 0.14f, 0.09f), new Color("#1E88E5"));
+            var off = down * new Vector3(0.74f, 0.02f, waistZ - 0.2f);
+            var mid = (mouth + off) / 2 + new Vector3(0.1f, 0.12f, 0);
+            u.Rod(mouth + new Vector3(0, 0.2f, 0), mid, 0.02f, new Color("#1565C0"), small: true);
+            u.Rod(mid, off, 0.02f, new Color("#1565C0"), small: true);
+        }
+
+        if (wear.HasFlag(Wear.NgTube))
+        {
+            // The fine tube out of one nostril, taped to the cheek, over the shoulder to its bag.
+            var tube = new Color("#E8D9A0");
+            var nostril = head + new Vector3(headR * 0.12f, headR * 0.98f, headR * 0.12f);
+            var cheek = head + new Vector3(headR * 0.78f, headR * 0.55f, headR * 0.12f);
+            var shoulder = new Vector3(shW * 0.9f, 0.3f, shZ);
+            var bag = down * new Vector3(0.76f, -0.1f, waistZ - 0.25f);
+            u.Rod(nostril, cheek, 0.011f, tube, small: true);
+            u.Box(cheek, new Vector3(0.07f, 0.02f, 0.05f), Colors.White);
+            u.Rod(cheek, shoulder, 0.011f, tube, small: true);
+            u.Rod(shoulder, bag, 0.011f, tube, small: true);
+            u.Ball(bag, new Vector3(0.05f, 0.16f, 0.2f), new Color("#CDD9A8"));
+        }
+
+        if (wear.HasFlag(Wear.NosePack))
+        {
+            u.Ball(head + new Vector3(0, headR * 1.02f, headR * 0.14f), new Vector3(0.1f, 0.06f, 0.08f), Colors.White, small: true);
+            u.Box(head + new Vector3(0, headR * 0.98f, headR * 0.05f), new Vector3(0.16f, 0.02f, 0.04f), new Color("#F4E9D8"));
+        }
+
+        if (sling)
+        {
+            // The blue sling under the forearm, its strap up round the neck.
+            var blue = new Color("#5B8DD6");
+            u.Capsule(elbowR.Lerp(handR, 0.05f), elbowR.Lerp(handR, 0.9f), foreR * 1.5f, blue);
+            var neck = new Vector3(0.06f, 0.3f, shZ - 0.02f);
+            u.Rod(elbowR.Lerp(handR, 0.9f) + new Vector3(0, foreR, 0), neck, 0.02f, blue.Darkened(0.15f), small: true);
+            u.Rod(elbowR + new Vector3(0, foreR, 0), neck + new Vector3(0.12f, 0, 0), 0.02f, blue.Darkened(0.15f), small: true);
+        }
+
+        if (wear.HasFlag(Wear.Dressing))
+        {
+            // A fresh white dressing bandaged round the forearm.
+            u.Capsule(elbowL.Lerp(handL, 0.3f), elbowL.Lerp(handL, 0.8f), foreR * 1.3f, new Color("#FAFAF5"));
+            u.Capsule(elbowL.Lerp(handL, 0.48f), elbowL.Lerp(handL, 0.52f), foreR * 1.34f, new Color("#E3E3DA"));
+        }
+
+        if (wear.HasFlag(Wear.Pads))
+        {
+            // Two big pads, one high on the right of the chest and one low on the left, their leads off to the monitor.
+            var front = 0.13f + (0.18f * deep);
+            var off = down * new Vector3(-0.74f, 0.05f, waistZ - 0.3f);
+            foreach (var at in new[] { new Vector3(shW * 0.45f, front, shZ + 0.12f), new Vector3(-shW * 0.6f, front - 0.03f, Mathf.Lerp(shZ, hipZ, 0.7f)) })
+            {
+                u.Box(at, new Vector3(0.17f, 0.02f, 0.2f), new Color("#F4F6F7"));
+                u.Box(at + new Vector3(0, 0.008f, 0), new Vector3(0.1f, 0.02f, 0.12f), new Color("#FB8C00"));
+                u.Rod(at + new Vector3(0, 0.02f, 0), off, 0.01f, new Color("#546E7A"), small: true);
+            }
+        }
+
+        _ = skin;
     }
 
     /// <summary>Where the ECG machine's lead socket is, in the bed's frame above the mattress, on the nurse's side.</summary>

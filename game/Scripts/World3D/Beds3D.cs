@@ -552,7 +552,9 @@ public partial class Beds3D : Node3D
                 (asleep, doing) = (false, InBed.None);
             }
 
-            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle, care, side);
+            var wear = _table ? Wear.None : Procedure3D.Worn(patient, sim);
+            BloodBag(wear.HasFlag(Wear.Blood));
+            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle, care, side, wear);
             Breathe(asleep, time);
             MealTable(doing == InBed.Meal);
             Busy(time);
@@ -561,6 +563,7 @@ public partial class Beds3D : Node3D
             Laser(care, careTask, time);
             EegWires(care == Care.Eeg ? Procedure3D.Machine(patient, sim) : null, sim);
             ObsStand(care == Care.Obs, side, time);
+            Mist(time);
             Blow(care == Care.PeakFlow ? careTask : null, angle, time);
             var rebuilt = _lying is null || !Equals(_lyingKey, key);
             if (!rebuilt && care is Care.Endoscopy or Care.LumbarPuncture && _lying is not null)
@@ -574,7 +577,7 @@ public partial class Beds3D : Node3D
 
             _lying?.QueueFree();
             _lyingKey = key;
-            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast, _table ? null : Carriers3D.BedBack, angle, care, side);
+            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast, _table ? null : Carriers3D.BedBack, angle, care, side, wear);
             _doing = doing;
             if (!_table)
             {
@@ -692,6 +695,55 @@ public partial class Beds3D : Node3D
                 _cartPaper.Visible = printed > 0.02f;
                 _cartPaper.Scale = new Vector3(Mathf.Max(0.02f, printed * 0.5f), 1, 1);
                 _cartPaper.Rotation = new Vector3(0, 0, -_cartSide * 0.5f * printed);
+            }
+        }
+
+        private Node3D? _blood;
+
+        /// <summary>A bag of blood on a pole at the head of the bed, its red line coming down to the arm.</summary>
+        private void BloodBag(bool on)
+        {
+            if (_blood is null && !on)
+            {
+                return;
+            }
+
+            if (_blood is null)
+            {
+                var b = new MeshBatch();
+                var steel = new Color("#B0BEC5");
+                var foot = new Vector3(0.66f, Kit3D.H(20f), -1.9f);
+                var top = new Vector3(0.66f, Kit3D.H(66f), -1.9f);
+                b.Rod(foot, top, 0.022f, steel);
+                b.Rod(top + new Vector3(-0.1f, 0, 0), top + new Vector3(0.1f, 0, 0), 0.016f, steel, small: true);
+                var bag = top + new Vector3(-0.08f, -Kit3D.H(7f), 0);
+                b.Box(bag, new Vector3(0.13f, Kit3D.H(9f), 0.05f), Basis.Identity, new Color("#8E1B2B"));
+                b.Box(bag + new Vector3(0, Kit3D.H(1f), 0.03f), new Vector3(0.09f, Kit3D.H(3.5f), 0.012f), Basis.Identity, Colors.White);
+                b.Rod(bag - new Vector3(0, Kit3D.H(4.5f), 0), new Vector3(0.5f, Kit3D.H(27f), -0.9f), 0.009f, new Color("#B3202F"), small: true);
+                b.Rod(new Vector3(0.5f, Kit3D.H(27f), -0.9f), new Vector3(0.5f, _mattress + 0.2f, -0.35f), 0.009f, new Color("#B3202F"), small: true);
+                _blood = b.AddTo(_node)!;
+                _blood.Name = "BloodBag";
+            }
+
+            _blood.Visible = on;
+        }
+
+        /// <summary>The mist from a nebuliser mask: three puffs drifting up and fading, one after another.</summary>
+        private void Mist(double time)
+        {
+            if (_lying?.FindChild("Mist", true, false) is not Node3D mist)
+            {
+                return;
+            }
+
+            for (var i = 0; i < mist.GetChildCount(); i++)
+            {
+                if (mist.GetChild(i) is Node3D puff)
+                {
+                    var u = Mathf.PosMod(((float)time * 0.45f) + (i / 3f), 1f);
+                    puff.Position = new Vector3(0.05f * Mathf.Sin((u * 5f) + i), 0.3f * u, 0.04f * i);
+                    puff.Scale = Vector3.One * (0.5f + (1.2f * u)) * (1f - (u * u * 0.9f));
+                }
             }
         }
 

@@ -51,6 +51,9 @@ public enum Act
     /// <summary>Observations: writing the numbers on the chart.</summary>
     Write,
 
+    /// <summary>Both hands up at the patient's face: fitting a mask, passing a tube, packing a nose.</summary>
+    Fit,
+
     /// <summary>Talking someone through something: hands gesturing.</summary>
     Talk,
 
@@ -193,13 +196,13 @@ public static class Activity3D
                 => Habit(member.Id, time, 9) < 0.7 ? Act.Examine : Act.Talk,
             TaskKind.Observations or TaskKind.Triage or TaskKind.AmbulanceHandover => ObsAct(member.Id, time),
             TaskKind.TakeBloods or TaskKind.BedsideTest => TestAct(task, member.Id, time),
-            TaskKind.GiveMedication or TaskKind.EmergencyTreatment => Act.Medicine,
+            TaskKind.GiveMedication or TaskKind.EmergencyTreatment => TreatAct(task, member, sim, time) ?? Act.Medicine,
             TaskKind.Register or TaskKind.Imaging or TaskKind.DispenseMedicines => Act.Typing,
             TaskKind.Surgery when member.Role == StaffRole.Anaesthetist => Act.Bag,
             TaskKind.Surgery => Act.Operate,
             TaskKind.Procedure when member.Role == StaffRole.Anaesthetist => Act.Bag,
             TaskKind.Procedure when member.Role == StaffRole.PlasterTechnician => Act.Wrap,
-            TaskKind.Procedure => Act.Operate,
+            TaskKind.Procedure => TreatAct(task, member, sim, time) ?? Act.Operate,
             TaskKind.Physio => Act.Exercise,
             TaskKind.Discharge or TaskKind.WardDischarge => Act.Talk,
             TaskKind.StayWithPatient => Act.Talk,
@@ -597,13 +600,39 @@ public static class Activity3D
         }
 
         var (care, careTask) = Procedure3D.For(patient, sim);
+        var f = Procedure3D.Turn(patient, sim);
+        (double, double) Bed(double across, double along) => Procedure3D.BedPoint(patient, sim, across, along);
+        if (care == Care.None && task.Kind is TaskKind.Procedure or TaskKind.GiveMedication or TaskKind.EmergencyTreatment
+            && member.Role != StaffRole.PlasterTechnician && member.Role != StaffRole.Anaesthetist && TreatAct(task, member, sim, time) is { } treat)
+        {
+            // A treatment at the bedside: at the head for a mask or a tube, at the arm for a needle or a bandage.
+            double side = Procedure3D.Side(patient, member, sim);
+            var label = task.Label.ToLowerInvariant();
+            if (label.Contains("dress") || label.Contains("wound"))
+            {
+                // The dressing goes on the left forearm.
+                side = -1;
+            }
+
+            switch (treat)
+            {
+                case Act.HangDrip when label.Contains("transfusion"):
+                    // At the pole at the head of the bed, on the patient's right, hanging the bag of blood.
+                    return (treat, Bed(1.4, -1.5), (-f, -f * 0.55));
+                case Act.Fit:
+                    return (treat, Bed(side * 1.3, -1.1), (-f * side, -f * 0.4));
+                case Act.Needle or Act.Wrap or Act.Bloods:
+                    return (treat, Bed(side * 1.38, -0.35), (-f * side, 0));
+                default:
+                    return null;
+            }
+        }
+
         if (careTask != task || care == Care.None || Procedure3D.OnScanner(care))
         {
             return null;
         }
 
-        var f = Procedure3D.Turn(patient, sim);
-        (double, double) Bed(double across, double along) => Procedure3D.BedPoint(patient, sim, across, along);
         switch (care)
         {
             case Care.Ecg:
@@ -700,6 +729,38 @@ public static class Activity3D
         var d = Math.Max(0.01, Math.Sqrt((dx * dx) + (dy * dy)));
         var at = (machine.CentreX + (dx / d * 0.8), machine.CentreY + (dy / d * 0.8));
         return (at, (dx, dy));
+    }
+
+    private static Dictionary<string, string>? _routes;
+
+    /// <summary>
+    /// What the hands do for a treatment, from its name (or the way the medicine goes in): fitting a mask,
+    /// an injection, bandaging, hanging a bag, or just talking it through. Null when nothing special fits.
+    /// </summary>
+    public static Act? TreatAct(ClinicalTask task, StaffMember member, HospitalSimulation sim, double time)
+    {
+        var what = task.Label.ToLowerInvariant();
+        if (task.Kind == TaskKind.GiveMedication)
+        {
+            _routes ??= sim.Database.Medications.Values.GroupBy(m => $"give {m.Name.ToLowerInvariant()}").ToDictionary(g => g.Key, g => g.First().Route);
+            return _routes.TryGetValue(what, out var route) ? route switch
+            {
+                "nebulised" or "inhaled" => Act.Fit,
+                "subcutaneous" or "intramuscular" or "local injection" => Act.Needle,
+                _ => null,
+            } : null;
+        }
+
+        bool Has(params string[] words) => words.Any(what.Contains);
+        return Has("oxygen", "nebulis", "nasogastric", "nasal") ? Act.Fit
+            : Has("transfusion", "iv ", "fluids") ? Act.HangDrip
+            : Has("im adrenaline", "nerve block", "drain", "wound") ? Act.Needle
+            : Has("backslab", "plaster", "dress", "ankle support", "tape") ? Act.Wrap
+            : Has("sling", "pads", "redness") ? Act.Bloods
+            : Has("observations", "blood pressure", "monitoring") ? ObsAct(member.Id, time)
+            : Has("swallow", "feeding", "glucose") ? Act.Medicine
+            : Has("advice", "assessment", "referral", "check ", "score", "stop medicines", "look for", "reassurance", "care (") ? (Habit(member.Id, time, 6) < 0.65 ? Act.Talk : Act.Write)
+            : null;
     }
 
     /// <summary>A round of observations: blood pressure, then temperature, then writing it all down.</summary>

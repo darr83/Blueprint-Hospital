@@ -1017,6 +1017,12 @@ public partial class Person3D : Node3D
                 right = new Vector3(-1.32f + (0.02f * S(1.5f)), 0, -0.1f);
                 _thermometer = Prop(_thermometer, _armR, Thermometer);
                 break;
+            case Act.Fit:
+                // Both hands up at the patient's face, settling the mask or feeding the tube a little at a time.
+                lean = 0.26f;
+                left = new Vector3(-1.25f + (0.05f * S(1.4f)), 0, 0.2f);
+                right = new Vector3(-1.3f + (0.06f * S(1.9f, 1)), 0, -0.2f);
+                break;
             case Act.Write:
                 // Writing the numbers on the chart.
                 lean = 0.05f;
