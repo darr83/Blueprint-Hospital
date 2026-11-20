@@ -133,6 +133,29 @@ public sealed partial class HospitalSimulation
     public IReadOnlyList<StaffingNeed> RecommendedStaffing() =>
         RecommendedForShift(StaffShift.Day).Concat(RecommendedForShift(StaffShift.Night).Where(n => !IsDayOnly(n.RoomId))).Where(n => IsRoleUnlocked(n.Role)).ToList();
 
+    /// <summary>
+    /// Someone who could fill <paramref name="need"/> without leaving a gap behind: same kind of staff,
+    /// same shift, from a place that has more of them than it needs (or doesn't need them at all).
+    /// Free hands first, then the most skilled. Null when nobody can be spared.
+    /// </summary>
+    public StaffMember? SpareFor(StaffingNeed need)
+    {
+        var needs = RecommendedStaffing();
+        bool Spare(StaffMember s)
+        {
+            var home = needs.FirstOrDefault(n => n.RoomId == s.BaseRoomId && n.Role == s.Role && n.Shift == s.Shift);
+            return home is null || home.Have > home.Recommended;
+        }
+
+        return _staff
+            .Where(s => s.Role == need.Role && s.Shift == need.Shift && s.BaseRoomId != need.RoomId && !s.HasPendingMove)
+            .Where(s => CanMoveTo(s, need.RoomId) && Spare(s))
+            .OrderBy(s => s.CurrentTaskId is null ? 0 : 1)
+            .ThenByDescending(s => s.Skill)
+            .ThenBy(s => s.Id)
+            .FirstOrDefault();
+    }
+
     private bool IsDayOnly(string? roomId) =>
         roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception };
 

@@ -11,8 +11,11 @@ namespace BlueprintHospital.UI;
 
 /// <summary>
 /// The staff rota: who is on the day team (08:00 to 20:00) and the night team (20:00 to 08:00) in
-/// each place, today's breaks, and everyone in one list. Drag someone to another place or shift, or
-/// use their card on the right to change their shift, move them, send them on a break or let them go.
+/// each department, today's breaks, and everyone in one list. Departments are listed down the left
+/// with a green, amber or red dot for their cover; picking one shows its team by staff type and grade,
+/// with an empty slot (and a Move or Hire button) for everyone missing. "Needs attention" cards at the
+/// top list the worst gaps. Drag someone to another place or shift, or use their card on the right to
+/// change their shift, move them, send them on a break or let them go.
 /// </summary>
 public partial class StaffRotaPanel : PanelContainer
 {
@@ -25,6 +28,11 @@ public partial class StaffRotaPanel : PanelContainer
 
     /// <summary>A row of the rota: A&amp;E, a ward, a clinic, a service room or the whole hospital (porters).</summary>
     internal sealed record Place(string? RoomId, string Name, string Sub, StaffRole[] Roles);
+
+    /// <summary>A department in the list on the left: one or more places shown together.</summary>
+    internal sealed record Dept(string Key, string Name, IReadOnlyList<Place> Places);
+
+    private const string AllDepartments = "all";
 
     private static readonly Color Hair = new("#E6ECF1");
     private static readonly Color Night = new("#24324A");
@@ -42,6 +50,12 @@ public partial class StaffRotaPanel : PanelContainer
     private HospitalSimulation _sim = null!;
     private Tab _tab = Tab.Rota;
     private string _filter = "all";
+    private string? _grade;
+    private string? _dept;
+    private readonly HBoxContainer _gradeChips = new();
+    private readonly HBoxContainer _attention = new();
+    private readonly VBoxContainer _deptList = new();
+    private PanelContainer _deptBox = null!;
     private int? _selectedId;
     private string _signature = string.Empty;
     private double _refresh;
@@ -70,6 +84,12 @@ public partial class StaffRotaPanel : PanelContainer
     /// <summary>Raised when the player asks to see someone on the map.</summary>
     public event Action<StaffMember>? ShowOnMapRequested;
 
+    /// <summary>Raised when the player presses Hire on a gap: opens Recruitment.</summary>
+    public event Action<StaffRole>? HireRequested;
+
+    /// <summary>The department picked on the left ("all" for every department).</summary>
+    public string? SelectedDepartment => _dept;
+
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;
@@ -93,10 +113,20 @@ public partial class StaffRotaPanel : PanelContainer
         }
 
         column.AddChild(stats);
+        _attention.AddThemeConstantOverride("separation", 10);
+        column.AddChild(_attention);
         column.AddChild(BuildTabBar());
 
         var body = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         body.AddThemeConstantOverride("separation", 16);
+        _deptBox = new PanelContainer { CustomMinimumSize = new Vector2(230, 0) };
+        _deptBox.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Ground, 12, null, 8));
+        var deptScroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        _deptList.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        _deptList.AddThemeConstantOverride("separation", 2);
+        deptScroll.AddChild(_deptList);
+        _deptBox.AddChild(deptScroll);
+        body.AddChild(_deptBox);
         var main = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         main.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, Hair, 0));
         var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
@@ -128,6 +158,17 @@ public partial class StaffRotaPanel : PanelContainer
         _selectedId = member?.Id;
         Rebuild();
     }
+
+    /// <summary>Shows one department on the rota ("all" for every department).</summary>
+    public void ShowDepartment(string key)
+    {
+        _tab = Tab.Rota;
+        _dept = key;
+        Rebuild();
+    }
+
+    /// <summary>The departments in the list on the left, in order (used by the smoke test).</summary>
+    public IReadOnlyList<string> DepartmentKeys() => Departments().Select(d => d.Key).ToList();
 
     public override void _Process(double delta)
     {
@@ -223,6 +264,7 @@ public partial class StaffRotaPanel : PanelContainer
             var chip = UiStyle.SecondaryButton(text, () =>
             {
                 _filter = key;
+                _grade = null;
                 Rebuild();
             });
             chip.ToggleMode = true;
@@ -233,7 +275,50 @@ public partial class StaffRotaPanel : PanelContainer
             bar.AddChild(chip);
         }
 
+        _gradeChips.AddThemeConstantOverride("separation", 4);
+        bar.AddChild(_gradeChips);
         return bar;
+    }
+
+    /// <summary>Grade chips (Consultant, Registrar ... or Band 5 to 9) next to the Doctors or Nurses filter.</summary>
+    private void RefreshGradeChips()
+    {
+        var role = _filter switch { "doctor" => StaffRole.Doctor, "nurse" => StaffRole.Nurse, _ => (StaffRole?)null };
+        var key = $"{role}|{_grade}";
+        if (_gradeChips.GetMeta("key", string.Empty).AsString() == key)
+        {
+            return;
+        }
+
+        _gradeChips.SetMeta("key", key);
+        foreach (var child in _gradeChips.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        _gradeChips.Visible = role is not null;
+        if (role is not { } r)
+        {
+            return;
+        }
+
+        _gradeChips.AddChild(new VSeparator());
+        var grades = new List<(string? Title, string Text)> { (null, "All grades") };
+        grades.AddRange(StaffGrades.For(r).Reverse().Select(g => ((string?)g.Title, ShortGrade(g.Title))));
+        foreach (var (title, text) in grades)
+        {
+            var chip = UiStyle.SecondaryButton(text, () =>
+            {
+                _grade = title;
+                Rebuild();
+            });
+            chip.ToggleMode = true;
+            chip.FocusMode = FocusModeEnum.None;
+            chip.CustomMinimumSize = new Vector2(0, 34);
+            chip.AddThemeFontSizeOverride("font_size", 13);
+            chip.SetPressedNoSignal(title == _grade);
+            _gradeChips.AddChild(chip);
+        }
     }
 
     private void RefreshHeader()
@@ -247,6 +332,8 @@ public partial class StaffRotaPanel : PanelContainer
         {
             chip.SetPressedNoSignal(key == _filter);
         }
+
+        RefreshGradeChips();
 
         var day = _sim.CurrentShift == StaffShift.Day;
         var left = _sim.CurrentShiftEnd - _sim.Now;
@@ -276,7 +363,8 @@ public partial class StaffRotaPanel : PanelContainer
 
     private void RefreshContent(bool force)
     {
-        var signature = $"{_tab}|{_filter}|{_selectedId}|{_sim.CurrentShift}|" + string.Join(",", _sim.Staff.Select(s =>
+        var needs = _sim.RecommendedStaffing();
+        var signature = $"{_tab}|{_filter}|{_grade}|{_dept}|{_selectedId}|{_sim.CurrentShift}|" + string.Join(",", needs.Select(n => $"{n.RoomId}{n.Role}{n.Shift}{n.Have}/{n.Recommended}")) + "|" + string.Join(",", _sim.Staff.Select(s =>
             $"{s.Id}{s.Name}{s.Shift}{s.BaseRoomId}{s.HasPendingMove}{Status(s)}{(int)(s.Fatigue * 20)}{s.Breaks.Count(b => b.Done)}{s.Breaks.Count}{s.Breaks.Count(_sim.IsBreakLate)}"))
             + "|" + string.Join(",", _sim.Spaces.Where(s => s.IsWard || s.IsServiceRoom || s.Kind is CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception).Select(s => s.Id + s.Name))
             + (_tab == Tab.Breaks ? "|" + (_sim.Now.Hour * 12) + (_sim.Now.Minute / 5) : string.Empty);
@@ -291,10 +379,24 @@ public partial class StaffRotaPanel : PanelContainer
             child.QueueFree();
         }
 
+        var departments = Departments();
+        if (_dept is null || (_dept != AllDepartments && departments.All(d => d.Key != _dept)))
+        {
+            // Open on the first department with a gap, or A&E when everything is covered.
+            _dept = departments.FirstOrDefault(d => Cover(d, needs).Short > 0)?.Key ?? departments.FirstOrDefault()?.Key ?? AllDepartments;
+        }
+
+        BuildAttention(needs, departments);
+        _deptBox.Visible = _tab == Tab.Rota;
+        if (_tab == Tab.Rota)
+        {
+            BuildDepartmentList(needs, departments);
+        }
+
         switch (_tab)
         {
             case Tab.Rota:
-                BuildRota();
+                BuildRota(needs, departments);
                 break;
             case Tab.Breaks:
                 BuildBreaks();
@@ -305,7 +407,7 @@ public partial class StaffRotaPanel : PanelContainer
         }
     }
 
-    private bool Shown(StaffMember m) => Shown(m.Role);
+    private bool Shown(StaffMember m) => Shown(m.Role) && (_grade is null || m.Grade == _grade);
 
     private bool Shown(StaffRole role) => _filter switch
     {
@@ -345,55 +447,395 @@ public partial class StaffRotaPanel : PanelContainer
                 : new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
         }
 
-        places.Add(new(null, "Whole hospital", "Porters", new[] { StaffRole.Porter }));
+        places.Add(new(null, "Whole hospital", "Porters and cleaners", new[] { StaffRole.Porter, StaffRole.Cleaner }));
         return places;
+    }
+
+    /// <summary>The departments down the left: A&amp;E, each ward, then the services grouped by what they do.</summary>
+    private List<Dept> Departments()
+    {
+        var places = Places();
+        var departments = new List<Dept>();
+        var groups = new Dictionary<string, List<Place>>();
+        var order = new List<string>();
+        void AddTo(string name, Place place)
+        {
+            if (!groups.TryGetValue(name, out var list))
+            {
+                groups[name] = list = new List<Place>();
+                order.Add(name);
+            }
+
+            list.Add(place);
+        }
+
+        foreach (var place in places)
+        {
+            if (place.RoomId is null)
+            {
+                departments.Add(new(place.Name == "A&E" ? "ae" : "hospital", place.Name, new[] { place }));
+                continue;
+            }
+
+            var space = _sim.FindSpace(place.RoomId);
+            if (space is { IsWard: true })
+            {
+                departments.Add(new(place.RoomId, place.Name, new[] { place }));
+            }
+            else if (space?.Kind is CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception)
+            {
+                AddTo("Clinics", place);
+            }
+            else if (space is not null)
+            {
+                AddTo(ServiceGroup(space.Kind), place);
+            }
+        }
+
+        // Keep "Whole hospital" (porters and cleaners) at the end, after the services and clinics.
+        var hospital = departments.Single(d => d.Key == "hospital");
+        departments.Remove(hospital);
+        departments.AddRange(order.Where(n => n != "Clinics").Select(n => new Dept("group:" + n, n, groups[n])));
+        if (groups.TryGetValue("Clinics", out var clinics))
+        {
+            departments.Add(new("group:Clinics", "Clinics", clinics));
+        }
+
+        departments.Add(hospital);
+        return departments;
+    }
+
+    private static string ServiceGroup(CareSpaceKind kind)
+    {
+        if (kind == CareSpaceKind.Theatre)
+        {
+            return "Theatres";
+        }
+
+        return HospitalSimulation.RoleForRoom(kind) switch
+        {
+            StaffRole.Radiographer or StaffRole.Sonographer => "Imaging",
+            StaffRole.Pharmacist => "Pharmacy",
+            StaffRole.Midwife => "Maternity",
+            StaffRole.CardiacPhysiologist or StaffRole.Neurophysiologist => "Heart and brain tests",
+            StaffRole.Endoscopist => "Endoscopy",
+            StaffRole.PlasterTechnician => "Plaster room",
+            StaffRole.Physiotherapist => "Physiotherapy",
+            var role => Capitalise(StaffGrades.RoleName(role, plural: true)),
+        };
+    }
+
+    private static IEnumerable<StaffingNeed> NeedsIn(Place place, IEnumerable<StaffingNeed> needs) =>
+        needs.Where(n => n.RoomId == place.RoomId && place.Roles.Contains(n.Role));
+
+    /// <summary>How well a department is covered: gaps, whether a needed kind of staff is missing altogether, spares and headcount.</summary>
+    private (int Short, bool Nobody, int Spare, int Staff) Cover(Dept dept, IReadOnlyList<StaffingNeed> needs)
+    {
+        var mine = dept.Places.SelectMany(p => NeedsIn(p, needs)).ToList();
+        var staff = _sim.Staff.Count(s => dept.Places.Any(p => p.RoomId == s.BaseRoomId && p.Roles.Contains(s.Role)));
+        return (mine.Sum(n => n.Short), mine.Any(n => n.Recommended > 0 && n.Have == 0), mine.Sum(n => Math.Max(0, n.Have - n.Recommended)), staff);
+    }
+
+    private static string ShiftWord(StaffShift shift) => shift == StaffShift.Day ? "days" : "nights";
+
+    /// <summary>"A&amp;E is 1 nurse short on nights" or "ICU has no anaesthetist on nights".</summary>
+    internal static string GapText(StaffingNeed need) => need.Have == 0
+        ? $"{need.Place} has no {StaffGrades.RoleName(need.Role)} on {ShiftWord(need.Shift)}"
+        : $"{need.Place} is {need.Short} {StaffGrades.RoleName(need.Role, need.Short > 1)} short on {ShiftWord(need.Shift)}";
+
+    // ---------------------------------------------------------------- needs attention and the department list
+
+    private void BuildAttention(IReadOnlyList<StaffingNeed> needs, List<Dept> departments)
+    {
+        foreach (var child in _attention.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var gaps = needs.Where(n => n.Short > 0)
+            .OrderBy(n => n.Have == 0 ? 0 : 1)
+            .ThenBy(n => n.Shift == _sim.CurrentShift ? 0 : 1)
+            .ThenByDescending(n => n.Short)
+            .ToList();
+        _attention.Visible = gaps.Count > 0;
+        foreach (var need in gaps.Take(3))
+        {
+            var red = need.Have == 0;
+            var card = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1 };
+            card.AddThemeStyleboxOverride("panel", red ? UiStyle.Box(new Color("#FCEBEC"), 12, new Color("#EBB1B4"), 12) : UiStyle.Box(UiStyle.AmberTint, 12, UiStyle.AmberBorder, 12));
+            var column = new VBoxContainer();
+            column.AddThemeConstantOverride("separation", 6);
+            var title = new HBoxContainer();
+            title.AddThemeConstantOverride("separation", 8);
+            title.AddChild(Dot(red ? UiStyle.Red : Amber, 10));
+            var text = new Label { Text = GapText(need), TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis, SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = GapText(need), MouseFilter = MouseFilterEnum.Pass };
+            text.AddThemeFontSizeOverride("font_size", 14);
+            title.AddChild(text);
+            column.AddChild(title);
+            column.AddChild(UiStyle.Caption($"{need.Have} of {need.Recommended} {StaffGrades.RoleName(need.Role, true)} · {(need.Shift == StaffShift.Day ? "Day" : "Night")} {HospitalSimulation.ShiftHoursText(need.Shift)}", 12));
+            column.AddChild(FixButtons(need, departments, showButton: true));
+            card.AddChild(column);
+            _attention.AddChild(card);
+        }
+
+        if (gaps.Count > 3)
+        {
+            var more = UiStyle.Caption($"+{gaps.Count - 3} more", 13);
+            more.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            _attention.AddChild(more);
+        }
+    }
+
+    /// <summary>The Move (someone spare) and Hire buttons for a gap.</summary>
+    private Control FixButtons(StaffingNeed need, List<Dept>? departments, bool showButton)
+    {
+        var row = new HFlowContainer();
+        row.AddThemeConstantOverride("h_separation", 6);
+        row.AddThemeConstantOverride("v_separation", 4);
+        if (_sim.SpareFor(need) is { } spare)
+        {
+            var from = _sim.PlaceName(spare.Role, spare.BaseRoomId);
+            var move = SmallButton($"Move {spare.Name} from {from}", false, () =>
+            {
+                _sim.MoveStaff(spare.Id, need.RoomId);
+                _selectedId = spare.Id;
+                Rebuild();
+            });
+            move.TooltipText = $"{spare.Name} ({spare.Grade}) is spare in {from} on {ShiftWord(need.Shift)}";
+            row.AddChild(move);
+        }
+
+        var hire = SmallButton("Hire", true, () => HireRequested?.Invoke(need.Role));
+        hire.TooltipText = $"Open Recruitment to hire a {StaffGrades.RoleName(need.Role)}";
+        row.AddChild(hire);
+        if (showButton && departments?.FirstOrDefault(d => d.Places.Any(p => p.RoomId == need.RoomId && p.Roles.Contains(need.Role))) is { } dept && (_tab != Tab.Rota || _dept != dept.Key))
+        {
+            row.AddChild(SmallButton("Show", false, () => ShowDepartment(dept.Key)));
+        }
+
+        return row;
+    }
+
+    private static Button SmallButton(string text, bool primary, Action onPressed)
+    {
+        var button = new Button { Text = text, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(0, 30), MouseDefaultCursorShape = CursorShape.PointingHand };
+        button.Pressed += onPressed;
+        button.AddThemeFontSizeOverride("font_size", 12);
+        StyleBoxFlat Style(Color fill, Color? border)
+        {
+            var box = UiStyle.Box(fill, 8, border);
+            box.ContentMarginLeft = box.ContentMarginRight = 10;
+            box.ContentMarginTop = box.ContentMarginBottom = 4;
+            return box;
+        }
+
+        var (normal, hover, text_) = primary
+            ? (Style(UiStyle.Blue, null), Style(UiStyle.BlueHover, null), Colors.White)
+            : (Style(UiStyle.Surface, UiStyle.Border), Style(UiStyle.BlueTint, UiStyle.Blue), UiStyle.TextDark);
+        button.AddThemeStyleboxOverride("normal", normal);
+        button.AddThemeStyleboxOverride("hover", hover);
+        button.AddThemeStyleboxOverride("pressed", primary ? Style(UiStyle.BluePressed, null) : hover);
+        button.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color" })
+        {
+            button.AddThemeColorOverride(state, state == "font_color" || primary ? text_ : UiStyle.Blue);
+        }
+
+        return button;
+    }
+
+    private void BuildDepartmentList(IReadOnlyList<StaffingNeed> needs, List<Dept> departments)
+    {
+        foreach (var child in _deptList.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var covers = departments.Select(d => (Dept: d, Cover: Cover(d, needs))).ToList();
+        var shortNow = covers.Where(c => c.Cover.Short > 0).OrderBy(c => c.Cover.Nobody ? 0 : 1).ToList();
+        var covered = covers.Where(c => c.Cover.Short == 0).ToList();
+        if (shortNow.Count > 0)
+        {
+            _deptList.AddChild(SectionLabel("SHORT NOW"));
+            foreach (var (dept, cover) in shortNow)
+            {
+                _deptList.AddChild(DeptRow(dept.Key, dept.Name, cover.Nobody ? NobodyText(dept, needs) : $"{cover.Short} {(cover.Short == 1 ? "gap" : "gaps")} · {cover.Staff} staff", cover.Nobody ? UiStyle.Red : Amber, cover.Short.ToString(), cover.Nobody ? 2 : 1));
+            }
+        }
+
+        if (covered.Count > 0)
+        {
+            _deptList.AddChild(SectionLabel("COVERED"));
+            foreach (var (dept, cover) in covered)
+            {
+                var sub = cover.Spare > 0 ? $"{cover.Staff} staff · {cover.Spare} spare" : $"{cover.Staff} staff";
+                _deptList.AddChild(DeptRow(dept.Key, dept.Name, sub, UiStyle.Green, cover.Spare > 0 ? $"+{cover.Spare}" : null, 0));
+            }
+        }
+
+        _deptList.AddChild(Spacer(4));
+        _deptList.AddChild(DeptRow(AllDepartments, "All departments", "Everyone on one list", GreyDot, null, 0));
+    }
+
+    private string NobodyText(Dept dept, IReadOnlyList<StaffingNeed> needs)
+    {
+        var need = dept.Places.SelectMany(p => NeedsIn(p, needs)).First(n => n.Recommended > 0 && n.Have == 0);
+        return $"No {StaffGrades.RoleName(need.Role)} on {ShiftWord(need.Shift)}";
+    }
+
+    private static Control SectionLabel(string text)
+    {
+        var label = UiStyle.Caption(text, 11);
+        var pad = new MarginContainer();
+        pad.AddThemeConstantOverride("margin_left", 8);
+        pad.AddThemeConstantOverride("margin_top", 6);
+        pad.AddThemeConstantOverride("margin_bottom", 2);
+        pad.AddChild(label);
+        return pad;
+    }
+
+    /// <summary>One department on the left: a dot for its cover, its name, a line about it and a badge (gaps or spares).</summary>
+    private Control DeptRow(string key, string name, string sub, Color dot, string? badge, int badgeKind)
+    {
+        var selected = key == _dept;
+        var row = new StaffPill { StaffId = -1, MouseDefaultCursorShape = CursorShape.PointingHand };
+        row.Clicked += () => ShowDepartment(key);
+        var box = UiStyle.Box(selected ? UiStyle.Surface : new Color(0, 0, 0, 0), 9, null, 0);
+        box.ContentMarginLeft = 10;
+        box.ContentMarginRight = 8;
+        box.ContentMarginTop = box.ContentMarginBottom = 6;
+        if (selected)
+        {
+            box.BorderColor = UiStyle.Blue;
+            box.BorderWidthLeft = 3;
+            box.ShadowColor = new Color(0, 0, 0, 0.06f);
+            box.ShadowSize = 2;
+        }
+
+        row.AddThemeStyleboxOverride("panel", box);
+        var line = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        line.AddThemeConstantOverride("separation", 8);
+        line.AddChild(Dot(dot, 10));
+        var text = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
+        text.AddThemeConstantOverride("separation", 0);
+        var title = new Label { Text = name, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis, MouseFilter = MouseFilterEnum.Ignore };
+        title.AddThemeFontSizeOverride("font_size", 14);
+        text.AddChild(title);
+        var caption = UiStyle.Caption(sub, 12);
+        caption.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        caption.MouseFilter = MouseFilterEnum.Ignore;
+        text.AddChild(caption);
+        line.AddChild(text);
+        if (badge is not null)
+        {
+            var chip = HudWidgets.Chip();
+            var (tint, colour) = badgeKind switch
+            {
+                2 => (new Color("#FCEBEC"), new Color("#9A2328")),
+                1 => (UiStyle.AmberTint, UiStyle.AmberText),
+                _ => (UiStyle.BlueTint, UiStyle.Blue),
+            };
+            HudWidgets.SetChip(chip, badge, tint);
+            chip.Text.AddThemeColorOverride("font_color", colour);
+            chip.Text.AddThemeFontSizeOverride("font_size", 12);
+            chip.Chip.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            chip.Chip.MouseFilter = MouseFilterEnum.Ignore;
+            line.AddChild(chip.Chip);
+        }
+
+        row.AddChild(line);
+        return row;
     }
 
     private static bool IsDayOnly(Place place) => place.Sub.EndsWith("days only", StringComparison.Ordinal);
 
-    private void BuildRota()
+    private void BuildRota(IReadOnlyList<StaffingNeed> needs, List<Dept> departments)
     {
-        var header = new HBoxContainer();
-        header.AddThemeConstantOverride("separation", 10);
-        var placeHead = UiStyle.Caption("Place", 12);
-        placeHead.CustomMinimumSize = new Vector2(160, 0);
-        header.AddChild(placeHead);
-        header.AddChild(ShiftHeading(StaffShift.Day));
-        header.AddChild(ShiftHeading(StaffShift.Night));
-        _content.AddChild(header);
-        _content.AddChild(Spacer(8));
-
-        var needs = _sim.RecommendedStaffing();
-        foreach (var place in Places())
+        var showing = _dept == AllDepartments ? departments : departments.Where(d => d.Key == _dept).ToList();
+        var places = showing.SelectMany(d => d.Places).Where(p => p.Roles.Any(Shown)).ToList();
+        var first = true;
+        foreach (var place in places)
         {
-            if (!place.Roles.Any(Shown))
+            var roles = place.Roles.Where(r => Shown(r) && (NeedsIn(place, needs).Any(n => n.Role == r) || _sim.Staff.Any(s => s.Role == r && s.BaseRoomId == place.RoomId))).ToList();
+            if (roles.Count == 0)
             {
                 continue;
             }
 
-            _content.AddChild(HudWidgets.Divider());
-            var row = new HBoxContainer();
-            row.AddThemeConstantOverride("separation", 10);
-            var label = new VBoxContainer { CustomMinimumSize = new Vector2(160, 0) };
+            if (!first)
+            {
+                _content.AddChild(Spacer(18));
+            }
+
+            first = false;
+            var header = new HBoxContainer();
+            header.AddThemeConstantOverride("separation", 10);
+            var label = new VBoxContainer { CustomMinimumSize = new Vector2(170, 0) };
             label.AddThemeConstantOverride("separation", 0);
             var name = new Label { Text = place.Name, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
-            name.AddThemeFontSizeOverride("font_size", 15);
+            name.AddThemeFontSizeOverride("font_size", 16);
             label.AddChild(name);
             label.AddChild(UiStyle.Caption(place.Sub, 12));
-            row.AddChild(label);
-            row.AddChild(Cell(place, StaffShift.Day, needs));
-            row.AddChild(Cell(place, StaffShift.Night, needs));
-            var wrap = new MarginContainer();
-            wrap.AddThemeConstantOverride("margin_top", 8);
-            wrap.AddThemeConstantOverride("margin_bottom", 8);
-            wrap.AddChild(row);
-            _content.AddChild(wrap);
+            header.AddChild(label);
+            header.AddChild(ShiftHeading(StaffShift.Day));
+            header.AddChild(ShiftHeading(StaffShift.Night));
+            _content.AddChild(header);
+            _content.AddChild(Spacer(6));
+
+            foreach (var role in roles)
+            {
+                _content.AddChild(HudWidgets.Divider());
+                _content.AddChild(RoleRow(place, role, needs));
+            }
         }
 
-        _content.AddChild(Spacer(8));
-        var hint = UiStyle.Caption("Drag someone to another place or to the other shift. A move happens once they've finished with their patient; a change of shift sends them home or brings them in.", 12);
+        if (first)
+        {
+            _content.AddChild(UiStyle.Body(_sim.Staff.Count == 0 ? "Nobody works here yet. Hire staff in Recruitment (H)." : "Nobody of this kind works here.", muted: true));
+        }
+
+        _content.AddChild(Spacer(10));
+        var hint = UiStyle.Caption("Drag someone to another place or to the other shift. A move happens once they've finished with their patient; a change of shift sends them home or brings them in. Recommended numbers are a guide: you can ignore them.", 12);
         hint.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _content.AddChild(hint);
+    }
+
+    /// <summary>One kind of staff at one place: day and night teams side by side, most senior first, with an empty slot for each gap.</summary>
+    private Control RoleRow(Place place, StaffRole role, IReadOnlyList<StaffingNeed> needs)
+    {
+        var day = NeedsIn(place, needs).FirstOrDefault(n => n.Role == role && n.Shift == StaffShift.Day);
+        var night = NeedsIn(place, needs).FirstOrDefault(n => n.Role == role && n.Shift == StaffShift.Night);
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 10);
+        var label = new VBoxContainer { CustomMinimumSize = new Vector2(170, 0) };
+        label.AddThemeConstantOverride("separation", 2);
+        var title = new Label { Text = Capitalise(StaffGrades.RoleName(role, plural: true)) };
+        title.AddThemeFontSizeOverride("font_size", 14);
+        label.AddChild(title);
+        var recommended = new[] { day, night }.Where(n => n is not null).Select(n => n!).ToList();
+        if (recommended.Count > 0)
+        {
+            var shortBy = recommended.Sum(n => n.Short);
+            var nobody = recommended.Any(n => n.Recommended > 0 && n.Have == 0);
+            var chip = HudWidgets.Chip();
+            HudWidgets.SetChip(chip, shortBy == 0 ? "Covered" : $"{shortBy} short", shortBy == 0 ? new Color("#E5F3EA") : nobody ? new Color("#FCEBEC") : UiStyle.AmberTint);
+            chip.Text.AddThemeColorOverride("font_color", shortBy == 0 ? new Color("#1E6B42") : nobody ? new Color("#9A2328") : UiStyle.AmberText);
+            chip.Text.AddThemeFontSizeOverride("font_size", 12);
+            var chipRow = new HBoxContainer();
+            chipRow.AddChild(chip.Chip);
+            label.AddChild(chipRow);
+            var per = recommended.Max(n => n.Recommended);
+            label.AddChild(UiStyle.Caption(IsDayOnly(place) ? $"{per} recommended, days only" : $"{per} per shift recommended", 12));
+        }
+
+        row.AddChild(label);
+        row.AddChild(Cell(place, role, StaffShift.Day, day));
+        row.AddChild(Cell(place, role, StaffShift.Night, night));
+        var wrap = new MarginContainer();
+        wrap.AddThemeConstantOverride("margin_top", 8);
+        wrap.AddThemeConstantOverride("margin_bottom", 8);
+        wrap.AddChild(row);
+        return wrap;
     }
 
     private Control ShiftHeading(StaffShift shift)
@@ -408,12 +850,12 @@ public partial class StaffRotaPanel : PanelContainer
         return box;
     }
 
-    private Control Cell(Place place, StaffShift shift, IReadOnlyList<StaffingNeed> needs)
+    private Control Cell(Place place, StaffRole role, StaffShift shift, StaffingNeed? need)
     {
         var cell = new RotaCell
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            CanAccept = id => _sim.FindStaff(id) is { } m && place.Roles.Contains(m.Role) && _sim.CanMoveTo(m, place.RoomId) && !(IsDayOnly(place) && shift == StaffShift.Night),
+            CanAccept = id => _sim.FindStaff(id) is { } m && m.Role == role && _sim.CanMoveTo(m, place.RoomId) && !(IsDayOnly(place) && shift == StaffShift.Night),
             Accept = id => Drop(id, place, shift),
             Normal = UiStyle.Box(shift == StaffShift.Day ? new Color("#FBFCFD") : new Color("#F6F7FA"), 10, null, 8),
             Highlight = UiStyle.Box(UiStyle.BlueTint, 10, UiStyle.Blue, 8),
@@ -429,49 +871,68 @@ public partial class StaffRotaPanel : PanelContainer
             return cell;
         }
 
-        var placeNeeds = needs.Where(n => n.RoomId == place.RoomId && n.Shift == shift && place.Roles.Contains(n.Role)).ToList();
-        var chips = new HFlowContainer();
-        chips.AddThemeConstantOverride("h_separation", 6);
-        chips.AddThemeConstantOverride("v_separation", 4);
-        foreach (var need in placeNeeds)
-        {
-            var chip = HudWidgets.Chip();
-            var role = need.Recommended == 1 ? StaffGrades.RoleName(need.Role) : StaffGrades.RoleName(need.Role, plural: true);
-            HudWidgets.SetChip(chip, $"{need.Have}/{need.Recommended} {role}", need.Short > 0 ? UiStyle.AmberTint : UiStyle.BlueTint);
-            chip.Text.AddThemeColorOverride("font_color", need.Short > 0 ? UiStyle.AmberText : UiStyle.Blue);
-            chip.Text.AddThemeFontSizeOverride("font_size", 12);
-            chips.AddChild(chip.Chip);
-        }
-
-        column.AddChild(chips);
-
         var people = new HFlowContainer();
         people.AddThemeConstantOverride("h_separation", 6);
         people.AddThemeConstantOverride("v_separation", 6);
-        foreach (var member in _sim.Staff.Where(s => s.Shift == shift && s.BaseRoomId == place.RoomId && place.Roles.Contains(s.Role) && Shown(s))
-                     .OrderBy(s => s.Role).ThenByDescending(s => s.Skill))
+        foreach (var member in _sim.Staff.Where(s => s.Shift == shift && s.BaseRoomId == place.RoomId && s.Role == role && Shown(s))
+                     .OrderByDescending(s => GradeRank(s))
+                     .ThenByDescending(s => s.Skill))
         {
             people.AddChild(Pill(member));
+        }
+
+        if (need is { Short: > 0 })
+        {
+            var nobody = need.Have == 0;
+            for (var i = 0; i < Math.Min(need.Short, 3); i++)
+            {
+                people.AddChild(EmptySlot($"{Capitalise(StaffGrades.RoleName(role))} needed", nobody));
+            }
+
+            if (need.Short > 3)
+            {
+                people.AddChild(EmptySlot($"+{need.Short - 3} more", nobody));
+            }
         }
 
         if (people.GetChildCount() > 0)
         {
             column.AddChild(people);
         }
-
-        var missing = placeNeeds.Where(n => n.Have == 0).Select(n => StaffGrades.RoleName(n.Role)).ToList();
-        if (missing.Count > 0)
+        else
         {
-            var gap = new PanelContainer();
-            gap.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.AmberTint, 8, UiStyle.AmberBorder, 8));
-            var text = UiStyle.Body($"No {string.Join(" or ", missing)} on {(shift == StaffShift.Day ? "days" : "nights")}. Drag someone here or hire one.");
-            text.AddThemeColorOverride("font_color", UiStyle.AmberText);
-            text.AddThemeFontSizeOverride("font_size", 12);
-            gap.AddChild(text);
-            column.AddChild(gap);
+            column.AddChild(UiStyle.Caption(_grade is null ? "Nobody" : "Nobody of this grade", 12));
+        }
+
+        if (need is { Short: > 0 })
+        {
+            column.AddChild(FixButtons(need, null, showButton: false));
         }
 
         return cell;
+    }
+
+    /// <summary>A gap on the rota: an amber slot (red when there's nobody of that kind at all).</summary>
+    private static Control EmptySlot(string text, bool nobody)
+    {
+        var slot = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+        var box = UiStyle.Box(nobody ? new Color("#FCEBEC") : UiStyle.AmberTint, 15, nobody ? UiStyle.Red : Amber, 0);
+        box.BorderWidthBottom = box.BorderWidthTop = box.BorderWidthLeft = box.BorderWidthRight = 1;
+        box.ContentMarginLeft = box.ContentMarginRight = 10;
+        box.ContentMarginTop = box.ContentMarginBottom = 5;
+        slot.AddThemeStyleboxOverride("panel", box);
+        var label = new Label { Text = "+ " + text, MouseFilter = MouseFilterEnum.Ignore };
+        label.AddThemeFontSizeOverride("font_size", 13);
+        label.AddThemeColorOverride("font_color", nobody ? new Color("#9A2328") : UiStyle.AmberText);
+        slot.AddChild(label);
+        return slot;
+    }
+
+    /// <summary>How senior someone's grade is within their kind of staff (0 = most junior).</summary>
+    private static int GradeRank(StaffMember member)
+    {
+        var grades = StaffGrades.For(member.Role).ToList();
+        return Math.Max(0, grades.FindIndex(g => g.Title == member.Grade));
     }
 
     private void Drop(int staffId, Place place, StaffShift shift)
@@ -1049,7 +1510,7 @@ public partial class StaffRotaPanel : PanelContainer
 
     private static Control Spacer(int height) => new Control { CustomMinimumSize = new Vector2(0, height), MouseFilter = MouseFilterEnum.Ignore };
 
-    private static string ShortGrade(string grade) => grade.Replace(" nurse", string.Empty);
+    private static string ShortGrade(string grade) => grade.Replace(" nurse", string.Empty).Replace("Healthcare assistant (Band 3)", "Band 3");
 
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 }
