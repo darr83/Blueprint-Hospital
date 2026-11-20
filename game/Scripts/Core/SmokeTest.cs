@@ -1892,6 +1892,16 @@ public partial class SmokeTest : Node
         var popup = bar.PopupRect;
         Check(bar.PopupOpen, "The build pop-up did not open.");
         Check(popup.Position.X >= 0 && popup.End.X <= screen.X && popup.End.Y <= bar.BarRect.Position.Y, $"The {bar.OpenIcon} pop-up does not fit: {popup} on {screen}.");
+
+        // Every tile carries a badge with how many of it are built (0 when none).
+        var sim = hospital.Session.Simulation;
+        foreach (var item in bar.Menu.Icons.First(i => i.Id == bar.OpenIcon).Items.Where(i => bar.CountShown(i) is not null))
+        {
+            var expected = sim.BuiltCount(item).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Check(bar.CountShown(item) == expected, $"The {item} tile shows {bar.CountShown(item)} built, not {expected}.");
+        }
+
+        Check(bar.OpenIcon != "emergency" || bar.CountShown("waiting_room") is { } waiting && waiting != "0", "The waiting room tile should count the starting waiting room.");
     }
 
     /// <summary>Builds a ward south of the new corridor, then sends in patients with pneumonia and runs the clock until some are on it.</summary>

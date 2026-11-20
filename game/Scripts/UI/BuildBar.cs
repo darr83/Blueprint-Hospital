@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BlueprintHospital.Hospital;
 using BlueprintHospital.Simulation.Data;
@@ -35,6 +36,7 @@ public partial class BuildBar : Control
     private readonly RichTextLabel _status = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.Off };
     private readonly Dictionary<string, BarIcon> _icons = new();
     private readonly Dictionary<string, Button> _tiles = new();
+    private readonly Dictionary<string, (Label Text, StyleBoxFlat Box, Color Colour)> _counts = new();
     private HospitalSimulation _sim = null!;
     private BuildTool _tool = null!;
     private Button? _openButton;
@@ -308,6 +310,7 @@ public partial class BuildBar : Control
         }
 
         _tiles.Clear();
+        _counts.Clear();
         _openButton = null;
         _chairRow = null;
         _swatches.Clear();
@@ -504,6 +507,21 @@ public partial class BuildBar : Control
         };
         circle.AddChild(glyph);
         column.AddChild(circle);
+
+        // How many are built: a small round badge on the icon's lower right, clear of the corner tags.
+        var countText = new Label { Text = "0", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MouseFilter = MouseFilterEnum.Ignore };
+        countText.AddThemeFontSizeOverride("font_size", 11);
+        var countBox = UiStyle.Box(UiStyle.Surface, 10, colour);
+        countBox.BorderWidthBottom = countBox.BorderWidthTop = countBox.BorderWidthLeft = countBox.BorderWidthRight = 2;
+        countBox.ContentMarginLeft = countBox.ContentMarginRight = 4;
+        var badge = new PanelContainer { Name = "Count", MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(20, 20) };
+        badge.AddThemeStyleboxOverride("panel", countBox);
+        badge.AddChild(countText);
+        badge.AnchorLeft = badge.AnchorRight = 0.5f;
+        badge.OffsetLeft = 8;
+        badge.OffsetTop = 30;
+        tile.AddChild(badge);
+        _counts[item] = (countText, countBox, colour);
         var label = new Label
         {
             Text = ItemName(item),
@@ -576,6 +594,13 @@ public partial class BuildBar : Control
             var available = Available(item);
             tile.Modulate = available ? Colors.White : new Color(1, 1, 1, 0.5f);
             tile.SetPressedNoSignal(item == _selectedItem && _tool.Active);
+            if (_counts.TryGetValue(item, out var count))
+            {
+                var built = _sim.BuiltCount(item);
+                count.Text.Text = built.ToString(CultureInfo.InvariantCulture);
+                count.Text.AddThemeColorOverride("font_color", built > 0 ? count.Colour.Darkened(0.35f) : UiStyle.TextMuted);
+                count.Box.BorderColor = built > 0 ? count.Colour : UiStyle.Border;
+            }
         }
 
         if (_openButton is not null && OpenIcon is not null && OpenMenuIcon.Department is { } d)
@@ -588,6 +613,9 @@ public partial class BuildBar : Control
 
     private bool Available(string item) =>
         LockedUntil(item) == 0 && (!_sim.Database.RoomTemplates.TryGetValue(item, out var template) || template.IsCorridor || _sim.IsUnlocked(template.Department));
+
+    /// <summary>The number on a tile's count badge in the open pop-up, or null when the tile isn't shown (for the smoke test).</summary>
+    public string? CountShown(string item) => _counts.TryGetValue(item, out var count) ? count.Text.Text : null;
 
     /// <summary>Picks a tile in the open pop-up as if clicked (for the smoke test).</summary>
     public void Choose(string item) => Pick(item);
