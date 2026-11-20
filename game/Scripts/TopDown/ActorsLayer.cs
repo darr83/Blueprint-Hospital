@@ -306,14 +306,45 @@ public partial class ActorsLayer : Node2D
     private void CareArt(Pen p, Patient patient, PersonLook look, double width, double length)
     {
         var (care, task) = World3D.Procedure3D.For(patient, _sim);
+        var k = Math.Min(1.0, look.Scale + 0.08);
+        var headY = (-length / 2) + 0.56;
+        var chestY = headY + (1.0 * k);
+        var wear = World3D.Procedure3D.Worn(patient, _sim);
+        if ((wear & (World3D.Wear.Oxygen | World3D.Wear.Nebuliser)) != 0)
+        {
+            // The mask over the nose and mouth, its tube off the side of the bed.
+            p.Path(new Color("#9AD3B8"), 0.04, (0, headY + (0.16 * k)), (-0.2, chestY), (-width / 2, chestY + 0.5));
+            p.Ellipse(0, headY + (0.12 * k), 0.15 * k, 0.12 * k, new Color("#BFE8D2"), new Color("#7FC8A6"), 0.03);
+            if (wear.HasFlag(World3D.Wear.Nebuliser))
+            {
+                var puff = Mathf.PosMod((float)_world.Time * 0.6f, 1f);
+                p.Circle(0.12, headY + (0.1 * k) - (0.3 * puff), 0.05 + (0.08 * puff), Pen.A("#FFFFFF", 0.7f * (1 - puff)));
+            }
+        }
+
+        if (wear.HasFlag(World3D.Wear.Sling))
+        {
+            p.Line(0.34 * k, chestY + 0.2, -0.1, chestY - 0.12, new Color("#5B8DD6"), 0.2);
+            p.Line(-0.1, chestY - 0.12, 0.1, headY + (0.42 * k), new Color("#3F6FB5"), 0.05);
+        }
+
+        if (wear.HasFlag(World3D.Wear.Dressing))
+        {
+            p.Line(-0.42 * k, chestY + 0.18, -0.36 * k, chestY + 0.5, new Color("#FAFAF5"), 0.17);
+        }
+
+        if (wear.HasFlag(World3D.Wear.Blood))
+        {
+            // The bag of blood at the head of the bed and its line to the arm.
+            p.Path(new Color("#B3202F"), 0.035, (0.72, headY - 0.3), (0.6, chestY - 0.2), (0.42 * k, chestY + 0.3));
+            p.Round(0.6, headY - 0.52, 0.24, 0.34, 0.07, new Color("#8E1B2B"), new Color("#5E1019"), 0.03);
+        }
+
         if (care == World3D.Care.None || task is not { Started: true })
         {
             return;
         }
 
-        var k = Math.Min(1.0, look.Scale + 0.08);
-        var headY = (-length / 2) + 0.56;
-        var chestY = headY + (1.0 * k);
         var worker = World3D.Procedure3D.Doing(task, _sim);
         switch (care)
         {

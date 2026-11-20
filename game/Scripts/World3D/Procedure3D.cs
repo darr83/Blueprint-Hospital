@@ -77,6 +77,40 @@ public enum Care
     Swab,
 }
 
+/// <summary>Things a patient in bed has on them because of a treatment: some only while it is given, some from then on.</summary>
+[Flags]
+public enum Wear
+{
+    None = 0,
+
+    /// <summary>An oxygen mask, its tube going off to the wall.</summary>
+    Oxygen = 1,
+
+    /// <summary>A nebuliser mask with its little chamber, misting (only while it is given).</summary>
+    Nebuliser = 2,
+
+    /// <summary>Gas and air: the mouthpiece held to the mouth (only while it is given).</summary>
+    Entonox = 4,
+
+    /// <summary>A nasogastric tube taped to the cheek, draining into a bag on the side of the bed.</summary>
+    NgTube = 8,
+
+    /// <summary>A pack in the nose after a nosebleed.</summary>
+    NosePack = 16,
+
+    /// <summary>An arm held across the chest in a sling.</summary>
+    Sling = 32,
+
+    /// <summary>A white dressing wrapped round a forearm.</summary>
+    Dressing = 64,
+
+    /// <summary>A bag of blood on the bed's pole, its line going to the arm.</summary>
+    Blood = 128,
+
+    /// <summary>Monitoring and pacing pads stuck on the chest.</summary>
+    Pads = 256,
+}
+
 /// <summary>Works out, from the simulation alone, which procedure a lying patient is in the middle of. Changes nothing.</summary>
 public static class Procedure3D
 {
@@ -152,6 +186,52 @@ public static class Procedure3D
         "viral_swab" => Care.Swab,
         _ => Care.None,
     };
+
+    /// <summary>What a treatment with this name puts on the patient.</summary>
+    public static Wear WearOf(string label)
+    {
+        var what = label.ToLowerInvariant();
+        return what.Contains("nebulis") ? Wear.Nebuliser
+            : what.Contains("entonox") ? Wear.Entonox
+            : what.Contains("oxygen") ? Wear.Oxygen
+            : what.Contains("nasogastric") ? Wear.NgTube
+            : what.Contains("nasal packing") ? Wear.NosePack
+            : what.Contains("sling") ? Wear.Sling
+            : what.Contains("dress the burn") || what.Contains("wound cleaning") ? Wear.Dressing
+            : what.Contains("transfusion") ? Wear.Blood
+            : what.Contains("pacing pads") ? Wear.Pads
+            : Wear.None;
+    }
+
+    /// <summary>
+    /// Everything <paramref name="patient"/> has on from their treatment: what is being put on right now, and
+    /// what stays on once it has been done (a mask, a sling, a dressing, a tube, a bag of blood).
+    /// </summary>
+    public static Wear Worn(Patient patient, HospitalSimulation sim)
+    {
+        var wear = Wear.None;
+        foreach (var record in patient.TreatmentPlan)
+        {
+            if (record.Done)
+            {
+                var name = record.Step.Medication is { } med && sim.Database.Medications.TryGetValue(med, out var def) ? def.Name : record.Step.Name ?? string.Empty;
+                wear |= WearOf(name);
+            }
+        }
+
+        // The mist and the gas and air only last while they are being given.
+        wear &= ~(Wear.Nebuliser | Wear.Entonox);
+        foreach (var task in sim.Tasks)
+        {
+            if (task.Started && task.PatientId == patient.Id && task.Kind is TaskKind.Procedure or TaskKind.GiveMedication or TaskKind.EmergencyTreatment
+                && Doing(task, sim) is not null)
+            {
+                wear |= WearOf(task.Label);
+            }
+        }
+
+        return wear;
+    }
 
     /// <summary>Care given at the bedside by someone standing beside the bed (so it needs them there, and a side to work from).</summary>
     public static bool AtBedside(Care care) => care is Care.Ecg or Care.Birth or Care.Obs or Care.Bloods or Care.FingerPrick or Care.PeakFlow

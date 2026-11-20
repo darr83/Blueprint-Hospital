@@ -96,6 +96,16 @@ public partial class AnimShots : Node
         ("lumbar", null, (s, a) => AtBed(s, a, Care.LumbarPuncture), 3.4f, 110, new[] { "bacterial_meningitis" }),
         ("tap", null, (s, a) => AtBed(s, a, Care.AsciticTap), 3.4f, 110, new[] { "decompensated_cirrhosis" }),
         ("knee", null, (s, a) => AtBed(s, a, Care.JointAspiration), 3.4f, 110, new[] { "septic_arthritis_knee", "gout" }),
+        ("oxygen", null, (s, a) => Putting(s, a, Wear.Oxygen), 3.4f, 130, new[] { "community_acquired_pneumonia", "acute_heart_failure" }),
+        ("nebuliser", null, (s, a) => Putting(s, a, Wear.Nebuliser), 3.4f, 130, new[] { "asthma_exacerbation", "copd_exacerbation" }),
+        ("entonox", null, (s, a) => Putting(s, a, Wear.Entonox), 3.4f, 110, new[] { "tibial_shaft_fracture", "shoulder_dislocation" }),
+        ("sling", null, (s, a) => Putting(s, a, Wear.Sling), 3.4f, 110, new[] { "shoulder_dislocation" }),
+        ("ngtube", null, (s, a) => Putting(s, a, Wear.NgTube), 3.4f, 130, new[] { "small_bowel_obstruction", "large_bowel_obstruction" }),
+        ("transfusion", null, (s, a) => Putting(s, a, Wear.Blood), 3.4f, 130, new[] { "upper_gi_bleed" }),
+        ("dressing", null, (s, a) => Putting(s, a, Wear.Dressing), 3.4f, 110, new[] { "minor_burn", "simple_laceration" }),
+        ("pads", null, (s, a) => Putting(s, a, Wear.Pads), 3.4f, 110, new[] { "complete_heart_block" }),
+        ("nosepack", null, (s, a) => Putting(s, a, Wear.NosePack), 3.4f, 110, new[] { "epistaxis" }),
+        ("injection", null, (s, a) => a is StaffMember m && Treating(s, m) is { } t && Activity3D.TreatAct(t, m, s, 0) == Act.Needle, 3.4f, 110, new[] { "migraine" }),
     };
 
     private static (Care Care, ClinicalTask? Task)? CareOf(HospitalSimulation s, StaffMember m) =>
@@ -106,6 +116,15 @@ public partial class AnimShots : Node
     private static bool AtBed(HospitalSimulation s, Agent a, Care care) =>
         a is StaffMember m && CareOf(s, m) is { } c && c.Care == care && Activity3D.Progress(c.Task!, s) is > 0.12 and < 0.5
         && s.FindPatient(c.Task!.PatientId) is { } onBed && World!.InBed(onBed);
+
+    /// <summary>The treatment someone is part way through giving to a patient who is in a bed.</summary>
+    private static ClinicalTask? Treating(HospitalSimulation s, StaffMember m) =>
+        !m.IsMoving && m.CurrentTaskId is { } id && s.Tasks.FirstOrDefault(t => t.Id == id) is { Started: true, Kind: TaskKind.Procedure or TaskKind.GiveMedication or TaskKind.EmergencyTreatment } task
+        && Activity3D.Progress(task, s) is > 0.1 and < 0.45 && s.FindPatient(task.PatientId) is { IsMoving: false } p && World!.InBed(p) ? task : null;
+
+    /// <summary>Someone putting this on a patient in a bed (a mask, a sling, a tube).</summary>
+    private static bool Putting(HospitalSimulation s, Agent a, Wear wear) =>
+        a is StaffMember m && Treating(s, m) is { } task && Procedure3D.WearOf(task.Label) == wear;
 
     private static bool Set6 => OS.GetCmdlineUserArgs().Contains("--anim-set=6");
 
@@ -314,6 +333,11 @@ public partial class AnimShots : Node
             if (Set6 && _subject is StaffMember who && CareOf(sim, who) is { Task: { } doing } && sim.FindPatient(doing.PatientId) is { } onBed)
             {
                 (fx, fy) = (onBed.X + 0.5, onBed.Y + 0.5);
+            }
+            else if (Set6 && _subject is StaffMember giver && giver.CurrentTaskId is { } giving && sim.Tasks.FirstOrDefault(t => t.Id == giving) is { } treatment
+                && sim.FindPatient(treatment.PatientId) is { } treated && World!.InBed(treated))
+            {
+                (fx, fy) = (treated.X + 0.5, treated.Y + 0.5);
             }
 
             if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
