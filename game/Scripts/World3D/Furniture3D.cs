@@ -27,22 +27,60 @@ public partial class Furniture3D : Node3D
     /// <summary>How many pieces were built (for tests).</summary>
     public int Count => _count;
 
-    public void Rebuild()
+    private string? _builtKey;
+    private int _fixedCount;
+
+    /// <summary>
+    /// Builds the furniture again. The fixed pieces are rebuilt only when <paramref name="key"/> (what
+    /// they are built from) has changed, or when it is null; the chairs, which players place one after
+    /// another, are their own mesh and always rebuilt, so placing a chair is quick.
+    /// </summary>
+    public void Rebuild(string? key = null)
     {
+        var all = key is null || key != _builtKey;
+        _builtKey = key;
         foreach (var child in GetChildren())
         {
-            if (child.Name.ToString().StartsWith("Trolley", StringComparison.Ordinal))
+            var name = child.Name.ToString();
+            if (name.StartsWith("Trolley", StringComparison.Ordinal) || (!all && !name.StartsWith("Chairs", StringComparison.Ordinal)))
             {
                 continue;
             }
 
+            RemoveChild(child);
             child.QueueFree();
         }
 
-        _cots.Clear();
-        _count = 0;
         var world = _view.World;
         var sim = _view.Simulation;
+        if (all)
+        {
+            BuildFixed(world, sim);
+        }
+
+        _count = _fixedCount;
+        var seats = new MeshBatch { Kind = SurfaceKind.Laminate };
+        var unused = new MeshBatch();
+        foreach (var chair in world.Chairs)
+        {
+            var (cx, cy) = ChairArt.Centre(chair.Tile, chair.Facing, chair.Shift);
+            var (fx, fy) = ChairArt.Direction(chair.Facing);
+            Place(seats, unused, cx, cy, ((int)fx, (int)fy), 1, 1);
+            Furnish3D.Chair(seats, chair.ItemId, chair.Colour);
+            _count++;
+        }
+
+        seats.Frame = Transform3D.Identity;
+        if (seats.AddTo(this) is { } chairs)
+        {
+            chairs.Name = "Chairs";
+        }
+    }
+
+    private void BuildFixed(WorldLayer world, Simulation.Simulation.HospitalSimulation sim)
+    {
+        _cots.Clear();
+        _count = 0;
         var solid = new MeshBatch { Kind = SurfaceKind.Laminate };
         var glass = new MeshBatch();
         foreach (var space in world.ViewSpaces)
@@ -114,21 +152,14 @@ public partial class Furniture3D : Node3D
             }
         }
 
-        foreach (var chair in world.Chairs)
-        {
-            var (cx, cy) = ChairArt.Centre(chair.Tile, chair.Facing, chair.Shift);
-            var (fx, fy) = ChairArt.Direction(chair.Facing);
-            Place(solid, glass, cx, cy, ((int)fx, (int)fy), 1, 1);
-            Furnish3D.Chair(solid, chair.ItemId, chair.Colour);
-            _count++;
-        }
-
         solid.Frame = glass.Frame = Transform3D.Identity;
         solid.AddTo(this);
         if (glass.AddTo(this, alpha: true, shadow: false) is { } g)
         {
             g.Name = "Glass";
         }
+
+        _fixedCount = _count;
     }
 
     public void Sync()

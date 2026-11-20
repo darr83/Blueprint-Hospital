@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Simulation;
 using Godot;
@@ -173,11 +174,32 @@ public static class DecorArt
                 var flecks = terrazzo
                     ? new[] { colour.Darkened(0.45f), colour.Lightened(0.5f), colour.Darkened(0.25f), new Color("#C9A27E") }
                     : new[] { colour.Darkened(0.35f), colour.Lightened(0.45f), colour.Darkened(0.2f) };
+                // Thousands of flecks in a big room: drawn as small hexagons in one batch, not a
+                // separately drawn circle each, so the floor costs little to draw every frame.
+                var points = new Vector2[count * 7];
+                var colours = new Color[count * 7];
+                var indices = new int[count * 18];
                 for (var i = 0; i < count; i++)
                 {
                     var p = map(x + (rng.NextDouble() * w), y + (rng.NextDouble() * l));
                     var r = (terrazzo ? 0.9f + (float)(rng.NextDouble() * 1.8) : 0.8f + (float)(rng.NextDouble() * 0.7)) * size;
-                    c.DrawCircle(p, r, flecks[rng.Next(flecks.Length)]);
+                    var fleck = flecks[rng.Next(flecks.Length)];
+                    var at = i * 7;
+                    points[at] = p;
+                    colours[at] = fleck;
+                    for (var k = 0; k < 6; k++)
+                    {
+                        points[at + 1 + k] = p + (Hexagon[k] * r);
+                        colours[at + 1 + k] = fleck;
+                        indices[(i * 18) + (k * 3)] = at;
+                        indices[(i * 18) + (k * 3) + 1] = at + 1 + k;
+                        indices[(i * 18) + (k * 3) + 2] = at + 1 + ((k + 1) % 6);
+                    }
+                }
+
+                if (count > 0)
+                {
+                    RenderingServer.CanvasItemAddTriangleArray(c.GetCanvasItem(), indices, points, colours);
                 }
 
                 if (terrazzo)
@@ -244,6 +266,9 @@ public static class DecorArt
             }
         }
     }
+
+    /// <summary>The corners of a hexagon of radius one, for the flecks in terrazzo and safety flooring.</summary>
+    private static readonly Vector2[] Hexagon = Enumerable.Range(0, 6).Select(k => Vector2.FromAngle(k * Mathf.Pi / 3)).ToArray();
 
     /// <summary>A room's floor in the world, in its finish.</summary>
     public static void DrawRoomFloor(CanvasItem c, CareSpace space, RoomDecor look)

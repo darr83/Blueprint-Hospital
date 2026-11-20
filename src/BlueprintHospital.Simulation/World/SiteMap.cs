@@ -69,17 +69,25 @@ public sealed class Building(string id, string name, GridRect footprint)
     {
         _extensions.Add(area);
         _area = null;
+        _outerEdges = null;
     }
 
     internal void ClearExtensions()
     {
         _extensions.Clear();
         _area = null;
+        _outerEdges = null;
     }
 
     /// <summary>Every edge between a floor tile of the building and a tile outside it: where the outer walls stand.</summary>
-    public IEnumerable<(GridCoord Inside, GridCoord Outside, WallSide Side)> OuterEdges()
+    public IEnumerable<(GridCoord Inside, GridCoord Outside, WallSide Side)> OuterEdges() => _outerEdges ??= FindOuterEdges();
+
+    /// <summary>The outer edges, worked out once until the building is extended (the view asks for them after every build).</summary>
+    private List<(GridCoord Inside, GridCoord Outside, WallSide Side)>? _outerEdges;
+
+    private List<(GridCoord Inside, GridCoord Outside, WallSide Side)> FindOuterEdges()
     {
+        var edges = new List<(GridCoord, GridCoord, WallSide)>();
         var seen = new HashSet<GridCoord>();
         foreach (var tile in Areas.SelectMany(a => a.Tiles()))
         {
@@ -88,16 +96,20 @@ public sealed class Building(string id, string name, GridRect footprint)
                 continue;
             }
 
-            foreach (var (dx, dy, side) in new[] { (0, -1, WallSide.North), (1, 0, WallSide.East), (0, 1, WallSide.South), (-1, 0, WallSide.West) })
+            foreach (var (dx, dy, side) in Neighbours)
             {
                 var n = new GridCoord(tile.X + dx, tile.Y + dy);
                 if (!Contains(n))
                 {
-                    yield return (tile, n, side);
+                    edges.Add((tile, n, side));
                 }
             }
         }
+
+        return edges;
     }
+
+    private static readonly (int Dx, int Dy, WallSide Side)[] Neighbours = { (0, -1, WallSide.North), (1, 0, WallSide.East), (0, 1, WallSide.South), (-1, 0, WallSide.West) };
 
     public void AddEntrance(Entrance entrance)
     {
@@ -224,9 +236,16 @@ public sealed class SiteMap
                 throw new ArgumentOutOfRangeException(nameof(c), c, "Outside the site.");
             }
 
-            _tiles[(c.Y * Width) + c.X] = value;
+            if (_tiles[(c.Y * Width) + c.X] != value)
+            {
+                _tiles[(c.Y * Width) + c.X] = value;
+                TileVersion++;
+            }
         }
     }
+
+    /// <summary>Counts changes to the tiles, so the view can tell when the grounds need drawing again.</summary>
+    public int TileVersion { get; private set; }
 
     public void Fill(GridRect rect, TileKind kind)
     {

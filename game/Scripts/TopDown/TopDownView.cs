@@ -25,11 +25,14 @@ public partial class TopDownView : Node2D
     private WorldLayer _world = null!;
     private GroundLayer _ground = null!;
     private DepartmentRenderer _floors = null!;
+    private BandsLayer _bands = null!;
     private RoomsLayer _rooms = null!;
     private ActorsLayer _actors = null!;
     private DoorsLayer _doors = null!;
     private WallsLayer _walls = null!;
     private (int Version, int Rotation, int Floor, bool Shadows, bool Detailed, bool Grid)? _built;
+    private int _decorBuilt = -1;
+    private (int Rotation, int Floor, bool Shadows, bool Detailed, string Site)? _groundBuilt;
     private bool _showGrid;
 
     /// <summary>Where the scene puts what lies on the floor under the furniture: the outline of the selected room.</summary>
@@ -83,6 +86,10 @@ public partial class TopDownView : Node2D
         FloorSlot = new Node2D { Name = "OnTheFloor" };
         AddChild(FloorSlot);
 
+        _bands = new BandsLayer { Name = "WallBands" };
+        AddChild(_bands);
+        _bands.Initialise(simulation, world);
+
         _rooms = new RoomsLayer { Name = "Rooms" };
         AddChild(_rooms);
         _rooms.Initialise(simulation, world);
@@ -118,31 +125,51 @@ public partial class TopDownView : Node2D
         _ground.Modulate = Colors.White.Lerp(NightTint, Night * 0.5f);
     }
 
-    /// <summary>Redraws the layers that stay put if the layout, the view or the display settings have changed.</summary>
+    /// <summary>
+    /// Redraws the layers that stay put if the layout, the view or the display settings have changed.
+    /// A change of floor or wall finish alone repaints only the floors and the bands round the walls.
+    /// </summary>
     public void Refresh()
     {
         var settings = GameManager.Instance?.Settings;
         var key = (_world.StaticVersion, IsoDraw.Rotation, IsoDraw.ViewFloor, settings?.EnhancedLighting ?? true, settings?.SurfaceTextures ?? true, _showGrid);
         if (key == _built)
         {
+            if (_decorBuilt != _world.DecorVersion)
+            {
+                _decorBuilt = _world.DecorVersion;
+                _floors.Repaint();
+                _bands.QueueRedraw();
+            }
+
             return;
         }
 
         _built = key;
+        _decorBuilt = _world.DecorVersion;
         var (_, _, _, shadows, detailed, grid) = key;
 
         _ground.Transform = Pen.GridFrame(IsoDraw.ToScreenGround);
         var floor = Pen.GridFrame(IsoDraw.ToScreen);
-        foreach (var layer in new Node2D[] { _rooms, _actors, _doors, _walls })
+        foreach (var layer in new Node2D[] { _bands, _rooms, _actors, _doors, _walls })
         {
             layer.Transform = floor;
         }
 
         var plan = WallPlan.Build(_world, _sim);
-        _ground.Shadows = shadows;
-        _ground.Detailed = detailed;
-        _ground.QueueRedraw();
-        _floors.QueueRedraw();
+        // The grounds take the longest to draw and only change when the site does, not for each room or chair.
+        var groundKey = (IsoDraw.Rotation, IsoDraw.ViewFloor, shadows, detailed, _world.SiteSignature());
+        if (groundKey != _groundBuilt)
+        {
+            _groundBuilt = groundKey;
+            _ground.Shadows = shadows;
+            _ground.Detailed = detailed;
+            _ground.QueueRedraw();
+        }
+
+        _floors.Repaint();
+        _bands.Shadows = shadows;
+        _bands.QueueRedraw();
         _rooms.Shadows = shadows;
         _rooms.Detailed = detailed;
         _rooms.ShowGrid = grid;

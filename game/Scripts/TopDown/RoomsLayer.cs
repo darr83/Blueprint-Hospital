@@ -28,7 +28,7 @@ public sealed record BedSpot(CareSpace Space, GridCoord Spot, bool HeadSouth, st
 public sealed record CotSpot(CareSpace Space, double X, double Y, double Angle, bool Incubator, int Index, WardBed? Bed);
 
 /// <summary>
-/// Everything in the rooms that stays put: the coloured band round the foot of the walls, the grid,
+/// Everything in the rooms that stays put: the door thresholds, the grid,
 /// the walls' shadows, curtain tracks, furniture, equipment, chairs, made-up beds and the room
 /// decorations. Drawn once and kept until the layout changes; whoever lies in the beds is drawn by
 /// the <see cref="ActorsLayer"/>.
@@ -194,11 +194,6 @@ public partial class RoomsLayer : Node2D
             WallsLayer.Threshold(p, door);
         }
 
-        foreach (var space in _world.ViewSpaces)
-        {
-            WallBand(p, space);
-        }
-
         if (ShowGrid)
         {
             Grid(p);
@@ -272,38 +267,6 @@ public partial class RoomsLayer : Node2D
         foreach (var top in Decorations.TopPieces)
         {
             FurnitureKit.OnTop(p, top.Kind, top.X, top.Y);
-        }
-    }
-
-    /// <summary>
-    /// The band round the foot of a room's walls, just inside them: the department's colour, or the
-    /// wall finish picked in Decorate with its accent colour as the line.
-    /// </summary>
-    private void WallBand(Pen p, CareSpace space)
-    {
-        if (!space.HasWalls || space.IsShaft)
-        {
-            return;
-        }
-
-        var r = space.Rect;
-        const double m = (WallPlan.InnerThickness / 2) + 0.07;
-        var look = DecorArt.LookOf(_sim, space);
-        if (look.Walls != WallFinish.Standard || look.WallColour is not null)
-        {
-            var wall = DecorArt.WallColour(look);
-            p.Round(r.X + m + 0.03, r.Y + m + 0.03, r.Width - (2 * m) - 0.06, r.Length - (2 * m) - 0.06, 0.05, null, wall, 0.2);
-            if (DecorArt.WallAccent(space, look) is { } accent)
-            {
-                p.Round(r.X + m + 0.14, r.Y + m + 0.14, r.Width - (2 * m) - 0.28, r.Length - (2 * m) - 0.28, 0.05, null, new Color(accent, 0.8f), 0.06);
-            }
-
-            return;
-        }
-
-        if (DepartmentRenderer.WayfindingColour(space) is { } colour)
-        {
-            p.Round(r.X + m, r.Y + m, r.Width - (2 * m), r.Length - (2 * m), 0.05, null, new Color(colour, 0.55f), 0.14);
         }
     }
 
@@ -418,6 +381,71 @@ public partial class RoomsLayer : Node2D
             }
 
             FurnitureKit.Draw(p, def.Id, x, y, w, l, front, colour, seed);
+        }
+    }
+}
+
+/// <summary>
+/// The band round the foot of each room's walls, under the furniture. Kept apart from the
+/// <see cref="RoomsLayer"/> so that trying out or changing a wall finish in Decorate repaints only
+/// these bands and the floors, not every piece of furniture in the building.
+/// </summary>
+public partial class BandsLayer : Node2D
+{
+    private HospitalSimulation _sim = null!;
+    private WorldLayer _world = null!;
+
+    public bool Shadows { get; set; } = true;
+
+    public void Initialise(HospitalSimulation simulation, WorldLayer world)
+    {
+        _sim = simulation;
+        _world = world;
+    }
+
+    public override void _Draw()
+    {
+        if (_sim is null)
+        {
+            return;
+        }
+
+        var p = new Pen(this, Shadows);
+        foreach (var space in _world.ViewSpaces)
+        {
+            WallBand(p, space);
+        }
+    }
+
+    /// <summary>
+    /// The band round the foot of a room's walls, just inside them: the department's colour, or the
+    /// wall finish picked in Decorate with its accent colour as the line.
+    /// </summary>
+    private void WallBand(Pen p, CareSpace space)
+    {
+        if (!space.HasWalls || space.IsShaft)
+        {
+            return;
+        }
+
+        var r = space.Rect;
+        const double m = (WallPlan.InnerThickness / 2) + 0.07;
+        var look = DecorArt.LookOf(_sim, space);
+        if (look.Walls != WallFinish.Standard || look.WallColour is not null)
+        {
+            var wall = DecorArt.WallColour(look);
+            p.Round(r.X + m + 0.03, r.Y + m + 0.03, r.Width - (2 * m) - 0.06, r.Length - (2 * m) - 0.06, 0.05, null, wall, 0.2);
+            if (DecorArt.WallAccent(space, look) is { } accent)
+            {
+                p.Round(r.X + m + 0.14, r.Y + m + 0.14, r.Width - (2 * m) - 0.28, r.Length - (2 * m) - 0.28, 0.05, null, new Color(accent, 0.8f), 0.06);
+            }
+
+            return;
+        }
+
+        if (DepartmentRenderer.WayfindingColour(space) is { } colour)
+        {
+            p.Round(r.X + m, r.Y + m, r.Width - (2 * m), r.Length - (2 * m), 0.05, null, new Color(colour, 0.55f), 0.14);
         }
     }
 }

@@ -146,7 +146,7 @@ public partial class FloorPainter : Node3D
         var size = new Vector2I(Math.Min(_area.Size.X * TilePixels, 16384), Math.Min(_area.Size.Y * TilePixels, 16384));
         _viewport.Size = size;
         _canvas.Position = new Vector2(-_area.Position.X * TilePixels, -_area.Position.Y * TilePixels);
-        _rooms.QueueRedraw();
+        _rooms.Repaint();
         _grid.QueueRedraw();
         _viewport.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
 

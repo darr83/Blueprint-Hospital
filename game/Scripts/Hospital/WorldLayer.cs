@@ -108,15 +108,28 @@ public partial class WorldLayer : Node2D
         _clock = clock;
         YSortEnabled = true;
         _layoutSubscription = _sim.Events.Subscribe<LayoutChanged>(_ => _layoutDirty = true);
+        _decorSubscription = _sim.Events.Subscribe<DecorChanged>(_ => DecorVersion++);
         RebuildStatic();
     }
 
     private bool _layoutDirty;
 
-    public override void _ExitTree() => _layoutSubscription?.Dispose();
+    private IDisposable? _decorSubscription;
+
+    public override void _ExitTree()
+    {
+        _layoutSubscription?.Dispose();
+        _decorSubscription?.Dispose();
+    }
 
     /// <summary>Counts rebuilds, so the view knows when to redraw its walls, floors and furniture.</summary>
     public int StaticVersion { get; private set; }
+
+    /// <summary>
+    /// Counts changes of floor and wall finish (picked, tried out or put back in Decorate). Only the
+    /// floors and wall finishes need painting again for these, not the whole building.
+    /// </summary>
+    public int DecorVersion { get; private set; }
 
     /// <summary>Rebuilds walls and furniture, after rooms are built, moved or demolished.</summary>
     public void RebuildStatic()
@@ -489,6 +502,79 @@ public partial class WorldLayer : Node2D
         var solid = walls.Where(w => !doors.Contains(w)).ToHashSet();
         WallEdges = solid;
         DoorEdges = doors.Where(d => !solid.Contains(d)).ToHashSet();
+    }
+
+    /// <summary>
+    /// What the grounds are made from: the site's tiles, the building's outline and ways in, and the
+    /// ambulance bays. Views compare it to skip drawing the grounds again when only rooms or chairs changed.
+    /// </summary>
+    public string SiteSignature()
+    {
+        var site = _sim.Site;
+        var text = new System.Text.StringBuilder();
+        text.Append(site.TileVersion).Append('|').Append(site.Layout?.GetHashCode()).Append('|').Append(_sim.AmbulanceBaySide)
+            .Append('|').Append(BlueprintHospital.Core.GameManager.Instance?.Session?.HospitalName);
+        foreach (var building in site.Buildings)
+        {
+            foreach (var area in building.Areas)
+            {
+                text.Append('|').Append(area);
+            }
+
+            foreach (var entrance in building.Entrances)
+            {
+                text.Append('|').Append(entrance);
+            }
+        }
+
+        foreach (var bay in _sim.AmbulanceBays)
+        {
+            text.Append('|').Append(bay);
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// What the walls are built from: every room's place, kind, name and doors on the floor in view.
+    /// Placing chairs or furniture leaves it the same, so the walls need not be built again.
+    /// </summary>
+    public string StructureSignature()
+    {
+        var text = new System.Text.StringBuilder(SiteSignature());
+        text.Append('#').Append(IsoDraw.ViewFloor);
+        foreach (var space in _sim.Spaces)
+        {
+            text.Append('|').Append(space.Id).Append(',').Append(space.TemplateId).Append(',').Append(space.Kind).Append(',').Append(space.Name)
+                .Append(',').Append(space.Rect).Append(',').Append(space.HasWalls).Append(',').Append(space.DepartmentId);
+            foreach (var door in space.Doors)
+            {
+                text.Append(',').Append(door);
+            }
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>What the furniture in the rooms is built from: the walls and doors, and every piece and bed in the rooms in view (not the chairs).</summary>
+    public string FurnitureSignature()
+    {
+        var text = new System.Text.StringBuilder(StructureSignature());
+        foreach (var space in ViewSpaces)
+        {
+            text.Append('#').Append(space.Id);
+            foreach (var item in space.Furniture)
+            {
+                text.Append('|').Append(item);
+            }
+
+            foreach (var bed in space.Beds)
+            {
+                text.Append('|').Append(bed.PatientSpot).Append(bed.HeadSouth);
+            }
+        }
+
+        return text.ToString();
     }
 
     /// <summary>Wall edges on the floor in view (a horizontal edge runs from (X, Y) to (X + 1, Y)); the 2D plan draws these.</summary>

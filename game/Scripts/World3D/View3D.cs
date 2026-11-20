@@ -209,6 +209,9 @@ public partial class View3D : Node3D
     }
 
     private bool _surfaces = SurfaceDetail.Enabled;
+    private int _decorVersion = -1;
+    private string _siteKey = "";
+    private string _structureKey = "";
 
     public override void _Process(double delta)
     {
@@ -237,19 +240,55 @@ public partial class View3D : Node3D
         // Walls, doors and floors follow the 2D world's layout: rebuilt whenever it is.
         if (_builtVersion != _world.StaticVersion)
         {
+            // Rebuilt in full when the view or settings changed; otherwise only what the change touches:
+            // a chair or a piece of furniture leaves the grounds, outside and walls as they are.
+            var full = _builtVersion == -1;
             _builtVersion = _world.StaticVersion;
-            _ground.Rebuild();
-            _outside.Rebuild(_walls.Cutaway);
-            _floors.Repaint();
-            _walls.Rebuild();
-            _beds.Rebuild();
-            _furniture.Rebuild();
+            var decorChanged = _decorVersion != _world.DecorVersion;
+            _decorVersion = _world.DecorVersion;
+            var site = _world.SiteSignature();
+            var structure = _world.StructureSignature();
+            var siteChanged = full || site != _siteKey;
+            var structureChanged = full || structure != _structureKey;
+            _siteKey = site;
+            _structureKey = structure;
+            if (siteChanged)
+            {
+                _ground.Rebuild();
+            }
+
+            if (structureChanged)
+            {
+                _outside.Rebuild(_walls.Cutaway);
+            }
+
+            if (structureChanged || decorChanged)
+            {
+                // The floor texture is copied back from the graphics card each time it is painted, so not for a chair.
+                _floors.Repaint();
+            }
+
+            if (structureChanged)
+            {
+                _walls.Rebuild();
+            }
+
+            var furniture = full ? null : _world.FurnitureSignature();
+            _beds.Rebuild(furniture);
+            _furniture.Rebuild(furniture);
             _decor.Rebuild(_walls.Cutaway);
             _life.Rebuild();
-            if (_eye is not null)
+            if (_eye is not null && structureChanged)
             {
                 _firstPerson.RebuildCeiling();
             }
+        }
+        else if (_decorVersion != _world.DecorVersion)
+        {
+            // A floor or wall finish picked in Decorate: only the floor paint and the wall finishes change.
+            _decorVersion = _world.DecorVersion;
+            _floors.Repaint();
+            _decor.Rebuild(_walls.Cutaway);
         }
 
         Daylight();
