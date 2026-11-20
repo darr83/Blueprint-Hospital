@@ -86,6 +86,8 @@ public partial class SmokeTest : Node
         Transport,
         Imaging,
         Theatre,
+        SurgeryBoard,
+        SurgeryList,
         Clinics,
         ReceptionistPanel,
         ClinicChair,
@@ -669,6 +671,27 @@ public partial class SmokeTest : Node
 
             case Stage.Theatre when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("09b_theatre_access");
+                hospital.Hud.ToggleSurgery();
+                Check(hospital.Hud.Surgery.Visible && !hospital.Hud.Surgery.ShowingWaitingList, "The Surgery panel did not open on the theatre board.");
+                _frame = 0;
+                _stage = Stage.SurgeryBoard;
+                break;
+
+            case Stage.SurgeryBoard when scene is HospitalScene hospital && _frame >= 6:
+            {
+                Screenshot("09b2_surgery_board");
+                var surgery = hospital.Hud.Surgery;
+                Check(surgery.GetCombinedMinimumSize().X <= surgery.Size.X + 1, $"The Surgery panel is wider than the screen ({surgery.GetCombinedMinimumSize().X:0} > {surgery.Size.X:0}).");
+                surgery.ShowTab(waitingList: true);
+                _frame = 0;
+                _stage = Stage.SurgeryList;
+                break;
+            }
+
+            case Stage.SurgeryList when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09b3_surgery_waiting_list");
+                hospital.Hud.ToggleSurgery();
+                Check(!hospital.Hud.Surgery.Visible, "The Surgery panel did not close.");
                 BuildClinics(hospital);
                 _frame = 0;
                 _stage = Stage.Clinics;
@@ -1073,14 +1096,22 @@ public partial class SmokeTest : Node
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
         sim.AdjustBalance(1_000_000);
         Check(sim.UnlockDepartment("gynaecology").CanBuild, "Could not unlock gynaecology.");
-        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 32, b.Y - 14, 32, 14));
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 40, b.Y - 14, 40, 14));
         Check(wing.CanBuild, "Theatre wing refused: " + string.Join("; ", wing.Problems));
         var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 20, b.Y - 14, 6, 24), Simulation.World.WallSide.South));
         Check(corridor.CanBuild, "Theatre corridor refused: " + string.Join("; ", corridor.Problems));
-        var built = sim.BuildRoom(sim.AutoPlan("operating_theatre", new Simulation.World.GridRect(b.X - 32, b.Y - 14, 12, 12)));
+        var side = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 40, b.Y - 3, 20, 3), Simulation.World.WallSide.South));
+        Check(side.CanBuild, "Theatre side corridor refused: " + string.Join("; ", side.Problems));
+        var built = sim.BuildRoom(sim.AutoPlan("operating_theatre", new Simulation.World.GridRect(b.X - 32, b.Y - 14, 12, 11)));
         Check(built.CanBuild, "Theatre refused: " + string.Join("; ", built.Problems));
         var theatre = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.Theatre);
         Check(theatre.AllowedDepartments.Count == 0, "A new theatre should not be open to every department.");
+
+        // The anaesthetic room goes against the theatre's west wall, opening onto the side corridor; sliding doors join the two.
+        var anaesthetic = sim.BuildRoom(sim.AutoPlan("anaesthetic_room", new Simulation.World.GridRect(b.X - 38, b.Y - 10, 6, 7)));
+        Check(anaesthetic.CanBuild, "Anaesthetic room refused: " + string.Join("; ", anaesthetic.Problems));
+        var anaestheticRoom = sim.Spaces.Single(s => s.Kind == Simulation.Hospital.CareSpaceKind.AnaestheticRoom);
+        Check(sim.AnaestheticRoomOf(theatre) == anaestheticRoom && anaestheticRoom.LinkDoors.Count == 1 && theatre.LinkDoors.Count == 1, "The anaesthetic room is not joined to the theatre by sliding doors.");
         sim.SetTheatreAccess(theatre.Id, "gynaecology", true);
         hospital.ClearSelectionForTest();
         hospital.SetMode(GameMode.Build);

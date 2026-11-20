@@ -25,14 +25,14 @@ public class MaternityTests
         Build(h.Sim.ExtendBuilding(new GridRect(B.X - 36, B.Y, 36, 36)), "extension");
         Build(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 36, B.Y + 12, 40, 6), WallSide.South)), "corridor");
         var x = B.X - 36;
-        foreach (var (template, w, d) in north)
+        foreach (var (template, w, d) in north.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 12 - d, w, d))), template);
             x += w;
         }
 
         x = B.X - 36;
-        foreach (var (template, w, d) in south)
+        foreach (var (template, w, d) in south.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 18, w, d))), template);
             x += w;

@@ -156,7 +156,8 @@ public class DepartmentTests
         var h = Wing(seed: 7);
         h.Sim.UnlockDepartment("general_surgery");
         var theatre = BuildSouth(h, "operating_theatre", 0, 12, 12);
-        BuildSouth(h, "surgical_ward", 12, 16, 10);
+        BuildSouth(h, "anaesthetic_room", 12, 7, 12);
+        BuildSouth(h, "surgical_ward", 19, 11, 10);
         h.StaffToRecommended();
         Assert.Empty(theatre.AllowedDepartments);
         Assert.Contains(h.Sim.SurgicalDepartments, d => d.Id == "general_surgery");
@@ -189,7 +190,8 @@ public class DepartmentTests
         var h = Wing(seed: 7);
         h.Sim.UnlockDepartment("general_surgery");
         var theatre = BuildSouth(h, "operating_theatre", 0, 12, 12);
-        BuildSouth(h, "surgical_ward", 12, 16, 10);
+        BuildSouth(h, "anaesthetic_room", 12, 7, 12);
+        BuildSouth(h, "surgical_ward", 19, 11, 10);
         h.Sim.SetTheatreAccess(theatre.Id, "general_surgery", true);
         h.StaffToRecommended();
 

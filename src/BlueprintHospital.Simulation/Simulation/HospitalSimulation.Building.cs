@@ -326,6 +326,10 @@ public sealed partial class HospitalSimulation
         else
         {
             CheckDoors(room, replacing, problems);
+            if (template.Kind == CareSpaceKind.AnaestheticRoom)
+            {
+                CheckAnaestheticRoom(room, replacing, problems);
+            }
         }
 
         if (template.Layout == RoomLayoutKind.Ward && room.Beds.Count == 0)
@@ -785,7 +789,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Rebuilds pathfinding and sends anyone whose route or base changed on their way again.</summary>
     private void AfterLayoutChange()
     {
-        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        Nav = BuildNav();
         SyncRoomStaff();
         PruneChairs();
 
@@ -882,7 +886,7 @@ public sealed partial class HospitalSimulation
             _spaces[r.Id] = Furnish(plan, r.Id, r.Name);
         }
 
-        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        Nav = BuildNav();
         _chairs.AddRange(state.Chairs.Concat(upgraded).GroupBy(c => c.Tile).Select(g => g.First() with { Colour = ChairColours.Normalise(g.First().Colour) }));
         foreach (var tile in state.CorridorChairs.Distinct().Where(t => ChairAt(t) is null))
         {
@@ -891,7 +895,7 @@ public sealed partial class HospitalSimulation
 
         PruneChairs();
         Balance = state.Balance;
-        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        Nav = BuildNav();
         SyncRoomStaff();
         foreach (var member in _staff)
         {

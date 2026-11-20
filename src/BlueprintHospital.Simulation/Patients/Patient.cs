@@ -394,6 +394,24 @@ public sealed class Patient : Agent
     /// <summary>Waiting for theatre on an assessment unit (e.g. the surgical assessment unit) rather than in A&amp;E.</summary>
     public bool PreOp { get; set; }
 
+    /// <summary>When the patient was booked for an operation in theatre (null if not booked).</summary>
+    public DateTime? SurgeryBookedAt { get; set; }
+
+    /// <summary>How soon their operation must be done.</summary>
+    public SurgeryUrgency? SurgeryUrgency { get; set; }
+
+    /// <summary>When the surgeon takes (or took) their consent for the operation.</summary>
+    public DateTime? ConsentAt { get; set; }
+
+    /// <summary>When their group and save blood sample is back from the lab (null: not needed).</summary>
+    public DateTime? GroupAndSaveAt { get; set; }
+
+    /// <summary>When they last had anything to eat, for the 6-hour nil by mouth rule before an anaesthetic.</summary>
+    public DateTime? LastAteAt { get; set; }
+
+    /// <summary>Their operation started later than its urgency allows.</summary>
+    public bool SurgeryBreached { get; set; }
+
     /// <summary>Already on a ward but needs a bed on another (up to ICU/HDU, down from them, or out of an assessment unit).</summary>
     public DateTime? WardMoveRequestedAt { get; set; }
 

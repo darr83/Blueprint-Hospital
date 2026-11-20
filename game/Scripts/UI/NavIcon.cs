@@ -14,6 +14,7 @@ public partial class NavIcon : Control
         Doctor,
         Hire,
         Clinics,
+        Surgery,
         Finances,
         Stats,
         Routes,
@@ -90,6 +91,11 @@ public partial class NavIcon : Control
                 L(16, 3, 16, 7);
                 DrawRect(new Rect2(7, 13, 3, 3), c);
                 DrawRect(new Rect2(14, 13, 3, 3), c);
+                break;
+            case Kind.Surgery:
+                // A scalpel: a long handle and a curved blade.
+                L(3, 21, 13, 11);
+                DrawPolyline(new[] { new Vector2(13, 11), new Vector2(19, 3), new Vector2(21, 5), new Vector2(15, 13), new Vector2(13, 11) }, c, w, true);
                 break;
             case Kind.Finances:
                 L(4, 20, 4, 10);

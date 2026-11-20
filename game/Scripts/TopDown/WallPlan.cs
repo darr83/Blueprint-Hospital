@@ -14,6 +14,9 @@ public readonly record struct WallRun(int X, int Y, int Length, bool Horizontal,
 /// <summary>A doorway: its run, the room it belongs to (null for a way into the building) and the entrance it is, if any.</summary>
 public sealed record DoorRun(WallRun Run, CareSpace? Room, Entrance? Entrance)
 {
+    /// <summary>Automatic sliding doors through a shared wall (between a theatre and its anaesthetic room).</summary>
+    public bool Sliding { get; init; }
+
     /// <summary>The middle of the doorway, on the wall line.</summary>
     public (double X, double Y) Middle => Run.Horizontal ? (Run.X + (Run.Length / 2.0), Run.Y) : (Run.X, Run.Y + (Run.Length / 2.0));
 }
@@ -67,8 +70,19 @@ public sealed class WallPlan
             }
         }
 
-        // Which room each doorway edge belongs to: a named room before a corridor.
+        // Which room each doorway edge belongs to: a named room before a corridor. The automatic doors
+        // between a theatre and its anaesthetic room belong to the anaesthetic room.
         var roomOf = new Dictionary<(int, int, bool), CareSpace>();
+        var sliding = new HashSet<(int, int, bool)>();
+        foreach (var space in world.ViewSpaces.Where(s => s.Kind == CareSpaceKind.AnaestheticRoom))
+        {
+            foreach (var edge in space.LinkDoors.SelectMany(d => RoomSigns.DoorwayEdges(space.Rect, d)))
+            {
+                roomOf.TryAdd(edge, space);
+                sliding.Add(edge);
+            }
+        }
+
         foreach (var space in world.ViewSpaces.Where(s => s.HasWalls).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0))
         {
             foreach (var door in space.Doors)
@@ -104,7 +118,7 @@ public sealed class WallPlan
         foreach (var run in Merge(world.DoorEdges, shell, e => (roomOf.GetValueOrDefault(e), entrances.GetValueOrDefault(e))))
         {
             var first = (run.X, run.Y, run.Horizontal);
-            plan.Doors.Add(new DoorRun(run, roomOf.GetValueOrDefault(first), entrances.GetValueOrDefault(first)));
+            plan.Doors.Add(new DoorRun(run, roomOf.GetValueOrDefault(first), entrances.GetValueOrDefault(first)) { Sliding = sliding.Contains(first) });
         }
 
         return plan;

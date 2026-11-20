@@ -332,6 +332,12 @@ public partial class DoorsLayer : Node2D
         LeafCount = 0;
         foreach (var door in Plan.Doors)
         {
+            if (door.Sliding)
+            {
+                SlidingDoors(p, door);
+                continue;
+            }
+
             if (door.Room is not { } room || door.Entrance is not null || RoomSigns.OpenGap(room))
             {
                 continue;
@@ -362,6 +368,44 @@ public partial class DoorsLayer : Node2D
                 Swing(p, run, run.Horizontal ? run.X + run.Length : run.X, run.Horizontal ? run.Y : run.Y + run.Length, -1, into, length, open);
             }
         }
+    }
+
+    private static readonly Color SlideGlass = new("#9FD3EA");
+    private static readonly Color SlideFrame = new("#6E7B85");
+    private readonly Dictionary<(int, int), (float Open, double At)> _slides = new();
+
+    /// <summary>
+    /// The automatic doors between a theatre and its anaesthetic room: two glass panels in steel frames
+    /// that part from the middle into the wall as someone (or a trolley) comes up to them.
+    /// </summary>
+    private void SlidingDoors(Pen p, DoorRun door)
+    {
+        var run = door.Run;
+        var (mx, my) = door.Middle;
+        static bool Near(Simulation.Agents.Agent a, double x, double y) => Math.Abs(a.X - x) < 1.8 && Math.Abs(a.Y - y) < 1.8;
+        var sim = _world.Simulation;
+        var near = sim.Patients.Any(a => Near(a, mx, my)) || sim.Staff.Any(a => Near(a, mx, my));
+        var now = Time.GetTicksMsec() / 1000.0;
+        var (open, at) = _slides.GetValueOrDefault((run.X, run.Y), (0f, now));
+        var step = (float)Math.Clamp((now - at) * 2.5, 0, 1);
+        open = Math.Clamp(open + (near ? step : -step), 0, 1);
+        _slides[(run.X, run.Y)] = (open, now);
+
+        var half = run.Length / 2.0;
+        var shift = half * 0.92 * open;
+        foreach (var dir in new[] { -1, 1 })
+        {
+            // Each panel sits in its half of the doorway and slides outwards into the wall.
+            var from = half + (dir < 0 ? -half : 0) + (dir * shift);
+            var (ax, ay) = run.Horizontal ? (run.X + from + 0.04, (double)run.Y) : (run.X, run.Y + from + 0.04);
+            var (bx, by) = run.Horizontal ? (ax + half - 0.08, ay) : (ax, ay + half - 0.08);
+            p.Line(ax, ay, bx, by, SlideFrame, 0.2);
+            p.Line(ax, ay, bx, by, SlideGlass, 0.11);
+        }
+
+        // The sensor box over the middle of the doorway.
+        p.Rect(mx - 0.12, my - 0.12, 0.24, 0.24, new Color("#37474F"));
+        LeafCount++;
     }
 
     /// <summary>One leaf hinged at (hx, hy), closed along the wall in direction <paramref name="along"/>, swinging into the room.</summary>

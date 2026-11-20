@@ -209,11 +209,14 @@ public static class ExampleHospital
     {
         // North row: critical care and theatres.
         new("intensive_care_unit", 6, NorthRowY, 23, NorthRowDepth, WallSide.South),
-        new("high_dependency_unit", 29, NorthRowY, 21, NorthRowDepth, WallSide.South),
-        new("operating_theatre", 50, NorthRowY, 14, NorthRowDepth, WallSide.South, "Theatre 1"),
-        new("operating_theatre", 64, NorthRowY, 14, NorthRowDepth, WallSide.South, "Theatre 2"),
-        new("doctors_office", 78, NorthRowY, 12, NorthRowDepth, WallSide.South, "Theatre office"),
-        new("staff_room", 90, NorthRowY, 10, NorthRowDepth, WallSide.South, "Theatre staff room"),
+        new("high_dependency_unit", 29, NorthRowY, 19, NorthRowDepth, WallSide.South),
+        // Each theatre has its anaesthetic room against its outer wall, joined by automatic doors.
+        new("operating_theatre", 55, NorthRowY, 13, NorthRowDepth, WallSide.South, "Theatre 1"),
+        new("operating_theatre", 68, NorthRowY, 13, NorthRowDepth, WallSide.South, "Theatre 2"),
+        new("anaesthetic_room", 48, NorthRowY, 7, NorthRowDepth, WallSide.South, "Anaesthetic room 1"),
+        new("anaesthetic_room", 81, NorthRowY, 7, NorthRowDepth, WallSide.South, "Anaesthetic room 2"),
+        new("doctors_office", 88, NorthRowY, 6, NorthRowDepth, WallSide.South, "Theatre office"),
+        new("staff_room", 94, NorthRowY, 6, NorthRowDepth, WallSide.South, "Theatre staff room"),
 
         // Middle row: surgical admissions, day surgery and endoscopy.
         new("surgical_assessment_unit", 24, MiddleRowY, 30, MiddleRowDepth, WallSide.South),
@@ -233,9 +236,10 @@ public static class ExampleHospital
     private static readonly Room[] SecondFloor =
     {
         // North row: maternity.
-        new("mother_baby_ward", 6, NorthRowY, 24, NorthRowDepth, WallSide.South),
-        new("neonatal_unit", 30, NorthRowY, 18, NorthRowDepth, WallSide.South),
+        new("mother_baby_ward", 6, NorthRowY, 21, NorthRowDepth, WallSide.South),
+        new("neonatal_unit", 27, NorthRowY, 14, NorthRowDepth, WallSide.South),
         new("caesarean_theatre", 48, NorthRowY, 14, NorthRowDepth, WallSide.South),
+        new("anaesthetic_room", 41, NorthRowY, 7, NorthRowDepth, WallSide.South, "Maternity anaesthetic room"),
         new("delivery_room", 62, NorthRowY, 12, NorthRowDepth, WallSide.South, "Delivery room 1"),
         new("delivery_room", 74, NorthRowY, 12, NorthRowDepth, WallSide.South, "Delivery room 2"),
         new("ambulatory_care_unit", 86, NorthRowY, 14, NorthRowDepth, WallSide.South),

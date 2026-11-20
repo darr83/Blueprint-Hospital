@@ -107,6 +107,8 @@
     "disposition_note": "Gynaecology team agree: ectopic pregnancy needing an operation.",
     "operation": {
       "name": "Laparoscopic salpingectomy",
+      "urgency": "immediate",
+      "tariff": 3100,
       "minutes": 60
     },
     "length_of_stay_hours": [
@@ -300,6 +302,8 @@
     "disposition_note": "Gynaecology agree: torsion on the scan. To theatre to untwist the ovary.",
     "operation": {
       "name": "Laparoscopic ovarian detorsion",
+      "urgency": "urgent",
+      "tariff": 2900,
       "minutes": 60
     },
     "length_of_stay_hours": [
@@ -602,6 +606,8 @@
     "disposition_note": "Gynaecology agree: Bartholin's abscess for drainage as a day case.",
     "operation": {
       "name": "Marsupialisation of Bartholin's abscess",
+      "urgency": "soon",
+      "tariff": 1000,
       "minutes": 30,
       "day_case": true
     },

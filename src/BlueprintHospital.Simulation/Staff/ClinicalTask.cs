@@ -1,5 +1,21 @@
 namespace BlueprintHospital.Simulation.Staff;
 
+/// <summary>Where a patient has got to on the way to an operation.</summary>
+public enum SurgeryPhase
+{
+    /// <summary>Not started (or a theatre without an anaesthetic room).</summary>
+    Waiting,
+
+    /// <summary>Being brought to the anaesthetic room and put to sleep there.</summary>
+    Anaesthetic,
+
+    /// <summary>Asleep, being wheeled through the automatic doors onto the operating table.</summary>
+    IntoTheatre,
+
+    /// <summary>On the table: the surgeon operates.</summary>
+    Operating,
+}
+
 /// <summary>Kinds of work staff can pick up.</summary>
 public enum TaskKind
 {
@@ -95,6 +111,15 @@ public sealed class ClinicalTask
 
     /// <summary>The room the task is done in, when it needs one of its own (triage, imaging, theatre or pharmacy).</summary>
     public string? SpaceId { get; set; }
+
+    /// <summary>For an operation in a theatre with an anaesthetic room: how far the patient has got.</summary>
+    public SurgeryPhase Phase { get; set; }
+
+    /// <summary>Seconds left of the anaesthetic, once it has begun.</summary>
+    public double? AnaestheticSecondsLeft { get; set; }
+
+    /// <summary>When the operation itself began (the patient on the table).</summary>
+    public DateTime? OperationStartedAt { get; set; }
 
     /// <summary>Calculated priority; higher is more urgent.</summary>
     public double Priority { get; set; }

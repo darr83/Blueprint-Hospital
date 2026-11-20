@@ -49,6 +49,9 @@ public partial class WorldLayer : Node2D
     /// <summary>Where a patient lies on each cubicle and ward bed.</summary>
     private readonly HashSet<GridCoord> _bedSpots = new();
 
+    /// <summary>Where a patient lies on their trolley in each anaesthetic room while they are put to sleep.</summary>
+    private readonly HashSet<GridCoord> _anaestheticSpots = new();
+
     /// <summary>Mother and baby ward beds that have a cot beside them, by the bed's patient spot.</summary>
     private readonly HashSet<GridCoord> _cotBeds = new();
     private IDisposable? _layoutSubscription;
@@ -137,6 +140,8 @@ public partial class WorldLayer : Node2D
         StaticVersion++;
         _monitors.Clear();
         _bedSpots.Clear();
+        _anaestheticSpots.Clear();
+        _anaestheticSpots.UnionWith(_sim.SpacesOfKind(CareSpaceKind.AnaestheticRoom).Select(s => s.PatientSpot));
         _cotBeds.Clear();
         _chairs.Clear();
         _seatTiles.Clear();
@@ -313,8 +318,17 @@ public partial class WorldLayer : Node2D
 
     /// <summary>On a trolley away from a bed: being pushed, waiting for a porter, or parked in corridor care.</summary>
     public bool OnTrolley(Patient patient) =>
-        patient.Mobility == Mobility.Trolley && patient.IsAlive && !InBed(patient) && !IsSeated(patient)
-        && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null || InCorridorCare(patient));
+        patient.IsAlive && !InBed(patient) && !IsSeated(patient)
+        && ((patient.Mobility == Mobility.Trolley && (patient.IsMoving || patient.PendingMove is not null || patient.PushedByStaffId is not null || InCorridorCare(patient)))
+            || InTheatreSuite(patient));
+
+    /// <summary>
+    /// On a trolley in an anaesthetic room being put to sleep, or being wheeled through the sliding doors into
+    /// theatre by the anaesthetist, whether they walked, came in a wheelchair or on a trolley.
+    /// </summary>
+    public bool InTheatreSuite(Patient patient) =>
+        (!patient.IsMoving && _anaestheticSpots.Contains(patient.Tile))
+        || (patient.PushedByStaffId is { } pusher && _sim.FindStaff(pusher)?.Role == StaffRole.Anaesthetist);
 
     /// <summary>Sitting in a wheelchair: being pushed, waiting for a porter, or parked in corridor care.</summary>
     public bool InWheelchair(Patient patient) =>

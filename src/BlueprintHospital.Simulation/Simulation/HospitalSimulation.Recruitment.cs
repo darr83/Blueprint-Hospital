@@ -83,8 +83,9 @@ public sealed partial class HospitalSimulation
     private static bool IsSpecialist(StaffRole role) => RoomKindsFor(role).Count > 0;
 
     /// <summary>Whether someone works in the room, so it is open for business.</summary>
+    /// <remarks>A theatre also needs an anaesthetic room joined to it (see <see cref="TheatreProblems"/>).</remarks>
     public bool IsStaffed(CareSpace room) => room.Kind == CareSpaceKind.Theatre
-        ? _staff.Any(s => s.BaseRoomId == room.Id && s.Role == StaffRole.Surgeon) && _staff.Any(s => s.BaseRoomId == room.Id && s.Role == StaffRole.Anaesthetist)
+        ? TheatreProblems(room).Count == 0
         : _staff.Any(s => s.BaseRoomId == room.Id);
 
     /// <summary>Where someone in this role could be based.</summary>

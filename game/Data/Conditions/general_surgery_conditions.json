@@ -110,6 +110,8 @@
     "disposition_note": "Surgical team agree: appendicitis needing an operation.",
     "operation": {
       "name": "Laparoscopic appendicectomy",
+      "urgency": "urgent",
+      "tariff": 3200,
       "minutes": 60
     },
     "length_of_stay_hours": [
@@ -678,6 +680,8 @@
     "disposition_note": "Surgical team agree: perforation needing an emergency laparotomy.",
     "operation": {
       "name": "Laparotomy and ulcer repair",
+      "urgency": "immediate",
+      "tariff": 7800,
       "minutes": 120,
       "major": true
     },
@@ -792,6 +796,8 @@
     "disposition_note": "Surgical team agree: strangulated hernia needing an emergency repair.",
     "operation": {
       "name": "Emergency hernia repair",
+      "urgency": "urgent",
+      "tariff": 3600,
       "minutes": 90
     },
     "length_of_stay_hours": [
@@ -892,6 +898,8 @@
     "disposition_note": "Surgical team agree: abscess for incision and drainage as a day case.",
     "operation": {
       "name": "Incision and drainage of abscess",
+      "urgency": "soon",
+      "tariff": 1100,
       "minutes": 30,
       "day_case": true
     },
@@ -1104,6 +1112,8 @@
     "disposition_note": "Urology on-call (general surgery here) agree: torsion until proven otherwise. Straight to theatre.",
     "operation": {
       "name": "Scrotal exploration and fixation",
+      "urgency": "immediate",
+      "tariff": 2400,
       "minutes": 45,
       "day_case": true
     },
@@ -1222,6 +1232,8 @@
     "disposition_note": "Surgical team agree: obstructing bowel tumour needing a Hartmann's procedure.",
     "operation": {
       "name": "Hartmann's procedure",
+      "urgency": "urgent",
+      "tariff": 9500,
       "minutes": 180,
       "major": true
     },

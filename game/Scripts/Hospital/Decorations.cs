@@ -114,6 +114,7 @@ public static class Decorations
         CareSpaceKind.Endoscopy => new(new[] { Wall.GutPoster }, new[] { Floor.ScopeCabinet }),
         CareSpaceKind.EndoscopyRecovery => new(new[] { Wall.Clock }, new[] { Floor.BlanketStack }),
         CareSpaceKind.Theatre => new(new[] { Wall.Clock, Wall.StaffOnly, Wall.Lightbox, Wall.GloveDispenser }, new[] { Floor.ScrubSink }),
+        CareSpaceKind.AnaestheticRoom => new(new[] { Wall.Clock, Wall.OxygenPanel, Wall.GloveDispenser }, new[] { Floor.BlanketStack }),
         CareSpaceKind.DeliveryRoom => new(new[] { Wall.Clock, Wall.PastelPrint, Wall.GelDispenser, Wall.OxygenPanel }, new[] { Floor.BlanketStack, Floor.Plant }),
         CareSpaceKind.PlasterRoom => new(new[] { Wall.BonePoster }, new[] { Floor.PlasterShelf, Floor.Bucket }),
         CareSpaceKind.PhysioGym => new(new[] { Wall.Mirror, Wall.Mirror }, new[] { Floor.GymBall, Floor.Dumbbells, Floor.GymBall }),

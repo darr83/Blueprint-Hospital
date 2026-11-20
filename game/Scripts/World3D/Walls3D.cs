@@ -152,6 +152,15 @@ public partial class Walls3D : Node3D
             AddDoorway(space);
         }
 
+        // The automatic doors between each theatre and its anaesthetic room.
+        foreach (var space in _view.Simulation.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y) && s.Kind == CareSpaceKind.AnaestheticRoom))
+        {
+            foreach (var link in space.LinkDoors)
+            {
+                AddLinkDoors(space, link);
+            }
+        }
+
         if (IsoDraw.ViewFloor == 0)
         {
             foreach (var entrance in _view.Simulation.Site.Buildings.SelectMany(b => b.Entrances))
@@ -296,6 +305,81 @@ public partial class Walls3D : Node3D
         var middle = start + (width / 2.0);
         var (mx, my) = horizontal ? (middle, (double)line) : ((double)line, middle);
         _sliding.Add(new Sliding { Panels = panels, Closed = closed, Along = unit, Travel = leaf * 0.92f, Mx = mx, My = my, Reach = 1.6f, Span = (float)(width / 2.0) + 0.3f, Horizontal = horizontal });
+    }
+
+    /// <summary>
+    /// Automatic doors through the wall between a theatre and its anaesthetic room: a steel frame with a
+    /// sensor over it and two glass panels with steel edges that part from the middle as a trolley comes up.
+    /// </summary>
+    private void AddLinkDoors(CareSpace room, Doorway d)
+    {
+        var r = room.Rect;
+        var (a, horizontal) = d.Side switch
+        {
+            WallSide.North => ((X: (double)r.X + d.Offset, Y: (double)r.Y), true),
+            WallSide.South => ((r.X + d.Offset, r.Bottom), true),
+            WallSide.West => ((r.X, r.Y + d.Offset), false),
+            _ => ((r.Right, r.Y + d.Offset), false),
+        };
+        var start = horizontal ? a.X : a.Y;
+        var line = horizontal ? a.Y : a.X;
+        var width = (double)d.Width;
+        var doorH = Kit3D.H(RoomSigns.DoorHeight);
+        var steel = new Color("#7F8C96");
+        var frame = new MeshBatch { Kind = SurfaceKind.Laminate };
+        void Along(double s0, double len, double thick, float from, float to, Color colour)
+        {
+            if (horizontal)
+            {
+                frame.Block(s0, line - (thick / 2), len, thick, to - from, colour, from);
+            }
+            else
+            {
+                frame.Block(line - (thick / 2), s0, thick, len, to - from, colour, from);
+            }
+        }
+
+        const double post = 0.12;
+        var wallT = WorldLayer.WallThickness;
+        Along(start, post, wallT + 0.06, 0, doorH, steel);
+        Along(start + width - post, post, wallT + 0.06, 0, doorH, steel);
+        Along(start, width, wallT + 0.06, doorH, doorH + Kit3D.H(2), steel);
+        if (Height > doorH + Kit3D.H(2))
+        {
+            Along(start, width, wallT, doorH + Kit3D.H(2), Height, WallFace);
+        }
+
+        // The sensor box over the middle, on both faces.
+        Along(start + (width / 2) - 0.18, 0.36, wallT + 0.2, doorH - Kit3D.H(1.6f), doorH, new Color("#37474F"));
+        frame.AddTo(this);
+
+        var unit = horizontal ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
+        var leaf = (float)((width - (post * 2)) / 2);
+        var panels = new Node3D[2];
+        var closed = new Vector3[2];
+        for (var i = 0; i < 2; i++)
+        {
+            var mid = (float)(start + post + (leaf * (i + 0.5f)));
+            closed[i] = horizontal ? new Vector3(mid, 0, (float)line) : new Vector3((float)line, 0, mid);
+            var node = new Node3D { Name = $"TheatreDoor{i}", Position = closed[i], Rotation = new Vector3(0, horizontal ? 0 : Mathf.Pi / 2, 0) };
+            AddChild(node);
+            var b = new MeshBatch();
+            var rail = new Color("#6E7B85");
+            b.Box(new Vector3(0, 0.05f, 0), new Vector3(leaf, 0.1f, 0.07f), rail);
+            b.Box(new Vector3(0, doorH - 0.04f, 0), new Vector3(leaf, 0.08f, 0.07f), rail);
+            b.Box(new Vector3(-(leaf / 2) + 0.03f, doorH / 2, 0), new Vector3(0.06f, doorH, 0.07f), rail);
+            b.Box(new Vector3((leaf / 2) - 0.03f, doorH / 2, 0), new Vector3(0.06f, doorH, 0.07f), rail);
+            // A frosted band at eye level, and a kick plate along the bottom for trolleys.
+            b.Box(new Vector3(0, doorH * 0.55f, 0), new Vector3(leaf - 0.1f, doorH * 0.12f, 0.075f), new Color("#E3ECF1"));
+            b.Box(new Vector3(0, 0.22f, 0), new Vector3(leaf - 0.1f, 0.25f, 0.075f), KickPlate);
+            b.AddTo(node);
+            Kit3D.Box(node, new Vector3(0, doorH / 2, 0), new Vector3(leaf - 0.1f, doorH - 0.12f, 0.03f), new Color("#9FD3EA", 0.5f), Finish.Gloss, shadow: false);
+            panels[i] = node;
+        }
+
+        var middle = start + (width / 2.0);
+        var (mx, my) = horizontal ? (middle, line) : (line, middle);
+        _sliding.Add(new Sliding { Panels = panels, Closed = closed, Along = unit, Travel = leaf * 0.92f, Mx = mx, My = my, Reach = 1.4f, Span = (float)(width / 2.0) + 0.2f, Horizontal = horizontal });
     }
 
     /// <summary>A lift's landing doors: two steel panels that part from the middle, with the call button beside them.</summary>
