@@ -196,6 +196,7 @@ public partial class ActorsLayer : Node2D
             var (width, length) = isBed ? (FurnitureKit.MattressWidth, FurnitureKit.BedLength - 0.42) : (FurnitureKit.TableWidth(bed.TableId!), FurnitureKit.BedLength - 0.6);
             p.Push(0, isBed ? 0.03 : 0);
             PeopleArt.LyingFigure(p, look, bed.Blanket, patient.Maternity ? null : Looks.Wristband(patient.Triage), _world.OnChest(patient), width, length, !patient.IsAlive);
+            CareArt(p, patient, look, width, length);
             p.Pop();
             if (isBed)
             {
@@ -298,6 +299,84 @@ public partial class ActorsLayer : Node2D
     }
 
     /// <summary>A patient on a trolley, on the ambulance crew's stretcher or on the floor. False if they are on their feet.</summary>
+    /// <summary>
+    /// What a procedure adds to a patient in bed, seen from above: the ECG leads and the machine on its cart,
+    /// knees up for a birth, gel for a scan, the cap of electrodes for an EEG. The 3D view's Beds3D does the same.
+    /// </summary>
+    private void CareArt(Pen p, Patient patient, PersonLook look, double width, double length)
+    {
+        var (care, task) = World3D.Procedure3D.For(patient, _sim);
+        if (care == World3D.Care.None || task is not { Started: true })
+        {
+            return;
+        }
+
+        var k = Math.Min(1.0, look.Scale + 0.08);
+        var headY = (-length / 2) + 0.56;
+        var chestY = headY + (1.0 * k);
+        var worker = World3D.Procedure3D.Doing(task, _sim);
+        switch (care)
+        {
+            case World3D.Care.Ecg when worker is not null:
+            {
+                double side = World3D.Procedure3D.Side(patient, worker, _sim);
+                var cart = (X: side * ((width / 2) + 1.0), Y: headY + (2.3 * k));
+                var colours = new[] { "#E53935", "#FDD835", "#43A047", "#8D6E63", "#263238", "#8E24AA" };
+                p.Ellipse(0, chestY, 0.42 * k, 0.32 * k, look.Skin);
+                for (var i = 0; i < colours.Length; i++)
+                {
+                    var (x, y) = ((0.3 - (i * 0.12)) * k, chestY - 0.08 + (0.04 * i));
+                    p.Line(x, y, side * 0.2, chestY + 0.3, new Color(colours[i]), 0.025);
+                    p.Circle(x, y, 0.055, Colors.White, new Color(colours[i]), 0.025);
+                }
+
+                p.Path(new Color("#546E7A"), 0.05, (side * 0.2, chestY + 0.3), (side * (width / 2), chestY + 0.6), (cart.X - (side * 0.3), cart.Y));
+                p.Box(cart.X - 0.42, cart.Y - 0.42, 0.84, 0.84, 0.1, new Color("#F5F1E6"));
+                p.Round(cart.X - 0.3, cart.Y - 0.3, 0.6, 0.4, 0.05, new Color("#0B1F17"));
+                var beat = Mathf.PosMod((float)_world.Time * 0.9f, 1f);
+                p.Path(new Color("#5CFF8A"), 0.035, (cart.X - 0.26, cart.Y - 0.1), (cart.X - 0.08, cart.Y - 0.1), (cart.X - 0.03, cart.Y - 0.24), (cart.X + 0.03, cart.Y - 0.02), (cart.X + 0.08, cart.Y - 0.1), (cart.X + 0.26, cart.Y - 0.1));
+                p.Circle(cart.X - 0.26 + (0.52 * beat), cart.Y - 0.1, 0.035, new Color("#D8FFE4"));
+                break;
+            }
+
+            case World3D.Care.Birth when worker is not null && World3D.Procedure3D.Born(task, _sim) < 2:
+            {
+                // Knees up and apart under a drape, feet in the supports.
+                var kneeY = headY + (2.15 * k);
+                p.Ellipse(0, kneeY - 0.15, 0.62, 0.5, new Color("#F7F9FA"), new Color("#C9D3DA"), 0.03);
+                foreach (var s in new[] { -1.0, 1.0 })
+                {
+                    p.Line(s * 0.42, kneeY, s * 0.6, kneeY + 0.62, look.Skin, 0.2);
+                    p.Circle(s * 0.42, kneeY, 0.17, new Color("#EEF2F5"), new Color("#C9D3DA"), 0.03);
+                    p.Round((s * 0.6) - 0.16, kneeY + 0.45, 0.32, 0.36, 0.08, new Color("#37474F"));
+                    p.Circle(s * 0.6, kneeY + 0.66, 0.12, Colors.White, new Color("#C9D3DA"), 0.03);
+                }
+
+                break;
+            }
+
+            case World3D.Care.Echo:
+                p.Ellipse(0, chestY, 0.42 * k, 0.32 * k, look.Skin);
+                p.Ellipse(-0.1, chestY, 0.14, 0.1, Pen.A("#9AD8F2", 0.9f));
+                break;
+            case World3D.Care.Ultrasound:
+                p.Ellipse(0, chestY + (0.55 * k), 0.42 * k, 0.3 * k, look.Skin);
+                p.Ellipse(0.04, chestY + (0.55 * k), 0.16, 0.11, Pen.A("#9AD8F2", 0.9f));
+                break;
+            case World3D.Care.Eeg:
+            {
+                var colours = new[] { "#E53935", "#FDD835", "#43A047", "#1E88E5", "#8E24AA" };
+                for (var i = 0; i < colours.Length; i++)
+                {
+                    var a = (i / 4.0 * 2.4) - 1.2;
+                    p.Circle(Math.Sin(a) * 0.24 * k, headY - (Math.Cos(a) * 0.2 * k), 0.05, new Color(colours[i]));
+                }
+
+                break;
+            }
+        }
+    }
+
     private bool Lying(Pen p, Patient patient)
     {
         var look = Looks.Patient(patient);

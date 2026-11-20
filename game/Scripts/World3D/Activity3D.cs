@@ -90,6 +90,15 @@ public enum Act
     /// <summary>A physio walking alongside a patient, an arm out ready to steady them.</summary>
     Support,
 
+    /// <summary>Scanning: the ultrasound probe held out on the patient, moved about in small circles.</summary>
+    Scan,
+
+    /// <summary>An endoscopy: the scope's control held up in one hand, the other feeding the tube.</summary>
+    Scope,
+
+    /// <summary>Carrying a newborn: both arms out in front, cradling.</summary>
+    Carry,
+
     /// <summary>A cleaner mopping the floor, the mop swinging side to side, with a wet floor sign out.</summary>
     Mop,
 
@@ -553,6 +562,81 @@ public static class Activity3D
         var limb = (X: px + (side * 0.25), Y: py + (LegCast(task) ? 1.2 : -0.35));
         var at = (px + (side * 1.45), limb.Y);
         return (at, (-side, 0));
+    }
+
+    /// <summary>
+    /// Where staff stand, and what they do there, for a procedure that has its own choreography: a nurse at the
+    /// chest putting ECG leads on and then at the machine while it prints, a midwife beside the mother's knees,
+    /// whoever is scanning beside the couch with the probe, the endoscopist at the patient's head. Null otherwise.
+    /// Only the drawing moves; they walk the step or two there (see Agents3D).
+    /// </summary>
+    public static (Act Act, (double X, double Y) At, (double X, double Y) Facing)? CareSpot(StaffMember member, WorldLayer world, HospitalSimulation sim, IReadOnlyDictionary<int, ClinicalTask> tasks, double time)
+    {
+        if (member.IsMoving || member.CurrentTaskId is not { } id || !tasks.TryGetValue(id, out var task)
+            || sim.FindPatient(task.PatientId) is not { IsMoving: false } patient || !world.InBed(patient))
+        {
+            return null;
+        }
+
+        var (care, careTask) = Procedure3D.For(patient, sim);
+        if (careTask != task || care == Care.None || Procedure3D.OnScanner(care))
+        {
+            return null;
+        }
+
+        var f = Procedure3D.Turn(patient, sim);
+        (double, double) Bed(double across, double along) => Procedure3D.BedPoint(patient, sim, across, along);
+        switch (care)
+        {
+            case Care.Ecg:
+            {
+                double side = Procedure3D.Side(patient, member, sim);
+                return Progress(task, sim) > 0.45
+                    ? (Habit(member.Id, time, 4) < 0.7 ? Act.Typing : Act.None, Bed(side * 1.5, -0.45), (f * 0.25 * side, f * 1.0))
+                    : (Act.Bloods, Bed(side * 1.4, -0.7), (-f * side, 0));
+            }
+
+            case Care.Birth:
+            {
+                double side = Procedure3D.Side(patient, member, sim);
+                var born = Procedure3D.Born(task, sim);
+                var pushing = Procedure3D.Push(time, task.Id) > 0.08;
+                var act = born >= 2 ? Act.Talk : born > 0.9 ? Act.Carry : born > 0 || pushing ? Act.Operate : Act.Talk;
+                return (act, Bed(side * 1.4, born > 1.2 ? -0.1 : 0.45), (-f * side, f * (born > 1 ? -0.45 : 0.1)));
+            }
+
+            case Care.Echo or Care.Ultrasound:
+            {
+                // Beside the couch on the machine's side, the probe on the chest or the tummy, eyes on the screen now and then.
+                double side = Procedure3D.MachineSide(patient, sim);
+                var along = care == Care.Echo ? -0.75 : -0.25;
+                return (Act.Scan, Bed(side * 1.35, along), (-f * side, 0));
+            }
+
+            case Care.Eeg:
+            {
+                // Fits the cap at the patient's head, then watches the recording at the machine.
+                if (Progress(task, sim) < 0.3 || Procedure3D.Machine(patient, sim) is not { } machine)
+                {
+                    double side = Procedure3D.MachineSide(patient, sim);
+                    return (Act.Bloods, Bed(side * 1.3, -1.35), (-f * side, 0));
+                }
+
+                var head = Bed(0, -1.4);
+                var (dx, dy) = (head.Item1 - machine.CentreX, head.Item2 - machine.CentreY);
+                var d = Math.Max(0.01, Math.Sqrt((dx * dx) + (dy * dy)));
+                return (Habit(member.Id, time, 5) < 0.7 ? Act.Typing : Act.None, (machine.CentreX + (dx / d * 1.0), machine.CentreY + (dy / d * 1.0)), (-dx, -dy));
+            }
+
+            case Care.Endoscopy:
+            {
+                double side = Procedure3D.Side(patient, member, sim);
+                return (Act.Scope, Bed(side * 1.35, -1.25), (-f * side, f * 0.15));
+            }
+
+            default:
+                return null;
+        }
     }
 
     /// <summary>

@@ -512,10 +512,55 @@ public partial class Beds3D : Node3D
             var doing = babies is { Length: > 0 } ? InBed.None : Doing(world.Simulation, patient, asleep, time);
             var cast = Plaster ? CastOn(world.Simulation, patient) : 0f;
             var angle = _table ? 0f : BackAngle(patient, asleep);
-            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle);
+            var sim = world.Simulation;
+            var (care, careTask) = Procedure3D.For(patient, sim);
+            var worker = careTask is null ? null : Procedure3D.Doing(careTask, sim);
+            if (babies is { Length: > 0 } || (care is Care.Ecg or Care.Birth && worker is null) || (_table && care is Care.Ecg or Care.Birth))
+            {
+                (care, careTask) = (Care.None, null);
+            }
+
+            var side = care switch
+            {
+                Care.Ecg or Care.Birth or Care.Endoscopy => _careFor == careTask?.Id ? _careSide : Procedure3D.Side(patient, worker, sim),
+                Care.Echo or Care.Ultrasound or Care.Eeg => Procedure3D.MachineSide(patient, sim),
+                _ => 1f,
+            };
+            (_careSide, _careFor) = (side, careTask?.Id);
+            var born = care == Care.Birth ? Procedure3D.Born(careTask!, sim) : 0f;
+            if (born >= 2f)
+            {
+                // The baby is on her chest: she lies back and cuddles it until the midwife has finished.
+                babies = new[] { Newborn(look) };
+                care = Care.None;
+            }
+
+            if (care == Care.Birth)
+            {
+                (angle, asleep, doing) = (Mathf.DegToRad(58), false, InBed.None);
+            }
+            else if (care == Care.Ecg)
+            {
+                (asleep, doing) = (false, InBed.None);
+            }
+            else if (babies is { Length: > 0 })
+            {
+                (asleep, doing) = (false, InBed.None);
+            }
+
+            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle, care, side);
             Breathe(asleep, time);
             MealTable(doing == InBed.Meal);
             Busy(time);
+            EcgCart(care == Care.Ecg, side, careTask, sim, time);
+            Labour(care == Care.Birth ? careTask : null, look, side, born, time, angle);
+            Laser(care, careTask, time);
+            EegWires(care == Care.Eeg ? Procedure3D.Machine(patient, sim) : null, sim);
+            var rebuilt = _lying is null || !Equals(_lyingKey, key);
+            if (!rebuilt && care == Care.Endoscopy && _lying is not null)
+            {
+                OnSide(_lying, side);
+            }
             if (_lying is not null && Equals(_lyingKey, key))
             {
                 return;
@@ -523,7 +568,7 @@ public partial class Beds3D : Node3D
 
             _lying?.QueueFree();
             _lyingKey = key;
-            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast, _table ? null : Carriers3D.BedBack, angle);
+            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast, _table ? null : Carriers3D.BedBack, angle, care, side);
             _doing = doing;
             if (!_table)
             {
@@ -532,7 +577,256 @@ public partial class Beds3D : Node3D
 
             Snore(asleep);
             _lying.Position = new Vector3(0, _mattress, 0);
+            if (care == Care.Endoscopy)
+            {
+                OnSide(_lying, side);
+            }
+
             _top.AddChild(_lying);
+        }
+
+        private float _careSide = 1;
+        private Node3D? _cart;
+        private Node3D? _cartBlip;
+        private Node3D? _cartPaper;
+        private float _cartSide;
+
+        /// <summary>
+        /// The ECG machine on its cart beside the bed while the recording is taken: a screen with the trace
+        /// running across it, and the pink paper strip printing out of the side as the test goes on.
+        /// </summary>
+        private void EcgCart(bool on, float side, Simulation.Staff.ClinicalTask? task, HospitalSimulation sim, double time)
+        {
+            if (_cart is not null && (!on || side != _cartSide))
+            {
+                _cart.QueueFree();
+                (_cart, _cartBlip, _cartPaper) = (null, null, null);
+            }
+
+            if (!on)
+            {
+                return;
+            }
+
+            if (_cart is null)
+            {
+                _cartSide = side;
+                var socket = Lying3D.EcgSocket(side) + new Vector3(0, _mattress, 0);
+                _cart = new Node3D { Name = "EcgCart", Position = new Vector3(socket.X + (side * 0.32f), 0, socket.Z) };
+                _node.AddChild(_cart);
+                var b = new MeshBatch();
+                var steel = new Color("#B0BEC5");
+                var body = new Color("#ECEFF1");
+                var top = socket.Y - 0.1f;
+                foreach (var (x, z) in new[] { (-0.3f, -0.3f), (0.3f, -0.3f), (0.3f, 0.3f), (-0.3f, 0.3f) })
+                {
+                    b.Ball(new Vector3(x, 0.07f, z), new Vector3(0.13f, 0.14f, 0.13f), new Color("#263238"), small: true);
+                    b.Rod(new Vector3(x, 0.1f, z), new Vector3(x, top, z), 0.022f, steel, small: true);
+                }
+
+                b.Box(new Vector3(0, 0.2f, 0), new Vector3(0.7f, 0.04f, 0.7f), steel);
+                b.Box(new Vector3(0, top * 0.55f, 0), new Vector3(0.66f, 0.2f, 0.62f), new Color("#D6DEE3"));
+                b.Box(new Vector3(0, top, 0), new Vector3(0.78f, 0.05f, 0.78f), body);
+                // The machine: a cream box with a sloping screen facing the foot of the bed.
+                b.Box(new Vector3(0, top + 0.13f, 0), new Vector3(0.66f, 0.22f, 0.6f), new Color("#F5F1E6"));
+                b.Box(new Vector3(0, top + 0.1f, 0.31f), new Vector3(0.5f, 0.06f, 0.03f), new Color("#1E88E5"));
+                var tilt = new Basis(Vector3.Right, -0.5f);
+                b.Box(new Vector3(0, top + 0.44f, -0.1f), new Vector3(0.62f, 0.42f, 0.05f), tilt, new Color("#263238"));
+                b.Box(new Vector3(0, top + 0.44f, -0.1f) + (tilt * new Vector3(0, 0, 0.03f)), new Vector3(0.54f, 0.34f, 0.012f), tilt, new Color("#0B1F17"));
+                b.Ball(new Vector3(-side * 0.33f, top + 0.13f, 0.1f), new Vector3(0.1f, 0.1f, 0.1f), new Color("#546E7A"), small: true);
+                b.AddTo(_cart);
+
+                // The trace: a row of green marks on the screen, with a bright blip that runs along it.
+                var trace = new MeshBatch();
+                var green = new Color("#5CFF8A");
+                var screen = new Transform3D(tilt, new Vector3(0, top + 0.44f, -0.1f) + (tilt * new Vector3(0, 0, 0.04f)));
+                for (var row = 0; row < 3; row++)
+                {
+                    var y = 0.1f - (row * 0.1f);
+                    for (var i = 0; i < 12; i++)
+                    {
+                        var x = -0.24f + (i * 0.044f);
+                        var spike = i % 4 == 2 ? 0.07f : i % 4 == 3 ? 0.025f : 0.008f;
+                        trace.Box(screen * new Vector3(x, y + (spike / 2) - 0.02f, 0), new Vector3(0.012f, spike, 0.004f), tilt, green);
+                    }
+                }
+
+                var lines = trace.AddTo(_cart, alpha: true, shadow: false)!;
+                lines.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+                var blip = new MeshBatch();
+                blip.Ball(Vector3.Zero, new Vector3(0.05f, 0.05f, 0.02f), new Color("#D8FFE4"), small: true);
+                _cartBlip = new Node3D { Name = "Blip" };
+                _cart.AddChild(_cartBlip);
+                var dot = blip.AddTo(_cartBlip, alpha: true, shadow: false)!;
+                dot.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+                _cartBlip.SetMeta("screen", screen);
+
+                // The paper strip: pink graph paper feeding out of the side of the machine.
+                _cartPaper = new Node3D { Name = "Paper", Position = new Vector3(side * 0.33f, top + 0.16f, 0.12f) };
+                _cart.AddChild(_cartPaper);
+                var paper = new MeshBatch();
+                paper.Box(new Vector3(side * 0.5f, 0, 0), new Vector3(1f, 0.008f, 0.2f), new Color("#FFD9E0"));
+                paper.Box(new Vector3(side * 0.5f, 0.005f, 0), new Vector3(1f, 0.004f, 0.012f), new Color("#C2185B"));
+                paper.AddTo(_cartPaper, shadow: false);
+            }
+
+            if (_cartBlip is not null)
+            {
+                var screen = (Transform3D)_cartBlip.GetMeta("screen");
+                var u = Mathf.PosMod((float)time * 0.55f, 1f);
+                _cartBlip.Position = screen * new Vector3(-0.25f + (0.5f * u), 0.1f - (0.1f * (int)(Mathf.PosMod((float)time * 0.55f, 3f))), 0.004f);
+            }
+
+            if (_cartPaper is not null)
+            {
+                // Leads go on for the first part of the test; the strip prints during the rest.
+                var done = task is null ? 0 : Activity3D.Progress(task, sim);
+                var printed = (float)Math.Clamp((done - 0.45) / 0.5, 0, 1);
+                _cartPaper.Visible = printed > 0.02f;
+                _cartPaper.Scale = new Vector3(Mathf.Max(0.02f, printed * 0.5f), 1, 1);
+                _cartPaper.Rotation = new Vector3(0, 0, -_cartSide * 0.5f * printed);
+            }
+        }
+
+        private int? _careFor;
+        private Node3D? _newborn;
+
+        /// <summary>A newborn wrapped in a white towel with a little hat, with its mother's colouring.</summary>
+        private static BabyLook Newborn(PersonLook mother) => new(new Color("#F7F9FA"), new Color("#DCE8EE"), new Color("#FFF3C4"), mother.Skin.Lightened(0.08f));
+
+        /// <summary>Turned on their side for an endoscopy, facing whoever is doing it.</summary>
+        private void OnSide(Node3D lying, float side)
+        {
+            lying.Rotation = new Vector3(0, 0, -side * 1.3f);
+            lying.Position = new Vector3(-side * 0.12f, _mattress + 0.3f, 0);
+        }
+
+        /// <summary>
+        /// Labour: she curls forward and pushes with each contraction, then rests. When the baby is born the
+        /// midwife lifts it clear (born 0 to 1) and lays it on its mother's chest (1 to 2).
+        /// </summary>
+        private void Labour(Simulation.Staff.ClinicalTask? task, PersonLook look, float side, float born, double time, float angle)
+        {
+            if (task is null)
+            {
+                _newborn?.QueueFree();
+                _newborn = null;
+                return;
+            }
+
+            var push = born > 0 ? 0f : Procedure3D.Push(time, task.Id);
+            if (_lying?.FindChild("Upper", false, false) is Node3D upper)
+            {
+                upper.Transform = Carriers3D.BedBack.Turn(0, angle + (0.2f * push));
+            }
+
+            if (born <= 0)
+            {
+                _newborn?.QueueFree();
+                _newborn = null;
+                return;
+            }
+
+            if (_newborn is null)
+            {
+                _newborn = Baby3D.Bundle(Newborn(look), 1f);
+                _newborn.Name = "Newborn";
+                _node.AddChild(_newborn);
+            }
+
+            var hb = Carriers3D.BedBack.HingeZ + 0.15f;
+            var up = new Vector3(0, _mattress, 0);
+            var from = up + new Vector3(0, 0.3f, hb + 0.8f);
+            var hands = up + new Vector3(side * 0.8f, 0.8f, hb + 0.55f);
+            var chest = up + Lying3D.Chest(look, Carriers3D.BedBack, angle, 0.5f);
+            _newborn.Position = born < 1f
+                ? from.Lerp(hands, Smooth(born)) + new Vector3(0, 0.2f * Mathf.Sin(born * Mathf.Pi), 0)
+                : hands.Lerp(chest, Smooth(born - 1f)) + new Vector3(0, 0.25f * Mathf.Sin((born - 1f) * Mathf.Pi), 0);
+            _newborn.Rotation = new Vector3(0, Mathf.Pi / 2, 0.25f * Mathf.Sin((float)time * 1.3f));
+        }
+
+        private Node3D? _wires;
+
+        /// <summary>An EEG: the bundle of coloured wires from the cap on the patient's head to the recorder's head box.</summary>
+        private void EegWires(PlacedFurniture? machine, HospitalSimulation sim)
+        {
+            if (machine is null)
+            {
+                _wires?.QueueFree();
+                _wires = null;
+                return;
+            }
+
+            if (_wires is not null)
+            {
+                return;
+            }
+
+            var h = sim.Database.Furniture.TryGetValue(machine.ItemId, out var def) ? Kit3D.M(def.HeightM) : 1.2f;
+            var box = _node.ToLocal(Kit3D.At(machine.CentreX, machine.CentreY, (h * 0.62f) + 0.12f));
+            var crown = new Vector3(0, _mattress + 0.2f, -1.66f);
+            var sag = crown.Lerp(box, 0.5f) + new Vector3(0, -0.25f, -0.15f);
+            var b = new MeshBatch();
+            var colours = new[] { "#E53935", "#FDD835", "#43A047", "#1E88E5", "#8E24AA" };
+            for (var i = 0; i < colours.Length; i++)
+            {
+                var off = new Vector3((i - 2) * 0.018f, (i % 2) * 0.014f, 0);
+                var c = new Color(colours[i]);
+                b.Rod(crown + off, crown.Lerp(sag, 0.6f) + (off * 1.5f), 0.008f, c, small: true);
+                b.Rod(crown.Lerp(sag, 0.6f) + (off * 1.5f), sag + (off * 1.5f), 0.008f, c, small: true);
+                b.Rod(sag + (off * 1.5f), sag.Lerp(box, 0.6f) + off + new Vector3(0, 0.05f, 0), 0.008f, c, small: true);
+                b.Rod(sag.Lerp(box, 0.6f) + off + new Vector3(0, 0.05f, 0), box + off, 0.008f, c, small: true);
+            }
+
+            _wires = b.AddTo(_node, shadow: false)!;
+            _wires.Name = "EegWires";
+        }
+
+        private Node3D? _laser;
+        private Care _laserFor;
+
+        /// <summary>
+        /// Lining up for a picture: the X-ray tube's light field (a soft yellow rectangle with a cross) on the part
+        /// being X-rayed, or the CT scanner's red laser line across the patient, while the radiographer positions them.
+        /// </summary>
+        private void Laser(Care care, Simulation.Staff.ClinicalTask? task, double time)
+        {
+            var xray = care is Care.XrayChest or Care.XrayAbdomen or Care.XrayArm or Care.XrayLeg;
+            var ct = care is Care.CtHead or Care.CtBody;
+            var phase = task is { Started: true } ? Activity3D.ScanPhase(time, task.Id) : -1;
+            var on = (xray || ct) && phase is >= 0.6 and < 5.2;
+            if (_laser is not null && (!on || care != _laserFor))
+            {
+                _laser.QueueFree();
+                _laser = null;
+            }
+
+            if (!on || _laser is not null)
+            {
+                return;
+            }
+
+            _laserFor = care;
+            var at = Procedure3D.Target(care);
+            var b = new MeshBatch();
+            var y = _mattress + 0.36f;
+            if (xray)
+            {
+                var (w, l) = care switch { Care.XrayArm => (0.4f, 0.6f), Care.XrayLeg => (0.5f, 0.85f), _ => (0.95f, 0.85f) };
+                b.Box(new Vector3(at.X, y, at.Y), new Vector3(w, 0.004f, l), new Color("#FFF59D", 0.42f));
+                b.Box(new Vector3(at.X, y + 0.004f, at.Y), new Vector3(w, 0.004f, 0.014f), new Color("#5D4037", 0.8f));
+                b.Box(new Vector3(at.X, y + 0.004f, at.Y), new Vector3(0.014f, 0.004f, l), new Color("#5D4037", 0.8f));
+            }
+            else
+            {
+                b.Box(new Vector3(0, y, at.Y), new Vector3(1.3f, 0.006f, 0.022f), new Color("#FF1744", 0.9f));
+                b.Box(new Vector3(0, y, at.Y + 0.6f), new Vector3(0.022f, 0.006f, 2.6f), new Color("#FF1744", 0.9f));
+            }
+
+            var mesh = b.AddTo(_top, alpha: true, shadow: false)!;
+            mesh.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+            mesh.Name = "LineUp";
+            _laser = mesh;
         }
 
         /// <summary>How much of the cast is on (in fifths), while a plaster technician is putting it on.</summary>
@@ -664,10 +958,12 @@ public partial class Beds3D : Node3D
                     var top = h * 0.75f;
                     var bottom = Kit3D.H(23);
                     var b = new MeshBatch();
-                    b.Cylinder(Kit3D.At(hx, hy, (top + bottom) / 2), 0.62f, top - bottom, 0.5f, new Color("#CFEFFF"), cone: true);
-                    b.Ball(Kit3D.At(hx, hy, bottom + 0.05f), new Vector3(1.3f, 0.12f, 1.0f), new Color("#F4FCFF"));
-                    b.Ball(Kit3D.At(hx, hy, top), new Vector3(0.22f, 0.12f, 0.22f), new Color("#FFFDE7"));
+                    b.Cylinder(Kit3D.At(0, 0, (top + bottom) / 2), 0.62f, top - bottom, 0.5f, new Color("#CFEFFF"), cone: true);
+                    b.Ball(Kit3D.At(0, 0, bottom + 0.05f), new Vector3(1.3f, 0.12f, 1.0f), new Color("#F4FCFF"));
+                    b.Ball(Kit3D.At(0, 0, top), new Vector3(0.22f, 0.12f, 0.22f), new Color("#FFFDE7"));
                     beam = Glow(b, parent);
+                    beam.Position = Kit3D.At(hx, hy);
+                    beam.SetMeta("table", new Vector2((float)table.CentreX, (float)table.CentreY));
                     beam.Transparency = 0.3f;
                     beam.Visible = false;
                 }
@@ -680,9 +976,13 @@ public partial class Beds3D : Node3D
                 var side = Math.Sign(table.CentreY - gantry.CentreY);
                 var face = Kit3D.At(gantry.CentreX, gantry.CentreY + (side * ((gantry.Length / 2) + 0.03)), h * 0.55f);
                 var b = new MeshBatch();
-                b.Ring(face, bore * 1.22f, new Color("#8FE3FF"), new Basis(Vector3.Right, Mathf.Pi / 2), 0.45f);
-                b.Ring(face, bore * 1.22f, new Color("#8FE3FF", 0.25f), new Basis(Vector3.Right, Mathf.Pi / 2) * Basis.FromScale(new Vector3(1.12f, 1.12f, 1.12f)), 1.2f);
+                b.Ring(Vector3.Zero, bore * 1.22f, new Color("#8FE3FF"), new Basis(Vector3.Right, Mathf.Pi / 2), 0.45f);
+                b.Ring(Vector3.Zero, bore * 1.22f, new Color("#8FE3FF", 0.25f), new Basis(Vector3.Right, Mathf.Pi / 2) * Basis.FromScale(new Vector3(1.12f, 1.12f, 1.12f)), 1.2f);
+                // The tube going round inside the ring: a bright spot and the one opposite it.
+                b.Ball(new Vector3(bore * 1.22f, 0, 0), new Vector3(0.3f, 0.3f, 0.12f), new Color("#FFFFFF"), small: true);
+                b.Ball(new Vector3(-bore * 1.22f, 0, 0), new Vector3(0.2f, 0.2f, 0.1f), new Color("#E1F8FF"), small: true);
                 ring = Glow(b, parent);
+                ring.Position = face;
                 ring.Visible = false;
             }
 
@@ -710,12 +1010,20 @@ public partial class Beds3D : Node3D
             if (_beam is not null)
             {
                 _beam.Visible = exposing;
+                if (exposing && task is not null && sim.FindPatient(task.PatientId) is { } on && _beam.GetMeta("table").AsVector2() is var t)
+                {
+                    var at = Procedure3D.Target(Procedure3D.For(on, sim).Care);
+                    _beam.Position = Kit3D.At(t.X + at.X, t.Y + at.Y);
+                    var narrow = at.X != 0 ? 0.55f : 1f;
+                    _beam.Scale = new Vector3(narrow, 1, narrow);
+                }
             }
 
             if (_ring is not null)
             {
                 _ring.Visible = exposing;
-                _ring.Transparency = exposing ? 0.35f * (0.5f + (0.5f * Mathf.Sin((float)time * 9))) : 0f;
+                _ring.Transparency = exposing ? 0.2f * (0.5f + (0.5f * Mathf.Sin((float)time * 9))) : 0f;
+                _ring.Rotation = new Vector3(0, 0, (float)time * 7f);
             }
         }
     }
