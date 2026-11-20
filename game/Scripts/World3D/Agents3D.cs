@@ -500,7 +500,10 @@ public partial class Agents3D : Node3D
             }
 
             Node.Position = Kit3D.At(at.X, at.Y);
-            var key = (look, carrier, blanket, band, babies?.Length ?? 0);
+            // Sat up on a trolley or stretcher, laid flat for CPR.
+            var rest = carrier switch { "stretcher" => Carriers3D.StretcherBack, "trolley" => Carriers3D.TrolleyBack, _ => (Carriers3D.Backrest?)null };
+            var angle = rest is { } r && alert != AlertKind.Crash && patient.IsAlive ? r.Raised : 0f;
+            var key = (look, carrier, blanket, band, babies?.Length ?? 0, angle);
             if (_lying is null || !Equals(_lyingKey, key))
             {
                 ClearLying();
@@ -509,8 +512,8 @@ public partial class Agents3D : Node3D
                 var b = new MeshBatch();
                 var mattress = carrier switch
                 {
-                    "stretcher" => Carriers3D.Stretcher(b),
-                    "trolley" => Carriers3D.Trolley(b),
+                    "stretcher" => Carriers3D.Stretcher(b, angle),
+                    "trolley" => Carriers3D.Trolley(b, angle),
                     _ => 0f,
                 };
                 if (carrier == "stretcher")
@@ -519,7 +522,7 @@ public partial class Agents3D : Node3D
                 }
 
                 b.AddTo(_lying);
-                var figure = Lying3D.Build(look, blanket, band, babies);
+                var figure = Lying3D.Build(look, blanket, band, babies, rest: rest, angle: angle);
                 figure.Position = new Vector3(0, mattress, 0);
                 _lying.AddChild(figure);
                 Node.AddChild(_lying);

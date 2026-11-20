@@ -15,6 +15,7 @@ BUDGET = 4000
 
 LENGTH, WIDTH = 2.1, 0.8
 TOP = 0.48  # the platform under the mattress; the sheet's top is 0.16 above it
+HINGE = 0.2  # the backrest (part "Back": its mattress section, sheet and pillow) hinges up from here to the head
 
 
 def build():
@@ -42,8 +43,14 @@ def build():
             cyl(f"Wheel{sx}{sy}", (x, y + 0.02, 0.055), 0.055, 0.045, rubber, rot=(0, math.pi / 2, 0), verts=12)
             cyl(f"Hub{sx}{sy}", (x, y + 0.02, 0.055), 0.025, 0.05, chrome, rot=(0, math.pi / 2, 0), verts=8)
 
-    soft = cube("Mattress", (0, 0, top + 0.08), (W - 0.05, L - 0.08, 0.15), mattress, bevel=0.045, bevel_segments=3)
-    top_sheet = cube("SheetTop", (0, 0, top + 0.15), (W - 0.04, L - 0.07, 0.025), sheet, bevel=0.01)
+    # The mattress in two sections: the foot end stays put, the head end lifts with the backrest.
+    foot_len, head_len = HINGE + (L / 2 - 0.04) - 0.005, (L / 2 - 0.04) - HINGE - 0.005
+    foot_y, head_y = HINGE - 0.005 - foot_len / 2, HINGE + 0.005 + head_len / 2
+    soft = cube("Mattress", (0, foot_y, top + 0.08), (W - 0.05, foot_len, 0.15), mattress, bevel=0.045, bevel_segments=3)
+    top_sheet = cube("SheetTop", (0, foot_y, top + 0.15), (W - 0.04, foot_len + 0.01, 0.025), sheet, bevel=0.01)
+    back_soft = cube("MattressBack", (0, head_y, top + 0.08), (W - 0.05, head_len, 0.15), mattress, bevel=0.045, bevel_segments=3, part="Back")
+    back_sheet = cube("SheetBack", (0, head_y, top + 0.15), (W - 0.04, head_len + 0.01, 0.025), sheet, bevel=0.01, part="Back")
+    cube("BackPanel", (0, head_y, top - 0.005), (W - 0.08, head_len, 0.03), dark, bevel=0.01, part="Back")
 
     boards = []
     for sy, h, name in ((1, 0.5, "Head"), (-1, 0.36, "Foot")):
@@ -76,10 +83,10 @@ def build():
         v.co.z = cz + (v.co.z - cz) * (0.3 + 1.1 * puff) + (v.co.y - cy) * 0.18
     bm.to_mesh(p.data)
     bm.free()
-    finish(p, pillow, subdiv=1)
+    finish(p, pillow, part="Back", subdiv=1)
 
     # Blanket: dropped onto the bed so it hangs and folds at the sides, with the sheet turned down over it.
-    cover = drape("Blanket", (0, -0.2, top + 0.32), (W + 0.5, L * 0.7), (22, 34), blanket, onto=[soft, top_sheet, boards[1], p], part="Made")
+    cover = drape("Blanket", (0, -0.2, top + 0.32), (W + 0.5, L * 0.7), (22, 34), blanket, onto=[soft, top_sheet, back_soft, back_sheet, boards[1], p], part="Made")
     turn = cover.copy()
     turn.data = cover.data.copy()
     turn.modifiers.clear()

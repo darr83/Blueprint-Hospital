@@ -19,6 +19,50 @@ public static class Carriers3D
 
     private static float W(double px) => Person3D.W(px);
 
+    /// <summary>
+    /// How a bed's, trolley's or stretcher's backrest (the model's part "Back": the head end of the mattress
+    /// and its pillow) hinges up: where the hinge is along it (z, in its own frame), how far under the
+    /// mattress top, how far it tips up when someone sits up in it, and how high its pillow is above the mattress.
+    /// </summary>
+    public readonly record struct Backrest(float HingeZ, float Drop, float Raised, float Pillow)
+    {
+        /// <summary>The backrest's turn at <paramref name="angle"/> (radians), about its hinge under a mattress whose top is at <paramref name="top"/>.</summary>
+        public Transform3D Turn(float top, float angle)
+        {
+            var hinge = new Vector3(0, top - Drop, HingeZ);
+            return new Transform3D(Basis.Identity, hinge) * new Transform3D(new Basis(Vector3.Right, angle), Vector3.Zero) * new Transform3D(Basis.Identity, -hinge);
+        }
+    }
+
+    /// <summary>The ward bed's backrest: 0.2 m from the middle towards the head (see tools/Blender/models/bed.py).</summary>
+    public static readonly Backrest BedBack = new(-0.4f, Kit3D.M(0.16), Mathf.DegToRad(45), 0.1f);
+
+    /// <summary>The A&amp;E trolley's backrest (see tools/Blender/models/trolley.py).</summary>
+    public static readonly Backrest TrolleyBack = new(-0.5f, Kit3D.M(0.15), Mathf.DegToRad(40), 0.06f);
+
+    /// <summary>The ambulance stretcher's backrest (see tools/Blender/models/stretcher.py).</summary>
+    public static readonly Backrest StretcherBack = new(-0.4f, Kit3D.M(0.09), Mathf.DegToRad(40), 0.05f);
+
+    /// <summary>
+    /// A carrier's backrest at <paramref name="angle"/> (0 flat), with the gas ram that holds it up showing
+    /// under it once it is raised.
+    /// </summary>
+    public static void Back(MeshBatch b, string model, Backrest rest, float top, float angle)
+    {
+        var turn = rest.Turn(top, angle);
+        b.Model(model, "Back", turn * new Transform3D(Basis.FromScale(Models3D.MetreScale), Vector3.Zero));
+        if (angle > 0.05f)
+        {
+            // The ram: from the frame under the hinge up to the underside of the backrest.
+            var under = turn * new Vector3(0, top - (rest.Drop * 1.3f), rest.HingeZ - 0.45f);
+            b.Rod(new Vector3(0, top - (rest.Drop * 1.6f), rest.HingeZ + 0.1f), under, 0.045f, Dark, small: true);
+            foreach (var x in new[] { -0.45f, 0.45f })
+            {
+                b.Rod(new Vector3(x, top - rest.Drop, rest.HingeZ), turn * new Vector3(x, top - rest.Drop, rest.HingeZ - 0.9f), 0.025f, Steel, small: true);
+            }
+        }
+    }
+
     /// <summary>A small castor wheel on the floor at (x, z).</summary>
     private static void Castor(MeshBatch b, float x, float z)
     {
@@ -36,9 +80,18 @@ public static class Carriers3D
     /// chassis, a blue mattress with a fitted sheet, moulded head and foot boards with the obs chart,
     /// tube side rails, a handset and a pillow. A <paramref name="made"/> bed has its blanket on.
     /// </summary>
-    public static float Bed(MeshBatch b, bool made)
+    /// <remarks>
+    /// The backrest is drawn at <paramref name="back"/> radians (flat by default); null leaves it out, for a
+    /// bed that draws it on its own node so it can go up and down (see <see cref="Back"/>).
+    /// </remarks>
+    public static float Bed(MeshBatch b, bool made, float? back = 0)
     {
         b.Model("bed");
+        if (back is { } angle)
+        {
+            Back(b, "bed", BedBack, H(18), angle);
+        }
+
         if (made)
         {
             BedMade(b);
@@ -140,23 +193,26 @@ public static class Carriers3D
     /// a blue mattress with a white sheet, side rails up, a push bar at the head and a drip pole.
     /// +z is the way it is pushed (feet first).
     /// </summary>
-    public static float Trolley(MeshBatch b)
+    public static float Trolley(MeshBatch b, float back = 0)
     {
         b.Model("trolley");
+        Back(b, "trolley", TrolleyBack, H(16), back);
         return H(16);
     }
 
     /// <summary>The ambulance crew's stretcher, from the Blender model "stretcher": a scissor undercarriage, a black mattress and a yellow head bar.</summary>
-    public static float Stretcher(MeshBatch b)
+    public static float Stretcher(MeshBatch b, float back = 0)
     {
         b.Model("stretcher");
+        Back(b, "stretcher", StretcherBack, H(16), back);
         return H(16);
     }
 
     /// <summary>The stretcher's two safety straps, buckled over the blanket.</summary>
     public static void Straps(MeshBatch b, float mattress)
     {
-        foreach (var z in new[] { -0.7f, 1.2f })
+        // Over the lap and the shins, clear of the backrest when it is raised.
+        foreach (var z in new[] { 0.05f, 1.2f })
         {
             b.Box(new Vector3(0, mattress + H(4), z), new Vector3(1.3f, H(1.2f), 0.1f), new Color("#1C1F22"));
             b.Box(new Vector3(0, mattress + H(4.7f), z), new Vector3(0.12f, H(1.2f), 0.13f), new Color("#F2C230"));

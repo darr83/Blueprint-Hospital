@@ -10,6 +10,7 @@ BUDGET = 3000
 
 PX = 1 / 28
 TOP = 16 * PX
+HINGE = 0.25  # the backrest hinges up from here to the head
 
 
 def build():
@@ -36,8 +37,16 @@ def build():
 
     cube("Deck", (0, 0, 11 * PX), (0.7, 2.0, 0.065), steel, bevel=0.02)
     cube("Bumper", (0, 0, 11 * PX), (0.705, 1.4, 0.022), grey, smooth=False)
-    cube("Mattress", (0, 0, TOP - 0.085), (0.62, 1.92, 0.13), mattress, bevel=0.04, bevel_segments=3)
-    cube("Sheet", (0, 0, TOP - 0.014), (0.63, 1.93, 0.028), sheet, bevel=0.012)
+    # The mattress in two sections: the head end lifts with the backrest (part "Back"), with its pillow.
+    end = 0.96
+    foot_len, head_len = HINGE + end - 0.005, end - HINGE - 0.005
+    foot_y, head_y = HINGE - 0.005 - foot_len / 2, HINGE + 0.005 + head_len / 2
+    cube("Mattress", (0, foot_y, TOP - 0.085), (0.62, foot_len, 0.13), mattress, bevel=0.04, bevel_segments=3)
+    cube("Sheet", (0, foot_y, TOP - 0.014), (0.63, foot_len + 0.01, 0.028), sheet, bevel=0.012)
+    cube("MattressBack", (0, head_y, TOP - 0.085), (0.62, head_len, 0.13), mattress, bevel=0.04, bevel_segments=3, part="Back")
+    cube("SheetBack", (0, head_y, TOP - 0.014), (0.63, head_len + 0.01, 0.028), sheet, bevel=0.012, part="Back")
+    cube("BackPanel", (0, head_y, TOP - 0.16), (0.58, head_len, 0.025), dark, bevel=0.008, part="Back")
+    cube("Pillow", (0, end - 0.24, TOP + 0.045), (0.46, 0.3, 0.08), sheet, bevel=0.035, bevel_segments=3, part="Back")
 
     rail, mid, foot = 20 * PX, 16.5 * PX, 12 * PX
     for sx in (-1, 1):

@@ -30,6 +30,7 @@ public partial class PeopleShots3D : Node
             {
                 var shots = new PeopleShots3D { Name = "PeopleShots3D", ProcessMode = ProcessModeEnum.Always, _directory = arg["--people3d-shots=".Length..] };
                 GameManager.Instance.AddChild(shots);
+                GameManager.Instance.Settings.View3D = true;
                 Callable.From(() => GameManager.Instance.StartNewGame("People Review General")).CallDeferred();
                 return true;
             }
@@ -105,6 +106,17 @@ public partial class PeopleShots3D : Node
             views.Add(("close_beds4", 1, Pose.Standing, Centre.X + 26.5, Centre.Y - 8.5, 2.2f));
         }
 
+        if (System.Environment.GetEnvironmentVariable("BH_SHOTS") == "beds")
+        {
+            views.Clear();
+            views.Add(("beds_a", 0, Pose.Standing, Centre.X + 5.2, Centre.Y + 13.8, 3.4f));
+            views.Add(("beds_b", 0, Pose.Standing, Centre.X + 10.4, Centre.Y + 8.6, 3.4f));
+            views.Add(("beds_c", 0, Pose.Standing, Centre.X + 26.5, Centre.Y - 8.5, 2.2f));
+            views.Add(("beds_d", 1, Pose.Standing, Centre.X + 7.8, Centre.Y + 12.5, 2.8f));
+            views.Add(("bay", 0, Pose.Standing, 37.6 + DX, 33.2 + DY, 2.4f));
+            views.Add(("bay_close", 0, Pose.Standing, 37.0 + DX, 31.4 + DY, 3.6f));
+        }
+
         var index = _shot / 2;
         if (index >= views.Count)
         {
@@ -171,6 +183,11 @@ public partial class PeopleShots3D : Node
             _line.AddChild(person);
         }
 
+        if (System.Environment.GetEnvironmentVariable("BH_SHOTS") == "beds")
+        {
+            Bay();
+        }
+
         // A row of beds, tables and trolleys with patients on them.
         var patient = Looks.Preview(77, Sex.Female, 58);
         var child = Looks.Preview(78, Sex.Male, 7);
@@ -182,9 +199,10 @@ public partial class PeopleShots3D : Node
             var who = i == 2 ? child : patient;
             var top = kinds[i] switch
             {
-                "bed" or "bed_empty" => Carriers3D.Bed(b, kinds[i] == "bed_empty"),
-                "trolley" => Carriers3D.Trolley(b),
-                "stretcher" => Carriers3D.Stretcher(b),
+                "bed" => Carriers3D.Bed(b, false, Carriers3D.BedBack.Raised),
+                "bed_empty" => Carriers3D.Bed(b, true),
+                "trolley" => Carriers3D.Trolley(b, Carriers3D.TrolleyBack.Raised),
+                "stretcher" => Carriers3D.Stretcher(b, Carriers3D.StretcherBack.Raised),
                 "floor" => 0f,
                 "wheelchair" or "cot" => -1f,
                 var id => Carriers3D.Table(b, id, new Color("#7FA7C4")),
@@ -213,7 +231,8 @@ public partial class PeopleShots3D : Node
             b.AddTo(holder);
             if (top >= 0 && kinds[i] != "bed_empty")
             {
-                var lying = Lying3D.Build(who, kinds[i] == "floor" ? who.Top : Looks.EdBlanket, kinds[i] == "bed" ? new Color("#F2A33A") : null, null);
+                var rest = kinds[i] switch { "bed" => Carriers3D.BedBack, "trolley" => Carriers3D.TrolleyBack, "stretcher" => Carriers3D.StretcherBack, _ => (Carriers3D.Backrest?)null };
+                var lying = Lying3D.Build(who, kinds[i] == "floor" ? who.Top : Looks.EdBlanket, kinds[i] == "bed" ? new Color("#F2A33A") : null, null, rest: rest, angle: rest?.Raised ?? 0);
                 lying.Position = new Vector3(0, top, 0);
                 holder.AddChild(lying);
             }
@@ -231,5 +250,58 @@ public partial class PeopleShots3D : Node
             holder.Rotation = new Vector3(0, Mathf.Pi / 2, 0);
             _line.AddChild(holder);
         }
+    }
+
+    /// <summary>A staged ward bay for the people review: four beds on a hospital floor, a nurse, a doctor and a porter with a trolley.</summary>
+    private const float DX = -23, DY = 5;
+
+    private void Bay()
+    {
+        if (GetTree().Root.FindChild("Outside", true, false) is Node3D outside)
+        {
+            outside.Visible = false;
+        }
+
+        var floor = new MeshBatch();
+        floor.Box(new Vector3(37 + DX, 0.01f, 33 + DY), new Vector3(18, 0.02f, 18), new Color("#E3E8EA"));
+        floor.AddTo(_line!);
+        var who = new[] { Looks.Preview(301, Sex.Male, 79), Looks.Preview(302, Sex.Female, 58), Looks.Preview(303, Sex.Male, 34), Looks.Preview(304, Sex.Female, 86) };
+        var bands = new Color?[] { new Color("#F2A33A"), new Color("#43A047"), new Color("#43A047"), new Color("#E53935") };
+        for (var i = 0; i < who.Length; i++)
+        {
+            var holder = new Node3D { Position = Kit3D.At(31 + DX + (i * 2.7), 37 + DY - (i * 2.7)), Rotation = new Vector3(0, Mathf.Pi / 2, 0) };
+            var b = new MeshBatch();
+            // Sat up by day; the second bed asleep with the back lower, the last one reading.
+            var angle = i == 1 ? Mathf.DegToRad(20) : Carriers3D.BedBack.Raised;
+            var top = Carriers3D.Bed(b, false, angle);
+            b.AddTo(holder);
+            var lying = Lying3D.Build(who[i], Looks.WardBlanket, bands[i], null, awake: i != 1, doing: i == 3 ? InBed.Book : i == 2 ? InBed.Phone : InBed.None, rest: Carriers3D.BedBack, angle: angle);
+            lying.Position = new Vector3(0, top, 0);
+            holder.AddChild(lying);
+            _line!.AddChild(holder);
+        }
+
+        Person3D Staff(StaffRole role, string grade, int id, double x, double y, float turn)
+        {
+            var p = Person3D.Build(Looks.Staff(new StaffMember { Id = id, Name = grade, Role = role, Grade = grade, DepartmentId = "ward", Age = 30 }));
+            p.Position = Kit3D.At(x, y);
+            p.Rotation = new Vector3(0, turn, 0);
+            _line!.AddChild(p);
+            return p;
+        }
+
+        Staff(StaffRole.Nurse, "Band 5 nurse", 91, 33.6 + DX, 36.0 + DY, Mathf.Pi / 4);
+        Staff(StaffRole.Doctor, "Registrar", 92, 39.0 + DX, 30.6 + DY, Mathf.Pi / 4);
+        var porter = Staff(StaffRole.Porter, "Porter", 93, 37.4 + DX, 39.6 + DY, Mathf.Pi / 2);
+        porter.SetPose(Pose.Walking, 0.6);
+
+        var t = new Node3D { Position = Kit3D.At(39.6 + DX, 39.6 + DY), Rotation = new Vector3(0, Mathf.Pi / 2, 0) };
+        var tb = new MeshBatch();
+        var tt = Carriers3D.Trolley(tb, Carriers3D.TrolleyBack.Raised);
+        tb.AddTo(t);
+        var rider = Lying3D.Build(Looks.Preview(305, Sex.Female, 27), Looks.EdBlanket, new Color("#F2A33A"), null, awake: true, rest: Carriers3D.TrolleyBack, angle: Carriers3D.TrolleyBack.Raised);
+        rider.Position = new Vector3(0, tt, 0);
+        t.AddChild(rider);
+        _line!.AddChild(t);
     }
 }
