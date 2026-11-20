@@ -422,6 +422,17 @@ public static class Looks
         return Civilian(seed, sex, appointment?.Age ?? 40, coat: Roll(seed, 54, 3) != 0, bump);
     }
 
+    /// <summary>A mum or dad staying with their child: everyday clothes (a coat when they first come in), and their child's skin tone.</summary>
+    public static PersonLook Parent(Parent parent, Patient? child)
+    {
+        var seed = parent.Id + 200_003;
+        var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && Roll(seed, 54, 3) == 0, bump: false);
+        return child is null ? look : look with { Skin = Patient(child).Skin };
+    }
+
+    /// <summary>The blanket a parent sleeps under on the fold-out bed: a soft hospital-issue blue.</summary>
+    public static readonly Color ParentBlanket = new("#9FA8DA");
+
     private static readonly Color[] BabyHats =
     {
         new("#F4C2D7"), new("#BFDDF5"), new("#F7E3A1"), new("#C8E6C9"), new("#E1D3F2"), new("#F6D1B8"),
@@ -467,6 +478,10 @@ public static class Looks
         sim.IsMotherAndBabyWard(ward) ? MaternityBlanket
         : sim.IsPaediatricWard(ward) ? ChildrensBlankets[Math.Max(0, System.Linq.Enumerable.ToList(ward.Beds).IndexOf(bed)) % ChildrensBlankets.Length]
         : WardBlanket;
+
+    /// <summary>The blanket on an A&amp;E cubicle bed: bright on a children's cubicle, otherwise the A&amp;E blanket.</summary>
+    public static Color CubicleBlanket(BlueprintHospital.Simulation.Simulation.HospitalSimulation sim, BlueprintHospital.Simulation.Hospital.CareSpace space) =>
+        sim.IsChildrensEmergencyRoom(space) ? ChildrensBlankets[System.Linq.Enumerable.Sum(space.Id, c => (int)c) % ChildrensBlankets.Length] : EdBlanket;
 
     public static Color TriageRing(TriageCategory? category) => category switch
     {

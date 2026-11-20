@@ -441,6 +441,11 @@ public partial class WorldLayer : Node2D
             present.Add(o);
         }
 
+        foreach (var parent in _sim.Parents)
+        {
+            present.Add(parent);
+        }
+
         foreach (var gone in _agentNodes.Keys.Where(a => !present.Contains(a)).ToList())
         {
             _agentNodes[gone].QueueFree();

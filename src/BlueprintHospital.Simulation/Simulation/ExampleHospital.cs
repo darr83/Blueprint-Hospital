@@ -97,6 +97,7 @@ public static class ExampleHospital
         Corridor(sim, 0, 6, 57, 94, 5);                 // front corridor
 
         sim.BuildFittedWaitingRoom(new GridRect(52, 62, 28, 8), WallSide.North, "example_waiting_room", "Main waiting room");
+        BuildChildrensWaitingRoom(sim);
 
         // Lifts and stairs go through every floor, doors onto the spine.
         Build(sim, new Room("lift", 11, 29, 7, 10, WallSide.South, "West bed lifts"));
@@ -187,12 +188,13 @@ public static class ExampleHospital
         // South of the spine (5 m), doors onto the spine.
         new("triage_room", 11, SouthY, 8, 10, WallSide.North, "Triage 1"),
         new("triage_room", 19, SouthY, 8, 10, WallSide.North, "Triage 2"),
-        new("minors_room", 27, SouthY, 20, 10, WallSide.North, "Minors"),
-        new("minors_cubicle", 47, SouthY, 8, 10, WallSide.North, "Minors cubicle"),
-        new("staff_room", 55, SouthY, 7, 10, WallSide.North),
-        new("pharmacy", 70, SouthY, 10, 10, WallSide.North),
-        new("plaster_room", 80, SouthY, 10, 10, WallSide.North),
-        new("outpatient_reception", 90, SouthY, 10, 10, WallSide.North),
+        new("minors_room", 27, SouthY, 11, 10, WallSide.North, "Minors"),
+        new("childrens_cubicle", 38, SouthY, 7, 10, WallSide.North, "Children's cubicle"),
+        new("minors_cubicle", 45, SouthY, 7, 10, WallSide.North, "Minors cubicle"),
+        new("pharmacy", 70, SouthY, 7, 10, WallSide.North),
+        new("staff_room", 77, SouthY, 6, 10, WallSide.North),
+        new("plaster_room", 83, SouthY, 8, 10, WallSide.North),
+        new("outpatient_reception", 91, SouthY, 9, 10, WallSide.North),
 
         // Front row (4 m), doors onto the front corridor; the main waiting room sits in the middle.
         new("fracture_clinic", 6, 62, 13, 8, WallSide.North),
@@ -219,14 +221,16 @@ public static class ExampleHospital
         new("theatre_recovery", 88, NorthRowY, 12, NorthRowDepth, WallSide.South, "Theatre recovery"),
 
         // Middle row: surgical admissions, day surgery and endoscopy.
-        new("surgical_assessment_unit", 24, MiddleRowY, 30, MiddleRowDepth, WallSide.South),
+        new("surgical_assessment_unit", 24, MiddleRowY, 18, MiddleRowDepth, WallSide.South),
+        new("childrens_assessment_unit", 42, MiddleRowY, 12, MiddleRowDepth, WallSide.South),
         new("gastro_clinic", 54, MiddleRowY, 7, MiddleRowDepth, WallSide.South),
         new("endoscopy_room", 61, MiddleRowY, 9, MiddleRowDepth, WallSide.South),
         new("endoscopy_recovery", 70, MiddleRowY, 8, MiddleRowDepth, WallSide.South),
         new("outreach_office", 78, MiddleRowY, 10, MiddleRowDepth, WallSide.South),
 
         // South of the spine (11.5 m): big wards and the gym.
-        new("orthopaedic_ward", 6, SouthY, 26, 23, WallSide.North),
+        new("orthopaedic_ward", 6, SouthY, 14, 23, WallSide.North),
+        new("picu", 20, SouthY, 12, 23, WallSide.North),
         new("gastro_ward", 32, SouthY, 22, 23, WallSide.North),
         new("day_surgery_unit", 54, SouthY, 16, 23, WallSide.North),
         new("physio_gym", 70, SouthY, 14, 23, WallSide.North),
@@ -267,6 +271,22 @@ public static class ExampleHospital
     };
 
     // ------------------------------------------------------------------ helpers
+
+    /// <summary>The children's waiting room, south of the spine beside the central link to the front corridor: a door onto the spine and two rows of chairs.</summary>
+    private static void BuildChildrensWaitingRoom(HospitalSimulation sim)
+    {
+        var rect = new GridRect(52, SouthY, 10, 10);
+        Must(sim.BuildRoom(new RoomPlan("childrens_waiting_room", rect, WallSide.North), "Children's waiting room"), "children's waiting room");
+        var room = sim.Spaces.Single(s => s.TemplateId == "childrens_waiting_room");
+        Must(sim.PlaceWaitingDoor(room.Id, new GridCoord(56, SouthY)), "children's waiting room door");
+        foreach (var y in new[] { SouthY + 4, SouthY + 7 })
+        {
+            for (var x = 54; x <= 59; x++)
+            {
+                Must(sim.PlaceChair(new GridCoord(x, y), WallSide.North, "#D6A72C"), $"children's waiting chair at {x},{y}");
+            }
+        }
+    }
 
     private static void Corridor(HospitalSimulation sim, int floor, int x, int y, int width, int length)
     {

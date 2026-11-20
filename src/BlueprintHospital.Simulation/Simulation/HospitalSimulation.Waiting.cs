@@ -71,9 +71,9 @@ public sealed partial class HospitalSimulation
     /// entrance (an entrance door) or along a corridor from it.
     /// </summary>
     public CareSpace? MainWaitingRoom =>
-        SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r) && HasInnerDoor(r))
-        ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r))
-        ?? SpacesOfKind(CareSpaceKind.Waiting).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasInnerDoor(r) && ReachedFromStreet(r));
+        SpacesOfKind(CareSpaceKind.Waiting).Where(r => !IsChildrensEmergencyRoom(r)).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r) && HasInnerDoor(r))
+        ?? SpacesOfKind(CareSpaceKind.Waiting).Where(r => !IsChildrensEmergencyRoom(r)).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasEntranceDoor(r))
+        ?? SpacesOfKind(CareSpaceKind.Waiting).Where(r => !IsChildrensEmergencyRoom(r)).FirstOrDefault(r => FittingsOf(r).Desk is not null && HasInnerDoor(r) && ReachedFromStreet(r));
 
     private NavGrid? _streetReachNav;
     private HashSet<GridCoord> _streetReach = new();
@@ -94,7 +94,8 @@ public sealed partial class HospitalSimulation
     public IReadOnlyList<string> WaitingRoomProblems(CareSpace room)
     {
         var missing = new List<string>();
-        if (FittingsOf(room).Desk is null)
+        // Children register at the main desk, so their own waiting room needs no desk.
+        if (FittingsOf(room).Desk is null && !IsChildrensEmergencyRoom(room))
         {
             missing.Add("a reception desk");
         }
@@ -597,6 +598,8 @@ public sealed partial class HospitalSimulation
 
     private bool InWaitingRoom(GridCoord tile) => SpacesOfKind(CareSpaceKind.Waiting).Any(r => r.Rect.Contains(tile));
 
+    private bool InChildrensWaitingRoom(GridCoord tile) => SpacesOfKind(CareSpaceKind.Waiting).Any(r => IsChildrensEmergencyRoom(r) && r.Rect.Contains(tile));
+
     /// <summary>How far apart two tiles are for choosing a chair: other floors count as a long way off.</summary>
     private int WaitDistance(GridCoord a, GridCoord b) =>
         Math.Abs(a.X - b.X) + Math.Abs(Site.Local(a).Y - Site.Local(b).Y) + (Site.FloorOf(a) == Site.FloorOf(b) ? 0 : 200);
@@ -651,9 +654,12 @@ public sealed partial class HospitalSimulation
         var preTriage = patient.Triage is null;
         var target = WaitTarget(patient);
         var taken = TakenChairs();
+        // Children (and their parents) wait in the children's waiting room when there is one; adults never do.
+        var child = IsChildPatient(patient);
         var chair = _chairs
-            .Where(c => !taken.Contains(c.Tile) && (!preTriage || InWaitingRoom(c.Tile)))
-            .OrderBy(c => WaitDistance(c.Tile, target))
+            .Where(c => !taken.Contains(c.Tile) && (!preTriage || InWaitingRoom(c.Tile)) && (child || !InChildrensWaitingRoom(c.Tile)))
+            .OrderBy(c => child && InChildrensWaitingRoom(c.Tile) ? 0 : 1)
+            .ThenBy(c => WaitDistance(c.Tile, target))
             .ThenBy(c => c.Tile.Y).ThenBy(c => c.Tile.X)
             .FirstOrDefault();
         if (chair is not null)

@@ -125,10 +125,11 @@ public sealed partial class HospitalSimulation
     /// Whether patients with a condition come in at this level: conditions of departments the hospital
     /// has opened (A&amp;E always is), or ones A&amp;E can sort out and send home with only tests this
     /// level has unlocked (a broken wrist once X-ray is unlocked); no one who starts very ill until red
-    /// patients are unlocked, and no conditions only children get until children are unlocked.
+    /// patients are unlocked, and no conditions only children get until children are unlocked. The
+    /// Paediatrics department's own illnesses wait until it is open, so earlier levels keep their mix.
     /// </summary>
     private bool CanArriveAtThisLevel(ConditionDefinition condition) =>
-        !IsCareer || ((IsDepartmentOpen(condition.Department) || CanBeSentHomeFromEmergency(condition))
+        !IsCareer || ((IsDepartmentOpen(condition.Department) || (CanBeSentHomeFromEmergency(condition) && condition.Department != PaediatricsDepartmentId))
                       && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients)
                       && (IsFeatureOn(LevelFeatures.Children) || condition.AgeRange.Length < 2 || condition.AgeRange[1] >= AdultAge));
 

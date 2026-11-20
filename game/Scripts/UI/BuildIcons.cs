@@ -80,7 +80,8 @@ public static class BuildIcons
         ["early_pregnancy_unit"] = "wave", ["ultrasound_room"] = "wave", ["endoscopy_room"] = "scope",
         ["plaster_room"] = "cast", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
-        ["childrens_ward"] = "teddy", ["childrens_hdu"] = "icu",
+        ["childrens_ward"] = "teddy", ["childrens_hdu"] = "icu", ["picu"] = "icu", ["childrens_assessment_unit"] = "teddy",
+        ["childrens_waiting_room"] = "chairs", ["childrens_cubicle"] = "bed",
         ["outpatient_reception"] = "reception", ["pharmacy"] = "pharmacy", ["cafeteria"] = "facilities", ["vending_point"] = "vend",
         ["accessible_toilet"] = "access", ["cleaning_room"] = "mop",
     };

@@ -72,6 +72,11 @@ public partial class Agents3D : Node3D
             present.Add(o);
         }
 
+        foreach (var parent in sim.Parents)
+        {
+            present.Add(parent);
+        }
+
         foreach (var a in sim.Ambulances)
         {
             present.Add(a);
@@ -231,6 +236,7 @@ public partial class Agents3D : Node3D
                 Patient p => Looks.Patient(p),
                 StaffMember m => Looks.Staff(m),
                 Outpatient o => Looks.Outpatient(o, sim.FindAppointment(o.AppointmentId)),
+                Parent mumOrDad => Looks.Parent(mumOrDad, sim.FindPatient(mumOrDad.ChildId)),
                 _ => null,
             };
             if (look is null)
@@ -269,6 +275,18 @@ public partial class Agents3D : Node3D
                     _person.Visible = false;
                 }
 
+                return;
+            }
+
+            if (_agent is Parent sleeper && sleeper.Activity == ParentActivity.Sleeping && sleeper.FoldOutBed is { } foldOut)
+            {
+                if (_person is not null)
+                {
+                    _person.Visible = false;
+                }
+
+                var ward = sim.FindPatient(sleeper.ChildId)?.CareSpaceId is { } wardId ? sim.FindSpace(wardId) : null;
+                AsleepOnFoldOutBed(world, look, foldOut, ward is null ? (0.0, -1.0) : BlueprintHospital.TopDown.RoomsLayer.FoldOutHead(ward, foldOut));
                 return;
             }
 
@@ -477,13 +495,29 @@ public partial class Agents3D : Node3D
                 pose = step.Walking ? Pose.Walking : Pose.Standing;
             }
 
+            // A parent on the ward sits on the edge of the fold-out bed, turned to their child.
+            var onFoldOut = false;
+            if (_agent is Parent sitter && sitter.Activity == ParentActivity.SittingByBed && sitter.FoldOutBed is { } bedBeside
+                && sim.FindPatient(sitter.ChildId) is { } child)
+            {
+                (x, y) = (bedBeside.CentreX, bedBeside.CentreY);
+                var (dx, dy) = (child.X - x, child.Y - y);
+                facing = Math.Abs(dx) >= Math.Abs(dy) ? (Math.Sign(dx), 0) : (0, Math.Sign(dy));
+
+                // On the edge nearest the child, feet on the floor.
+                var edge = (Math.Abs(facing.X) > 0 ? bedBeside.Width : bedBeside.Length) / 2 - 0.25;
+                (x, y) = (x + (facing.X * edge), y + (facing.Y * edge));
+                (act, faceTo) = (Act.None, null);
+                (seated, onFoldOut) = (true, true);
+            }
+
             Wheelchair(inChair, look.Scale);
             TurnWheels(x, y);
             if (seated)
             {
                 pose = Pose.Seated;
-                _person.Seat = inChair ? Person3D.SeatShape.Wheelchair(look.Scale) : physio is not null ? Person3D.SeatShape.BedSide : Person3D.SeatShape.Chair;
-                facing = world.IsSeated(_agent) && physio is null ? Facing(world.SeatFacing(_agent)) : facing;
+                _person.Seat = inChair ? Person3D.SeatShape.Wheelchair(look.Scale) : onFoldOut ? FoldOutSeat : physio is not null ? Person3D.SeatShape.BedSide : Person3D.SeatShape.Chair;
+                facing = world.IsSeated(_agent) && physio is null && !onFoldOut ? Facing(world.SeatFacing(_agent)) : facing;
             }
 
             Node.Position = Kit3D.At(x, y);
@@ -626,6 +660,34 @@ public partial class Agents3D : Node3D
             }
 
             _lying.Rotation = new Vector3(0, Kit3D.Yaw(scene.CouchFeet.X, scene.CouchFeet.Y), 0);
+            Wheelchair(false, 1);
+            Ring(world, upright: false);
+            SetAlert(null, 0, 0);
+        }
+
+        /// <summary>The edge of a parent's fold-out bed, a little lower than a hospital bed.</summary>
+        private static readonly Person3D.SeatShape FoldOutSeat = new(Kit3D.M(0.45), -0.06f, 0.14f);
+
+        /// <summary>A parent asleep under a blanket on the fold-out bed, head at its raised end.</summary>
+        private void AsleepOnFoldOutBed(WorldLayer world, PersonLook look, BlueprintHospital.Simulation.Hospital.PlacedFurniture foldOut, (double X, double Y) head)
+        {
+            var key = (look, "fold-out", Looks.ParentBlanket, (Color?)null, 0, 0f);
+            if (_lying is null || !Equals(_lyingKey, key))
+            {
+                ClearLying();
+                _lyingKey = key;
+                _lying = new Node3D { Name = "Asleep" };
+                var figure = Lying3D.Build(look, Looks.ParentBlanket, null, ownClothes: true);
+                figure.Position = new Vector3(0, Kit3D.M(0.45), 0);
+                _lying.AddChild(figure);
+                Node.AddChild(_lying);
+            }
+
+            Node.Position = Kit3D.At(foldOut.CentreX, foldOut.CentreY);
+
+            // Head at the fold-out bed's chair back; the figure lies with its feet towards dir.
+            var dir = (X: -head.X, Y: -head.Y);
+            _lying.Rotation = new Vector3(0, Kit3D.Yaw(dir.X, dir.Y), 0);
             Wheelchair(false, 1);
             Ring(world, upright: false);
             SetAlert(null, 0, 0);

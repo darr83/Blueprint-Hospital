@@ -559,7 +559,9 @@ public sealed partial class HospitalSimulation
             var current = patient.CareSpaceId is { } cid ? FindSpace(cid) : null;
             CareSpace? target = null;
 
-            foreach (var kind in SpacePreference(category))
+            // Children go to the children's cubicles first; adults never do.
+            foreach (var (kind, childrens) in SpacePreference(category).SelectMany(k => IsChildPatient(patient) ? new[] { (k, true) } : Array.Empty<(CareSpaceKind, bool)>())
+                         .Concat(SpacePreference(category).Select(k => (k, false))))
             {
                 // Don't use resus for an Amber patient while a Red one is waiting, or majors for Green while Amber wait.
                 if (category == TriageCategory.Amber && kind == CareSpaceKind.Resus && redWaiting)
@@ -577,7 +579,7 @@ public sealed partial class HospitalSimulation
                     continue;
                 }
 
-                target = _spaces.Values.Where(s => s.Kind == kind && IsVacant(s)).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
+                target = _spaces.Values.Where(s => s.Kind == kind && IsVacant(s) && IsChildrensEmergencyRoom(s) == childrens).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
                 if (target is not null)
                 {
                     break;

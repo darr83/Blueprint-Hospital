@@ -69,7 +69,7 @@ public partial class PaediatricsShots : Node
         {
             case 0:
                 h2.Hud.Visible = false;
-                Run(h2, () => ward.Beds.Count(b => b.OccupantId is not null) >= 3, TimeSpan.FromHours(16));
+                Run(h2, () => sim.Parents.Count(p => p.FoldOutBed is not null) >= 3, TimeSpan.FromHours(16));
                 Focus(h2, ward.Rect.X + (ward.Rect.Width / 2.0), ward.Rect.Y + (ward.Rect.Length / 2.0), GameManager.Instance.Settings.View3D ? 1.8f : 1.1f);
                 break;
             case 1:
@@ -84,6 +84,25 @@ public partial class PaediatricsShots : Node
                 break;
             case 3:
                 Save("3_room_panel");
+                h2.Hud.Visible = false;
+                h2.SetMode(GameMode.Play);
+                h2.Hud.HideRightPanels();
+                Run(h2, () => sim.Parents.Count(p => p.Activity == ParentActivity.Sleeping) >= 2, TimeSpan.FromHours(20));
+                Focus(h2, ward.Rect.X + (ward.Rect.Width / 2.0), ward.Rect.Y + (ward.Rect.Length / 2.0), GameManager.Instance.Settings.View3D ? 1.8f : 1.1f);
+                break;
+            case 4:
+                Save("4_night_parents_asleep");
+                WalkIns(sim);
+                Run(h2, () => sim.Patients.Any(p => p.CareSpaceId == Room(sim, "childrens_cubicle").Id) && sim.Patients.Count(p => Room(sim, "childrens_waiting_room").Rect.Contains(p.Tile)) >= 2, TimeSpan.FromHours(3));
+                Focus(h2, Room(sim, "childrens_waiting_room").Rect.X + 2, Room(sim, "childrens_waiting_room").Rect.Y + 8, GameManager.Instance.Settings.View3D ? 1.8f : 1.1f);
+                break;
+            case 5:
+                Save("5_childrens_cubicle_and_waiting_room");
+                Run(h2, () => sim.Patients.Any(p => p.CareSpaceId == Room(sim, "picu").Id), TimeSpan.FromHours(12));
+                Focus(h2, Room(sim, "picu").Rect.X + (Room(sim, "picu").Rect.Width / 2.0), Room(sim, "picu").Rect.Y + 6, GameManager.Instance.Settings.View3D ? 1.8f : 1.1f);
+                break;
+            case 6:
+                Save("6_picu");
                 GD.Print("[paediatrics] Done.");
                 GetTree().Quit(0);
                 return;
@@ -92,6 +111,8 @@ public partial class PaediatricsShots : Node
         _step++;
         _frame = 0;
     }
+
+    private static CareSpace Room(HospitalSimulation sim, string template) => sim.Spaces.First(s => s.TemplateId == template);
 
     private static void Focus(HospitalScene hospital, double x, double y, float zoom) => hospital.Camera.SnapTo(IsoDraw.ToScreen(x, y), zoom);
 
@@ -123,7 +144,20 @@ public partial class PaediatricsShots : Node
         sim.UnlockDepartment(HospitalSimulation.PaediatricsDepartmentId);
         void Report(string what, BuildCheck check) => GD.Print($"[paediatrics] {what}: {(check.CanBuild ? "built" : string.Join("; ", check.Problems))}");
         Report("extension", sim.ExtendBuilding(new GridRect(B.X - 40, B.Y, 40, 34)));
-        Report("corridor", sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 40, B.Y + 9, 44, 8), WallSide.South)));
+        Report("corridor", sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 40, B.Y + 11, 44, 6), WallSide.South)));
+        Report("children's cubicle", sim.BuildRoom(sim.AutoPlan("childrens_cubicle", new GridRect(B.X - 40, B.Y, 7, 11), doorSide: WallSide.South)));
+        Report("children's waiting room", sim.BuildRoom(new RoomPlan("childrens_waiting_room", new GridRect(B.X - 33, B.Y, 10, 11), WallSide.South), "Children's waiting room"));
+        var waiting = sim.Spaces.First(s => s.TemplateId == "childrens_waiting_room");
+        Report("waiting room door", sim.PlaceWaitingDoor(waiting.Id, new GridCoord(B.X - 29, B.Y + 10)));
+        foreach (var y in new[] { B.Y + 2, B.Y + 5 })
+        {
+            for (var x = B.X - 32; x <= B.X - 25; x++)
+            {
+                sim.PlaceChair(new GridCoord(x, y), WallSide.South, "#D6A72C");
+            }
+        }
+
+        Report("PICU", sim.BuildRoom(sim.AutoPlan("picu", new GridRect(B.X - 23, B.Y, 23, 11), doorSide: WallSide.South)));
         Report("children's ward", sim.BuildRoom(sim.AutoPlan("childrens_ward", new GridRect(B.X - 40, B.Y + 17, 24, 15))));
         Report("children's HDU", sim.BuildRoom(sim.AutoPlan("childrens_hdu", new GridRect(B.X - 16, B.Y + 17, 14, 15))));
         foreach (var need in sim.RecommendedStaffing().ToList())
@@ -134,9 +168,19 @@ public partial class PaediatricsShots : Node
             }
         }
 
-        foreach (var (condition, age) in new[] { ("diabetic_ketoacidosis", 13), ("diabetic_ketoacidosis", 9), ("diabetic_ketoacidosis", 6), ("diabetic_ketoacidosis", 11) })
+        foreach (var (condition, age) in new[] { ("diabetic_ketoacidosis", 13), ("diabetic_ketoacidosis", 9), ("diabetic_ketoacidosis", 6), ("diabetic_ketoacidosis", 11),
+                     ("paediatric_sepsis", 4), ("paediatric_sepsis", 7), ("paediatric_sepsis", 2) })
         {
             sim.SpawnPatient(ArrivalMethod.Ambulance, condition, age);
+        }
+    }
+
+    /// <summary>Walk-in children (and one adult, who must not use the children's rooms) for the children's A&amp;E shot.</summary>
+    private static void WalkIns(HospitalSimulation sim)
+    {
+        foreach (var (condition, age) in new[] { ("pulled_elbow", 3), ("viral_wheeze", 2), ("dehydration_gastroenteritis", 5), ("acute_asthma_child", 9), ("pulled_elbow", 4), ("viral_wheeze", 1) })
+        {
+            sim.SpawnPatient(ArrivalMethod.WalkIn, condition, age);
         }
     }
 }

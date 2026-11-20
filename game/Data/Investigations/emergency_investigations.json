@@ -267,6 +267,9 @@
    }
   },
   "abnormal": [
+      {"condition": "fever_under_three_months", "probability": 0.5, "value_range": [15, 24], "summaries": ["White cell count {value} x10^9/L (raised)."]},
+      {"condition": "paediatric_sepsis", "probability": 0.85, "value_range": [18, 30], "summaries": ["White cell count {value} x10^9/L (raised, neutrophilia)."]},
+      {"condition": "kawasaki_disease", "probability": 0.85, "value_range": [15, 25], "summaries": ["White cell count {value} x10^9/L (raised); platelets high."]},
    {
     "condition": "acute_appendicitis",
     "probability": 0.8,
@@ -692,6 +695,11 @@
    ]
   },
   "abnormal": [
+      {"condition": "childhood_pneumonia", "probability": 0.85, "value_range": [40, 180], "summaries": ["CRP {value} mg/L (raised)."]},
+      {"condition": "fever_under_three_months", "probability": 0.6, "value_range": [20, 120], "summaries": ["CRP {value} mg/L (raised)."]},
+      {"condition": "paediatric_sepsis", "probability": 0.9, "value_range": [80, 300], "summaries": ["CRP {value} mg/L (very raised)."]},
+      {"condition": "infant_uti", "probability": 0.8, "value_range": [30, 150], "summaries": ["CRP {value} mg/L (raised)."]},
+      {"condition": "kawasaki_disease", "probability": 0.95, "value_range": [60, 200], "summaries": ["CRP {value} mg/L (raised)."]},
    {
     "condition": "acute_appendicitis",
     "probability": 0.85,
@@ -1243,6 +1251,9 @@
    }
   },
   "abnormal": [
+      {"condition": "infant_uti", "probability": 0.9, "summaries": ["Leucocytes +++ and nitrites positive."], "analyte_text": {"leucocytes": "+++", "nitrites": "Positive"}},
+      {"condition": "fever_under_three_months", "probability": 0.3, "summaries": ["Leucocytes ++, nitrites positive."], "analyte_text": {"leucocytes": "++", "nitrites": "Positive"}},
+      {"condition": "new_type1_diabetes", "probability": 0.95, "summaries": ["Glucose ++++; ketones +."], "analyte_text": {"glucose": "++++", "ketones": "+"}},
    {
     "condition": "lower_urinary_tract_infection",
     "probability": 0.93,
@@ -1383,6 +1394,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "new_type1_diabetes", "probability": 0.99, "value_range": [16, 28], "summaries": ["Blood glucose {value} mmol/L (high)."]},
    {
     "condition": "hypoglycaemia",
     "probability": 0.99,
@@ -1455,6 +1467,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "new_type1_diabetes", "probability": 0.7, "value_range": [0.7, 1.4], "summaries": ["Blood ketones {value} mmol/L (mildly raised)."]},
    {
     "condition": "diabetic_ketoacidosis",
     "probability": 0.98,
@@ -1515,6 +1528,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "acute_asthma_child", "probability": 0.9, "value_range": [35, 65], "summaries": ["Peak flow {value}% of predicted (reduced)."]},
    {
     "condition": "asthma_exacerbation",
     "probability": 0.92,
@@ -1964,6 +1978,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "paediatric_sepsis", "probability": 0.8, "summaries": ["pH 7.28, lactate 4.6: raised lactate with a metabolic acidosis."]},
    {
     "condition": "diabetic_ketoacidosis",
     "probability": 0.98,
@@ -2161,6 +2176,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "childhood_pneumonia", "probability": 0.85, "summaries": ["Right lower lobe consolidation, consistent with pneumonia."], "pictures": ["cxr_rll_consolidation"], "findings": ["Patchy shadowing in the right lower zone with air bronchograms, consistent with a chest infection."]},
    {
     "condition": "community_acquired_pneumonia",
     "probability": 0.9,
@@ -3080,6 +3096,8 @@
    }
   },
   "abnormal": [
+      {"condition": "paediatric_sepsis", "probability": 0.5, "summaries": ["Gram-positive cocci in chains growing: Group A Streptococcus."], "analyte_text": {"bc_growth": "Growth in 1 of 1 bottles", "bc_gram": "Gram-positive cocci in chains", "bc_org": "Streptococcus pyogenes"}},
+      {"condition": "fever_under_three_months", "probability": 0.15, "summaries": ["Gram-negative bacilli growing: E. coli."], "analyte_text": {"bc_growth": "Growth in 1 of 1 bottles", "bc_gram": "Gram-negative bacilli", "bc_org": "Escherichia coli"}},
    {
     "condition": "bacterial_meningitis",
     "probability": 0.6,

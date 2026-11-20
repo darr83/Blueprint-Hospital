@@ -1,0 +1,271 @@
+using BlueprintHospital.Simulation.Hospital;
+using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Transport;
+using BlueprintHospital.Simulation.World;
+
+namespace BlueprintHospital.Simulation.Simulation;
+
+/// <summary>
+/// Parents. Every child (under 16) comes in with a mum or dad, who walks with them, stands or sits beside
+/// them in A&amp;E, waits outside while they have a scan or an operation, sits on the fold-out bed beside their
+/// ward bed by day and sleeps on it at night, and goes home with them.
+///
+/// Parents are worked out from their child each tick (their name and looks come from the child), so they
+/// need no saving: after a load they come back beside their child.
+/// </summary>
+public sealed partial class HospitalSimulation
+{
+    /// <summary>Parents sleep on the fold-out bed from this hour...</summary>
+    public const int ParentBedtimeHour = 22;
+
+    /// <summary>...until this one.</summary>
+    public const int ParentWakeHour = 7;
+
+    private readonly Dictionary<int, Parent> _parents = new();
+
+    private static readonly string[] MumNames = { "Sarah", "Emma", "Laura", "Gemma", "Rachel", "Amy", "Hannah", "Priya", "Aisha", "Natalie", "Zoe", "Kirsty", "Fatima", "Joanne", "Claire", "Sophie" };
+
+    private static readonly string[] DadNames = { "James", "Daniel", "Chris", "Mark", "Tom", "Ryan", "Lee", "Imran", "Ben", "Craig", "Gareth", "Adam", "Mohammed", "Paul", "Jason", "Stuart" };
+
+    /// <summary>Parents in the hospital with their children.</summary>
+    public IEnumerable<Parent> Parents => _parents.Values;
+
+    /// <summary>The mum or dad with a child, if they are here.</summary>
+    public Parent? ParentOf(Patient child) => _parents.GetValueOrDefault(child.Id);
+
+    public Parent? FindParent(int id) => _parents.Values.FirstOrDefault(p => p.Id == id);
+
+    /// <summary>A patient who comes with a parent: any child, apart from a girl in labour.</summary>
+    public static bool HasParentWith(Patient patient) => patient.Age < AdultAge && !patient.Maternity;
+
+    /// <summary>Whether a parent is asleep on the fold-out bed at this time of day.</summary>
+    public bool IsParentBedtime => Now.Hour >= ParentBedtimeHour || Now.Hour < ParentWakeHour;
+
+    private void UpdateParents(double dt)
+    {
+        foreach (var id in _parents.Keys.Where(id => !_patients.TryGetValue(id, out var c) || !ChildIsOnSite(c)).ToList())
+        {
+            _parents.Remove(id);
+        }
+
+        foreach (var child in _patients.Values)
+        {
+            if (!HasParentWith(child) || !ChildIsOnSite(child))
+            {
+                continue;
+            }
+
+            if (!_parents.TryGetValue(child.Id, out var parent))
+            {
+                parent = NewParent(child);
+                _parents[child.Id] = parent;
+            }
+
+            parent.Move(dt);
+            Accompany(parent, child);
+        }
+    }
+
+    /// <summary>On site and on foot (or in bed), not still in the ambulance or the car.</summary>
+    private bool ChildIsOnSite(Patient child) =>
+        child.Stage != PatientStage.Gone && child.IsAlive
+        && !_ambulances.Any(a => a.PatientId == child.Id && a.Purpose == AmbulancePurpose.Arrival && a.State is AmbulanceState.Driving or AmbulanceState.WaitingForBay)
+        && !_cars.Any(c => ReferenceEquals(c.Passenger, child));
+
+    private Parent NewParent(Patient child)
+    {
+        // Mostly mums; the name and age come from the child, so the same parent comes back after a load.
+        var roll = (child.Id * 7919) + child.Surname.Length;
+        var mum = roll % 10 < 7;
+        var names = mum ? MumNames : DadNames;
+        var parent = new Parent
+        {
+            Id = Parent.IdOffset + child.Id,
+            ChildId = child.Id,
+            FirstName = names[(roll / 10) % names.Length],
+            Surname = child.Surname,
+            Sex = mum ? Sex.Female : Sex.Male,
+            Age = Math.Max(child.Age, 1) + 22 + (roll / 7 % 14),
+        };
+        parent.PlaceAt(ParentSpotBeside(child.Tile));
+        if (!child.Timeline.Any(e => e.Text.StartsWith("Came in with", StringComparison.Ordinal)))
+        {
+            child.Log(Now, $"Came in with {(mum ? "their mum" : "their dad")}, {parent.FirstName}.");
+        }
+
+        return parent;
+    }
+
+    /// <summary>Keeps a parent with their child, or on the fold-out bed beside their ward bed.</summary>
+    private void Accompany(Parent parent, Patient child)
+    {
+        // On the ward and in bed: the fold-out bed beside it.
+        if (child.Stage == PatientStage.OnWard && !child.IsMoving && BedOf(child) is { } bed && child.Tile == bed.PatientSpot
+            && FindSpace(child.CareSpaceId!) is { } ward && FoldOutBedBeside(ward, bed) is { } foldOut)
+        {
+            var by = TileBeside(foldOut, ward);
+            if (parent.Tile == by && !parent.IsMoving)
+            {
+                if (parent.FoldOutBed is null)
+                {
+                    child.Log(Now, $"{parent.Relation} is staying with them on the fold-out bed.");
+                }
+
+                parent.FoldOutBed = foldOut;
+                parent.Activity = IsParentBedtime ? ParentActivity.Sleeping : ParentActivity.SittingByBed;
+                return;
+            }
+
+            parent.FoldOutBed = null;
+            parent.Activity = ParentActivity.WithChild;
+            Head(parent, by);
+            return;
+        }
+
+        parent.FoldOutBed = null;
+
+        // Scans and operations: wait in the corridor outside until they come out.
+        if (child.CareSpaceId is { } spaceId && FindSpace(spaceId) is { } room && !child.IsMoving && room.Rect.Contains(child.Tile)
+            && (room.IsServiceRoom || room.Kind is CareSpaceKind.AnaestheticRoom or CareSpaceKind.TheatreRecovery))
+        {
+            if (parent.Activity != ParentActivity.WaitingOutside)
+            {
+                parent.Activity = ParentActivity.WaitingOutside;
+                Head(parent, FreeSpot(parent, OutsideDoor(room)));
+            }
+
+            return;
+        }
+
+        parent.Activity = ParentActivity.WithChild;
+
+        // On the move: keep up, a step behind.
+        if (child.IsMoving)
+        {
+            if (Chebyshev(parent.Tile, child.Tile) > 1 && (parent.Destination is not { } d || Chebyshev(d, child.Tile) > 2))
+            {
+                Head(parent, child.Destination is { } where && Chebyshev(child.Tile, where) <= 2 ? ParentSpotBeside(where) : child.Tile, force: true);
+            }
+
+            return;
+        }
+
+        if (parent.IsMoving && parent.Destination is { } heading && Chebyshev(heading, child.Tile) <= 2)
+        {
+            return;
+        }
+
+        // Sitting down already: stay put.
+        if (IsSeat(parent.Tile) && Chebyshev(parent.Tile, child.Tile) <= 4 && !SeatBooked(parent.Tile) && !IsSpotTaken(parent.Tile, parent))
+        {
+            return;
+        }
+
+        // A free chair: next to theirs in the waiting room, or the visitor's chair in their cubicle.
+        var chair = child.Seat == child.Tile
+            ? Neighbours(child.Tile).Where(t => IsSeat(t) && !IsSpotTaken(t, parent) && !SeatBooked(t)).Cast<GridCoord?>().FirstOrDefault()
+            : child.CareSpaceId is { } cubicleId && FindSpace(cubicleId) is { IsWard: false, Kind: not CareSpaceKind.Waiting } cubicle && cubicle.Rect.Contains(child.Tile)
+                ? SeatTiles.Where(t => cubicle.Rect.Contains(t) && !IsSpotTaken(t, parent) && !SeatBooked(t)).OrderBy(t => Chebyshev(t, child.Tile)).Cast<GridCoord?>().FirstOrDefault()
+                : null;
+        if (chair is { } seat)
+        {
+            Head(parent, seat);
+            return;
+        }
+
+        // Otherwise somewhere to stand beside them.
+        if (Chebyshev(parent.Tile, child.Tile) <= 2 && parent.Tile != child.Tile && !IsSpotTaken(parent.Tile, parent) && !IsSeat(parent.Tile))
+        {
+            return;
+        }
+
+        Head(parent, FreeSpot(parent, child.Tile));
+    }
+
+    private bool SeatBooked(GridCoord tile) =>
+        _patients.Values.Any(p => p.Seat == tile && p.Stage != PatientStage.Gone) || _outpatients.Any(o => o.Seat == tile);
+
+    private static IEnumerable<GridCoord> Neighbours(GridCoord tile)
+    {
+        foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1) })
+        {
+            yield return new GridCoord(tile.X + dx, tile.Y + dy);
+        }
+    }
+
+    private void Head(Parent parent, GridCoord to, bool force = false)
+    {
+        if (!force && parent.Heading == to && (parent.IsMoving || parent.Tile == to))
+        {
+            return;
+        }
+
+        parent.Heading = to;
+        if (parent.Tile == to)
+        {
+            parent.StopMoving();
+            return;
+        }
+
+        var path = PathFor(parent, to);
+        if (path.Count > 0)
+        {
+            parent.FollowPath(path);
+        }
+        else
+        {
+            parent.PlaceAt(to);
+        }
+    }
+
+    /// <summary>A walkable tile next to <paramref name="tile"/>, or the tile itself.</summary>
+    private GridCoord ParentSpotBeside(GridCoord tile) =>
+        Neighbours(tile).Where(t => Nav.IsWalkable(t) && Site.FloorOf(t) == Site.FloorOf(tile)).Cast<GridCoord?>().FirstOrDefault() ?? tile;
+
+    /// <summary>The corridor tile just outside a room's door.</summary>
+    private GridCoord OutsideDoor(CareSpace room)
+    {
+        foreach (var door in room.Doors)
+        {
+            foreach (var outside in DoorTiles(room, door).Select(t => Step(t, door.Side)))
+            {
+                if (Nav.IsWalkable(outside))
+                {
+                    return outside;
+                }
+            }
+        }
+
+        return room.StaffSpot;
+    }
+
+    /// <summary>The fold-out bed beside a ward bed: the nearest one on the ward.</summary>
+    public static PlacedFurniture? FoldOutBedBeside(CareSpace ward, WardBed bed) =>
+        ward.Furniture.Where(f => f.ItemId == "parent_bed")
+            .OrderBy(f => Math.Abs(f.CentreX - (bed.PatientSpot.X + 0.5)) + Math.Abs(f.CentreY - (bed.PatientSpot.Y + 0.5)))
+            .FirstOrDefault();
+
+    /// <summary>Where a parent stands to get on to a fold-out bed: a free floor tile beside it, on the open side.</summary>
+    private GridCoord TileBeside(PlacedFurniture foldOut, CareSpace ward)
+    {
+        var centre = new GridCoord((int)Math.Floor(ward.Rect.X + (ward.Rect.Width / 2.0)), (int)Math.Floor(ward.Rect.Y + (ward.Rect.Length / 2.0)));
+        var x0 = (int)Math.Floor(foldOut.X) - 1;
+        var y0 = (int)Math.Floor(foldOut.Y) - 1;
+        var x1 = (int)Math.Ceiling(foldOut.X + foldOut.Width);
+        var y1 = (int)Math.Ceiling(foldOut.Y + foldOut.Length);
+        var ring = new List<GridCoord>();
+        for (var x = x0; x <= x1; x++)
+        {
+            for (var y = y0; y <= y1; y++)
+            {
+                if ((x == x0 || x == x1 || y == y0 || y == y1) && ward.Rect.Contains(new GridCoord(x, y)) && Nav.IsWalkable(new GridCoord(x, y)))
+                {
+                    ring.Add(new GridCoord(x, y));
+                }
+            }
+        }
+
+        var bedTile = foldOut.Tile;
+        return ring.OrderBy(t => Math.Abs(t.Y - centre.Y)).ThenBy(t => Math.Abs(t.X - bedTile.X)).Cast<GridCoord?>().FirstOrDefault() ?? bedTile;
+    }
+}

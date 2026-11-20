@@ -211,6 +211,13 @@ public partial class Furniture3D : Node3D
             return CafeArt.FrontOf(space, x, y, w, l);
         }
 
+        // A parent's fold-out bed faces the aisle like the ward bed beside it, so its head is at the same end.
+        if (id == "parent_bed" && space.Beds.Count > 0)
+        {
+            var beside = space.Beds.MinBy(b => Math.Abs(b.PatientSpot.Y + 0.5 - (y + (l / 2))) + (Math.Abs(b.PatientSpot.X + 0.5 - (x + (w / 2))) * 0.1))!;
+            return beside.HeadSouth ? (0, -1) : (0, 1);
+        }
+
         return FurnitureArt.FrontOf(space, item) switch
         {
             Sides.North => (0, -1),

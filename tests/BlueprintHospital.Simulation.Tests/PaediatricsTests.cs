@@ -153,3 +153,81 @@ public class PaediatricsTests
         Assert.Equal(Room(h, "childrens_ward").Id, nurse.BaseRoomId);
     }
 }
+
+/// <summary>Paediatrics stage 3: the children's A&amp;E rooms, the children's assessment unit and the children's ICU.</summary>
+public class ChildrensEmergencyAndIntensiveCareTests
+{
+    private static readonly GridRect B = StarterSite.MainBuildingFootprint;
+
+    private static SimulationHarness Wing(int seed, params (string Template, int W)[] rooms)
+    {
+        var h = new SimulationHarness(seed);
+        h.Sim.AdjustBalance(5_000_000);
+        Assert.True(h.Sim.UnlockDepartment(HospitalSimulation.PaediatricsDepartmentId).CanBuild);
+        Assert.True(h.Sim.ExtendBuilding(new GridRect(B.X - 40, B.Y, 40, 34)).CanBuild);
+        Assert.True(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 40, B.Y + 9, 44, 8), WallSide.South)).CanBuild);
+        var x = B.X - 40;
+        foreach (var (template, w) in rooms)
+        {
+            var check = h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 17, w, 15)));
+            Assert.True(check.CanBuild, $"{template}: {string.Join("; ", check.Problems)}");
+            x += w;
+        }
+
+        h.StaffToRecommended();
+        return h;
+    }
+
+    [Fact]
+    public void The_new_rooms_and_illnesses_are_in_the_game_data()
+    {
+        var h = new SimulationHarness();
+        Assert.Equal(WardUnit.Assessment, h.Database.RoomTemplates["childrens_assessment_unit"].Unit);
+        Assert.Equal(WardUnit.IntensiveCare, h.Database.RoomTemplates["picu"].Unit);
+        Assert.Equal(CareSpaceKind.Waiting, h.Database.RoomTemplates["childrens_waiting_room"].Kind);
+        Assert.Equal(CareSpaceKind.Majors, h.Database.RoomTemplates["childrens_cubicle"].Kind);
+        var childrens = h.Database.Conditions.Values.Where(c => c.Department == HospitalSimulation.PaediatricsDepartmentId).ToList();
+        Assert.True(childrens.Count >= 12, $"{childrens.Count} children's illnesses");
+        Assert.All(childrens, c => Assert.True(c.AgeRange[1] < HospitalSimulation.AdultAge, c.Id));
+    }
+
+    [Fact]
+    public void Children_are_seen_in_the_childrens_cubicle_and_adults_never_are()
+    {
+        var h = Wing(21, ("childrens_cubicle", 8));
+        var cubicle = h.Sim.Spaces.Single(s => s.TemplateId == "childrens_cubicle");
+        var adult = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "community_acquired_pneumonia", age: 50);
+        var child = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "childhood_pneumonia", age: 6);
+        var adultUsed = false;
+        h.RunUntil(() =>
+        {
+            adultUsed |= adult.CareSpaceId == cubicle.Id;
+            return child.CareSpaceId == cubicle.Id || child.Stage == PatientStage.Gone;
+        }, TimeSpan.FromHours(6), "the child to reach the children's cubicle");
+        Assert.Equal(cubicle.Id, child.CareSpaceId);
+        h.RunFor(TimeSpan.FromHours(2));
+        Assert.False(adultUsed || adult.CareSpaceId == cubicle.Id, h.Journey(adult));
+    }
+
+    [Fact]
+    public void A_child_who_needs_intensive_care_goes_to_an_open_picu()
+    {
+        var h = Wing(22, ("childrens_ward", 16), ("picu", 22));
+        var picu = h.Sim.Spaces.Single(s => s.TemplateId == "picu");
+        Assert.True(h.Sim.IsIntensiveCareOpen(picu));
+        Assert.Contains(h.Sim.Staff, s => s.Role == StaffRole.Anaesthetist && s.BaseRoomId == picu.Id);
+        Assert.Contains(h.Sim.Staff, s => s.Role == StaffRole.Paediatrician && s.BaseRoomId == picu.Id);
+        Assert.Contains(h.Sim.Staff, s => s.Role == StaffRole.ChildrensNurse && s.BaseRoomId == picu.Id);
+
+        var child = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "paediatric_sepsis", age: 4);
+        child.Severity = Math.Max(child.Severity, 0.8);
+        h.RunUntil(() => child.Stage is PatientStage.OnWard or PatientStage.Gone, TimeSpan.FromHours(12), "the child to be admitted");
+        if (child.Stage == PatientStage.OnWard && child.CareLevel >= 3)
+        {
+            Assert.Equal(picu.Id, child.CareSpaceId);
+        }
+
+        // Adults never use it.
+        Assert.DoesNotContain(h.Sim.Patients, p => p.Age >= HospitalSimulation.AdultAge && p.CareSpaceId == picu.Id);
+    }
+}

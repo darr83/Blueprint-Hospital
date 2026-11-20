@@ -119,7 +119,7 @@ public sealed partial class HospitalSimulation
     private bool CubicleFreeFor(Patient patient)
     {
         var kinds = patient.Triage is { } category ? SpacePreference(category) : new[] { CareSpaceKind.Majors, CareSpaceKind.Resus };
-        return _spaces.Values.Any(s => kinds.Contains(s.Kind) && IsVacant(s));
+        return _spaces.Values.Any(s => kinds.Contains(s.Kind) && IsVacant(s) && MayUse(s, patient));
     }
 
     private HashSet<GridCoord> DoorTiles()

@@ -246,6 +246,7 @@ public sealed partial class HospitalSimulation
         }
 
         KeepPushersWithPatients();
+        UpdateParents(dt);
 
         UpdateAmbulances();
         UpdateCars();

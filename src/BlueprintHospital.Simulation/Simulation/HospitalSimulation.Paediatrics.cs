@@ -39,39 +39,50 @@ public sealed partial class HospitalSimulation
 
     private IEnumerable<CareSpace> PaediatricHighDependencyUnits => PaediatricWards.Where(w => UnitOf(w) == WardUnit.HighDependency);
 
+    /// <summary>Children's intensive care units (PICUs) that are open: like an adult ICU, one needs an anaesthetist posted to it.</summary>
+    private IEnumerable<CareSpace> OpenPaediatricIntensiveCareUnits => PaediatricWards.Where(IsIntensiveCareOpen);
+
+    /// <summary>A&amp;E rooms kept for children: the children's waiting room and children's cubicles.</summary>
+    public bool IsChildrensEmergencyRoom(CareSpace space) => !space.IsWard && space.DepartmentId == PaediatricsDepartmentId;
+
+    /// <summary>Whether a patient may use an A&amp;E room: children's rooms are for children only.</summary>
+    private bool MayUse(CareSpace space, Patient patient) => !IsChildrensEmergencyRoom(space) || IsChildPatient(patient);
+
     /// <summary>Staff who can only work with children.</summary>
     public static bool IsPaediatricRole(StaffRole role) => role is StaffRole.ChildrensNurse or StaffRole.Paediatrician;
 
     /// <summary>Whether there is a high dependency bed for this patient: a children's HDU for a child, otherwise an adult HDU or open ICU.</summary>
     private bool HasHighDependencyBedsFor(Patient patient) =>
-        IsChildPatient(patient) ? PaediatricHighDependencyUnits.Any() : HasHighDependencyBeds;
+        IsChildPatient(patient) ? PaediatricHighDependencyUnits.Any() || OpenPaediatricIntensiveCareUnits.Any() : HasHighDependencyBeds;
 
-    /// <summary>Whether there is an open intensive care unit for this patient (none for children: they go to the regional unit).</summary>
-    private bool HasIntensiveCareFor(Patient patient) => !IsChildPatient(patient) && OpenIntensiveCareUnits.Any();
+    /// <summary>Whether there is an open intensive care unit for this patient: a PICU for a child, otherwise an adult ICU.</summary>
+    private bool HasIntensiveCareFor(Patient patient) => IsChildPatient(patient) ? OpenPaediatricIntensiveCareUnits.Any() : OpenIntensiveCareUnits.Any();
 
     /// <summary>
-    /// The wards a child can be admitted to, best first: the children's HDU for high dependency care,
-    /// then the children's wards. A child back from theatre, or here for a few hours' observation, can use
-    /// the A&amp;E ward when there is no children's ward. Empty when there is nowhere for them.
+    /// The wards a child can be admitted to, best first: an open PICU for intensive care; the children's HDU
+    /// (then a PICU) for high dependency care; then the children's wards, then the children's assessment
+    /// unit. A child here for a few hours' observation goes to the children's assessment unit first. A child
+    /// back from theatre, or here for observation, can use the A&amp;E ward when there is no children's ward.
+    /// Empty when there is nowhere for them.
     /// </summary>
     private List<CareSpace> WardsForChild(Patient patient)
     {
-        var plain = PaediatricWards.Where(w => UnitOf(w) == WardUnit.None)
-            .Concat(PaediatricWards.Where(w => UnitOf(w) == WardUnit.Assessment))
-            .ToList();
+        var wards = PaediatricWards.Where(w => UnitOf(w) == WardUnit.None).ToList();
+        var assessment = PaediatricWards.Where(w => UnitOf(w) == WardUnit.Assessment).ToList();
+        var plain = wards.Concat(assessment).ToList();
         var emergency = WardsOf(EmergencyDepartmentId).Where(w => !IsSameDayUnit(w) && UnitOf(w) is WardUnit.None or WardUnit.Assessment).ToList();
         if (patient.ForObservation)
         {
-            return plain.Concat(emergency).ToList();
+            return assessment.Concat(wards).Concat(emergency).ToList();
         }
 
         if (patient.CareLevel >= 3)
         {
-            // Children who need intensive care go to the regional children's ICU.
-            return new List<CareSpace>();
+            // With no open PICU here, children who need intensive care go to the regional children's ICU.
+            return OpenPaediatricIntensiveCareUnits.ToList();
         }
 
-        var critical = patient.CareLevel == 2 ? PaediatricHighDependencyUnits.ToList() : new List<CareSpace>();
+        var critical = patient.CareLevel == 2 ? PaediatricHighDependencyUnits.Concat(OpenPaediatricIntensiveCareUnits).ToList() : new List<CareSpace>();
         var ordinary = plain.Count > 0 ? plain : patient.HadSurgery ? emergency : plain;
         return critical.Concat(ordinary).ToList();
     }
@@ -81,7 +92,9 @@ public sealed partial class HospitalSimulation
     {
         if (patient.CareLevel >= 3)
         {
-            return "Needs intensive care: the regional children's intensive care team are coming to take them to their PICU.";
+            return PaediatricWards.Any(w => UnitOf(w) == WardUnit.IntensiveCare)
+                ? "Needs intensive care, but the children's intensive care unit has no anaesthetist, so the regional children's intensive care team are coming to take them to their PICU."
+                : "Needs intensive care: the regional children's intensive care team are coming to take them to their PICU.";
         }
 
         return IsUnlocked(PaediatricsDepartmentId)
