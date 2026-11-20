@@ -168,7 +168,7 @@ public partial class DecoratePanel : PanelContainer
         if (DecorArt.Preview is not null)
         {
             DecorArt.Preview = null;
-            _sim.Events.Publish(new LayoutChanged());
+            _sim.Events.Publish(new DecorChanged());
         }
     }
 
@@ -206,8 +206,12 @@ public partial class DecoratePanel : PanelContainer
 
         _draft = look;
         var current = _sim.DecorOf(_room);
+        var shown = DecorArt.Preview;
         DecorArt.Preview = look == current ? null : (_room.Id, look);
-        _sim.Events.Publish(new LayoutChanged());
+        if (!Equals(shown, DecorArt.Preview))
+        {
+            _sim.Events.Publish(new DecorChanged());
+        }
 
         foreach (var (finish, button) in _floorButtons)
         {

@@ -588,30 +588,24 @@ public sealed partial class HospitalSimulation
     /// <summary>The corridor tiles just outside each room's doors (and the entrances), which must stay clear.</summary>
     private HashSet<GridCoord> DoorwayTiles()
     {
+        // Walks each doorway rather than every tile of every room: this runs for every tile the
+        // mouse passes over while placing chairs, so it has to be quick.
         var tiles = new HashSet<GridCoord>();
         foreach (var space in _spaces.Values.Where(s => s.HasWalls))
         {
             var r = space.Rect;
-            foreach (var t in r.Tiles())
+            foreach (var door in space.Doors)
             {
-                if (t.Y == r.Y && space.IsDoor(t, WallSide.North))
+                var span = door.Side is WallSide.North or WallSide.South ? r.Width : r.Length;
+                for (var i = Math.Max(0, door.Offset); i < Math.Min(span, door.Offset + door.Width); i++)
                 {
-                    tiles.Add(new GridCoord(t.X, t.Y - 1));
-                }
-
-                if (t.Y == r.Bottom - 1 && space.IsDoor(t, WallSide.South))
-                {
-                    tiles.Add(new GridCoord(t.X, t.Y + 1));
-                }
-
-                if (t.X == r.X && space.IsDoor(t, WallSide.West))
-                {
-                    tiles.Add(new GridCoord(t.X - 1, t.Y));
-                }
-
-                if (t.X == r.Right - 1 && space.IsDoor(t, WallSide.East))
-                {
-                    tiles.Add(new GridCoord(t.X + 1, t.Y));
+                    tiles.Add(door.Side switch
+                    {
+                        WallSide.North => new GridCoord(r.X + i, r.Y - 1),
+                        WallSide.South => new GridCoord(r.X + i, r.Bottom),
+                        WallSide.West => new GridCoord(r.X - 1, r.Y + i),
+                        _ => new GridCoord(r.Right, r.Y + i),
+                    });
                 }
             }
         }

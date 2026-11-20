@@ -150,9 +150,20 @@ public partial class Decor3D : Node3D
         {
             var size = Pack(cells);
             BuildQuads(quads, cells, size);
-            Paint(cells, size);
+
+            // The same pictures in the same places as last time (a chair placed, say): keep the atlas
+            // already painted, rather than painting it again and copying it back from the graphics card.
+            var atlasKey = $"{size}|{string.Join("\n", keys.OrderBy(k => k.Value).Select(k => k.Key))}";
+            if (atlasKey != _atlasKey)
+            {
+                _atlasKey = atlasKey;
+                Paint(cells, size);
+            }
         }
     }
+
+    /// <summary>Which pictures the atlas holds and where (their keys in order, and its size), as last painted.</summary>
+    private string _atlasKey = "";
 
     /// <summary>Lays the cells out in rows across the atlas, shrinking them all until they fit.</summary>
     private static Vector2I Pack(List<Cell> cells)

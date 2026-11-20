@@ -1654,6 +1654,8 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>The Decorate tool: clicking the staff room opens its panel, and picks show in the world before they are paid for.</summary>
+    private static (int Static, int Decor) _decorStartVersion;
+
     private static void StartDecorating(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
@@ -1666,6 +1668,7 @@ public partial class SmokeTest : Node
         Check(hospital.Hud.Decorate.Visible && hospital.Hud.Decorate.RoomId == room.Id, "Clicking a room with the Decorate tool did not open its Decorate panel.");
         Check(!hospital.Hud.RoomInfo.Visible, "The Decorate tool should open the Decorate panel, not the room panel.");
         var before = sim.DecorOf(room);
+        _decorStartVersion = (hospital.World.StaticVersion, hospital.World.DecorVersion);
         hospital.Hud.Decorate.PickFloor(Simulation.Hospital.FloorFinish.CarpetTiles, "#8FA7B8");
         hospital.Hud.Decorate.PickWalls(Simulation.Hospital.WallFinish.Stripe, "#DCEBF5");
         Check(sim.DecorOf(room) == before, "Picking a finish should not pay for it before Apply.");
@@ -1682,6 +1685,8 @@ public partial class SmokeTest : Node
         Check(sim.DecorOf(room).Floor == Simulation.Hospital.FloorFinish.CarpetTiles && sim.DecorOf(room).Walls == Simulation.Hospital.WallFinish.Stripe, "Apply did not redecorate the room.");
         Check(cost > 0 && sim.Balance == balance - cost, $"Redecorating should cost £{cost:N0}.");
         Check(DecorArt.Preview is null, "After Apply nothing should be left on trial.");
+        Check(hospital.World.StaticVersion == _decorStartVersion.Static, "Trying out finishes should repaint floors and walls only, not rebuild the whole building (that made decorating lag).");
+        Check(hospital.World.DecorVersion > _decorStartVersion.Decor, "Trying out finishes should tell the view to repaint the floors and walls.");
         hospital.Hud.Build.ClosePopup();
     }
 

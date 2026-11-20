@@ -32,8 +32,17 @@ public partial class Beds3D : Node3D
     public int Count => _beds.Count;
 
     /// <summary>Builds a bed or table for every one in the rooms on the floor in view.</summary>
-    public void Rebuild()
+    private string? _builtKey;
+
+    /// <summary>Builds the beds again, unless <paramref name="key"/> (the rooms and their furniture) is what they were last built from.</summary>
+    public void Rebuild(string? key = null)
     {
+        if (key is not null && key == _builtKey)
+        {
+            return;
+        }
+
+        _builtKey = key;
         foreach (var child in GetChildren())
         {
             child.QueueFree();

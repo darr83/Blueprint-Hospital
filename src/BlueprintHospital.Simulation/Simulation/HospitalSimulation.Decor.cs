@@ -1,6 +1,13 @@
+using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Hospital;
 
 namespace BlueprintHospital.Simulation.Simulation;
+
+/// <summary>
+/// Raised when a room's floor or wall finish changes (or one is being tried out), so the view can
+/// repaint just the floors and walls instead of rebuilding the whole building.
+/// </summary>
+public sealed record DecorChanged : IGameEvent;
 
 /// <summary>Floor and wall finishes: what each room is decorated with, what redecorating costs, and the look new rooms start with.</summary>
 public sealed partial class HospitalSimulation
@@ -89,7 +96,7 @@ public sealed partial class HospitalSimulation
             Notifications.Add(Now, NotificationLevel.Info, $"Redecorated {space.Name} for £{cost:N0}.");
         }
 
-        Events.Publish(new LayoutChanged());
+        Events.Publish(new DecorChanged());
         return new BuildCheck(cost, Array.Empty<string>(), space);
     }
 

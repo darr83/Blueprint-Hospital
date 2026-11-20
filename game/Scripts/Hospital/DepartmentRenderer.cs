@@ -62,12 +62,135 @@ public partial class DepartmentRenderer : Node2D
     {
         _sim = simulation;
         _current = simulation;
-        QueueRedraw();
+        Repaint();
     }
 
     /// <summary>True for the copy that paints the floors flat, into the texture on the 3D floor.</summary>
     public bool Flat { get; set; }
 
+    /// <summary>Each room's floor, by room id: drawn on its own so that one room can change without the rest being drawn again.</summary>
+    private readonly Dictionary<string, RoomFloor> _roomFloors = new();
+    private (int Rotation, int Floor, bool Plan)? _view;
+
+    /// <summary>How many room floors were drawn again at the last repaint (for tests).</summary>
+    public int RoomsRepainted { get; private set; }
+
+    /// <summary>
+    /// Brings the floors up to date after building, decorating or turning the view: only the rooms
+    /// that are new, moved or decorated are drawn again, then the markings over them.
+    /// </summary>
+    public void Repaint()
+    {
+        QueueRedraw();
+        if (_sim is null)
+        {
+            return;
+        }
+
+        var view = (IsoDraw.Rotation, IsoDraw.ViewFloor, IsoDraw.Plan);
+        var all = view != _view;
+        _view = view;
+        RoomsRepainted = 0;
+        var seen = new HashSet<string>();
+        var index = 0;
+        foreach (var space in _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
+        {
+            seen.Add(space.Id);
+            if (!_roomFloors.TryGetValue(space.Id, out var node))
+            {
+                node = new RoomFloor
+                {
+                    Name = $"Floor {space.Id}",
+                    Renderer = this,
+                    ShowBehindParent = true,
+                    TextureRepeat = TextureRepeatEnum.Enabled,
+                    TextureFilter = TextureFilterEnum.Nearest,
+                };
+                _roomFloors[space.Id] = node;
+                AddChild(node);
+            }
+
+            node.Space = space;
+            var key = (space.Rect, space.Kind, DecorArt.LookOf(_sim, space));
+            if (all || node.Key != key)
+            {
+                node.Key = key;
+                node.QueueRedraw();
+                RoomsRepainted++;
+            }
+
+            MoveChild(node, index++);
+        }
+
+        foreach (var gone in _roomFloors.Keys.Where(id => !seen.Contains(id)).ToList())
+        {
+            var node = _roomFloors[gone];
+            _roomFloors.Remove(gone);
+            RemoveChild(node);
+            node.QueueFree();
+        }
+    }
+
+    /// <summary>One room's floor, drawn under the markings of the <see cref="DepartmentRenderer"/> it belongs to.</summary>
+    private sealed partial class RoomFloor : Node2D
+    {
+        public DepartmentRenderer Renderer { get; init; } = null!;
+
+        public CareSpace? Space { get; set; }
+
+        public (GridRect Rect, CareSpaceKind Kind, RoomDecor Look)? Key { get; set; }
+
+        public override void _Draw()
+        {
+            if (Space is not null)
+            {
+                using var flat = Renderer.Flat ? IsoDraw.PushFlat() : default(IsoDraw.FlatScope?);
+                Renderer.DrawRoom(this, Space);
+            }
+        }
+    }
+
+    /// <summary>A room's floor: its colour with a faint tile pattern, or the finish it was decorated with.</summary>
+    private void DrawRoom(CanvasItem canvas, CareSpace space)
+    {
+        var r = space.Rect;
+        var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
+        if (DecorArt.LookOf(_sim, space) is { IsStandard: false } look && look.Floor != FloorFinish.Standard)
+        {
+            DecorArt.DrawRoomFloor(canvas, space, look);
+            return;
+        }
+
+        // The floor colour with a subtle half-metre tile pattern: one shape with a repeating chequer
+        // texture (a tile in every other square 2.5% darker), not a square drawn for every tile.
+        var points = new[] { IsoDraw.ToScreen(r.X, r.Y), IsoDraw.ToScreen(r.Right, r.Y), IsoDraw.ToScreen(r.Right, r.Bottom), IsoDraw.ToScreen(r.X, r.Bottom) };
+        var uvs = new[] { new Vector2(r.X, r.Y) / 2, new Vector2(r.Right, r.Y) / 2, new Vector2(r.Right, r.Bottom) / 2, new Vector2(r.X, r.Bottom) / 2 };
+        canvas.DrawPolygon(points, new[] { colour, colour, colour, colour }, uvs, Chequer);
+    }
+
+    private static ImageTexture? _chequer;
+
+    /// <summary>Two by two texels, one per tile: white where (x + y) is odd, 2.5% darker where it is even. It repeats across a room's floor and takes the room's colour.</summary>
+    private static ImageTexture Chequer
+    {
+        get
+        {
+            if (_chequer is null)
+            {
+                var image = Image.CreateEmpty(2, 2, false, Image.Format.Rgba8);
+                var dark = Colors.White.Darkened(0.025f);
+                image.SetPixel(0, 0, dark);
+                image.SetPixel(1, 1, dark);
+                image.SetPixel(1, 0, Colors.White);
+                image.SetPixel(0, 1, Colors.White);
+                _chequer = ImageTexture.CreateFromImage(image);
+            }
+
+            return _chequer;
+        }
+    }
+
+    /// <summary>The markings over the floors: wayfinding bands, lifts and stairs, and the ambulance bays. The floors themselves are the children, drawn behind.</summary>
     public override void _Draw()
     {
         if (_sim is null)
@@ -76,31 +199,6 @@ public partial class DepartmentRenderer : Node2D
         }
 
         using var flat = Flat ? IsoDraw.PushFlat() : default(IsoDraw.FlatScope?);
-
-        foreach (var space in _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 0 : 1))
-        {
-            var r = space.Rect;
-            var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
-            if (DecorArt.LookOf(_sim, space) is { IsStandard: false } look && look.Floor != FloorFinish.Standard)
-            {
-                DecorArt.DrawRoomFloor(this, space, look);
-                continue;
-            }
-
-            IsoDraw.FloorQuad(this, r.X, r.Y, r.Width, r.Length, colour);
-
-            // A subtle half-metre tile pattern.
-            for (var x = r.X; x < r.Right; x++)
-            {
-                for (var y = r.Y; y < r.Bottom; y++)
-                {
-                    if ((x + y) % 2 == 0)
-                    {
-                        IsoDraw.FloorQuad(this, x, y, 1, 1, colour.Darkened(0.025f));
-                    }
-                }
-            }
-        }
 
         DrawWayfinding();
         foreach (var space in _sim.Spaces.Where(s => s.IsShaft && IsoDraw.OnViewFloor(s.Rect.Y)))
