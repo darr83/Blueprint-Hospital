@@ -10,7 +10,7 @@ using Godot;
 namespace BlueprintHospital.Core;
 
 /// <summary>
-/// Close-up review shots of doorways, run with: godot --path game -- --door-shots=DIR (needs a display).
+/// Close-up review shots of doorways, run with: godot --path game -- --door-shots=DIR [--3d] (needs a display).
 /// Builds stairs and a lift beside A&amp;E, then photographs them and the waiting room's doors from all four sides.
 /// </summary>
 public partial class DoorShots : Node
@@ -26,6 +26,8 @@ public partial class DoorShots : Node
         {
             if (arg.StartsWith("--door-shots=", StringComparison.Ordinal))
             {
+                // The view is chosen on the main menu; --3d takes these shots in 3D instead of 2D.
+                GameManager.Instance.Settings.View3D = Array.IndexOf(OS.GetCmdlineUserArgs(), "--3d") >= 0;
                 var shots = new DoorShots { Name = "DoorShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--door-shots=".Length..] };
                 GameManager.Instance.AddChild(shots);
                 Callable.From(() => GameManager.Instance.StartNewGame("Door Review General")).CallDeferred();

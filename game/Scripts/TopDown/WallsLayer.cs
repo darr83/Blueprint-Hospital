@@ -42,6 +42,22 @@ public partial class WallsLayer : Node2D
 
     public static string HospitalName => GameManager.Instance?.Session?.HospitalName is { Length: > 0 } name ? name : "Hospital";
 
+    private static readonly Color RoofFill = new("#CDD5DC");
+    private static readonly Color RoofTrim = new("#B8C2CB");
+    private static readonly Color HatchFill = new("#E2E7EC");
+
+    /// <summary>A flat roof over a lift or stairwell, with a small access hatch in the middle when it fits.</summary>
+    private static void Roof(Pen p, GridRect r)
+    {
+        p.Rect(r.X, r.Y, r.Width, r.Length, RoofFill);
+        if (r.Width >= 2 && r.Length >= 2)
+        {
+            var (cx, cy) = (r.X + (r.Width / 2.0), r.Y + (r.Length / 2.0));
+            p.Rect(cx - 0.42, cy - 0.42, 0.84, 0.84, RoofTrim);
+            p.Rect(cx - 0.36, cy - 0.36, 0.72, 0.72, HatchFill);
+        }
+    }
+
     public void Initialise(HospitalSimulation simulation, WorldLayer world)
     {
         _sim = simulation;
@@ -58,6 +74,12 @@ public partial class WallsLayer : Node2D
         var p = new Pen(this, Shadows);
         SignTexts.Clear();
         LabelCount = 0;
+
+        // Lifts and stairwells are roofed over, hiding whoever is inside; walls, doors and names go on top.
+        foreach (var space in _world.ViewSpaces.Where(RoomSigns.Roofed))
+        {
+            Roof(p, space.Rect);
+        }
 
         foreach (var (x, y, w, h) in Plan.ShellRects.Concat(Plan.InnerRects))
         {
