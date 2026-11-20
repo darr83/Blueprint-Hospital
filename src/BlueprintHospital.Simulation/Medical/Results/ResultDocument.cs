@@ -84,9 +84,9 @@ public sealed class ResultDocument
             picture = template.Pictures[Math.Min(index, template.Pictures.Count - 1)];
         }
 
-        if (!order.Abnormal && specific?.NormalPicture is { } normalPicture)
+        if (!order.Abnormal)
         {
-            picture = normalPicture;
+            picture = specific?.NormalPicture ?? NormalPictureFor(test, patient) ?? picture;
         }
 
         string? findings = template.Findings.Count > 0 ? template.Findings[Math.Min(index, template.Findings.Count - 1)] : null;
@@ -106,6 +106,28 @@ public sealed class ResultDocument
             Seed = seed,
             Department = DepartmentFor(test),
         };
+    }
+
+    /// <summary>
+    /// The normal picture for this patient's illness, else for their presenting complaint, else for their other
+    /// symptoms in order; null when the test does not vary its normal picture.
+    /// </summary>
+    public static string? NormalPictureFor(InvestigationDefinition test, Patient patient)
+    {
+        if (test.NormalPictures.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var key in patient.Symptoms.Prepend(patient.PresentingComplaint).Prepend(patient.Condition.Id))
+        {
+            if (test.NormalPictures.TryGetValue(key, out var picture))
+            {
+                return picture;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

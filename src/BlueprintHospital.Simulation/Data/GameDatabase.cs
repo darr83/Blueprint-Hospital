@@ -178,6 +178,11 @@ public sealed class GameDatabase
             {
                 errors.Add(new DataValidationError($"{InvestigationsFolder}/", investigation.Id, "abnormal.condition", $"refers to unknown condition '{a.Condition}'."));
             }
+
+            foreach (var key in investigation.NormalPictures.Keys.Where(k => !Conditions.ContainsKey(k) && !Symptoms.ContainsKey(k)))
+            {
+                errors.Add(new DataValidationError($"{InvestigationsFolder}/", investigation.Id, "normal_pictures", $"'{key}' is not an illness or symptom."));
+            }
         }
 
         foreach (var profile in Arrivals.Values.Where(p => !Departments.ContainsKey(p.Department)))

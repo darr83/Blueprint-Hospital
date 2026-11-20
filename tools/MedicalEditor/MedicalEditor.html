@@ -486,6 +486,10 @@ function validate() {
         if (!a || a.normal || !a.normal_text) err(K, t, field + " sheet values", `"${aid}" is not a written line on this test's result sheet.`);
       }
     };
+    for (const [key, pic] of Object.entries(t.normal_pictures || {})) {
+      if (!byId("conditions", key) && !byId("symptoms", key)) err(K, t, "normal picture by illness or symptom", `"${key}" is not an illness or symptom.`);
+      if (!RESULT_PICTURES.includes(pic)) err(K, t, "normal picture by illness or symptom", `"${pic}" is not a picture the game can draw.`);
+    }
     const seen = new Set();
     (t.analytes || []).forEach((a, i) => {
       const label = `result sheet line ${a.name || i + 1}`;
@@ -941,6 +945,19 @@ function resultDocumentFields(t, x, isAbnormal) {
   if (imaging && !x.findings?.length) delete x.findings;
   return h("details", { style: "margin-top:8px" }, h("summary", { style: "cursor:pointer;color:var(--blue)" }, "Result document (picture, findings, sheet values)"), kids);
 }
+function normalPictures(t) {
+  const map = t.normal_pictures || {};
+  const name = (k) => byId("conditions", k) ? nameOf("conditions", k) : byId("symptoms", k) ? nameOf("symptoms", k) + " (symptom)" : k;
+  const rows = Object.keys(map).map(k => h("div", { class: "pair", style: "margin-bottom:4px" },
+    h("span", { style: "min-width:240px" }, name(k)),
+    selectBox(t, () => map[k], (v) => { if (v) map[k] = v; }, RESULT_PICTURES),
+    h("button", { class: "icon", title: "Remove", onclick: () => { delete map[k]; if (!Object.keys(map).length) delete t.normal_pictures; touch(t); renderContent(); } }, "×")));
+  const options = [...records("conditions").map(c => [c.id, c.name]), ...records("symptoms").map(x => [x.id, x.name + " (symptom)"])]
+    .filter(([id]) => !(id in map)).sort((a, b) => a[1].localeCompare(b[1]));
+  const adder = h("select", { onchange: (e) => { if (!e.target.value) return; (t.normal_pictures ||= {})[e.target.value] = (t.normal?.pictures || [])[0] || RESULT_PICTURES[0]; touch(t); renderContent(); } },
+    h("option", { value: "" }, "+ Add illness or symptom…"), options.map(([v, l]) => h("option", { value: v }, l)));
+  return card("Normal picture by illness or symptom", "When the result is normal, show the part that matters for this patient (e.g. a hip for a fall). The illness is checked first, then the main complaint, then other symptoms.", rows, adder);
+}
 function analyteLines(t) {
   const lines = t.analytes || [];
   const row = (a, i) => h("div", { class: "sub-card" },
@@ -1044,6 +1061,7 @@ function investigationForm(t) {
       checkIn(t, t, "escalate_to_red_if_abnormal", "Abnormal result makes the patient Red"))),
     t.category !== "imaging" || (t.analytes || []).length ? analyteLines(t) : null,
     tmpl("normal", "Normal result", "What the report says when the test is normal.", false),
+    t.category === "imaging" ? normalPictures(t) : null,
     tmpl("false_positive", "False positive result", "Used when a well patient's test comes back mildly abnormal.", true),
     card("Abnormal results by illness", "How often this test is abnormal in each illness, and what it reports.",
       t.abnormal.map(a => testResultEditor(t, a, t)),

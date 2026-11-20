@@ -144,6 +144,12 @@ public sealed class InvestigationDefinition : IDataRecord
 
     public ResultTemplate Normal { get; init; } = new();
 
+    /// <summary>
+    /// Which picture a normal result shows, by the patient's illness or symptom, so a normal X-ray is of the part
+    /// that hurts (a hip for a fall, a knee for a hot swollen joint). Keys are condition or symptom ids.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> NormalPictures { get; init; } = new Dictionary<string, string>();
+
     /// <summary>Chance the test is abnormal in a patient without any listed condition.</summary>
     public double FalsePositiveRate { get; init; }
 
@@ -194,6 +200,11 @@ public sealed class InvestigationDefinition : IDataRecord
             {
                 context.Error($"abnormal[{i}].normal_picture", $"'{np}' is not a known picture.");
             }
+        }
+
+        foreach (var (key, picture) in NormalPictures.Where(p => !ResultPictureIds.IsKnown(p.Value)))
+        {
+            context.Error("normal_pictures", $"'{picture}' for '{key}' is not a known picture.");
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);

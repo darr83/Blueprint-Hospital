@@ -227,6 +227,37 @@ public class ResultDocumentTests
         Assert.Equal(2400, ResultDocument.FindInSummary(lp, "Cloudy fluid, white cells 2,400 (mostly neutrophils), glucose low."));
     }
 
+    [Theory]
+    [InlineData("fall_older_person", "hip_normal")]
+    [InlineData("gout", "knee_normal")]
+    [InlineData("cellulitis", "tibia_normal")]
+    [InlineData("ankle_sprain", "ankle_normal")]
+    [InlineData("wrist_fracture", "wrist_normal")]
+    [InlineData("shoulder_dislocation", "shoulder_normal")]
+    public void A_normal_X_ray_shows_the_part_that_hurts(string condition, string picture)
+    {
+        var test = Db.Investigations["limb_xray"];
+        var patient = new PatientGenerator(Db, new GameRandom(4)).Generate(Now, conditionId: condition);
+        var order = Resulted(test, test.Normal, 0, false, null);
+        Assert.Equal(picture, ResultDocument.Build(test, patient, order)!.PictureId);
+    }
+
+    [Fact]
+    public void An_unknown_illness_or_symptom_for_a_normal_picture_is_a_data_error()
+    {
+        var test = new InvestigationDefinition
+        {
+            Id = "x",
+            Name = "X",
+            ProcedureMinutes = 5,
+            Normal = new ResultTemplate { Summaries = new[] { "Fine." } },
+            NormalPictures = new Dictionary<string, string> { ["no_such_thing"] = "no_such_picture" },
+        };
+        var errors = new List<DataValidationError>();
+        test.Validate(new ValidationContext("Investigations/x.json", "x", errors));
+        Assert.Contains(errors, e => e.Field == "normal_pictures");
+    }
+
     [Fact]
     public void Unfinished_tests_have_no_document()
     {
