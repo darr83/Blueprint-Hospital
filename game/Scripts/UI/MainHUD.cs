@@ -54,6 +54,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised by the rotate buttons: -1 anticlockwise (Q), +1 clockwise (E).</summary>
     public event Action<int>? RotateRequested;
 
+    /// <summary>The walls button of the 3D game: walls cut down low so you can see into every room (X).</summary>
+    public event Action? WallsToggled;
+
     /// <summary>Raised by the floor buttons: +1 up a floor (Page Up), -1 down (Page Down).</summary>
     public event Action<int>? FloorStepRequested;
 
@@ -629,7 +632,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
-        column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, "Be a doctor: walk one of your doctors round the hospital yourself and do their work (O)"));
+        column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, BlueprintHospital.Core.GameView.ThreeD ? "Be a doctor: play one of your doctors in first person (O)" : "Be a doctor: walk one of your doctors round the hospital yourself and do their work (O)"));
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
@@ -739,6 +742,11 @@ public partial class MainHUD : CanvasLayer
         _mapControls.AddChild(MapButton("−", "Zoom out (mouse wheel)", () => ZoomRequested?.Invoke(0.8f)));
         _mapControls.AddChild(MapButton("⟲", "Turn the view anticlockwise (Q)", () => RotateRequested?.Invoke(-1)));
         _mapControls.AddChild(MapButton("⟳", "Turn the view clockwise (E)", () => RotateRequested?.Invoke(1)));
+        if (BlueprintHospital.Core.GameView.ThreeD)
+        {
+            _mapControls.AddChild(MapButton("⌂", "Walls up or cut down low, to see into every room (X)", () => WallsToggled?.Invoke()));
+        }
+
         return _mapControls;
     }
 
@@ -791,7 +799,7 @@ public partial class MainHUD : CanvasLayer
         var foot = canvas * anchor.World;
         _tagLabel.Text = anchor.Name;
         _tag.Size = _tag.GetCombinedMinimumSize();
-        _tag.Position = new Vector2(foot.X - (_tag.Size.X / 2), foot.Y - (22 * zoom) - _tag.Size.Y);
+        _tag.Position = new Vector2(foot.X - (_tag.Size.X / 2), foot.Y - ((BlueprintHospital.Hospital.IsoDraw.Plan ? 22 : 78) * zoom) - _tag.Size.Y);
         _tag.Visible = true;
     }
 

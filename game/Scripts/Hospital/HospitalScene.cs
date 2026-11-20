@@ -35,6 +35,7 @@ public partial class HospitalScene : Node2D
     private bool _showGrid;
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
+    private PlanLayer? _plan;
     private RouteLayer _routes = null!;
     private TileCursor _cursor = null!;
     private BuildTool _build = null!;
@@ -42,7 +43,8 @@ public partial class HospitalScene : Node2D
     private MainHUD _hud = null!;
     private SelectionHighlight _highlight = null!;
     private SelectionHighlight _itemHighlight = null!;
-    private BlueprintHospital.TopDown.TopDownView _view = null!;
+    private BlueprintHospital.TopDown.TopDownView? _view;
+    private BlueprintHospital.World3D.View3D? _view3D;
     private DoctorMode _doctor = null!;
     private BlueprintHospital.UI.DoctorHud _doctorHud = null!;
 
@@ -58,7 +60,7 @@ public partial class HospitalScene : Node2D
 
     public MainHUD Hud => _hud;
 
-    /// <summary>Be A Doctor: walking one of the doctors round the hospital with the arrow keys.</summary>
+    /// <summary>Be A Doctor: playing one of the doctors, from above with the arrow keys in 2D or through their eyes in 3D.</summary>
     public DoctorMode Doctor => _doctor;
 
     public BlueprintHospital.UI.DoctorHud DoctorHud => _doctorHud;
@@ -67,6 +69,11 @@ public partial class HospitalScene : Node2D
     public bool EnterDoctorMode(StaffMember member)
     {
         SetMode(GameMode.Play);
+        if (ThreeD && PlanView)
+        {
+            SetPlanView(false);
+        }
+
         var result = _doctor.Enter(member);
         if (!result.Ok)
         {
@@ -123,20 +130,46 @@ public partial class HospitalScene : Node2D
 
         _showGrid = settings.ShowGridByDefault;
 
+        // The view was picked on the main menu and stays as it is for as long as this game is open.
+        ThreeD = GameView.ThreeD;
+        IsoDraw.SetPlan(!ThreeD);
+        _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
+        if (ThreeD)
+        {
+            // Outline of the selected room or item, on the floor under everything standing on it.
+            AddChild(_highlight);
+        }
+
         // Keeps track of the layout and where everyone is between ticks; draws nothing itself.
         _world = new WorldLayer { Name = "World", Visible = false };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
 
-        // The hospital from above, drawn under the labels, cursor and build outlines.
-        _view = new BlueprintHospital.TopDown.TopDownView { Name = "TopDown" };
-        AddChild(_view);
-        _view.Initialise(_session.Simulation, _world);
-        _view.ShowGrid = _showGrid;
+        if (ThreeD)
+        {
+            // The hospital in 3D, drawn under everything 2D (labels, cursor and build outlines stay on top).
+            _view3D = new BlueprintHospital.World3D.View3D { Name = "World3D" };
+            AddChild(_view3D);
+            _view3D.Initialise(this, _session.Simulation, _world);
+            _view3D.ShowGrid = _showGrid;
 
-        // Outline of the selected room, on the floor under everything standing on it.
-        _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
-        _view.FloorSlot.AddChild(_highlight);
+            // The 3D world straight from above, with everyone marked by a circle: used while the site is planned.
+            _plan = new PlanLayer { Name = "Plan", Visible = false };
+            AddChild(_plan);
+            _plan.Initialise(_world);
+            _view3D.SetShown(true);
+        }
+        else
+        {
+            // The hospital from above, drawn under the labels, cursor and build outlines.
+            _view = new BlueprintHospital.TopDown.TopDownView { Name = "TopDown" };
+            AddChild(_view);
+            _view.Initialise(_session.Simulation, _world);
+            _view.ShowGrid = _showGrid;
+
+            // Outline of the selected room, on the floor under everything standing on it.
+            _view.FloorSlot.AddChild(_highlight);
+        }
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -169,15 +202,15 @@ public partial class HospitalScene : Node2D
 
         if (_session.InitialCamera is { } saved)
         {
-            // Saves keep the camera the way the old angled view counted it; turn that into a spot on the grid.
+            // Saves keep the camera the way the angled 3D view counts it; turn that into a spot on the grid.
             var (a, b) = (saved.X / 32.0, saved.Y / 16.0);
-            _camera.SnapTo(IsoDraw.ToScreenGround((a + b) / 2, (b - a) / 2), (float)saved.Zoom * SavedZoomScale);
+            _camera.SnapTo(IsoDraw.ToScreenGround((a + b) / 2, (b - a) / 2), (float)saved.Zoom * ZoomScale);
         }
         else
         {
             // Start looking at the emergency department.
             var footprint = StarterSite.MainBuildingFootprint;
-            _camera.SnapTo(IsoDraw.ToScreenGround(footprint.X + 22, footprint.Y + 16), 0.56f * SavedZoomScale);
+            _camera.SnapTo(IsoDraw.ToScreenGround(footprint.X + 22, footprint.Y + 16), 0.56f * ZoomScale);
         }
 
         _hud = new MainHUD { Name = "HUD" };
@@ -237,6 +270,7 @@ public partial class HospitalScene : Node2D
         _hud.StaffInfo.FocusRequested += m => FocusOn(m);
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
         _hud.RotateRequested += RotateView;
+        _hud.WallsToggled += ToggleWalls;
         _hud.FloorStepRequested += step => ShowFloor(ViewFloor + step);
         _hud.AddFloorRequested += () =>
         {
@@ -348,6 +382,9 @@ public partial class HospitalScene : Node2D
         _highlight.Hover = _hud.Build.Decorating && GetViewport().GuiGetHoveredControl() is null ? DecorTarget(GetGlobalMousePosition())?.Rect : null;
         var shown = _hud.ItemInfo.Visible && _hud.ItemInfo.Room is { } itemRoom && _hud.ItemInfo.Item is { } item ? (itemRoom, item) : default;
         _itemHighlight.Item = shown.item is null ? null : Footprint(shown.itemRoom, shown.item);
+        _itemHighlight.ItemHeight = ThreeD && shown.item is not null && _session.Database.Furniture.TryGetValue(shown.item.ItemId, out var shownDef)
+            ? (float)System.Math.Min(System.Math.Max(shownDef.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
+            : 0;
         if (_layoutDirty)
         {
             _layoutDirty = false;
@@ -447,6 +484,9 @@ public partial class HospitalScene : Node2D
             case Key.R:
                 ToggleRoutes();
                 break;
+            case Key.X:
+                ToggleWalls();
+                break;
             case Key.Q:
                 RotateView(-1);
                 break;
@@ -474,7 +514,7 @@ public partial class HospitalScene : Node2D
     {
         if (Mode == GameMode.Play)
         {
-            switch (_view.HitTest(world))
+            switch (AgentAt(world))
             {
                 case Patient patient:
                     SelectPatient(patient);
@@ -548,11 +588,17 @@ public partial class HospitalScene : Node2D
     }
 
     /// <summary>
-    /// The furniture under a point on screen: the smallest piece whose footprint the point is on.
+    /// The furniture under a point on screen. In 2D it is the smallest piece whose footprint the point
+    /// is on; in 3D its height counts, so clicking the top of a cupboard works.
     /// Beds are the patient beds on wards and in cubicles (not X-ray tables).
     /// </summary>
     public (CareSpace Room, PlacedFurniture Item)? ItemAt(Vector2 world, bool bedsOnly)
     {
+        if (ThreeD)
+        {
+            return ItemAt3D(world, bedsOnly);
+        }
+
         (CareSpace, PlacedFurniture)? best = null;
         var bestArea = double.MaxValue;
         var (gx, gy) = IsoDraw.ScreenToGrid(world);
@@ -621,21 +667,106 @@ public partial class HospitalScene : Node2D
         }
 
         var spot = space.IsWard ? item.Tile : space.PatientSpot;
-        return (spot.X + 0.5 - 1.14, spot.Y + 0.5 - 2.45, 2.28, 4.9);
+        return ThreeD ? (spot.X + 0.5 - 0.8, spot.Y + 0.5 - 2.1, 1.6, 4.2) : (spot.X + 0.5 - 1.14, spot.Y + 0.5 - 2.45, 2.28, 4.9);
     }
 
-    /// <summary>How much closer the view from above has to be than the old angled view to show the same stretch of hospital.</summary>
-    private const float SavedZoomScale = 1.3f;
+    /// <summary>The furniture under a point on screen in the 3D view, counting its height.</summary>
+    private (CareSpace Room, PlacedFurniture Item)? ItemAt3D(Vector2 world, bool bedsOnly)
+    {
+        (CareSpace, PlacedFurniture)? best = null;
+        var bestDepth = float.MinValue;
+        foreach (var space in _session.Simulation.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)))
+        {
+            foreach (var item in space.Furniture)
+            {
+                if (!_session.Database.Furniture.TryGetValue(item.ItemId, out var def))
+                {
+                    continue;
+                }
+
+                var isBed = def.Style == Simulation.Data.Models.FurnitureStyle.Bed && !space.IsServiceRoom;
+                if (bedsOnly && !isBed)
+                {
+                    continue;
+                }
+
+                const double pad = 0.1;
+                var (x, y, w, l) = Footprint(space, item);
+                var lift = new Vector2(0, -(float)System.Math.Max(def.HeightM, 0.3) * IsoDraw.PixelsPerMetre);
+                var floor = new[]
+                {
+                    IsoDraw.ToScreen(x - pad, y - pad), IsoDraw.ToScreen(x + w + pad, y - pad),
+                    IsoDraw.ToScreen(x + w + pad, y + l + pad), IsoDraw.ToScreen(x - pad, y + l + pad),
+                };
+                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
+                if (!Geometry2D.IsPointInPolygon(world, hull))
+                {
+                    continue;
+                }
+
+                // Nearest the viewer wins when two overlap on screen.
+                var depth = IsoDraw.ToScreen(x + (w / 2), y + (l / 2)).Y;
+                if (depth > bestDepth)
+                {
+                    best = (space, item);
+                    bestDepth = depth;
+                }
+            }
+        }
+
+        // Waiting chairs the player has placed, in waiting rooms and along corridors.
+        if (!bedsOnly)
+        {
+            var sim = _session.Simulation;
+            foreach (var placed in sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
+            {
+                var home = sim.Spaces.Where(s => s.Rect.Contains(placed.Tile)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0).FirstOrDefault();
+                if (home is null)
+                {
+                    continue;
+                }
+
+                const double pad = 0.1;
+                var chair = new PlacedFurniture(HospitalSimulation.ChairItem, placed.Tile.X + 0.08, placed.Tile.Y + 0.08, 0.84, 0.84);
+                var lift = new Vector2(0, -0.9f * IsoDraw.PixelsPerMetre);
+                var floor = new[]
+                {
+                    IsoDraw.ToScreen(chair.X - pad, chair.Y - pad), IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y - pad),
+                    IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y + chair.Length + pad), IsoDraw.ToScreen(chair.X - pad, chair.Y + chair.Length + pad),
+                };
+                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
+                var depth = IsoDraw.ToScreen(chair.CentreX, chair.CentreY).Y;
+                if (Geometry2D.IsPointInPolygon(world, hull) && depth > bestDepth)
+                {
+                    best = (home, chair);
+                    bestDepth = depth;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>How much closer the view from above has to be than the angled 3D view to show the same stretch of hospital.</summary>
+    private const float TopDownZoomScale = 1.3f;
+
+    private float ZoomScale => ThreeD ? 1f : TopDownZoomScale;
 
     /// <summary>
     /// The camera for a save: the spot on the grid in the middle of the screen, written the way saves
-    /// have always kept it (as the old angled view counted it, not rotated), so old and new saves load alike.
+    /// have always kept it (as the angled 3D view counts it, not rotated), so a save opens on the
+    /// same spot in either view.
     /// </summary>
     public CameraState CaptureCamera()
     {
         var state = _camera.CaptureState();
+        if (ThreeD && IsoDraw.Rotation == 0 && !IsoDraw.Plan)
+        {
+            return state;
+        }
+
         var (gx, gy) = IsoDraw.ScreenToGroundGrid(new Vector2((float)state.X, (float)state.Y));
-        return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16, Zoom = state.Zoom / SavedZoomScale };
+        return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16, Zoom = state.Zoom / ZoomScale };
     }
 
     /// <summary>Turns the view a quarter turn (Q anticlockwise, E clockwise), keeping the same spot in the middle of the screen.</summary>
@@ -652,8 +783,47 @@ public partial class HospitalScene : Node2D
     /// <summary>The floor in view (0 = ground).</summary>
     public int ViewFloor => IsoDraw.ViewFloor;
 
-    /// <summary>The drawing of the hospital from above.</summary>
-    public BlueprintHospital.TopDown.TopDownView View => _view;
+    /// <summary>The patient, visitor or member of staff under a point in the world, if any.</summary>
+    public Agent? AgentAt(Vector2 world) => _view is not null ? _view.HitTest(world) : IsoDraw.Plan ? _plan!.HitTest(world) : _world.HitTest(world);
+
+    /// <summary>True when this game is drawn in 3D, false when it is drawn in 2D from above. Fixed when the game opens.</summary>
+    public bool ThreeD { get; private set; }
+
+    /// <summary>The drawing of the hospital from above (the 2D game only).</summary>
+    public BlueprintHospital.TopDown.TopDownView View => _view ?? throw new System.InvalidOperationException("This game is in 3D.");
+
+    /// <summary>The hospital in 3D (the 3D game only).</summary>
+    public BlueprintHospital.World3D.View3D View3D => _view3D ?? throw new System.InvalidOperationException("This game is in 2D.");
+
+    /// <summary>The 3D game only: true while the site is shown flat from above for planning.</summary>
+    public bool PlanView => ThreeD && IsoDraw.Plan;
+
+    /// <summary>The 3D game only: shows the site flat from above (for planning it) or goes back to 3D, keeping the same spot in the middle of the screen.</summary>
+    public void SetPlanView(bool on)
+    {
+        if (!ThreeD || on == IsoDraw.Plan)
+        {
+            return;
+        }
+
+        var state = _camera.CaptureState();
+        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
+        IsoDraw.SetPlan(on);
+        _overlay.Visible = !on;
+        _plan!.Visible = on;
+        _world.RebuildStatic();
+        _camera.Bounds = SiteBounds();
+        _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
+    }
+
+    /// <summary>The 3D game only: cuts the walls down low (or puts them back up) so you can see into every room.</summary>
+    public void ToggleWalls()
+    {
+        if (_view3D is not null)
+        {
+            _view3D.Cutaway = !_view3D.Cutaway;
+        }
+    }
 
     /// <summary>Looks at another floor: only its rooms and people are drawn, over the grounds faded below.</summary>
     public void ShowFloor(int floor)
@@ -680,7 +850,15 @@ public partial class HospitalScene : Node2D
     private void ToggleGrid()
     {
         _showGrid = !_showGrid;
-        _view.ShowGrid = _showGrid;
+        if (_view is not null)
+        {
+            _view.ShowGrid = _showGrid;
+        }
+        else
+        {
+            _view3D!.ShowGrid = _showGrid;
+        }
+
         _hud.SetGridShown(_showGrid);
     }
 

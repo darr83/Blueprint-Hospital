@@ -52,10 +52,13 @@ public static class IsoDraw
     public const float PlanTile = 32f;
 
     /// <summary>
-    /// Always true: the game is drawn straight down from above, so every floor, cursor, route and
-    /// highlight that goes through this class lines up. (The isometric maths is kept for old saves' camera positions.)
+    /// True while the grid is drawn straight down from above instead of isometric, so every floor,
+    /// cursor, route and highlight that goes through this class lines up. Always on in the 2D game;
+    /// in the 3D game it is on while the site is being planned.
     /// </summary>
     public static bool Plan { get; private set; } = true;
+
+    public static void SetPlan(bool on) => Plan = on;
 
     /// <summary>
     /// Draws flat from above, unrotated, until disposed: used to paint the floors into the texture

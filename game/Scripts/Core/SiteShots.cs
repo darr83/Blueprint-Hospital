@@ -105,10 +105,12 @@ public partial class SiteShots : Node
         switch (_frame)
         {
             case 10:
+                _hospital.SetPlanView(true);
                 _hospital.Camera.SnapTo(IsoDraw.ToScreen(80, 60), 0.23f);
                 break;
             case 40:
                 Shot($"{name}_site");
+                _hospital.SetPlanView(false);
                 var bays = _hospital.Session.Simulation.AmbulanceBays;
                 var door = _hospital.Session.Site.Buildings[0].Entrances.First(e => !e.IsAmbulanceEntrance).Tile;
                 var x = (bays.Average(b => b.X + (b.Width / 2.0)) + door.X) / 2;

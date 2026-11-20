@@ -65,6 +65,16 @@ public partial class ArtShots : Node
                     GameManager.Instance.Settings.SurfaceTextures = false;
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
+                {
+                    h.ToggleWalls();
+                }
+
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-plan") >= 0)
+                {
+                    h.SetPlanView(true);
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-wing") >= 0)
                 {
                     BuildShowroom(h);

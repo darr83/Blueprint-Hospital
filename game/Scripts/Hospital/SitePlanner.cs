@@ -52,6 +52,7 @@ public partial class SitePlanner : Node2D
         _step = GameManager.Instance.SitePlanStep;
         session.Clock.SetSpeed(SimulationSpeed.Paused);
         scene.Hud.Visible = false;
+        scene.SetPlanView(true);
         var size = GetViewportRect().Size;
 
         // The whole site from above, in the space below the banner.
@@ -158,6 +159,7 @@ public partial class SitePlanner : Node2D
     public void Finish()
     {
         GameManager.Instance.FinishSitePlan();
+        _scene.SetPlanView(false);
         _scene.Hud.Visible = true;
         var b = _scene.Session.Site.Buildings[0].Entrances.First(e => !e.IsAmbulanceEntrance).Tile;
         _scene.Camera.SnapTo(IsoDraw.ToScreenGround(b.X + 4, b.Y), 0.56f);

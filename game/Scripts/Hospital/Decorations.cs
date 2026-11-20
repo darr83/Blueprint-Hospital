@@ -384,10 +384,10 @@ public static class Decorations
                 }
             }
 
-            // Not over the service panel at the head of a bed (the rooms layer draws one there).
+            // Not over the service panel at the head of a bed (each view puts one there).
             foreach (var bed in space.Beds)
             {
-                if (TopDown.RoomsLayer.HeadWall(space, bed) is not { } head)
+                if ((Core.GameView.ThreeD ? World3D.SetDressing.HeadWall(space, bed)?.X : TopDown.RoomsLayer.HeadWall(space, bed)?.X) is not { } headX)
                 {
                     continue;
                 }
@@ -398,7 +398,7 @@ public static class Decorations
                     continue;
                 }
 
-                var at = head.X - r.X;
+                var at = headX - r.X;
                 for (var t = (int)Math.Floor(at - 1.6); t < (int)Math.Ceiling(at + 1.6); t++)
                 {
                     if (t >= 0 && t < length)

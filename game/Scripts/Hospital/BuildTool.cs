@@ -37,6 +37,8 @@ public enum BuildMode
 /// </summary>
 public partial class BuildTool : Node2D
 {
+    private static bool ThreeD => Core.GameView.ThreeD;
+
     private static readonly Color Good = new("#2EBD6B");
     private static readonly Color Bad = new("#E53935");
 
@@ -646,13 +648,13 @@ public partial class BuildTool : Node2D
             foreach (var item in room.Furniture)
             {
                 var f = new[] { P(item.X, item.Y), P(item.X + item.Width, item.Y), P(item.X + item.Width, item.Y + item.Length), P(item.X, item.Y + item.Length) };
-                DrawColoredPolygon(f, new Color(1, 1, 1, 0.3f));
+                DrawColoredPolygon(f, new Color(1, 1, 1, ThreeD ? 0.45f : 0.3f));
                 DrawPolyline(f.Append(f[0]).ToArray(), new Color(colour, 0.9f), 1.5f, true);
             }
 
             var pen = TopDown.Pen.OnMap(this);
             pen.Alpha = 0.7f;
-            foreach (var item in room.Furniture)
+            foreach (var item in ThreeD ? [] : room.Furniture)
             {
                 if (!_sim.Database.Furniture.TryGetValue(item.ItemId, out var def) || def.Style == Simulation.Data.Models.FurnitureStyle.Bed)
                 {
@@ -693,7 +695,11 @@ public partial class BuildTool : Node2D
             var quad = new[] { P(tile.X, tile.Y), P(tile.X + 1, tile.Y), P(tile.X + 1, tile.Y + 1), P(tile.X, tile.Y + 1) };
             DrawColoredPolygon(quad, new Color(ok ? Good : Bad, 0.3f));
             DrawPolyline(quad.Append(quad[0]).ToArray(), ok ? Good : Bad, 2f, true);
-            if (ok)
+            if (ok && ThreeD)
+            {
+                ChairArt.Whole(this, tile, facing, new Color(colour, 0.85f), _sim.ChairShift(tile));
+            }
+            else if (ok)
             {
                 var pen = TopDown.Pen.OnMap(this);
                 pen.Alpha = 0.85f;
@@ -732,12 +738,19 @@ public partial class BuildTool : Node2D
             var def = _sim.Database.Furniture.GetValueOrDefault(HospitalSimulation.ResusTrolleyItem);
             var w = (def?.WidthM ?? 0.6) / Units.MetresPerTile;
             var l = (def?.DepthM ?? 0.7) / Units.MetresPerTile;
-            var pen = TopDown.Pen.OnMap(this);
-            pen.Alpha = 0.8f;
-            pen.Push(t.X + 0.5, t.Y + 0.5);
-            TopDown.FurnitureKit.ResusTrolley(pen, Math.Max(w, 1.0), Math.Max(l, 1.5), new Color(def?.Colour ?? "#D84B3E"));
-            pen.Pop();
-            pen.Done();
+            if (ThreeD)
+            {
+                Figures.ResusTrolleyAt(this, t.X + 0.5, t.Y + 0.5, w, l, (float)((def?.HeightM ?? 1.0) * IsoDraw.PixelsPerMetre), new Color(def?.Colour ?? "#D84B3E", 0.8f), (0, 1));
+            }
+            else
+            {
+                var pen = TopDown.Pen.OnMap(this);
+                pen.Alpha = 0.8f;
+                pen.Push(t.X + 0.5, t.Y + 0.5);
+                TopDown.FurnitureKit.ResusTrolley(pen, Math.Max(w, 1.0), Math.Max(l, 1.5), new Color(def?.Colour ?? "#D84B3E"));
+                pen.Pop();
+                pen.Done();
+            }
         }
 
         CostTag(P(t.X + 1, t.Y));
@@ -778,7 +791,7 @@ public partial class BuildTool : Node2D
 
             var f = layout.Furniture;
             var top = new[] { P(f.X, f.Y), P(f.X + f.Width, f.Y), P(f.X + f.Width, f.Y + f.Length), P(f.X, f.Y + f.Length) };
-            DrawColoredPolygon(top, new Color("#8C6D4F", 0.75f));
+            DrawColoredPolygon(ThreeD ? Array.ConvertAll(top, v => v + new Vector2(0, -30)) : top, new Color("#8C6D4F", 0.75f));
             CostTag(P(layout.DeskTiles.Max(t => t.X) + 1, layout.DeskTiles.Min(t => t.Y)));
             return;
         }

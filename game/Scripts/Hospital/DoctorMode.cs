@@ -7,15 +7,19 @@ using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
 using BlueprintHospital.UI;
+using BlueprintHospital.World3D;
 using Godot;
 
 namespace BlueprintHospital.Hospital;
 
 /// <summary>
-/// Be A Doctor: the player is one of the doctors, seen from above like everyone else. The arrow keys
-/// (or W A S D) walk them up, down, left and right on the screen, the view follows them from floor
-/// to floor, a line on the floor leads to where they are heading, and everything else is handed to
-/// the <see cref="DoctorHud"/>.
+/// Be A Doctor: the player is one of the doctors.
+/// In the 2D game they are seen from above like everyone else: the arrow keys (or W A S D) walk them
+/// up, down, left and right on the screen, the view follows them from floor to floor and a line on
+/// the floor leads to where they are heading.
+/// In the 3D game the player sees through the doctor's eyes: the keys and mouse walk and look, and
+/// arrows on the floor lead the way.
+/// Everything else is handed to the <see cref="DoctorHud"/>.
 /// </summary>
 public partial class DoctorMode : Node
 {
@@ -28,12 +32,20 @@ public partial class DoctorMode : Node
     private const float NearestZoom = 3f;
     private const float FurthestZoom = 0.7f;
 
+    private const float MouseDegreesPerPixel = 0.16f;
+    private const float KeyTurnDegreesPerSecond = 110f;
+
     private HospitalScene _scene = null!;
     private GameSession _session = null!;
     private HospitalSimulation _sim = null!;
     private DoctorHud _hud = null!;
-    private DoctorRoute _route = null!;
+    private DoctorRoute? _route;
+    private bool _firstPerson;
     private float _yaw;
+    private float _pitch;
+    private bool _pointer;
+    private bool _pointerWanted;
+    private bool _dragLook;
     private float _zoom = StartZoom;
     private (Vector2 Position, float Zoom) _cameraBefore;
     private double _routeRefresh;
@@ -46,8 +58,11 @@ public partial class DoctorMode : Node
     /// <summary>Which way the doctor faces, in degrees (0 faces towards smaller y).</summary>
     public float Yaw => _yaw;
 
-    /// <summary>The tiles of the line on the floor to where the doctor is heading, on the floor in view.</summary>
-    public IReadOnlyList<GridCoord> Route => _route.Tiles;
+    /// <summary>The 3D game: true when the mouse is a pointer for the panel instead of turning the head.</summary>
+    public bool PointerShown => _pointer;
+
+    /// <summary>The 2D game: the tiles of the line on the floor to where the doctor is heading, on the floor in view.</summary>
+    public IReadOnlyList<GridCoord> Route => _route?.Tiles ?? Array.Empty<GridCoord>();
 
     /// <summary>Raised after the player becomes a doctor, and after they stop.</summary>
     public event Action<bool>? Changed;
@@ -61,8 +76,22 @@ public partial class DoctorMode : Node
         ProcessMode = ProcessModeEnum.Always;
         hud.LeaveRequested += Exit;
         hud.WalkRequested += WalkThere;
-        _route = new DoctorRoute { Name = "DoctorRoute" };
-        scene.View.FloorSlot.AddChild(_route);
+        _firstPerson = scene.ThreeD;
+        if (_firstPerson)
+        {
+            hud.PointerNeeded += needed =>
+            {
+                if (Active)
+                {
+                    SetPointer(needed || _pointerWanted);
+                }
+            };
+        }
+        else
+        {
+            _route = new DoctorRoute { Name = "DoctorRoute" };
+            scene.View.FloorSlot.AddChild(_route);
+        }
     }
 
     /// <summary>The player becomes <paramref name="member"/>.</summary>
@@ -76,6 +105,8 @@ public partial class DoctorMode : Node
 
         Active = true;
         _yaw = YawOf(member.Facing);
+        _pitch = -4;
+        _pointerWanted = false;
         _routeTarget = null;
         _routeRefresh = 0;
         _zoom = StartZoom;
@@ -88,9 +119,19 @@ public partial class DoctorMode : Node
 
         _hud.Open();
         _hud.Toast(result.Message);
-        _scene.View.Player = member;
-        Changed?.Invoke(true);
-        Follow(member, 1);
+        if (_firstPerson)
+        {
+            SetPointer(false);
+            Changed?.Invoke(true);
+            PlaceEye(member);
+        }
+        else
+        {
+            _scene.View.Player = member;
+            Changed?.Invoke(true);
+            Follow(member, 1);
+        }
+
         return result;
     }
 
@@ -106,10 +147,19 @@ public partial class DoctorMode : Node
         var member = _sim.PlayerDoctor;
         _sim.ReleaseControl();
         _hud.Close();
-        _route.Show(Array.Empty<GridCoord>());
-        _scene.View.Player = null;
-        _scene.View.Actors.PlayerWalking = false;
-        _scene.Camera.SnapTo(_scene.Camera.Position, _cameraBefore.Zoom);
+        if (_firstPerson)
+        {
+            _scene.View3D.FirstPersonParts.ShowRoute(Array.Empty<GridCoord>());
+            _scene.View3D.FirstPerson = null;
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+        }
+        else
+        {
+            _route!.Show(Array.Empty<GridCoord>());
+            _scene.View.Player = null;
+            _scene.View.Actors.PlayerWalking = false;
+            _scene.Camera.SnapTo(_scene.Camera.Position, _cameraBefore.Zoom);
+        }
         Changed?.Invoke(false);
         if (member is not null)
         {
@@ -118,6 +168,13 @@ public partial class DoctorMode : Node
     }
 
     private static float YawOf((double X, double Y) facing) => Mathf.RadToDeg((float)Math.Atan2(-facing.X, -facing.Y));
+
+    private void SetPointer(bool shown)
+    {
+        _pointer = shown;
+        _dragLook = false;
+        Input.MouseMode = shown ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+    }
 
     /// <summary>G: the doctor walks themselves to where the line leads.</summary>
     public void WalkThere()
@@ -159,15 +216,51 @@ public partial class DoctorMode : Node
             walked = Walk(member, delta);
         }
 
-        _scene.View.Actors.PlayerWalking = walked;
-        _yaw = YawOf(member.Facing);
-        Follow(member, (float)Math.Min(1, delta * 9));
+        if (_firstPerson)
+        {
+            if (member.IsMoving)
+            {
+                // Walking by themselves: look where they are going.
+                var want = YawOf(member.Facing);
+                _yaw = Mathf.RadToDeg(Mathf.LerpAngle(Mathf.DegToRad(_yaw), Mathf.DegToRad(want), (float)Math.Min(1, delta * 6)));
+                _pitch = Mathf.Lerp(_pitch, -4, (float)Math.Min(1, delta * 3));
+            }
+
+            PlaceEye(member);
+        }
+        else
+        {
+            _scene.View.Actors.PlayerWalking = walked;
+            _yaw = YawOf(member.Facing);
+            Follow(member, (float)Math.Min(1, delta * 9));
+        }
+
         UpdateRoute(member, delta);
         UpdateTag();
     }
 
     private bool Walk(StaffMember member, double delta)
     {
+        if (_firstPerson)
+        {
+            var turn = (Input.IsKeyPressed(Key.Left) ? 1 : 0) - (Input.IsKeyPressed(Key.Right) ? 1 : 0);
+            if (turn != 0)
+            {
+                _yaw += turn * KeyTurnDegreesPerSecond * (float)delta;
+            }
+
+            var forward = (Input.IsKeyPressed(Key.W) || Input.IsKeyPressed(Key.Up) ? 1 : 0) - (Input.IsKeyPressed(Key.S) || Input.IsKeyPressed(Key.Down) ? 1 : 0);
+            var strafe = (Input.IsKeyPressed(Key.D) ? 1 : 0) - (Input.IsKeyPressed(Key.A) ? 1 : 0);
+            if ((forward == 0 && strafe == 0) || _session.Clock.IsPaused)
+            {
+                return false;
+            }
+
+            var (sx, sy) = Step(_yaw, forward, strafe, (Input.IsKeyPressed(Key.Shift) ? HurryTilesPerSecond : WalkTilesPerSecond) * delta);
+            _sim.PlayerMove(sx, sy);
+            return true;
+        }
+
         var right = (Input.IsKeyPressed(Key.Right) || Input.IsKeyPressed(Key.D) ? 1 : 0) - (Input.IsKeyPressed(Key.Left) || Input.IsKeyPressed(Key.A) ? 1 : 0);
         var down = (Input.IsKeyPressed(Key.Down) || Input.IsKeyPressed(Key.S) ? 1 : 0) - (Input.IsKeyPressed(Key.Up) || Input.IsKeyPressed(Key.W) ? 1 : 0);
         if ((right == 0 && down == 0) || _session.Clock.IsPaused)
@@ -198,6 +291,17 @@ public partial class DoctorMode : Node
         return ((gx - ox) * distance, (gy - oy) * distance);
     }
 
+    /// <summary>The 3D game: how far a step forward and sideways moves on the grid when looking along <paramref name="yaw"/>.</summary>
+    public static (double Dx, double Dy) Step(float yaw, double forward, double strafe, double distance)
+    {
+        var a = Mathf.DegToRad(yaw);
+        var (fx, fy) = (-Math.Sin(a), -Math.Cos(a));
+        var (rx, ry) = (Math.Cos(a), -Math.Sin(a));
+        var (x, y) = ((fx * forward) + (rx * strafe), (fy * forward) + (ry * strafe));
+        var length = Math.Sqrt((x * x) + (y * y));
+        return length < 1e-9 ? (0, 0) : (x / length * distance, y / length * distance);
+    }
+
     /// <summary>For the smoke test: walks the way the doctor was last turned for a moment.</summary>
     public void StepForwardForTest(double tiles)
     {
@@ -207,6 +311,31 @@ public partial class DoctorMode : Node
 
     /// <summary>For the smoke test: turns the doctor (0 faces towards smaller y).</summary>
     public void LookForTest(float yaw) => _yaw = yaw;
+
+    /// <summary>The 3D game, for screenshots and the smoke test: turns the player's head.</summary>
+    public void LookForTest(float yaw, float pitch)
+    {
+        _yaw = yaw;
+        _pitch = pitch;
+        if (_sim.PlayerDoctor is { } member)
+        {
+            PlaceEye(member);
+        }
+    }
+
+    /// <summary>The 3D game: puts the camera at the doctor's eye, on whichever floor they are on.</summary>
+    private void PlaceEye(StaffMember member)
+    {
+        // Walking by themselves they glide between ticks; under the player's keys they are exactly where the keys put them.
+        var (x, y) = member.IsMoving ? _scene.World.FootGrid(member) : (member.X, member.Y);
+        var floor = _sim.FloorOf(member);
+        if (floor != _scene.ViewFloor)
+        {
+            _scene.ShowFloor(floor);
+        }
+
+        _scene.View3D.FirstPerson = new View3D.Eye(x, y, _yaw, _pitch, member);
+    }
 
     /// <summary>Keeps the doctor in the middle of the part of the screen the panel leaves free, on whichever floor they are on.</summary>
     private void Follow(StaffMember member, float weight)
@@ -247,7 +376,15 @@ public partial class DoctorMode : Node
 
         // Only the stretch on this floor: the line leads to the lift, and carries on upstairs.
         var floor = _sim.FloorOf(member);
-        _route.Show(route.TakeWhile(t => _sim.Site.FloorOf(t) == floor).ToList());
+        var here = route.TakeWhile(t => _sim.Site.FloorOf(t) == floor).ToList();
+        if (_firstPerson)
+        {
+            _scene.View3D.FirstPersonParts.ShowRoute(here);
+        }
+        else
+        {
+            _route!.Show(here);
+        }
     }
 
     private void UpdateTag()
@@ -259,8 +396,25 @@ public partial class DoctorMode : Node
         }
 
         var (x, y) = _scene.World.FootGrid(patient);
-        var lift = _scene.World.IsLying(patient) ? 2.4f : 1.2f;
-        var at = GetViewport().GetCanvasTransform() * (IsoDraw.ToScreen(x, y) - new Vector2(0, lift * IsoDraw.PlanTile));
+        Vector2 at;
+        if (_firstPerson)
+        {
+            var camera = _scene.View3D.Camera;
+            var point = _scene.View3D.WorldPoint(x, y, Kit3D.M(_scene.World.IsLying(patient) ? 1.25 : 1.95));
+            if (camera.IsPositionBehind(point))
+            {
+                _hud.PlaceTag(null, string.Empty, string.Empty);
+                return;
+            }
+
+            at = camera.UnprojectPosition(point);
+        }
+        else
+        {
+            var lift = _scene.World.IsLying(patient) ? 2.4f : 1.2f;
+            at = GetViewport().GetCanvasTransform() * (IsoDraw.ToScreen(x, y) - new Vector2(0, lift * IsoDraw.PlanTile));
+        }
+
         var screen = GetViewport().GetVisibleRect().Size;
         if (at.X < 60 || at.X > screen.X - DoctorHud.PanelWidth - 60 || at.Y < 110 || at.Y > screen.Y - 60)
         {
@@ -278,6 +432,15 @@ public partial class DoctorMode : Node
     {
         switch (@event)
         {
+            case InputEventMouseMotion motion when _firstPerson && (!_pointer || _dragLook):
+                _yaw -= motion.Relative.X * MouseDegreesPerPixel;
+                _pitch = Mathf.Clamp(_pitch - (motion.Relative.Y * MouseDegreesPerPixel), -70, 70);
+                break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.Right } right when _firstPerson && _pointer:
+                _dragLook = right.Pressed;
+                break;
+            case InputEventMouseButton when _firstPerson:
+                break;
             case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.WheelUp }:
                 _zoom = Math.Min(NearestZoom, _zoom * 1.15f);
                 break;
@@ -299,6 +462,10 @@ public partial class DoctorMode : Node
                 break;
             case Key.Escape:
                 Exit();
+                break;
+            case Key.Tab when _firstPerson:
+                _pointerWanted = !_pointer;
+                SetPointer(_pointerWanted || _hud.HintOpen);
                 break;
             case Key.H:
                 _hud.ToggleHint();

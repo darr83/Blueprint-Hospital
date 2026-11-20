@@ -25,7 +25,7 @@ public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y, WardBed
 /// <summary>
 /// Keeps track of the layout and of where everyone is between simulation ticks: wall and doorway
 /// edges, chairs and who sits on them, beds and who lies in them, monitors, trolleys and babies.
-/// It draws nothing itself; the top-down view reads it every frame.
+/// It draws nothing itself; the 2D view from above and the 3D view read it every frame.
 /// </summary>
 public partial class WorldLayer : Node2D
 {
@@ -226,6 +226,43 @@ public partial class WorldLayer : Node2D
 
     /// <summary>The rooms on the floor in view.</summary>
     public IEnumerable<CareSpace> ViewSpaces => _sim.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y));
+
+    /// <summary>The patient or staff member under a world-space point, nearest the viewer first.</summary>
+    public Agent? HitTest(Vector2 world)
+    {
+        Agent? best = null;
+        var bestDepth = float.MinValue;
+        foreach (var (agent, node) in _agentNodes)
+        {
+            if (agent is AmbulanceVehicle || !node.Visible)
+            {
+                continue;
+            }
+
+            var foot = FootPosition(agent);
+            var box = agent is Patient p && IsLying(p)
+                ? new Rect2(foot.X - 36, foot.Y - 60, 72, 74)
+                : new Rect2(foot.X - 14, foot.Y - 62, 28, 66);
+            if (box.HasPoint(world) && foot.Y > bestDepth)
+            {
+                best = agent;
+                bestDepth = foot.Y;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>For the member of a crash team doing compressions right now: where the patient's chest is on screen.</summary>
+    public (Vector2 Chest, Vector2 Foot)? CprChest(StaffMember member)
+    {
+        if (CprSpot(member) is not { } spot)
+        {
+            return null;
+        }
+
+        return (IsoDraw.ToScreen(spot.ChestX, spot.ChestY) + new Vector2(0, -spot.Lift), IsoDraw.ToScreen(spot.FootX, spot.FootY));
+    }
 
     /// <summary>
     /// For the member of a crash team doing compressions right now: where they stand and where the
