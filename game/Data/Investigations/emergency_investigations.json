@@ -11,12 +11,18 @@
   "normal": {
    "summaries": [
     "Sinus rhythm. No acute ST-segment or T-wave changes."
+   ],
+   "pictures": [
+    "ecg_normal"
    ]
   },
   "false_positive_rate": 0.05,
   "false_positive": {
    "summaries": [
     "Sinus rhythm with non-specific T-wave flattening."
+   ],
+   "pictures": [
+    "ecg_t_flat"
    ]
   },
   "abnormal": [
@@ -27,6 +33,11 @@
      "ST-segment elevation in leads II, III and aVF (inferior STEMI).",
      "ST-segment elevation in leads V1–V4 (anterior STEMI).",
      "ST-segment depression and T-wave inversion in V4–V6."
+    ],
+    "pictures": [
+     "ecg_inferior_stemi",
+     "ecg_anterior_stemi",
+     "ecg_lateral_st_depression"
     ]
    },
    {
@@ -35,6 +46,10 @@
     "summaries": [
      "Atrial fibrillation with a fast ventricular rate (around 140 bpm).",
      "Irregularly irregular rhythm, no P waves: atrial fibrillation, rate 130 to 150."
+    ],
+    "pictures": [
+     "ecg_af_fast",
+     "ecg_af_fast"
     ]
    },
    {
@@ -42,6 +57,9 @@
     "probability": 0.97,
     "summaries": [
      "Narrow-complex regular tachycardia at 190 bpm, no visible P waves: SVT."
+    ],
+    "pictures": [
+     "ecg_svt"
     ]
    },
    {
@@ -49,6 +67,9 @@
     "probability": 0.4,
     "summaries": [
      "Sinus tachycardia with left bundle branch block (old)."
+    ],
+    "pictures": [
+     "ecg_lbbb"
     ]
    },
    {
@@ -57,6 +78,10 @@
     "summaries": [
      "ST-segment depression in V4–V6 with T-wave inversion: possible NSTEMI.",
      "Deep T-wave inversion across the anterior leads."
+    ],
+    "pictures": [
+     "ecg_lateral_st_depression",
+     "ecg_deep_twi"
     ]
    },
    {
@@ -64,6 +89,9 @@
     "probability": 0.99,
     "summaries": [
      "Complete heart block: P waves and QRS complexes unrelated, ventricular rate 35."
+    ],
+    "pictures": [
+     "ecg_chb"
     ]
    },
    {
@@ -71,6 +99,9 @@
     "probability": 0.8,
     "summaries": [
      "Widespread saddle-shaped ST elevation with PR depression: pericarditis."
+    ],
+    "pictures": [
+     "ecg_pericarditis"
     ]
    },
    {
@@ -78,6 +109,9 @@
     "probability": 0.02,
     "summaries": [
      "Sinus tachycardia 112, otherwise normal."
+    ],
+    "pictures": [
+     "ecg_sinus_tachy"
     ]
    }
   ],
@@ -180,7 +214,22 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "trop",
+    "name": "Troponin T (high-sensitivity)",
+    "unit": "ng/L",
+    "high": 14,
+    "normal": [
+     3,
+     12
+    ],
+    "aliases": [
+     "Troponin"
+    ]
+   }
+  ]
  },
  {
   "id": "full_blood_count",
@@ -209,7 +258,13 @@
    ],
    "summaries": [
     "White cell count {value} x10^9/L (mildly raised)."
-   ]
+   ],
+   "analytes": {
+    "neut": [
+     7.6,
+     8.4
+    ]
+   }
   },
   "abnormal": [
    {
@@ -221,7 +276,17 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised, neutrophilia)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      10,
+      15.5
+     ],
+     "lymph": [
+      0.5,
+      0.9
+     ]
+    }
    },
    {
     "condition": "acute_myocardial_infarction",
@@ -232,7 +297,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (mildly raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      8.0,
+      10.5
+     ]
+    }
    },
    {
     "condition": "community_acquired_pneumonia",
@@ -243,7 +314,17 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised, neutrophilia)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      11,
+      19
+     ],
+     "lymph": [
+      0.5,
+      0.9
+     ]
+    }
    },
    {
     "condition": "acute_cholecystitis",
@@ -254,7 +335,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      9.5,
+      15
+     ]
+    }
    },
    {
     "condition": "pyelonephritis",
@@ -265,7 +352,17 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised, neutrophilia)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      11,
+      18
+     ],
+     "lymph": [
+      0.5,
+      0.9
+     ]
+    }
    },
    {
     "condition": "upper_gi_bleed",
@@ -287,7 +384,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (mildly raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      8.0,
+      11.5
+     ]
+    }
    },
    {
     "condition": "copd_exacerbation",
@@ -298,7 +401,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (mildly raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      8.0,
+      12
+     ]
+    }
    },
    {
     "condition": "acute_pancreatitis",
@@ -309,7 +418,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      10.5,
+      16
+     ]
+    }
    },
    {
     "condition": "diabetic_ketoacidosis",
@@ -320,7 +435,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised, stress response)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      9.5,
+      14
+     ]
+    }
    },
    {
     "condition": "bacterial_meningitis",
@@ -331,7 +452,17 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised, neutrophilia)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      14,
+      24
+     ],
+     "lymph": [
+      0.5,
+      0.9
+     ]
+    }
    },
    {
     "condition": "septic_arthritis_knee",
@@ -342,7 +473,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      10,
+      16
+     ]
+    }
    },
    {
     "condition": "diverticulitis",
@@ -353,7 +490,13 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      9.5,
+      14
+     ]
+    }
    },
    {
     "condition": "ulcerative_colitis_flare",
@@ -364,7 +507,13 @@
     ],
     "summaries": [
      "Haemoglobin {value} g/L (low); platelets raised."
-    ]
+    ],
+    "analytes": {
+     "plt": [
+      460,
+      620
+     ]
+    }
    },
    {
     "condition": "large_bowel_obstruction",
@@ -375,14 +524,20 @@
     ],
     "summaries": [
      "Haemoglobin {value} g/L (low: iron deficiency)."
-    ]
+    ],
+    "analytes": {
+     "mcv": [
+      68,
+      76
+     ]
+    }
    },
    {
     "condition": "epistaxis",
     "probability": 0.2,
     "value_range": [
-     105,
-     118
+     104,
+     117
     ],
     "summaries": [
      "Haemoglobin {value} g/L (slightly low)."
@@ -397,21 +552,115 @@
     ],
     "summaries": [
      "White cell count {value} x10^9/L (mildly raised)."
-    ]
+    ],
+    "analytes": {
+     "neut": [
+      8.0,
+      10.5
+     ]
+    }
    },
    {
     "condition": "tibial_shaft_fracture",
     "probability": 0.3,
     "value_range": [
-     105,
-     120
+     100,
+     117
     ],
     "summaries": [
      "Haemoglobin {value} g/L (dropped)."
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "hb",
+    "name": "Haemoglobin (Hb)",
+    "unit": "g/L",
+    "low": 130,
+    "high": 170,
+    "low_female": 120,
+    "high_female": 150,
+    "normal": [
+     136,
+     158
+    ],
+    "decimals": 0,
+    "aliases": [
+     "Haemoglobin",
+     "Hb"
+    ]
+   },
+   {
+    "id": "wcc",
+    "name": "White cell count",
+    "unit": "x10^9/L",
+    "low": 4.0,
+    "high": 11.0,
+    "normal": [
+     5,
+     9.5
+    ],
+    "decimals": 1,
+    "aliases": [
+     "White cell count",
+     "WCC",
+     "white cells"
+    ]
+   },
+   {
+    "id": "neut",
+    "name": "Neutrophils",
+    "unit": "x10^9/L",
+    "low": 2.0,
+    "high": 7.5,
+    "normal": [
+     2.6,
+     6.4
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "lymph",
+    "name": "Lymphocytes",
+    "unit": "x10^9/L",
+    "low": 1.0,
+    "high": 4.0,
+    "normal": [
+     1.3,
+     3.2
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "plt",
+    "name": "Platelets",
+    "unit": "x10^9/L",
+    "low": 150,
+    "high": 400,
+    "normal": [
+     190,
+     350
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "mcv",
+    "name": "Mean cell volume (MCV)",
+    "unit": "fL",
+    "low": 80,
+    "high": 100,
+    "normal": [
+     84,
+     96
+    ],
+    "decimals": 0,
+    "aliases": [
+     "MCV"
+    ]
+   }
+  ]
  },
  {
   "id": "c_reactive_protein",
@@ -631,7 +880,22 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "crp",
+    "name": "C-reactive protein (CRP)",
+    "unit": "mg/L",
+    "high": 5,
+    "normal": [
+     0.5,
+     4.5
+    ],
+    "aliases": [
+     "CRP"
+    ]
+   }
+  ]
  },
  {
   "id": "urea_electrolytes",
@@ -672,7 +936,13 @@
     ],
     "summaries": [
      "Urea {value} mmol/L (raised, consistent with dehydration)."
-    ]
+    ],
+    "analytes": {
+     "creat": [
+      80,
+      100
+     ]
+    }
    },
    {
     "condition": "acute_kidney_injury",
@@ -684,7 +954,17 @@
     "summaries": [
      "Creatinine {value} µmol/L (raised; baseline 85 last year). Potassium 5.6.",
      "Creatinine {value} µmol/L (raised from baseline). Urea 18."
-    ]
+    ],
+    "analytes": {
+     "k": [
+      5.6,
+      5.6
+     ],
+     "urea": [
+      18,
+      18
+     ]
+    }
    },
    {
     "condition": "diabetic_ketoacidosis",
@@ -695,7 +975,17 @@
     ],
     "summaries": [
      "Urea {value} mmol/L (raised). Potassium 5.8."
-    ]
+    ],
+    "analytes": {
+     "k": [
+      5.8,
+      5.8
+     ],
+     "na": [
+      130,
+      133
+     ]
+    }
    },
    {
     "condition": "upper_gi_bleed",
@@ -779,10 +1069,84 @@
     "probability": 0.3,
     "summaries": [
      "Urea 2.4 mmol/L (low). Magnesium 0.5 mmol/L (low)."
-    ]
+    ],
+    "analytes": {
+     "urea": [
+      2.4,
+      2.4
+     ],
+     "mg": [
+      0.5,
+      0.5
+     ]
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "na",
+    "name": "Sodium",
+    "unit": "mmol/L",
+    "low": 133,
+    "high": 146,
+    "normal": [
+     136,
+     143
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "k",
+    "name": "Potassium",
+    "unit": "mmol/L",
+    "low": 3.5,
+    "high": 5.3,
+    "normal": [
+     3.8,
+     4.9
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "urea",
+    "name": "Urea",
+    "unit": "mmol/L",
+    "low": 2.5,
+    "high": 7.8,
+    "normal": [
+     3.2,
+     7.0
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "creat",
+    "name": "Creatinine",
+    "unit": "µmol/L",
+    "low": 59,
+    "high": 104,
+    "low_female": 45,
+    "high_female": 84,
+    "normal": [
+     66,
+     98
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "mg",
+    "name": "Magnesium",
+    "unit": "mmol/L",
+    "low": 0.7,
+    "high": 1.0,
+    "normal": [
+     0.76,
+     0.95
+    ],
+    "decimals": 2
+   }
+  ]
  },
  {
   "id": "pregnancy_test",
@@ -796,6 +1160,9 @@
   "normal": {
    "summaries": [
     "Urine hCG negative."
+   ],
+   "pictures": [
+    "preg_negative"
    ]
   },
   "false_positive_rate": 0.0,
@@ -805,6 +1172,12 @@
     "probability": 0.99,
     "summaries": [
      "Urine hCG positive."
+    ],
+    "analyte_text": {
+     "hcg": "Positive"
+    },
+    "pictures": [
+     "preg_positive"
     ]
    },
    {
@@ -812,6 +1185,12 @@
     "probability": 0.99,
     "summaries": [
      "Urine hCG positive."
+    ],
+    "analyte_text": {
+     "hcg": "Positive"
+    },
+    "pictures": [
+     "preg_positive"
     ]
    },
    {
@@ -819,10 +1198,26 @@
     "probability": 0.99,
     "summaries": [
      "Urine hCG positive."
+    ],
+    "analyte_text": {
+     "hcg": "Positive"
+    },
+    "pictures": [
+     "preg_positive"
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "hcg",
+    "name": "Urine hCG",
+    "normal_text": "Negative",
+    "aliases": [
+     "hCG"
+    ]
+   }
+  ]
  },
  {
   "id": "urine_dipstick",
@@ -842,7 +1237,10 @@
   "false_positive": {
    "summaries": [
     "Trace leucocytes only; nitrites negative."
-   ]
+   ],
+   "analyte_text": {
+    "leucocytes": "Trace"
+   }
   },
   "abnormal": [
    {
@@ -850,52 +1248,110 @@
     "probability": 0.93,
     "summaries": [
      "Leucocytes +++ and nitrites positive."
-    ]
+    ],
+    "analyte_text": {
+     "leucocytes": "+++",
+     "nitrites": "Positive"
+    }
    },
    {
     "condition": "pyelonephritis",
     "probability": 0.95,
     "summaries": [
      "Leucocytes +++, nitrites positive, blood ++."
-    ]
+    ],
+    "analyte_text": {
+     "leucocytes": "+++",
+     "nitrites": "Positive",
+     "blood": "++"
+    }
    },
    {
     "condition": "renal_colic",
     "probability": 0.85,
     "summaries": [
      "Blood +++; no leucocytes or nitrites."
-    ]
+    ],
+    "analyte_text": {
+     "blood": "+++"
+    }
    },
    {
     "condition": "diabetic_ketoacidosis",
     "probability": 0.95,
     "summaries": [
      "Glucose ++++ and ketones +++."
-    ]
+    ],
+    "analyte_text": {
+     "glucose": "++++",
+     "ketones": "+++"
+    }
    },
    {
     "condition": "hyperemesis_gravidarum",
     "probability": 0.9,
     "summaries": [
      "Ketones +++; no leucocytes or nitrites."
-    ]
+    ],
+    "analyte_text": {
+     "ketones": "+++"
+    }
    },
    {
     "condition": "pelvic_inflammatory_disease",
     "probability": 0.3,
     "summaries": [
      "Leucocytes +; nitrites negative."
-    ]
+    ],
+    "analyte_text": {
+     "leucocytes": "+"
+    }
    },
    {
     "condition": "febrile_convulsion",
     "probability": 0.1,
     "summaries": [
      "Leucocytes ++ and nitrites positive."
-    ]
+    ],
+    "analyte_text": {
+     "leucocytes": "++",
+     "nitrites": "Positive"
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "leucocytes",
+    "name": "Leucocytes",
+    "normal_text": "Negative"
+   },
+   {
+    "id": "nitrites",
+    "name": "Nitrites",
+    "normal_text": "Negative"
+   },
+   {
+    "id": "blood",
+    "name": "Blood",
+    "normal_text": "Negative"
+   },
+   {
+    "id": "protein",
+    "name": "Protein",
+    "normal_text": "Negative"
+   },
+   {
+    "id": "glucose",
+    "name": "Glucose",
+    "normal_text": "Negative"
+   },
+   {
+    "id": "ketones",
+    "name": "Ketones",
+    "normal_text": "Negative"
+   }
+  ]
  },
  {
   "id": "capillary_glucose",
@@ -950,7 +1406,24 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "glu",
+    "name": "Capillary glucose",
+    "unit": "mmol/L",
+    "low": 4.0,
+    "high": 7.8,
+    "normal": [
+     4.6,
+     7.4
+    ],
+    "decimals": 1,
+    "aliases": [
+     "Blood glucose"
+    ]
+   }
+  ]
  },
  {
   "id": "blood_ketones",
@@ -994,7 +1467,23 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "ket",
+    "name": "Capillary ketones",
+    "unit": "mmol/L",
+    "high": 0.6,
+    "normal": [
+     0.1,
+     0.5
+    ],
+    "decimals": 1,
+    "aliases": [
+     "Blood ketones"
+    ]
+   }
+  ]
  },
  {
   "id": "peak_flow",
@@ -1049,7 +1538,22 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "pef",
+    "name": "Peak flow (% of predicted)",
+    "unit": "%",
+    "low": 80,
+    "normal": [
+     84,
+     104
+    ],
+    "aliases": [
+     "Peak flow"
+    ]
+   }
+  ]
  },
  {
   "id": "d_dimer",
@@ -1104,7 +1608,19 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "dd",
+    "name": "D-dimer",
+    "unit": "ng/mL",
+    "high": 500,
+    "normal": [
+     120,
+     440
+    ]
+   }
+  ]
  },
  {
   "id": "liver_function_tests",
@@ -1124,7 +1640,13 @@
   "false_positive": {
    "summaries": [
     "ALT mildly raised (63 U/L); bilirubin normal."
-   ]
+   ],
+   "analytes": {
+    "alt": [
+     63,
+     63
+    ]
+   }
   },
   "abnormal": [
    {
@@ -1132,45 +1654,160 @@
     "probability": 0.35,
     "summaries": [
      "ALP mildly raised; bilirubin normal."
-    ]
+    ],
+    "analytes": {
+     "alp": [
+      145,
+      190
+     ]
+    }
    },
    {
     "condition": "acute_cholecystitis",
     "probability": 0.7,
     "summaries": [
      "ALP and ALT raised; bilirubin 28 µmol/L."
-    ]
+    ],
+    "analytes": {
+     "alp": [
+      150,
+      260
+     ],
+     "alt": [
+      60,
+      140
+     ],
+     "bili": [
+      28,
+      28
+     ]
+    }
    },
    {
     "condition": "acute_pancreatitis",
     "probability": 0.5,
     "summaries": [
      "ALT raised at 180 U/L (possible gallstone cause)."
-    ]
+    ],
+    "analytes": {
+     "alt": [
+      180,
+      180
+     ]
+    }
    },
    {
     "condition": "paracetamol_overdose",
     "probability": 0.3,
     "summaries": [
      "ALT 240 U/L (raised): early liver injury."
-    ]
+    ],
+    "analytes": {
+     "alt": [
+      240,
+      240
+     ]
+    }
    },
    {
     "condition": "alcohol_withdrawal",
     "probability": 0.7,
     "summaries": [
      "GGT 410 U/L and ALT 88 U/L: alcohol-related liver injury."
-    ]
+    ],
+    "analytes": {
+     "ggt": [
+      410,
+      410
+     ],
+     "alt": [
+      88,
+      88
+     ]
+    }
    },
    {
     "condition": "decompensated_cirrhosis",
     "probability": 0.97,
     "summaries": [
      "Bilirubin 96 µmol/L, albumin 22 g/L: a failing liver."
-    ]
+    ],
+    "analytes": {
+     "bili": [
+      96,
+      96
+     ],
+     "alb": [
+      22,
+      22
+     ],
+     "alp": [
+      140,
+      180
+     ]
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "bili",
+    "name": "Bilirubin",
+    "unit": "µmol/L",
+    "high": 21,
+    "normal": [
+     5,
+     17
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "alt",
+    "name": "ALT",
+    "unit": "U/L",
+    "high": 40,
+    "normal": [
+     12,
+     34
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "alp",
+    "name": "ALP",
+    "unit": "U/L",
+    "low": 30,
+    "high": 130,
+    "normal": [
+     50,
+     110
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "ggt",
+    "name": "GGT",
+    "unit": "U/L",
+    "high": 60,
+    "normal": [
+     14,
+     45
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "alb",
+    "name": "Albumin",
+    "unit": "g/L",
+    "low": 35,
+    "high": 50,
+    "normal": [
+     37,
+     46
+    ],
+    "decimals": 0
+   }
+  ]
  },
  {
   "id": "lipase",
@@ -1214,7 +1851,19 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "lip",
+    "name": "Lipase",
+    "unit": "U/L",
+    "high": 60,
+    "normal": [
+     18,
+     55
+    ]
+   }
+  ]
  },
  {
   "id": "nt_pro_bnp",
@@ -1280,7 +1929,19 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "bnp",
+    "name": "NT-proBNP",
+    "unit": "ng/L",
+    "high": 400,
+    "normal": [
+     40,
+     340
+    ]
+   }
+  ]
  },
  {
   "id": "venous_blood_gas",
@@ -1309,7 +1970,17 @@
     "summaries": [
      "pH 7.08, bicarbonate 9, lactate 2.4: severe metabolic acidosis.",
      "pH 7.19, bicarbonate 12: metabolic acidosis."
-    ]
+    ],
+    "analytes": {
+     "pco2": [
+      2.8,
+      3.5
+     ],
+     "vk": [
+      5.4,
+      6.0
+     ]
+    }
    },
    {
     "condition": "pyelonephritis",
@@ -1323,21 +1994,43 @@
     "probability": 0.35,
     "summaries": [
      "pH 7.32, lactate 3.1, haemoglobin 79."
-    ]
+    ],
+    "analytes": {
+     "lac": [
+      3.1,
+      3.1
+     ]
+    }
    },
    {
     "condition": "copd_exacerbation",
     "probability": 0.55,
     "summaries": [
      "pH 7.32, pCO2 7.9 kPa: acute-on-chronic respiratory acidosis."
-    ]
+    ],
+    "analytes": {
+     "hco3": [
+      30,
+      33
+     ]
+    }
    },
    {
     "condition": "septic_shock",
     "probability": 0.95,
     "summaries": [
      "pH 7.24, lactate 5.8: severe lactic acidosis."
-    ]
+    ],
+    "analytes": {
+     "hco3": [
+      14,
+      17
+     ],
+     "pco2": [
+      3.5,
+      4.3
+     ]
+    }
    },
    {
     "condition": "perforated_peptic_ulcer",
@@ -1351,10 +2044,88 @@
     "probability": 0.4,
     "summaries": [
      "pH 7.36, lactate 2.4, low potassium."
-    ]
+    ],
+    "analytes": {
+     "vk": [
+      3.0,
+      3.3
+     ]
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "ph",
+    "name": "pH",
+    "low": 7.35,
+    "high": 7.45,
+    "normal": [
+     7.37,
+     7.43
+    ],
+    "decimals": 2
+   },
+   {
+    "id": "pco2",
+    "name": "pCO2",
+    "unit": "kPa",
+    "low": 4.7,
+    "high": 6.4,
+    "normal": [
+     5.0,
+     6.0
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "hco3",
+    "name": "Bicarbonate",
+    "unit": "mmol/L",
+    "low": 22,
+    "high": 29,
+    "normal": [
+     23,
+     27
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "lac",
+    "name": "Lactate",
+    "unit": "mmol/L",
+    "high": 2.0,
+    "normal": [
+     0.6,
+     1.5
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "vk",
+    "name": "Potassium",
+    "unit": "mmol/L",
+    "low": 3.5,
+    "high": 5.3,
+    "normal": [
+     3.8,
+     4.8
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "vhb",
+    "name": "Haemoglobin",
+    "unit": "g/L",
+    "low": 120,
+    "high": 170,
+    "normal": [
+     128,
+     155
+    ],
+    "decimals": 0
+   }
+  ]
  },
  {
   "id": "chest_xray",
@@ -1369,12 +2140,24 @@
   "normal": {
    "summaries": [
     "Clear lung fields. Normal heart size. No pneumothorax."
+   ],
+   "pictures": [
+    "cxr_normal"
+   ],
+   "findings": [
+    "The lungs are clear and well expanded. Heart size is normal. No pleural effusion or pneumothorax. Bones intact."
    ]
   },
   "false_positive_rate": 0.06,
   "false_positive": {
    "summaries": [
     "Possible subtle shadowing at the left base; clinical correlation advised."
+   ],
+   "pictures": [
+    "cxr_subtle_left_base"
+   ],
+   "findings": [
+    "Possible faint shadowing at the left base, behind the heart. Could be overlapping soft tissue. Lungs otherwise clear."
    ]
   },
   "abnormal": [
@@ -1384,6 +2167,14 @@
     "summaries": [
      "Right lower lobe consolidation, consistent with pneumonia.",
      "Left basal consolidation with air bronchograms."
+    ],
+    "pictures": [
+     "cxr_rll_consolidation",
+     "cxr_left_base_consolidation"
+    ],
+    "findings": [
+     "Dense patchy shadowing in the right lower zone with air bronchograms. The right hemidiaphragm is obscured but the right heart border is clear, placing it in the right lower lobe. No effusion. Heart size normal.",
+     "Dense shadowing at the left base with air bronchograms, behind the heart. The left hemidiaphragm is partly obscured. No effusion. Heart size normal."
     ]
    },
    {
@@ -1391,6 +2182,12 @@
     "probability": 0.8,
     "summaries": [
      "Enlarged heart, upper lobe venous diversion and bilateral pleural effusions: pulmonary oedema."
+    ],
+    "pictures": [
+     "cxr_pulmonary_oedema"
+    ],
+    "findings": [
+     "The heart is enlarged (cardiothoracic ratio over 0.5). Upper lobe vessels are prominent and there is hazy shadowing around both hila. Both costophrenic angles are blunted by pleural effusions."
     ]
    },
    {
@@ -1398,6 +2195,12 @@
     "probability": 0.45,
     "summaries": [
      "Hyperinflated lungs with flattened diaphragms. No consolidation."
+    ],
+    "pictures": [
+     "cxr_hyperinflation"
+    ],
+    "findings": [
+     "The lungs are hyperinflated, with more than ten posterior ribs visible and flattened hemidiaphragms. The heart looks long and narrow. No consolidation, effusion or pneumothorax."
     ]
    },
    {
@@ -1405,13 +2208,26 @@
     "probability": 0.2,
     "summaries": [
      "Small wedge-shaped opacity at the right base; small effusion."
-    ]
+    ],
+    "pictures": [
+     "cxr_pe_wedge"
+    ],
+    "findings": [
+     "A small wedge-shaped opacity sits at the right base, pointing towards the hilum, with a small right pleural effusion. Lungs otherwise clear."
+    ],
+    "normal_picture": "cxr_normal"
    },
    {
     "condition": "perforated_peptic_ulcer",
     "probability": 0.75,
     "summaries": [
      "Free air under the right hemidiaphragm on the erect film: perforation."
+    ],
+    "pictures": [
+     "cxr_free_air"
+    ],
+    "findings": [
+     "On the erect film there is a crescent of free gas under the right hemidiaphragm, separating it from the liver. Lungs clear."
     ]
    },
    {
@@ -1419,6 +2235,12 @@
     "probability": 0.1,
     "summaries": [
      "Patchy shadowing in both lungs (viral)."
+    ],
+    "pictures": [
+     "cxr_viral_patchy"
+    ],
+    "findings": [
+     "Patchy, ill-defined shadowing in both mid and lower zones, in keeping with a viral pneumonitis. No effusion."
     ]
    }
   ],
@@ -1437,12 +2259,24 @@
   "normal": {
    "summaries": [
     "No fracture or dislocation seen."
+   ],
+   "pictures": [
+    "ankle_normal"
+   ],
+   "findings": [
+    "No fracture or dislocation. Joint spaces and alignment are normal. Soft tissues unremarkable."
    ]
   },
   "false_positive_rate": 0.03,
   "false_positive": {
    "summaries": [
     "Possible hairline lucency; may be a nutrient vessel. Treat clinically."
+   ],
+   "pictures": [
+    "ankle_hairline"
+   ],
+   "findings": [
+    "A faint lucent line crosses the distal fibula. This may be a nutrient vessel rather than a fracture. Alignment normal."
    ]
   },
   "abnormal": [
@@ -1452,7 +2286,16 @@
     "summaries": [
      "Displaced fracture of the lateral malleolus (Weber B).",
      "Undisplaced fracture of the distal fibula."
-    ]
+    ],
+    "pictures": [
+     "ankle_weber_b",
+     "ankle_fibula_undisplaced"
+    ],
+    "findings": [
+     "Oblique fracture of the distal fibula starting at the level of the ankle joint, with a few millimetres of displacement. The mortise is congruent and the medial clear space is normal, so there is no talar shift.",
+     "Undisplaced oblique fracture line through the distal fibula. The mortise is congruent. No other fracture."
+    ],
+    "normal_picture": "ankle_normal"
    },
    {
     "condition": "fractured_neck_of_femur",
@@ -1460,7 +2303,16 @@
     "summaries": [
      "Displaced intracapsular fracture of the neck of femur.",
      "Intertrochanteric fracture of the femur."
-    ]
+    ],
+    "pictures": [
+     "hip_intracapsular",
+     "hip_intertrochanteric"
+    ],
+    "findings": [
+     "Fracture through the neck of the femur inside the joint capsule. The shaft has moved up and rotated outwards (Garden IV). Shenton's line is broken.",
+     "Fracture running between the greater and lesser trochanters. The femoral head stays in the joint. Mild varus angulation."
+    ],
+    "normal_picture": "hip_normal"
    },
    {
     "condition": "wrist_fracture",
@@ -1468,28 +2320,58 @@
     "summaries": [
      "Dorsally angled fracture of the distal radius (Colles' fracture).",
      "Undisplaced buckle fracture of the distal radius."
-    ]
+    ],
+    "pictures": [
+     "wrist_colles",
+     "wrist_buckle"
+    ],
+    "findings": [
+     "Transverse fracture of the distal radius about 2 cm from the joint. The distal fragment is shifted towards the thumb side and impacted, with dorsal angulation on the lateral view.",
+     "Small bulge (buckle) of the cortex of the distal radius on both sides, without a clear fracture line. Typical in children."
+    ],
+    "normal_picture": "wrist_normal"
    },
    {
     "condition": "shoulder_dislocation",
     "probability": 0.97,
     "summaries": [
      "Anterior dislocation of the shoulder, no fracture."
-    ]
+    ],
+    "pictures": [
+     "shoulder_dislocation"
+    ],
+    "findings": [
+     "The humeral head lies in front of and below the glenoid, under the coracoid process. The glenoid is empty. No fracture of the humeral head or glenoid."
+    ],
+    "normal_picture": "shoulder_normal"
    },
    {
     "condition": "tibial_shaft_fracture",
     "probability": 0.99,
     "summaries": [
      "Displaced spiral fracture of the tibial shaft."
-    ]
+    ],
+    "pictures": [
+     "tibia_spiral"
+    ],
+    "findings": [
+     "Long spiral fracture of the tibial shaft with displacement and some shortening. The fibula is intact. Knee and ankle joints normal."
+    ],
+    "normal_picture": "tibia_normal"
    },
    {
     "condition": "septic_arthritis_knee",
     "probability": 0.2,
     "summaries": [
      "Joint effusion in the knee; no fracture."
-    ]
+    ],
+    "pictures": [
+     "knee_effusion"
+    ],
+    "findings": [
+     "Swelling of the soft tissues around the knee with a joint effusion. Joint space preserved. No fracture or bone erosion."
+    ],
+    "normal_picture": "knee_normal"
    }
   ],
   "escalate_to_red_if_abnormal": false
@@ -1507,12 +2389,24 @@
   "normal": {
    "summaries": [
     "No acute intracranial abnormality. No haemorrhage."
+   ],
+   "pictures": [
+    "cth_normal"
+   ],
+   "findings": [
+    "Normal grey-white matter differentiation. Ventricles and cisterns normal in size. No haemorrhage, mass or midline shift. No skull fracture."
    ]
   },
   "false_positive_rate": 0.02,
   "false_positive": {
    "summaries": [
     "Small old infarct; no acute change."
+   ],
+   "pictures": [
+    "cth_old_infarct"
+   ],
+   "findings": [
+    "A small, well-defined low-density area in the left frontal lobe, in keeping with an old infarct. No acute change."
    ]
   },
   "abnormal": [
@@ -1521,6 +2415,12 @@
     "probability": 0.93,
     "summaries": [
      "Acute subarachnoid blood in the basal cisterns: subarachnoid haemorrhage."
+    ],
+    "pictures": [
+     "cth_sah"
+    ],
+    "findings": [
+     "Bright (hyperdense) acute blood fills the basal cisterns around the midbrain and runs into both Sylvian fissures and along the interhemispheric fissure. Ventricles not enlarged. No midline shift."
     ]
    },
    {
@@ -1528,6 +2428,12 @@
     "probability": 0.55,
     "summaries": [
      "Early ischaemic change in the left middle cerebral artery territory. No haemorrhage."
+    ],
+    "pictures": [
+     "cth_mca_ischaemia"
+    ],
+    "findings": [
+     "Subtle low density with loss of grey-white differentiation in the left middle cerebral artery territory. The left MCA is bright (hyperdense MCA sign). No haemorrhage."
     ]
    },
    {
@@ -1535,6 +2441,12 @@
     "probability": 0.01,
     "summaries": [
      "Small scalp swelling; no bleed or fracture."
+    ],
+    "pictures": [
+     "cth_scalp_swelling"
+    ],
+    "findings": [
+     "Soft-tissue swelling of the scalp over the right frontal bone. No skull fracture. No intracranial bleed."
     ]
    },
    {
@@ -1542,6 +2454,12 @@
     "probability": 0.05,
     "summaries": [
      "No mass; safe for lumbar puncture."
+    ],
+    "pictures": [
+     "cth_normal"
+    ],
+    "findings": [
+     "No mass, hydrocephalus or swelling. Basal cisterns open. Safe to proceed to lumbar puncture."
     ]
    },
    {
@@ -1549,6 +2467,12 @@
     "probability": 0.1,
     "summaries": [
      "Old scar in the right temporal lobe; no acute change."
+    ],
+    "pictures": [
+     "cth_old_scar"
+    ],
+    "findings": [
+     "A small area of old scarring (gliosis) in the right temporal lobe. No acute bleed, mass or swelling."
     ]
    }
   ],
@@ -1567,12 +2491,24 @@
   "normal": {
    "summaries": [
     "No pulmonary embolism."
+   ],
+   "pictures": [
+    "ctpa_normal"
+   ],
+   "findings": [
+    "The pulmonary arteries fill well with contrast down to subsegmental level. No filling defect. Lungs clear. Heart size normal."
    ]
   },
   "false_positive_rate": 0.03,
   "false_positive": {
    "summaries": [
     "Indeterminate small filling defect in a subsegmental artery."
+   ],
+   "pictures": [
+    "ctpa_subsegmental"
+   ],
+   "findings": [
+    "A possible tiny filling defect in a right lower lobe subsegmental artery, which may be artefact from breathing."
    ]
   },
   "abnormal": [
@@ -1582,6 +2518,14 @@
     "summaries": [
      "Filling defects in both main pulmonary arteries: pulmonary emboli.",
      "Segmental pulmonary embolus in the right lower lobe."
+    ],
+    "pictures": [
+     "ctpa_bilateral",
+     "ctpa_segmental"
+    ],
+    "findings": [
+     "Large filling defects (clots) straddle the main pulmonary artery and extend into both the right and left pulmonary arteries.",
+     "A filling defect (clot) in a segmental artery of the right lower lobe. Main arteries clear. No right heart strain."
     ]
    }
   ],
@@ -1600,12 +2544,24 @@
   "normal": {
    "summaries": [
     "No acute abdominal abnormality."
+   ],
+   "pictures": [
+    "cta_normal"
+   ],
+   "findings": [
+    "Liver, spleen, pancreas, kidneys and adrenals normal. Bowel normal in calibre. No free fluid or free gas. No lymph node enlargement."
    ]
   },
   "false_positive_rate": 0.04,
   "false_positive": {
    "summaries": [
     "Small amount of free fluid in the pelvis, probably not significant."
+   ],
+   "pictures": [
+    "cta_free_fluid"
+   ],
+   "findings": [
+    "A small amount of simple free fluid in the pelvis. Bowel and organs otherwise normal."
    ]
   },
   "abnormal": [
@@ -1614,6 +2570,12 @@
     "probability": 0.92,
     "summaries": [
      "Dilated loops of small bowel with a transition point: adhesional small bowel obstruction."
+    ],
+    "pictures": [
+     "cta_sbo"
+    ],
+    "findings": [
+     "Multiple fluid-filled, dilated loops of small bowel with air-fluid levels, narrowing to a transition point in the lower abdomen. The colon is collapsed. No free gas."
     ]
    },
    {
@@ -1621,6 +2583,12 @@
     "probability": 0.95,
     "summaries": [
      "Free air under the diaphragm and free fluid: perforated duodenal ulcer."
+    ],
+    "pictures": [
+     "cta_perforation"
+    ],
+    "findings": [
+     "Free gas under the anterior abdominal wall and around the liver, with free fluid. The duodenal wall is thickened at the site of the perforation."
     ]
    },
    {
@@ -1628,6 +2596,12 @@
     "probability": 0.9,
     "summaries": [
      "Thickened, inflamed appendix with surrounding fat stranding: acute appendicitis."
+    ],
+    "pictures": [
+     "cta_appendicitis"
+    ],
+    "findings": [
+     "The appendix is swollen (12 mm) with a thick, enhancing wall and stranding of the surrounding fat in the right iliac fossa. No abscess or free gas."
     ]
    },
    {
@@ -1635,6 +2609,12 @@
     "probability": 0.8,
     "summaries": [
      "Swollen pancreas with surrounding fluid: acute pancreatitis."
+    ],
+    "pictures": [
+     "cta_pancreatitis"
+    ],
+    "findings": [
+     "The pancreas is swollen with fluid and fat stranding around it. The gland enhances throughout (no necrosis). Gallstones in the gallbladder."
     ]
    },
    {
@@ -1642,6 +2622,12 @@
     "probability": 0.85,
     "summaries": [
      "Loop of small bowel trapped in a right inguinal hernia, with poor enhancement."
+    ],
+    "pictures": [
+     "cta_hernia"
+    ],
+    "findings": [
+     "A loop of small bowel passes into a right inguinal hernia. The trapped loop has a thick wall that enhances poorly, with dilated bowel above it."
     ]
    },
    {
@@ -1649,6 +2635,12 @@
     "probability": 0.92,
     "summaries": [
      "Thickened sigmoid colon with diverticula and fat stranding: diverticulitis, no abscess."
+    ],
+    "pictures": [
+     "cta_diverticulitis"
+    ],
+    "findings": [
+     "The sigmoid colon is thickened with several diverticula and surrounding fat stranding. No abscess or free gas."
     ]
    },
    {
@@ -1656,6 +2648,12 @@
     "probability": 0.95,
     "summaries": [
      "Tumour in the sigmoid colon with dilated bowel above it: large bowel obstruction."
+    ],
+    "pictures": [
+     "cta_lbo_tumour"
+    ],
+    "findings": [
+     "A short, shouldered mass in the sigmoid colon narrows the bowel. The colon above it is dilated with gas and fluid. The liver has no metastases."
     ]
    }
   ],
@@ -1674,12 +2672,24 @@
   "normal": {
    "summaries": [
     "Normal left ventricular size and function. Valves look normal."
+   ],
+   "pictures": [
+    "echo_normal"
+   ],
+   "findings": [
+    "Normal size and thickness of the left ventricle, which squeezes well (ejection fraction about 60%). Valves open and close normally. Right heart normal. No pericardial effusion."
    ]
   },
   "false_positive_rate": 0.05,
   "false_positive": {
    "summaries": [
     "Mildly thickened aortic valve, not significant."
+   ],
+   "pictures": [
+    "echo_thick_aortic"
+   ],
+   "findings": [
+    "Aortic valve leaflets mildly thickened but open fully. Left ventricle normal in size and function."
    ]
   },
   "abnormal": [
@@ -1688,6 +2698,12 @@
     "probability": 0.9,
     "summaries": [
      "Severely impaired left ventricular function, ejection fraction about 30%."
+    ],
+    "pictures": [
+     "echo_poor_lv"
+    ],
+    "findings": [
+     "The left ventricle is dilated with thin walls that hardly move. Ejection fraction about 30%. Moderate leak of the mitral valve."
     ]
    },
    {
@@ -1695,6 +2711,12 @@
     "probability": 0.6,
     "summaries": [
      "New regional wall motion abnormality in the anterior wall."
+    ],
+    "pictures": [
+     "echo_anterior_rwma"
+    ],
+    "findings": [
+     "The anterior wall and the apex do not move (akinetic). The rest of the left ventricle squeezes well. Ejection fraction about 45%."
     ]
    },
    {
@@ -1702,6 +2724,12 @@
     "probability": 0.5,
     "summaries": [
      "Dilated left atrium; left ventricle works normally."
+    ],
+    "pictures": [
+     "echo_big_la"
+    ],
+    "findings": [
+     "The left atrium is dilated. Left ventricle normal in size with normal function. Irregular rhythm during the scan."
     ]
    },
    {
@@ -1709,6 +2737,12 @@
     "probability": 0.35,
     "summaries": [
      "Dilated, strained right ventricle."
+    ],
+    "pictures": [
+     "echo_rv_dilated"
+    ],
+    "findings": [
+     "The right ventricle is dilated and larger than the left, with the septum flattened. Signs of right heart strain."
     ]
    },
    {
@@ -1716,6 +2750,12 @@
     "probability": 0.5,
     "summaries": [
      "Small pericardial effusion; heart pumps normally."
+    ],
+    "pictures": [
+     "echo_effusion"
+    ],
+    "findings": [
+     "A small pericardial effusion surrounds the heart. No signs of tamponade. Ventricles squeeze normally."
     ]
    },
    {
@@ -1723,6 +2763,12 @@
     "probability": 0.5,
     "summaries": [
      "Mild regional wall motion abnormality in the lateral wall."
+    ],
+    "pictures": [
+     "echo_lateral_rwma"
+    ],
+    "findings": [
+     "The lateral wall of the left ventricle moves poorly (hypokinetic). Ejection fraction about 50%."
     ]
    }
   ],
@@ -1741,12 +2787,24 @@
   "normal": {
    "summaries": [
     "Normal background rhythm. No epileptiform activity."
+   ],
+   "pictures": [
+    "eeg_normal"
+   ],
+   "findings": [
+    "Well-formed 10 Hz alpha rhythm over the back of the head that blocks on eye opening. No focal or epileptiform features."
    ]
   },
   "false_positive_rate": 0.04,
   "false_positive": {
    "summaries": [
     "Some non-specific slowing, of uncertain significance."
+   ],
+   "pictures": [
+    "eeg_slowing"
+   ],
+   "findings": [
+    "Some intermittent theta slowing over both temporal regions. Non-specific; may be drowsiness."
    ]
   },
   "abnormal": [
@@ -1755,6 +2813,12 @@
     "probability": 0.6,
     "summaries": [
      "Frequent epileptiform discharges: supports epilepsy."
+    ],
+    "pictures": [
+     "eeg_epileptiform"
+    ],
+    "findings": [
+     "Repeated bursts of generalised 3 Hz spike-and-wave discharges on a normal background."
     ]
    }
   ],
@@ -1773,12 +2837,24 @@
   "normal": {
    "summaries": [
     "Normal uterus and ovaries. No free fluid."
+   ],
+   "pictures": [
+    "pus_normal"
+   ],
+   "findings": [
+    "Anteverted uterus of normal size with a thin endometrium. Both ovaries normal with small follicles. No free fluid."
    ]
   },
   "false_positive_rate": 0.04,
   "false_positive": {
    "summaries": [
     "Small simple ovarian cyst, probably not significant."
+   ],
+   "pictures": [
+    "pus_simple_cyst"
+   ],
+   "findings": [
+    "A 2 cm thin-walled simple cyst in the left ovary. Uterus normal. No free fluid."
    ]
   },
   "abnormal": [
@@ -1787,6 +2863,12 @@
     "probability": 0.85,
     "summaries": [
      "Empty uterus with a mass beside the left ovary and free fluid in the pelvis: ectopic pregnancy."
+    ],
+    "pictures": [
+     "pus_ectopic"
+    ],
+    "findings": [
+     "No pregnancy in the uterus. Separate from the left ovary is a 24 mm ring-shaped mass with a strong ring of blood flow on Doppler. Moderate free fluid in the pouch of Douglas."
     ]
    },
    {
@@ -1794,6 +2876,12 @@
     "probability": 0.8,
     "summaries": [
      "Live pregnancy in the womb with a heartbeat; small bleed beside the sac."
+    ],
+    "pictures": [
+     "pus_iup_bleed"
+    ],
+    "findings": [
+     "A single pregnancy in the uterus with a fetal heartbeat, about 8 weeks. A small crescent of blood lies beside the sac."
     ]
    },
    {
@@ -1801,6 +2889,12 @@
     "probability": 0.85,
     "summaries": [
      "Enlarged, swollen right ovary with a 6 cm cyst and no blood flow: torsion."
+    ],
+    "pictures": [
+     "pus_torsion"
+    ],
+    "findings": [
+     "The right ovary is swollen (8 cm) with a 6 cm cyst and no blood flow on Doppler."
     ]
    },
    {
@@ -1808,6 +2902,12 @@
     "probability": 0.2,
     "summaries": [
      "Thickened, fluid-filled tubes."
+    ],
+    "pictures": [
+     "pus_hydrosalpinx"
+    ],
+    "findings": [
+     "Both fallopian tubes are thick-walled and filled with fluid. Small amount of free fluid."
     ]
    },
    {
@@ -1816,6 +2916,14 @@
     "summaries": [
      "Live pregnancy in the womb, about 8 weeks.",
      "Twin pregnancy in the womb, about 9 weeks."
+    ],
+    "pictures": [
+     "pus_iup",
+     "pus_twins"
+    ],
+    "findings": [
+     "A single live pregnancy in the uterus, crown-rump length matching about 8 weeks.",
+     "Two pregnancy sacs in the uterus, each with a fetal heartbeat, about 9 weeks."
     ]
    }
   ],
@@ -1834,12 +2942,24 @@
   "normal": {
    "summaries": [
     "Normal gullet, stomach and duodenum."
+   ],
+   "pictures": [
+    "ogd_normal"
+   ],
+   "findings": [
+    "Normal oesophagus, stomach and duodenum. No ulcer, bleeding or varices."
    ]
   },
   "false_positive_rate": 0.03,
   "false_positive": {
    "summaries": [
     "Mild redness of the stomach lining."
+   ],
+   "pictures": [
+    "ogd_gastritis"
+   ],
+   "findings": [
+    "Mild patchy redness of the stomach lining. Biopsies taken for Helicobacter pylori."
    ]
   },
   "abnormal": [
@@ -1848,6 +2968,12 @@
     "probability": 0.9,
     "summaries": [
      "Bleeding duodenal ulcer, treated with clips and adrenaline injection."
+    ],
+    "pictures": [
+     "ogd_bleeding_ulcer"
+    ],
+    "findings": [
+     "A 15 mm ulcer in the duodenal bulb with a visible vessel and fresh blood. Treated with adrenaline injection and two clips; bleeding stopped."
     ]
    },
    {
@@ -1855,6 +2981,12 @@
     "probability": 0.5,
     "summaries": [
      "Inflamed lower gullet (oesophagitis)."
+    ],
+    "pictures": [
+     "ogd_oesophagitis"
+    ],
+    "findings": [
+     "Red streaks and erosions in the lower oesophagus (LA grade B oesophagitis). Small hiatus hernia. Stomach and duodenum normal."
     ]
    }
   ],
@@ -1893,7 +3025,19 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "para",
+    "name": "Paracetamol",
+    "unit": "mg/L",
+    "high": 10,
+    "normal": [
+     0,
+     0
+    ]
+   }
+  ]
  },
  {
   "id": "blood_cultures",
@@ -1913,7 +3057,12 @@
   "false_positive": {
    "summaries": [
     "Skin bacteria in one bottle only: probable contaminant."
-   ]
+   ],
+   "analyte_text": {
+    "bc_growth": "Growth in 1 of 2 bottles",
+    "bc_gram": "Gram-positive cocci in clusters",
+    "bc_org": "Coagulase-negative staphylococcus (probable contaminant)"
+   }
   },
   "abnormal": [
    {
@@ -1921,31 +3070,68 @@
     "probability": 0.6,
     "summaries": [
      "Gram-negative diplococci growing: Neisseria meningitidis."
-    ]
+    ],
+    "analyte_text": {
+     "bc_growth": "Growth in 2 of 2 bottles",
+     "bc_gram": "Gram-negative diplococci",
+     "bc_org": "Neisseria meningitidis"
+    }
    },
    {
     "condition": "septic_shock",
     "probability": 0.6,
     "summaries": [
      "Gram-negative rods growing: E. coli."
-    ]
+    ],
+    "analyte_text": {
+     "bc_growth": "Growth in 2 of 2 bottles",
+     "bc_gram": "Gram-negative rods",
+     "bc_org": "Escherichia coli"
+    }
    },
    {
     "condition": "septic_arthritis_knee",
     "probability": 0.5,
     "summaries": [
      "Staphylococcus aureus growing in both bottles."
-    ]
+    ],
+    "analyte_text": {
+     "bc_growth": "Growth in 2 of 2 bottles",
+     "bc_gram": "Gram-positive cocci in clusters",
+     "bc_org": "Staphylococcus aureus"
+    }
    },
    {
     "condition": "pyelonephritis",
     "probability": 0.3,
     "summaries": [
      "E. coli growing, sensitive to gentamicin."
-    ]
+    ],
+    "analyte_text": {
+     "bc_growth": "Growth in 2 of 2 bottles",
+     "bc_gram": "Gram-negative rods",
+     "bc_org": "Escherichia coli (sensitive to gentamicin)"
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "bc_growth",
+    "name": "Growth",
+    "normal_text": "No growth at 48 hours"
+   },
+   {
+    "id": "bc_gram",
+    "name": "Gram stain",
+    "normal_text": "Not applicable"
+   },
+   {
+    "id": "bc_org",
+    "name": "Organism",
+    "normal_text": "None"
+   }
+  ]
  },
  {
   "id": "clotting_screen",
@@ -1980,17 +3166,70 @@
     "probability": 0.9,
     "summaries": [
      "INR 1.9: the liver isn't making clotting factors."
-    ]
+    ],
+    "analytes": {
+     "aptt": [
+      38,
+      44
+     ],
+     "fib": [
+      1.1,
+      1.4
+     ]
+    }
    },
    {
     "condition": "upper_gi_bleed",
     "probability": 0.2,
     "summaries": [
      "INR 2.8 on warfarin."
-    ]
+    ],
+    "analytes": {
+     "aptt": [
+      34,
+      36
+     ]
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "inr",
+    "name": "INR",
+    "low": 0.8,
+    "high": 1.2,
+    "normal": [
+     0.9,
+     1.1
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "aptt",
+    "name": "APTT",
+    "unit": "s",
+    "low": 25,
+    "high": 36,
+    "normal": [
+     27,
+     33
+    ],
+    "decimals": 0
+   },
+   {
+    "id": "fib",
+    "name": "Fibrinogen",
+    "unit": "g/L",
+    "low": 1.5,
+    "high": 4.0,
+    "normal": [
+     2.0,
+     3.6
+    ],
+    "decimals": 1
+   }
+  ]
  },
  {
   "id": "viral_swab",
@@ -2010,7 +3249,10 @@
   "false_positive": {
    "summaries": [
     "Weak positive for influenza A; repeat if in doubt."
-   ]
+   ],
+   "analyte_text": {
+    "flua": "Weak positive"
+   }
   },
   "abnormal": [
    {
@@ -2029,7 +3271,35 @@
     ]
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "flua",
+    "name": "Influenza A",
+    "normal_text": "Not detected",
+    "aliases": [
+     "Influenza A"
+    ]
+   },
+   {
+    "id": "flub",
+    "name": "Influenza B",
+    "normal_text": "Not detected",
+    "aliases": [
+     "Influenza B"
+    ]
+   },
+   {
+    "id": "rsv",
+    "name": "RSV",
+    "normal_text": "Not detected"
+   },
+   {
+    "id": "cov",
+    "name": "SARS-CoV-2 (COVID-19)",
+    "normal_text": "Not detected"
+   }
+  ]
  },
  {
   "id": "joint_aspiration",
@@ -2049,7 +3319,16 @@
   "false_positive": {
    "summaries": [
     "Slightly cloudy fluid; low white count."
-   ]
+   ],
+   "analytes": {
+    "ja_wcc": [
+     1500,
+     1900
+    ]
+   },
+   "analyte_text": {
+    "ja_app": "Slightly cloudy"
+   }
   },
   "abnormal": [
    {
@@ -2057,17 +3336,62 @@
     "probability": 0.9,
     "summaries": [
      "Pus from the joint, white cells 80,000, Gram-positive cocci seen."
-    ]
+    ],
+    "analyte_text": {
+     "ja_app": "Pus",
+     "ja_gram": "Gram-positive cocci seen"
+    }
    },
    {
     "condition": "gout",
     "probability": 0.9,
     "summaries": [
      "Needle-shaped crystals under polarised light: gout."
-    ]
+    ],
+    "analytes": {
+     "ja_wcc": [
+      8000,
+      20000
+     ]
+    },
+    "analyte_text": {
+     "ja_app": "Cloudy, yellow",
+     "ja_cry": "Needle-shaped, negatively birefringent (urate)"
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "ja_app",
+    "name": "Appearance",
+    "normal_text": "Clear, straw-coloured"
+   },
+   {
+    "id": "ja_wcc",
+    "name": "White cells",
+    "unit": "per mm³",
+    "high": 2000,
+    "normal": [
+     100,
+     400
+    ],
+    "decimals": 0,
+    "aliases": [
+     "white cells"
+    ]
+   },
+   {
+    "id": "ja_cry",
+    "name": "Crystals",
+    "normal_text": "None seen"
+   },
+   {
+    "id": "ja_gram",
+    "name": "Gram stain",
+    "normal_text": "No organisms seen"
+   }
+  ]
  },
  {
   "id": "lumbar_puncture",
@@ -2087,7 +3411,13 @@
   "false_positive": {
    "summaries": [
     "Slightly raised protein, no white cells."
-   ]
+   ],
+   "analytes": {
+    "lp_prot": [
+     0.5,
+     0.6
+    ]
+   }
   },
   "abnormal": [
    {
@@ -2095,17 +3425,90 @@
     "probability": 0.95,
     "summaries": [
      "Cloudy fluid, white cells 2,400 (mostly neutrophils), glucose low: bacterial meningitis."
-    ]
+    ],
+    "analytes": {
+     "lp_prot": [
+      1.5,
+      2.5
+     ],
+     "lp_glu": [
+      0.8,
+      1.5
+     ]
+    },
+    "analyte_text": {
+     "lp_app": "Cloudy"
+    }
    },
    {
     "condition": "subarachnoid_haemorrhage",
     "probability": 0.8,
     "summaries": [
      "Yellow-stained fluid (xanthochromia): bleeding around the brain."
-    ]
+    ],
+    "analytes": {
+     "lp_wcc": [
+      2,
+      4
+     ]
+    },
+    "analyte_text": {
+     "lp_app": "Yellow-stained",
+     "lp_xan": "Detected"
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": true
+  "escalate_to_red_if_abnormal": true,
+  "analytes": [
+   {
+    "id": "lp_app",
+    "name": "Appearance",
+    "normal_text": "Clear, colourless"
+   },
+   {
+    "id": "lp_wcc",
+    "name": "White cells",
+    "unit": "per mm³",
+    "high": 5,
+    "normal": [
+     0,
+     3
+    ],
+    "decimals": 0,
+    "aliases": [
+     "white cells"
+    ]
+   },
+   {
+    "id": "lp_prot",
+    "name": "Protein",
+    "unit": "g/L",
+    "low": 0.15,
+    "high": 0.45,
+    "normal": [
+     0.2,
+     0.4
+    ],
+    "decimals": 2
+   },
+   {
+    "id": "lp_glu",
+    "name": "Glucose (CSF)",
+    "unit": "mmol/L",
+    "low": 2.5,
+    "high": 4.4,
+    "normal": [
+     2.9,
+     3.9
+    ],
+    "decimals": 1
+   },
+   {
+    "id": "lp_xan",
+    "name": "Xanthochromia",
+    "normal_text": "Not detected"
+   }
+  ]
  },
  {
   "id": "ascitic_tap",
@@ -2119,7 +3522,10 @@
   "normal": {
    "summaries": [
     "No fluid could be drawn."
-   ]
+   ],
+   "analyte_text": {
+    "as_app": "No fluid obtained"
+   }
   },
   "false_positive_rate": 0,
   "abnormal": [
@@ -2128,10 +3534,34 @@
     "probability": 0.95,
     "summaries": [
      "Straw-coloured fluid, low protein, white cells 120: no infection."
-    ]
+    ],
+    "analyte_text": {
+     "as_app": "Straw-coloured, clear"
+    }
    }
   ],
-  "escalate_to_red_if_abnormal": false
+  "escalate_to_red_if_abnormal": false,
+  "analytes": [
+   {
+    "id": "as_app",
+    "name": "Appearance",
+    "normal_text": "No fluid obtained"
+   },
+   {
+    "id": "as_wcc",
+    "name": "White cells",
+    "unit": "per mm³",
+    "high": 250,
+    "normal": [
+     0,
+     0
+    ],
+    "decimals": 0,
+    "aliases": [
+     "white cells"
+    ]
+   }
+  ]
  },
  {
   "id": "abdominal_xray",
@@ -2146,12 +3576,24 @@
   "normal": {
    "summaries": [
     "Normal bowel gas pattern."
+   ],
+   "pictures": [
+    "axr_normal"
+   ],
+   "findings": [
+    "Normal bowel gas pattern. No dilated loops. No free gas visible on this film."
    ]
   },
   "false_positive_rate": 0.04,
   "false_positive": {
    "summaries": [
     "A few mildly dilated loops; probably not significant."
+   ],
+   "pictures": [
+    "axr_mild_loops"
+   ],
+   "findings": [
+    "A few mildly dilated central small bowel loops, under 3 cm. Probably not significant."
    ]
   },
   "abnormal": [
@@ -2160,6 +3602,12 @@
     "probability": 0.9,
     "summaries": [
      "Dilated large bowel down to the sigmoid colon: large bowel obstruction."
+    ],
+    "pictures": [
+     "axr_lbo"
+    ],
+    "findings": [
+     "The large bowel is dilated around the edge of the abdomen down to the sigmoid colon, with haustral folds visible. No gas in the rectum."
     ]
    },
    {
@@ -2167,6 +3615,12 @@
     "probability": 0.75,
     "summaries": [
      "Dilated central loops of small bowel: small bowel obstruction."
+    ],
+    "pictures": [
+     "axr_sbo"
+    ],
+    "findings": [
+     "Dilated central loops of small bowel over 3 cm, with valvulae conniventes crossing the full width. Little gas in the colon."
     ]
    }
   ],
@@ -2185,12 +3639,24 @@
   "normal": {
    "summaries": [
     "Normal lining of the lower bowel."
+   ],
+   "pictures": [
+    "sig_normal"
+   ],
+   "findings": [
+    "Normal lining with a clear vessel pattern to 60 cm. No polyps or inflammation."
    ]
   },
   "false_positive_rate": 0.03,
   "false_positive": {
    "summaries": [
     "A few small piles; otherwise normal."
+   ],
+   "pictures": [
+    "sig_piles"
+   ],
+   "findings": [
+    "Small internal haemorrhoids (piles). Otherwise normal to 60 cm."
    ]
   },
   "abnormal": [
@@ -2199,6 +3665,12 @@
     "probability": 0.95,
     "summaries": [
      "Red, ulcerated, bleeding lining from the rectum upwards: severe ulcerative colitis."
+    ],
+    "pictures": [
+     "sig_colitis"
+    ],
+    "findings": [
+     "Continuous inflammation from the rectum upwards: red, granular, bleeding lining with ulcers and no visible vessels (Mayo score 3). Biopsies taken."
     ]
    },
    {
@@ -2206,6 +3678,12 @@
     "probability": 0.3,
     "summaries": [
      "Many diverticula in the sigmoid colon with some redness."
+    ],
+    "pictures": [
+     "sig_diverticula"
+    ],
+    "findings": [
+     "Many diverticula in the sigmoid colon with some redness around them. No bleeding or mass."
     ]
    }
   ],

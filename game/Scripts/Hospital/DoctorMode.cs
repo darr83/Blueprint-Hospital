@@ -211,7 +211,7 @@ public partial class DoctorMode : Node
         }
 
         var walked = false;
-        if (!_hud.Typing && !_hud.HintOpen)
+        if (!_hud.Typing && !_hud.HintOpen && !BlueprintHospital.UI.Results.ResultViewer.IsOpen)
         {
             walked = Walk(member, delta);
         }

@@ -960,6 +960,12 @@ public partial class DoctorHud : CanvasLayer
             verdict.AddThemeFontSizeOverride("font_size", 14);
             verdict.AddThemeColorOverride("font_color", r.Abnormal ? UiStyle.Red : UiStyle.Green);
             top.AddChild(verdict);
+            var order = r;
+            var open = new LinkButton { Text = "Open ›", TooltipText = "Read the full result" };
+            open.AddThemeColorOverride("font_color", UiStyle.Blue);
+            open.AddThemeFontSizeOverride("font_size", 14);
+            open.Pressed += () => BlueprintHospital.UI.Results.ResultViewer.Open(this, db, patient, order, _session.HospitalName, asDoctor: true);
+            top.AddChild(open);
             row.AddChild(top);
             var summary = UiStyle.Caption(r.Summary, 13);
             summary.AutowrapMode = TextServer.AutowrapMode.WordSmart;
