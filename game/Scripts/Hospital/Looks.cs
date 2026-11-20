@@ -219,6 +219,12 @@ public static class Looks
             StaffRole.Paediatrician when Is("Junior") => Scrubs("#9AA6EA") with { Stethoscope = true, Pocket = true },
             StaffRole.Paediatrician => Scrubs("#6C79D2") with { Stethoscope = true, Pocket = true },
 
+            // Play specialists: a bright green tee with a yellow star and a rainbow lanyard; the senior's is darker.
+            StaffRole.PlaySpecialist => new PersonLook(new Color(Is("Band 5") ? "#2E7D32" : "#43A047"), new Color("#2B3A55"), who.Skin, hair)
+            {
+                Kind = TopKind.Tee, Motif = new Color("#FFD54F"), Lanyard = true, LanyardColour = new Color("#E8408A"), ShoeColour = new Color("#F2F4F7"),
+            },
+
             // Theatre and procedure staff: scrubs, a cap and a mask.
             StaffRole.Surgeon => Scrubs("#4E9C6F") with { Cap = new Color("#3E7F5A"), Mask = true, Lanyard = false, ShoeColour = new Color("#E8ECEF") },
             StaffRole.Anaesthetist => Scrubs("#3F5FA8") with { Cap = cap, Mask = true, Stethoscope = true, ShoeColour = new Color("#2F6FD0") },
@@ -426,7 +432,7 @@ public static class Looks
     public static PersonLook Parent(Parent parent, Patient? child)
     {
         var seed = parent.Id + 200_003;
-        var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && Roll(seed, 54, 3) == 0, bump: false);
+        var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && parent.Activity != ParentActivity.InParentsRoom && Roll(seed, 54, 3) == 0, bump: false);
         return child is null ? look : look with { Skin = Patient(child).Skin };
     }
 

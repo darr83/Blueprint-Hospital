@@ -132,7 +132,7 @@ public sealed partial class HospitalSimulation
         && p.Seat is { } seat && p.Tile == seat && !p.IsMoving
         && p.BusyWithTaskId is null && p.CareSpaceId is null && p.PendingMove is null
         && Now - p.QueuedSince >= RefreshmentAfterWaiting
-        && !_trips.ContainsKey(p)
+        && !_trips.ContainsKey(p) && !_playVisits.ContainsKey(p)
         && (p.LastRefreshmentAt is null || Now - p.LastRefreshmentAt >= RefreshmentLasts);
 
     /// <summary>A checked-in clinic patient sitting down, whose appointment isn't due for a while.</summary>
@@ -342,5 +342,5 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A patient who has had something to eat or drink recently is half as likely to walk out; with no toilets, more likely.</summary>
     private double WalkOutFactor(Patient patient) =>
-        (patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0) * ToiletWalkOutFactor();
+        (patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0) * ToiletWalkOutFactor() * PlayWalkOutFactor(patient);
 }

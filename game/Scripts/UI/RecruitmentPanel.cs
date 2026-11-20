@@ -241,6 +241,7 @@ public partial class RecruitmentPanel : PanelContainer
         StaffRole.HealthcareAssistant => new Color("#6B7782"),
         StaffRole.ChildrensNurse => new Color("#C9573F"),
         StaffRole.Paediatrician => new Color("#4C5BC0"),
+        StaffRole.PlaySpecialist => new Color("#43A047"),
         _ => new Color("#6E5A8C"),
     };
 }

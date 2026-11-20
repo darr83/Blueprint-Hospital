@@ -218,7 +218,7 @@ public partial class Person3D : Node3D
         var chest = new Vector3(0, torsoMid + V(5 * s), depth / 2);
         if (look.Lanyard)
         {
-            Wear("lanyard", LanyardBlue);
+            Wear("lanyard", look.LanyardColour ?? LanyardBlue);
         }
 
         if (look.Badge is { } badge)

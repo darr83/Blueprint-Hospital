@@ -62,6 +62,7 @@ public sealed partial class HospitalSimulation
         StaffRole.ScrubNurse => new[] { CareSpaceKind.Theatre },
         StaffRole.OutreachNurse => new[] { CareSpaceKind.OutreachOffice },
         StaffRole.Midwife => new[] { CareSpaceKind.DeliveryRoom },
+        StaffRole.PlaySpecialist => new[] { CareSpaceKind.PlayRoom },
         _ => Array.Empty<CareSpaceKind>(),
     };
 
@@ -96,6 +97,7 @@ public sealed partial class HospitalSimulation
         {
             // Children's nurses and paediatric doctors work on the children's wards.
             var wards = PaediatricWards.Select(w => new StaffPosting(w.Id, w.Name)).ToList();
+            wards.AddRange(ClinicsRunBy(role).Select(c => new StaffPosting(c.Id, c.Name)));
             return wards.Count > 0 ? wards : new[] { new StaffPosting(null, "No children's ward yet") };
         }
 
@@ -172,7 +174,7 @@ public sealed partial class HospitalSimulation
     }
 
     private bool IsDayOnly(string? roomId) =>
-        roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception };
+        roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception or CareSpaceKind.PlayRoom };
 
     private IEnumerable<StaffingNeed> RecommendedForShift(StaffShift shift)
     {
@@ -254,6 +256,11 @@ public sealed partial class HospitalSimulation
         {
             var clinician = ClinicianFor(clinic);
             needs.Add(new(clinic.Name, clinic.Id, clinician, 1, Have(clinician, clinic.Id)));
+        }
+
+        foreach (var play in SpacesOfKind(CareSpaceKind.PlayRoom).OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            needs.Add(new(play.Name, play.Id, StaffRole.PlaySpecialist, 1, Have(StaffRole.PlaySpecialist, play.Id)));
         }
 
         return needs.Select(n => n with { Shift = shift });

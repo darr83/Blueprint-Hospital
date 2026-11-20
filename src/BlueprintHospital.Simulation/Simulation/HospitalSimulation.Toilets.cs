@@ -217,7 +217,7 @@ public sealed partial class HospitalSimulation
 
     private bool RecentlyWent(Agent person) => _lastToiletAt.TryGetValue(person, out var at) && Now - at < ToiletGap;
 
-    private bool Away(Agent person) => _toiletTrips.ContainsKey(person) || _trips.ContainsKey(person);
+    private bool Away(Agent person) => _toiletTrips.ContainsKey(person) || _trips.ContainsKey(person) || (person is Patient p && _playVisits.ContainsKey(p));
 
     /// <summary>A walking A&amp;E patient sitting in the waiting room (not Red) who has waited a while.</summary>
     private bool CanGoToToilet(Patient p) =>
