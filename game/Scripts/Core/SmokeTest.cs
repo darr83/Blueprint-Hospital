@@ -2107,6 +2107,27 @@ public partial class SmokeTest : Node
         hospital.SelectPatient(focus);
         Check(hospital.Hud.Record.Visible, "Patient record did not open.");
         GD.Print($"[smoke] Opened the record for {focus.FullName}.");
+        OpenAResult(hospital);
+    }
+
+    /// <summary>Opens a finished test as a result document, flicks to another of the patient's results, and closes it.</summary>
+    private static void OpenAResult(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var withResult = sim.Patients.Concat(sim.DepartedPatients).FirstOrDefault(p => p.Investigations.Any(i => i.Status == Simulation.Patients.InvestigationStatus.Resulted));
+        if (withResult is null)
+        {
+            GD.Print("[smoke] No finished tests yet, so no result document to open.");
+            return;
+        }
+
+        var results = withResult.Investigations.Where(i => i.Status == Simulation.Patients.InvestigationStatus.Resulted).ToList();
+        var viewer = BlueprintHospital.UI.Results.ResultViewer.Open(hospital.Hud, sim.Database, withResult, results[0], hospital.Session.HospitalName);
+        Check(viewer?.Document is not null, "The result viewer did not open.");
+        viewer!.Show(results[^1]);
+        Check(viewer.Document is not null && viewer.Order == results[^1], "The result document did not open.");
+        viewer.Close();
+        GD.Print($"[smoke] Opened {results.Count} result document(s) for {withResult.FullName}: {viewer.Document!.Test.Name} ({viewer.Document.Layout}).");
     }
 
     /// <summary>

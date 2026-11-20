@@ -107,7 +107,8 @@ public partial class IsoCamera : Camera2D
             direction += EdgeDirection();
         }
 
-        if (direction != Vector2.Zero)
+        // A result document is open over the map: keys and the screen edge belong to it.
+        if (direction != Vector2.Zero && !BlueprintHospital.UI.Results.ResultViewer.IsOpen)
         {
             var speed = KeyboardPanPixelsPerSecond * PanSpeedMultiplier / _targetZoom;
             _targetPosition = ClampToBounds(_targetPosition + (direction.Normalized() * speed * (float)delta));

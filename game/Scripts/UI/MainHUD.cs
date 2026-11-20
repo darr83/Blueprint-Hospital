@@ -305,6 +305,7 @@ public partial class MainHUD : CanvasLayer
         Record.Initialise(sim);
         DockRight(Record, 420);
         root.AddChild(Record);
+        Record.ResultRequested += (patient, order) => BlueprintHospital.UI.Results.ResultViewer.Open(this, sim.Database, patient, order, session.HospitalName);
         StaffInfo.Initialise(sim);
         DockRight(StaffInfo, 400);
         root.AddChild(StaffInfo);

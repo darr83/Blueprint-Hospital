@@ -39,6 +39,9 @@ public partial class PatientRecordPanel : PanelContainer
 
     public Patient? Patient => _patient;
 
+    /// <summary>Raised when a finished test is clicked, to open it as a readable result document.</summary>
+    public event Action<Patient, InvestigationOrder>? ResultRequested;
+
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;
@@ -109,6 +112,11 @@ public partial class PatientRecordPanel : PanelContainer
             if (link.StartsWith("rename-baby:", StringComparison.Ordinal) && int.TryParse(link["rename-baby:".Length..], out var id))
             {
                 RenameBaby(id);
+            }
+            else if (link.StartsWith("result:", StringComparison.Ordinal) && int.TryParse(link["result:".Length..], out var index)
+                && _patient is { } patient && index >= 0 && index < patient.Investigations.Count)
+            {
+                ResultRequested?.Invoke(patient, patient.Investigations[index]);
             }
         };
         _scroll.AddChild(_text);
@@ -339,14 +347,15 @@ public partial class PatientRecordPanel : PanelContainer
             sb.Append("[color=#5B6B79]None requested.[/color]\n");
         }
 
-        foreach (var inv in p.Investigations)
+        for (var index = 0; index < p.Investigations.Count; index++)
         {
+            var inv = p.Investigations[index];
             var name = db.Investigations[inv.InvestigationId].Name;
             switch (inv.Status)
             {
                 case InvestigationStatus.Resulted:
                     var colour = inv.Abnormal ? ClinicalText.RedHex : GreenHex;
-                    sb.Append($"[b]{E(name)}[/b] [color=#5B6B79]{inv.ResultedAt:HH:mm}[/color]\n");
+                    sb.Append($"[url=result:{index}][b][color=#1F5FBF]{E(name)}[/color][/b] [color=#5B6B79]{inv.ResultedAt:HH:mm}[/color] [color=#1F5FBF]Open result ›[/color][/url]\n");
                     sb.Append($"   [color={colour}]{(inv.Abnormal ? "ABNORMAL: " : "")}{E(inv.Summary)}[/color]\n");
                     break;
                 case InvestigationStatus.SampleTaken:
