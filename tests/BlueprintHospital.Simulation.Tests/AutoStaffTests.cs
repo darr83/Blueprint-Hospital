@@ -62,7 +62,7 @@ public class AutoStaffTests
     }
 
     [Fact]
-    public void A_new_theatre_opens_straight_away_with_a_surgeon_and_an_anaesthetist()
+    public void A_new_theatre_comes_with_a_surgeon_and_an_anaesthetist_and_opens_once_it_has_an_anaesthetic_room()
     {
         var h = WestWing();
 
@@ -70,6 +70,11 @@ public class AutoStaffTests
         Assert.True(built.CanBuild, string.Join("; ", built.Problems));
 
         var theatre = h.Sim.SpacesOfKind(Hospital.CareSpaceKind.Theatre).Single();
+        Assert.Equal(new[] { "an anaesthetic room built against it" }, h.Sim.TheatreProblems(theatre));
+        Assert.False(h.Sim.IsStaffed(theatre));
+
+        var room = h.Sim.BuildRoom(h.Sim.AutoPlan("anaesthetic_room", new GridRect(B.X - 18, B.Y + 17, 7, 12)));
+        Assert.True(room.CanBuild, string.Join("; ", room.Problems));
         Assert.True(h.Sim.IsStaffed(theatre));
     }
 }

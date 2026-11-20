@@ -264,6 +264,7 @@ internal sealed class CareerHospitalBuilder(SimulationHarness h)
                 break;
             case 5:
                 Room("operating_theatre", 12);
+                Room("anaesthetic_room", 7);
                 Ward("surgical_assessment_unit");
                 Ward("surgical_ward");
                 Room("ct_scanner", 9);

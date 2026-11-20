@@ -98,13 +98,17 @@ public sealed partial class HospitalSimulation
         if (task.Kind is TaskKind.Imaging or TaskKind.Surgery or TaskKind.Procedure)
         {
             ReleaseSeat(patient);
-            WalkTo(patient, room.PatientSpot);
+            var anaesthetic = task.Kind == TaskKind.Surgery ? AnaestheticRoomOf(room) : null;
+            WalkTo(patient, anaesthetic?.PatientSpot ?? room.PatientSpot);
             if (task.Kind == TaskKind.Surgery && room.Kind == CareSpaceKind.Theatre)
             {
+                task.Phase = anaesthetic is null ? SurgeryPhase.Operating : SurgeryPhase.Anaesthetic;
+                task.AnaestheticSecondsLeft = null;
                 JoinAnaesthetist(task, room, patient);
             }
 
-            patient.Log(Now, task.Kind == TaskKind.Surgery ? $"Taken to {room.Name} for {task.Label.ToLowerInvariant()}." : $"Taken to {room.Name} for {task.Label}.");
+            patient.Log(Now, anaesthetic is not null ? $"Taken to {anaesthetic.Name} for {task.Label.ToLowerInvariant()} in {room.Name}."
+                : task.Kind == TaskKind.Surgery ? $"Taken to {room.Name} for {task.Label.ToLowerInvariant()}." : $"Taken to {room.Name} for {task.Label}.");
         }
     }
 
@@ -176,6 +180,7 @@ public sealed partial class HospitalSimulation
         if (operation.Room == CareSpaceKind.Theatre && FreeAssessmentBed(diagnosed.Department) is { } unit)
         {
             // Waits for theatre on the assessment unit, freeing their A&E cubicle.
+            BookSurgery(patient, diagnosed.Id);
             patient.PreOp = true;
             patient.Stage = PatientStage.AwaitingBed;
             patient.BedRequestedAt = Now;
@@ -199,6 +204,11 @@ public sealed partial class HospitalSimulation
         var planned = Database.Conditions[patient.WorkingDiagnosis!.ConditionId];
         if (planned.IsMaternity)
         {
+            if (planned.Operation?.Room == CareSpaceKind.Theatre)
+            {
+                OperationFinished(surgeon, patient, CaesareanTariff);
+            }
+
             CompleteBirth(surgeon, patient);
             return;
         }
@@ -229,7 +239,12 @@ public sealed partial class HospitalSimulation
         }
         else
         {
-            Book(MoneyCategory.Operations, OperationTariff);
+            Book(MoneyCategory.Operations, OperationFee(operation));
+        }
+
+        if (inTheatre)
+        {
+            OperationFinished(surgeon, patient, planned.IsPlanned ? planned.Planned?.Tariff ?? 0 : OperationFee(operation));
         }
 
         ReturnFromServiceRoom(patient);

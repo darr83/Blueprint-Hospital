@@ -57,7 +57,7 @@ public sealed partial class HospitalSimulation
         }
 
         Balance += value;
-        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        Nav = BuildNav();
         Notifications.Add(Now, NotificationLevel.Info, "An empty hospital. A&E opens to patients once it has " + Join(ClosedReasons) + ".");
     }
 
@@ -73,7 +73,7 @@ public sealed partial class HospitalSimulation
             _spaces.Remove(space.Id);
         }
 
-        Nav = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        Nav = BuildNav();
         BuildStarterWaitingRoom();
         foreach (var shift in new[] { CurrentShift, CurrentShift == StaffShift.Day ? StaffShift.Night : StaffShift.Day })
         {

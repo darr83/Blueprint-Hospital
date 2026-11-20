@@ -80,3 +80,13 @@ internal sealed class SimulationHarness
 
     public string Journey(Patient p) => string.Join(Environment.NewLine, p.Timeline.Select(t => $"{t.Time:HH:mm:ss} {t.Text}"));
 }
+
+/// <summary>Helpers for laying out test wings.</summary>
+internal static class WingRows
+{
+    /// <summary>Puts an anaesthetic room (3.5 m wide) beside every theatre in a row, as every theatre needs one.</summary>
+    public static (string Template, int W, int D)[] WithAnaestheticRooms(this (string Template, int W, int D)[] row) =>
+        row.SelectMany(r => r.Template is "operating_theatre" or "caesarean_theatre"
+            ? new[] { r, ("anaesthetic_room", 7, Math.Min(r.D, 16)) }
+            : new[] { r }).ToArray();
+}

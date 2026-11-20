@@ -87,6 +87,12 @@ public enum CareSpaceKind
 
     /// <summary>Cleaning room: where cleaners keep their mops, buckets and brushes, and fill up at the sink.</summary>
     CleaningRoom,
+
+    /// <summary>
+    /// Anaesthetic room, built against an operating theatre's wall and joined to it by automatic doors:
+    /// the anaesthetist puts the patient to sleep here, then they are wheeled straight through into theatre.
+    /// </summary>
+    AnaestheticRoom,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -154,8 +160,20 @@ public sealed class CareSpace
     /// <summary>Which wall the main door is in.</summary>
     public WallSide DoorSide { get; init; } = WallSide.South;
 
-    /// <summary>Furniture and equipment, placed by <see cref="RoomLayoutEngine"/>.</summary>
-    public IReadOnlyList<PlacedFurniture> Furniture { get; init; } = Array.Empty<PlacedFurniture>();
+    /// <summary>Furniture and equipment, placed by <see cref="RoomLayoutEngine"/> (less anything standing in a linking doorway).</summary>
+    public IReadOnlyList<PlacedFurniture> Furniture { get; set; } = Array.Empty<PlacedFurniture>();
+
+    /// <summary>The furniture as laid out, before anything in the way of a linking doorway was taken out.</summary>
+    public IReadOnlyList<PlacedFurniture> LaidOutFurniture { get; init; } = Array.Empty<PlacedFurniture>();
+
+    /// <summary>
+    /// Doorways through a shared wall into a neighbouring room: the automatic doors between a theatre and
+    /// its anaesthetic room. Worked out by the simulation whenever the layout changes.
+    /// </summary>
+    public List<Doorway> LinkDoors { get; } = new();
+
+    /// <summary>The room joined to this one by <see cref="LinkDoors"/>: a theatre's anaesthetic room, or an anaesthetic room's theatre.</summary>
+    public string? LinkedRoomId { get; set; }
 
     /// <summary>Where patients queue (the reception queue in a waiting room), nearest the desk first.</summary>
     public IReadOnlyList<GridCoord> QueueTiles { get; init; } = Array.Empty<GridCoord>();
@@ -235,7 +253,7 @@ public sealed class CareSpace
     /// <summary>True if the edge from <paramref name="inside"/> outward on <paramref name="side"/> is a doorway.</summary>
     public bool IsDoor(GridCoord inside, WallSide side)
     {
-        foreach (var door in Doors.Where(d => d.Side == side))
+        foreach (var door in Doors.Concat(LinkDoors).Where(d => d.Side == side))
         {
             var along = side is WallSide.North or WallSide.South ? inside.X - Rect.X : inside.Y - Rect.Y;
             if (along >= door.Offset && along < door.Offset + door.Width)

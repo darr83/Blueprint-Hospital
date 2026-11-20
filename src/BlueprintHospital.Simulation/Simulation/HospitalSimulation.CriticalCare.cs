@@ -296,6 +296,14 @@ public sealed partial class HospitalSimulation
         anaesthetist.AssistingTaskId = task.Id;
         anaesthetist.Activity = StaffActivity.Working;
         anaesthetist.StatusText = $"Anaesthetic: {patient.FullName}";
+        if (AnaestheticRoomOf(theatre) is { } room)
+        {
+            // Meets the patient in the anaesthetic room; the anaesthetic itself is logged there.
+            anaesthetist.StatusText = $"Anaesthetic room: {patient.FullName}";
+            WalkTo(anaesthetist, room.StaffSpot);
+            return;
+        }
+
         WalkTo(anaesthetist, AnaesthetistSpot(theatre));
         patient.Log(Now, $"Anaesthetic given by {anaesthetist.Name}.");
     }

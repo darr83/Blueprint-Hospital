@@ -29,7 +29,8 @@ public class PlannedListTests
         }
 
         Build(h.Sim.BuildRoom(h.Sim.AutoPlan("operating_theatre", new GridRect(B.X - 40, B.Y + 18, 12, 12))), "theatre");
-        Build(h.Sim.BuildRoom(h.Sim.AutoPlan("endoscopy_room", new GridRect(B.X - 28, B.Y + 18, 12, 10))), "endoscopy room");
+        Build(h.Sim.BuildRoom(h.Sim.AutoPlan("anaesthetic_room", new GridRect(B.X - 28, B.Y + 18, 7, 12))), "anaesthetic room");
+        Build(h.Sim.BuildRoom(h.Sim.AutoPlan("endoscopy_room", new GridRect(B.X - 21, B.Y + 18, 12, 10))), "endoscopy room");
         foreach (var theatre in h.Sim.Spaces.Where(s => s.Kind == CareSpaceKind.Theatre).ToList())
         {
             foreach (var department in h.Sim.SurgicalDepartments)

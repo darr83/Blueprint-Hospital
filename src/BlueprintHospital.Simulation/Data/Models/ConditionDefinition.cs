@@ -42,6 +42,28 @@ public sealed class OperationDefinition
 
     /// <summary>A small operation: the patient comes round on a day surgery unit, if there is one, and goes home the same day.</summary>
     public bool DayCase { get; init; }
+
+    /// <summary>How soon it must be done (NHS NCEPOD-style categories). Emergency operations are Urgent unless the data says otherwise.</summary>
+    public SurgeryUrgency Urgency { get; init; } = SurgeryUrgency.Urgent;
+
+    /// <summary>What the hospital is paid for doing it, in pounds (0 uses the standard operation fee).</summary>
+    public int Tariff { get; init; }
+}
+
+/// <summary>How soon an operation must be done, with the longest a patient should wait for it.</summary>
+public enum SurgeryUrgency
+{
+    /// <summary>Life, limb or organ at risk: within the hour (a ruptured ectopic, a perforated ulcer).</summary>
+    Immediate,
+
+    /// <summary>Within 6 hours (appendicitis, a strangulated hernia).</summary>
+    Urgent,
+
+    /// <summary>Within 24 hours (a broken hip, an abscess).</summary>
+    Soon,
+
+    /// <summary>Booked on a planned list.</summary>
+    Planned,
 }
 
 /// <summary>

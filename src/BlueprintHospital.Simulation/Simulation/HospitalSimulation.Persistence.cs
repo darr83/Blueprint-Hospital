@@ -162,6 +162,18 @@ public sealed class PatientState
 
     public bool PreOp { get; init; }
 
+    public DateTime? SurgeryBookedAt { get; init; }
+
+    public SurgeryUrgency? SurgeryUrgency { get; init; }
+
+    public DateTime? ConsentAt { get; init; }
+
+    public DateTime? GroupAndSaveAt { get; init; }
+
+    public DateTime? LastAteAt { get; init; }
+
+    public bool SurgeryBreached { get; init; }
+
     public DateTime? WardMoveRequestedAt { get; init; }
 
     public double IntensiveCareHours { get; init; }
@@ -457,6 +469,9 @@ public sealed class PeopleState
 
     /// <summary>Career level and goal progress (absent from Sandbox games and older saves).</summary>
     public ProgressionState? Progression { get; init; }
+
+    /// <summary>Theatres: cleaning between cases, today's operations and the day's figures (absent in older saves).</summary>
+    public SurgeryState? Surgery { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -528,6 +543,7 @@ public sealed partial class HospitalSimulation
         ResusTrolleys = SaveTrolleys(),
         Arrests = _arrests.Where(a => a.IsActive).ToList(),
         Progression = CaptureProgression(),
+        Surgery = CaptureSurgery(),
     };
 
     /// <summary>
@@ -646,6 +662,7 @@ public sealed partial class HospitalSimulation
         _candidatesDate = state.CandidatesDate;
         _nextCandidateId = Math.Max(state.NextCandidateId, _candidates.Count == 0 ? 1 : _candidates.Max(c => c.Id) + 1);
         RestoreProgression(state.Progression);
+        RestoreSurgery(state.Surgery);
         if (state.UnlockedDepartments is { } unlocked)
         {
             _unlockedDepartments.Clear();
@@ -794,7 +811,7 @@ public sealed partial class HospitalSimulation
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
-        CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, WardMoveRequestedAt = p.WardMoveRequestedAt,
+        CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
         LastRefreshmentAt = p.LastRefreshmentAt, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
@@ -868,6 +885,12 @@ public sealed partial class HospitalSimulation
         p.CareLevel = s.CareLevel;
         p.DayCase = s.DayCase;
         p.PreOp = s.PreOp;
+        p.SurgeryBookedAt = s.SurgeryBookedAt;
+        p.SurgeryUrgency = s.SurgeryUrgency;
+        p.ConsentAt = s.ConsentAt;
+        p.GroupAndSaveAt = s.GroupAndSaveAt;
+        p.LastAteAt = s.LastAteAt;
+        p.SurgeryBreached = s.SurgeryBreached;
         p.WardMoveRequestedAt = s.WardMoveRequestedAt;
         p.IntensiveCareHours = s.IntensiveCareHours;
         p.HighDependencyHours = s.HighDependencyHours;

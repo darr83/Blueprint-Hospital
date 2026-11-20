@@ -91,6 +91,7 @@ public sealed partial class HospitalSimulation
 
         var building = site.Buildings[0];
         _spaces = EmergencyDepartmentLayout.Create(building, database, site.Layout?.Plan).ToDictionary(s => s.Id);
+        TheatreSuite.Link(_spaces.Values);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
         foreach (var space in _spaces.Values)
         {
@@ -258,6 +259,7 @@ public sealed partial class HospitalSimulation
         UpdateWards();
         UpdateClinics(dt);
         UpdatePlannedLists();
+        UpdateSurgery();
         UpdateRefreshments(dt);
         UpdateToilets(dt);
         UpdatePharmacyTrips();

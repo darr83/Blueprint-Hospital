@@ -26,14 +26,14 @@ public class CriticalCareTests
         Build(h.Sim.ExtendBuilding(new GridRect(B.X - 40, B.Y, 40, 34)), "extension");
         Build(h.Sim.BuildRoom(new RoomPlan("corridor", new GridRect(B.X - 40, B.Y + 12, 44, 6), WallSide.South)), "corridor");
         var x = B.X - 40;
-        foreach (var (template, w, d) in north)
+        foreach (var (template, w, d) in north.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 12 - d, w, d))), template);
             x += w;
         }
 
         x = B.X - 40;
-        foreach (var (template, w, d) in south)
+        foreach (var (template, w, d) in south.WithAnaestheticRooms())
         {
             Build(h.Sim.BuildRoom(h.Sim.AutoPlan(template, new GridRect(x, B.Y + 18, w, d))), template);
             x += w;
