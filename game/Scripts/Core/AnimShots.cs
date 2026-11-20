@@ -75,6 +75,26 @@ public partial class AnimShots : Node
         ("push", null, (s, a) => a is StaffMember { Role: StaffRole.Cleaner, IsMoving: true } m && s.CleanerJobOf(m) is { HasKit: true, Stage: CleanerStage.Walking } && a.RemainingPath.Count() > 8, 3.0f, 90, Array.Empty<string>()),
     };
 
+    /// <summary>Procedure review (run with --anim-set=6): an ECG, a birth and its last moments, an X-ray and a CT scan.</summary>
+    private static readonly (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Scenes6 =
+    {
+        ("ecg", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Ecg } c && Activity3D.Progress(c.Task!, s) is > 0.36 and < 0.4 && s.FindPatient(c.Task!.PatientId) is { } onBed && World!.InBed(onBed), 3.4f, 150, new[] { "acute_myocardial_infarction", "atrial_fibrillation" }),
+        ("xray", null, (s, a) => InRoom(s, a, CareSpaceKind.XRay) && Busy(s, a) && CareOf(s, (StaffMember)a) is { } c && Activity3D.Progress(c.Task!, s) < 0.5, 2.6f, 190, new[] { "wrist_fracture", "ankle_fracture", "community_acquired_pneumonia" }),
+        ("ct", null, (s, a) => InRoom(s, a, CareSpaceKind.CT) && Busy(s, a) && CareOf(s, (StaffMember)a) is { } c && Activity3D.Progress(c.Task!, s) < 0.5, 2.6f, 190, new[] { "pulmonary_embolism", "minor_head_injury" }),
+        ("birth", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Birth } c && Activity3D.Progress(c.Task!, s) is > 0.3 and < 0.8, 3.2f, 150, new[] { "established_labour" }),
+        ("born", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Birth } c && Procedure3D.Remaining(c.Task!, s) is > 245 and < 275, 3.2f, 240, new[] { "established_labour" }),
+        ("echo", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Echo } c && Activity3D.Progress(c.Task!, s) < 0.6, 3.2f, 120, new[] { "pericarditis", "acute_heart_failure" }),
+        ("ultrasound", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Ultrasound } c && Activity3D.Progress(c.Task!, s) < 0.6, 3.2f, 120, new[] { "ectopic_pregnancy", "ovarian_torsion" }),
+        ("eeg", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Eeg } c && Activity3D.Progress(c.Task!, s) is > 0.22 and < 0.27, 3.2f, 150, new[] { "breakthrough_seizure" }),
+        ("endoscopy", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Endoscopy } c && Activity3D.Progress(c.Task!, s) < 0.6, 3.2f, 120, new[] { "upper_gi_bleed", "ulcerative_colitis_flare" }),
+    };
+
+    private static (Care Care, ClinicalTask? Task)? CareOf(HospitalSimulation s, StaffMember m) =>
+        !m.IsMoving && m.CurrentTaskId is { } id && s.Tasks.FirstOrDefault(t => t.Id == id) is { Started: true } task && s.FindPatient(task.PatientId) is { IsMoving: false } p
+        && Procedure3D.For(p, s) is var c && c.Task == task ? c : null;
+
+    private static bool Set6 => OS.GetCmdlineUserArgs().Contains("--anim-set=6");
+
     private static WorldLayer? World;
 
     private static bool OnWardBed(Patient p) => p.Stage == PatientStage.OnWard && !p.IsMoving && World!.InBed(p)
@@ -90,7 +110,7 @@ public partial class AnimShots : Node
 
     private static bool Set5 => OS.GetCmdlineUserArgs().Contains("--anim-set=5");
 
-    private static (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Active => Set5 ? Scenes5 : Set4 ? Scenes4 : Scenes;
+    private static (string Name, Act? Act, Func<HospitalSimulation, Agent, bool> Where, float Zoom, int Frames, string[] Conditions)[] Active => Set6 ? Scenes6 : Set5 ? Scenes5 : Set4 ? Scenes4 : Scenes;
 
     public static bool Begin()
     {
@@ -100,7 +120,7 @@ public partial class AnimShots : Node
             {
                 var shots = new AnimShots { Name = "AnimShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--anim-shots=".Length..] };
                 GameManager.Instance.AddChild(shots);
-                GameManager.Instance.Settings.View3D = true;
+                GameManager.Instance.Settings.View3D = !OS.GetCmdlineUserArgs().Contains("--anim-2d");
                 Callable.From(() => GameManager.Instance.StartNewGame("Animation Review General")).CallDeferred();
                 return true;
             }
@@ -133,6 +153,12 @@ public partial class AnimShots : Node
                 }
 
                 h.ToggleWalls();
+                if (Set6 && h.FindChild("Labels", true, false) is CanvasItem labels)
+                {
+                    // The job labels over staff would sit right on top of what is being filmed.
+                    labels.Visible = false;
+                }
+
                 Build(h);
             }
 
@@ -161,7 +187,7 @@ public partial class AnimShots : Node
         {
             // Run the game on (fast, unseen) until the scene happens, with new arrivals to keep it busy.
             clock.SetSpeed(SimulationSpeed.Paused);
-            if (_settle == 0 && _scene == 3 && !Set4)
+            if (_settle == 0 && _scene == 3 && !Set4 && !Set6)
             {
                 // Enough doctors and nurses now that the queue has had time to build for the vending machine.
                 for (var i = 0; i < 3; i++)
@@ -201,7 +227,7 @@ public partial class AnimShots : Node
                 }
             }
 
-            if (Set4 && _settle % 25 == 0 && sim.Patients.Count() < 40)
+            if ((Set4 || Set6) && _settle % 25 == 0 && sim.Patients.Count() < 40)
             {
                 // Only the patients this scene needs, so A&E keeps moving.
                 foreach (var condition in scene.Conditions)
@@ -210,7 +236,7 @@ public partial class AnimShots : Node
                 }
             }
 
-            if (!Set4 && _settle % 25 == 0)
+            if (!Set4 && !Set6 && _settle % 25 == 0)
             {
                 for (var i = 0; i < 4; i++)
                 {
@@ -223,7 +249,7 @@ public partial class AnimShots : Node
             for (var i = 0; i < 400; i++)
             {
                 clock.Step();
-                if (i % 20 != 0)
+                if (i % (Set6 ? 2 : 20) != 0)
                 {
                     continue;
                 }
@@ -231,8 +257,14 @@ public partial class AnimShots : Node
                 tasks = sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
 
                 // Moments that come and go on the animation clock (a phone call): wind that on too while we look.
-                _hospital.View3D.People.AnimTime += 7.3;
-                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act is null || (Activity3D.For(a, _hospital.World, sim, tasks, _hospital.View3D.People.AnimTime).Act == scene.Act && Activity3D.For(a, _hospital.World, sim, tasks, _hospital.View3D.People.AnimTime + 3).Act == scene.Act)));
+                var animTime = _hospital.World.Time;
+                if (GameView.ThreeD)
+                {
+                    _hospital.View3D.People.AnimTime += 7.3;
+                    animTime = _hospital.View3D.People.AnimTime;
+                }
+
+                _subject = Everyone(sim).FirstOrDefault(a => scene.Where(sim, a) && (scene.Act is null || (Activity3D.For(a, _hospital.World, sim, tasks, animTime).Act == scene.Act && Activity3D.For(a, _hospital.World, sim, tasks, animTime + 3).Act == scene.Act)));
                 if (_subject is not null)
                 {
                     break;
@@ -265,6 +297,11 @@ public partial class AnimShots : Node
                 (fx, fy) = ((fx + face.X) / 2, (fy + face.Y) / 2);
             }
 
+            if (Set6 && _subject is StaffMember who && CareOf(sim, who) is { Task: { } doing } && sim.FindPatient(doing.PatientId) is { } onBed)
+            {
+                (fx, fy) = (onBed.X + 0.5, onBed.Y + 0.5);
+            }
+
             if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
             {
                 (fx, fy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0) - 1);
@@ -292,7 +329,7 @@ public partial class AnimShots : Node
 
             // Lift and entrance doors only show with the walls up; everything else is filmed cut away.
             var wallsUp = scene.Name is "lift" or "entrance";
-            if (wallsUp == _hospital.View3D.Cutaway)
+            if (GameView.ThreeD && wallsUp == _hospital.View3D.Cutaway)
             {
                 _hospital.ToggleWalls();
             }
@@ -338,6 +375,12 @@ public partial class AnimShots : Node
         if (Set4)
         {
             Build4(h);
+            return;
+        }
+
+        if (Set6)
+        {
+            Build6(h);
             return;
         }
 
@@ -510,6 +553,51 @@ public partial class AnimShots : Node
         for (var i = 0; i < 12; i++)
         {
             sim.SpawnPatient(i % 4 == 0 ? ArrivalMethod.Ambulance : ArrivalMethod.WalkIn);
+        }
+    }
+
+    /// <summary>The procedure review's hospital: the starter A&amp;E plus X-ray, CT, a delivery room and a mother and baby ward.</summary>
+    private static void Build6(HospitalScene h)
+    {
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(30_000_000);
+        foreach (var dept in sim.Database.Departments.Keys)
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        static Simulation.World.GridRect R(int x, int y, int w, int l) => new(x, y, w, l);
+        Report("north wing", sim.ExtendBuilding(R(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new RoomPlan("corridor", R(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new RoomPlan("corridor", R(44, 13, 56, 5), Simulation.World.WallSide.South)));
+        foreach (var (template, rect) in new[]
+                 {
+                     ("xray_room", R(44, 2, 11, 11)), ("ct_scanner", R(55, 2, 11, 11)), ("delivery_room", R(66, 3, 11, 10)),
+                     ("mother_baby_ward", R(44, 18, 25, 11)), ("echo_room", R(77, 3, 8, 10)), ("eeg_room", R(85, 3, 8, 10)),
+                     ("early_pregnancy_unit", R(69, 18, 9, 10)), ("endoscopy_room", R(78, 18, 10, 10)), ("endoscopy_recovery", R(88, 18, 11, 10)),
+                 })
+        {
+            Report(template, sim.BuildRoom(sim.AutoPlan(template, rect)));
+        }
+
+        foreach (var need in sim.RecommendedStaffing())
+        {
+            for (var i = 0; i < need.Short; i++)
+            {
+                sim.HireStaff(need.Role, need.RoomId, skill: 0.8, shift: need.Shift);
+            }
+        }
+
+        for (var i = 0; i < 4; i++)
+        {
+            sim.HireStaff(StaffRole.Doctor);
+            sim.HireStaff(StaffRole.Nurse);
+            sim.HireStaff(StaffRole.Porter);
+        }
+
+        foreach (var condition in new[] { "established_labour", "acute_myocardial_infarction", "wrist_fracture", "ankle_fracture", "minor_head_injury", "pulmonary_embolism", "atrial_fibrillation", "established_labour" })
+        {
+            sim.SpawnPatient(condition is "ankle_fracture" or "wrist_fracture" ? ArrivalMethod.WalkIn : ArrivalMethod.Ambulance, condition);
         }
     }
 

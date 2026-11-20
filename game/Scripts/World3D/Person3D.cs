@@ -65,6 +65,8 @@ public partial class Person3D : Node3D
     private Node3D? _tray;
     private Node3D? _ambuBag;
     private Node3D? _roll;
+    private Node3D? _probe;
+    private Node3D? _scope;
     private Node3D? _kit;
     private Node3D _bucket = null!;
     private Node3D _mopHead = null!;
@@ -935,6 +937,33 @@ public partial class Person3D : Node3D
                 break;
             }
 
+            case Act.Scan:
+            {
+                // The probe held out on the patient, pressed and angled in small circles; a glance up at the screen.
+                var a = f * 1.7f;
+                lean = 0.2f;
+                right = new Vector3(-1.05f + (0.1f * Mathf.Sin(a)), 0, -0.18f + (0.1f * Mathf.Cos(a * 0.8f)));
+                left = new Vector3(-0.75f + (0.04f * S(0.6f)), 0, 0.55f);
+                _probe = Prop(_probe, _armR, Probe);
+                break;
+            }
+
+            case Act.Scope:
+            {
+                // The control head held up in the left hand, thumb on the wheels; the right hand feeds the tube.
+                lean = 0.12f;
+                left = new Vector3(-1.45f + (0.05f * S(1.1f)), 0, 0.2f);
+                right = new Vector3(-0.85f + (0.14f * S(0.9f)), 0, -0.25f);
+                _scope = Prop(_scope, _armL, Scope);
+                break;
+            }
+
+            case Act.Carry:
+                // Both arms out and bent in, cradling the baby.
+                lean = 0.1f;
+                left = new Vector3(-1.1f, 0, 0.4f);
+                right = new Vector3(-1.1f, 0, -0.4f);
+                break;
             case Act.Wrap:
             {
                 // Round and round the limb with the roll of plaster.
@@ -1071,6 +1100,16 @@ public partial class Person3D : Node3D
         if (act != Act.Wrap)
         {
             Hide(_roll);
+        }
+
+        if (act != Act.Scan)
+        {
+            Hide(_probe);
+        }
+
+        if (act != Act.Scope)
+        {
+            Hide(_scope);
         }
     }
 
@@ -1324,6 +1363,25 @@ public partial class Person3D : Node3D
     private static void Roll(MeshBatch b)
     {
         b.Cylinder(new Vector3(0, -W(1), W(2)), W(1.8f), W(4.5f), W(1.8f), new Color("#F5F5F0"), Basis.FromEuler(new Vector3(0, 0, Mathf.Pi / 2)));
+    }
+
+    /// <summary>An ultrasound probe: a pale handle with a dark curved face, its lead trailing off.</summary>
+    private static void Probe(MeshBatch b)
+    {
+        b.Capsule(new Vector3(0, W(1), W(1)), new Vector3(0, -W(2.5f), W(1)), W(1.3f), new Color("#ECEFF1"));
+        b.Ball(new Vector3(0, -W(3.6f), W(1)), new Vector3(W(3.4f), W(1.6f), W(2f)), new Color("#455A64"), small: true);
+        b.Rod(new Vector3(0, W(1.5f), W(1)), new Vector3(W(3), W(5), -W(2)), W(0.35f), new Color("#607D8B"), small: true);
+    }
+
+    /// <summary>An endoscope: the black control head with its wheels, and the long tube curving away from it.</summary>
+    private static void Scope(MeshBatch b)
+    {
+        var black = new Color("#22262B");
+        b.Capsule(new Vector3(0, W(2), W(1)), new Vector3(0, -W(3), W(1)), W(1.5f), black);
+        b.Ball(new Vector3(W(1.6f), 0, W(1)), new Vector3(W(1.8f), W(1.8f), W(1.2f)), new Color("#B0BEC5"), small: true);
+        b.Rod(new Vector3(0, -W(3), W(1)), new Vector3(0, -W(8), W(5)), W(0.55f), black, small: true);
+        b.Rod(new Vector3(0, -W(8), W(5)), new Vector3(-W(3), -W(11), W(11)), W(0.55f), black, small: true);
+        b.Rod(new Vector3(0, W(2), W(1)), new Vector3(W(4), W(7), -W(3)), W(0.5f), new Color("#37474F"), small: true);
     }
 
     private static void Pot(MeshBatch b)

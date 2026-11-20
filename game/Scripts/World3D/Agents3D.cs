@@ -131,6 +131,7 @@ public partial class Agents3D : Node3D
         }
 
         private (double X, double Y) _shift;
+        private (double X, double Y)? _careAt;
         private Node3D? _lying;
         private object? _lyingKey;
         private Node3D? _chair;
@@ -377,6 +378,48 @@ public partial class Agents3D : Node3D
                 (x, y) = head.At;
                 facing = head.Facing;
                 faceTo = null;
+            }
+
+            // A procedure with its own place to stand (an ECG, a birth, a scan): walk the step or two there,
+            // and back again when it is done.
+            {
+                var careSpot = _agent is StaffMember carer ? Activity3D.CareSpot(carer, world, sim, _owner._tasks, _owner.AnimTime) : null;
+                if (_agent.IsMoving)
+                {
+                    _careAt = null;
+                }
+                else if (careSpot is not null || _careAt is not null)
+                {
+                    var from = _careAt ?? (x, y);
+                    var goal = careSpot?.At ?? (x, y);
+                    var (gx, gy) = (goal.X - from.X, goal.Y - from.Y);
+                    var gap = Math.Sqrt((gx * gx) + (gy * gy));
+                    if (gap > 0.04)
+                    {
+                        var stepLen = Math.Min(gap, 1.6 * delta);
+                        from = (from.X + (gx / gap * stepLen), from.Y + (gy / gap * stepLen));
+                        (act, faceTo) = (Act.None, null);
+                        facing = (gx, gy);
+                        pose = Pose.Walking;
+                        _careAt = from;
+                    }
+                    else if (careSpot is { } there)
+                    {
+                        _careAt = there.At;
+                        act = there.Act;
+                        facing = there.Facing;
+                        faceTo = null;
+                    }
+                    else
+                    {
+                        _careAt = null;
+                    }
+
+                    if (_careAt is { } drawn)
+                    {
+                        (x, y) = drawn;
+                    }
+                }
             }
 
             // A plaster technician works right beside the couch, at the limb.
