@@ -54,105 +54,6 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Raised by the rotate buttons: -1 anticlockwise (Q), +1 clockwise (E).</summary>
     public event Action<int>? RotateRequested;
 
-    /// <summary>Raised by the 2D / 3D button (V): switches between the isometric view and the flat plan.</summary>
-    public event Action? PlanToggled;
-
-    /// <summary>The walls button: walls cut down low so you can see into every room (X).</summary>
-    public event Action? WallsToggled;
-
-    private Button? _planButton;
-    private readonly PanelContainer _planKey = new() { Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
-    private readonly VBoxContainer _planKeyRows = new();
-    private double _planKeyAge;
-
-    /// <summary>Shows whether the 2D plan is on: the button then offers 3D, and the plan's colour key appears.</summary>
-    public void SetPlanShown(bool on, BlueprintHospital.Simulation.Simulation.HospitalSimulation sim)
-    {
-        if (_planButton is not null)
-        {
-            _planButton.Text = on ? "3D" : "2D";
-            _planButton.TooltipText = on ? "Back to the 3D view (V)" : "Flat 2D plan: the hospital from above, people as circles in their uniform colour (V)";
-            StylePlanButton(on);
-        }
-
-        _planKey.Visible = on;
-        if (on)
-        {
-            RefreshPlanKey();
-        }
-    }
-
-    private void StylePlanButton(bool on)
-    {
-        foreach (var state in new[] { "normal", "hover", "pressed" })
-        {
-            var box = (StyleBoxFlat)UiStyle.Theme.GetStylebox(state, UiStyle.Secondary).Duplicate();
-            box.ContentMarginLeft = box.ContentMarginRight = 0;
-            box.ContentMarginTop = box.ContentMarginBottom = 0;
-            box.ShadowColor = new Color(0.09f, 0.14f, 0.18f, 0.12f);
-            box.ShadowSize = 6;
-            box.ShadowOffset = new Vector2(0, 2);
-            if (on)
-            {
-                box.BgColor = state == "hover" ? UiStyle.BlueHover : UiStyle.Blue;
-                box.BorderColor = UiStyle.Blue;
-            }
-
-            _planButton!.AddThemeStyleboxOverride(state, box);
-        }
-
-        _planButton!.AddThemeColorOverride("font_color", on ? Colors.White : UiStyle.TextDark);
-        _planButton.AddThemeColorOverride("font_hover_color", on ? Colors.White : UiStyle.TextDark);
-    }
-
-    /// <summary>The plan's key: what each circle colour means, for the uniforms in the building now.</summary>
-    private void RefreshPlanKey()
-    {
-        _planKeyAge = 0;
-        foreach (var child in _planKeyRows.GetChildren())
-        {
-            child.QueueFree();
-        }
-
-        _planKeyRows.AddChild(UiStyle.Caption("KEY", 11));
-        void Row(string label, Color fill, Color ring)
-        {
-            var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-            row.AddThemeConstantOverride("separation", 8);
-            row.AddChild(new KeyDot(fill, ring));
-            var text = UiStyle.Caption(label, 12);
-            text.AddThemeColorOverride("font_color", UiStyle.TextDark);
-            row.AddChild(text);
-            _planKeyRows.AddChild(row);
-        }
-
-        foreach (var (label, fill, ring) in BlueprintHospital.Hospital.PlanLayer.Key(_session.Simulation))
-        {
-            Row(label, fill, ring);
-        }
-
-        Row("Patient (ring = triage)", new Color("#C9B79C"), BlueprintHospital.Hospital.Looks.Amber);
-        Row("Outpatient", new Color("#C9B79C"), BlueprintHospital.Hospital.Looks.OutpatientRing);
-    }
-
-    /// <summary>A small circle for the plan key, drawn like the circles on the map.</summary>
-    private sealed partial class KeyDot(Color fill, Color ring) : Control
-    {
-        public override void _Ready()
-        {
-            CustomMinimumSize = new Vector2(16, 16);
-            MouseFilter = MouseFilterEnum.Ignore;
-        }
-
-        public override void _Draw()
-        {
-            var c = Size / 2;
-            DrawCircle(c, 8, new Color("#1D2B36"));
-            DrawCircle(c, 7, ring);
-            DrawCircle(c, 4.5f, fill);
-        }
-    }
-
     /// <summary>Raised by the floor buttons: +1 up a floor (Page Up), -1 down (Page Down).</summary>
     public event Action<int>? FloorStepRequested;
 
@@ -382,7 +283,6 @@ public partial class MainHUD : CanvasLayer
         root.AddChild(BuildNav());
         root.AddChild(BuildHoverPanel());
         root.AddChild(BuildMapControls());
-        root.AddChild(BuildPlanKey());
 
         var sim = session.Simulation;
         _left.OffsetLeft = NavWidth + Gap;
@@ -507,28 +407,6 @@ public partial class MainHUD : CanvasLayer
         var open = RightPanels.FirstOrDefault(p => p.Visible);
         _mapControls.OffsetRight = open is null ? -Gap : open.OffsetLeft - Gap;
         _mapControls.OffsetLeft = _mapControls.OffsetRight - 44;
-        _planKey.OffsetRight = _mapControls.OffsetLeft - Gap;
-        _planKey.OffsetBottom = _planKey.OffsetTop = -Gap - reserve;
-        if (_planKey.Visible && (_planKeyAge += delta) > 2)
-        {
-            RefreshPlanKey();
-        }
-    }
-
-    private Control BuildPlanKey()
-    {
-        _planKey.AnchorLeft = _planKey.AnchorRight = 1;
-        _planKey.AnchorTop = _planKey.AnchorBottom = 1;
-        _planKey.GrowVertical = Control.GrowDirection.Begin;
-        _planKey.GrowHorizontal = Control.GrowDirection.Begin;
-        var box = UiStyle.Box(new Color(1, 1, 1, 0.94f), 12, UiStyle.Border);
-        box.ContentMarginLeft = box.ContentMarginRight = 12;
-        box.ContentMarginTop = box.ContentMarginBottom = 8;
-        _planKey.AddThemeStyleboxOverride("panel", box);
-        _planKeyRows.AddThemeConstantOverride("separation", 4);
-        _planKeyRows.MouseFilter = Control.MouseFilterEnum.Ignore;
-        _planKey.AddChild(_planKeyRows);
-        return _planKey;
     }
 
     public void ShowHoveredTile(int x, int y, bool onSite, SiteMap site)
@@ -751,7 +629,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Build", NavIcon.Kind.Build, () => ModeRequested?.Invoke(Mode == BlueprintHospital.Hospital.GameMode.Build ? BlueprintHospital.Hospital.GameMode.Play : BlueprintHospital.Hospital.GameMode.Build), "Build mode: build rooms and corridors, and pick rooms and items (B)"));
         column.AddChild(NavButton("Patients", NavIcon.Kind.Patients, () => ToggleRoster(false), "Everyone in A&E, sickest first (P)"));
         column.AddChild(NavButton("Staff", NavIcon.Kind.Staff, ToggleRota, "Staff rota: day and night teams, breaks and who works where (T)"));
-        column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, "Be a doctor: play one of your doctors in first person (O)"));
+        column.AddChild(NavButton("Doctor", NavIcon.Kind.Doctor, ToggleDoctors, "Be a doctor: walk one of your doctors round the hospital yourself and do their work (O)"));
         column.AddChild(NavButton("Clinics", NavIcon.Kind.Clinics, ToggleClinics, "Outpatient clinics: today's and tomorrow's booked patients (C)"));
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
@@ -861,10 +739,6 @@ public partial class MainHUD : CanvasLayer
         _mapControls.AddChild(MapButton("−", "Zoom out (mouse wheel)", () => ZoomRequested?.Invoke(0.8f)));
         _mapControls.AddChild(MapButton("⟲", "Turn the view anticlockwise (Q)", () => RotateRequested?.Invoke(-1)));
         _mapControls.AddChild(MapButton("⟳", "Turn the view clockwise (E)", () => RotateRequested?.Invoke(1)));
-        _mapControls.AddChild(MapButton("⌂", "Walls up or cut down low, to see into every room (X)", () => WallsToggled?.Invoke()));
-        _planButton = MapButton("2D", "Flat 2D plan: the hospital from above, people as circles in their uniform colour (V)", () => PlanToggled?.Invoke());
-        _planButton.AddThemeFontSizeOverride("font_size", 16);
-        _mapControls.AddChild(_planButton);
         return _mapControls;
     }
 
@@ -917,7 +791,7 @@ public partial class MainHUD : CanvasLayer
         var foot = canvas * anchor.World;
         _tagLabel.Text = anchor.Name;
         _tag.Size = _tag.GetCombinedMinimumSize();
-        _tag.Position = new Vector2(foot.X - (_tag.Size.X / 2), foot.Y - ((BlueprintHospital.Hospital.IsoDraw.Plan ? 18 : 78) * zoom) - _tag.Size.Y);
+        _tag.Position = new Vector2(foot.X - (_tag.Size.X / 2), foot.Y - (22 * zoom) - _tag.Size.Y);
         _tag.Visible = true;
     }
 

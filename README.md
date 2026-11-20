@@ -29,7 +29,9 @@ game/                          Godot project (open this folder in Godot)
   Scenes/                      Main menu and hospital scenes
   Scripts/
     Core/                      GameManager (autoload), session, settings, saves, smoke test
-    Hospital/                  Site, rooms and people rendering, isometric camera, tile cursor
+    Hospital/                  The play scene, camera, tile cursor, build tool, Be A Doctor
+    TopDown/                   The hospital drawn from above in 2D: grounds, rooms, furniture,
+                               people, vehicles, walls and doors
     UI/                        Main menu, HUD, A&E board, notifications, patient record,
                                patient/staff lists, pause/settings/save/load panels
 src/BlueprintHospital.Simulation/   Engine-independent game rules (no Godot references)
@@ -48,6 +50,9 @@ tools/SimulationRunner/        Console tool: runs the A&E for days and prints th
 
 The rules of the game live in `src/` as plain C#, so they can be tested quickly without
 starting Godot. The `game/` project only draws the world and handles input.
+
+The hospital is drawn in 2D from directly above (`game/Scripts/TopDown/`): everything is flat
+vector art drawn in code, so there are no model or texture files to build.
 
 ## Opening and running the game
 
@@ -72,6 +77,7 @@ Then:
 | Toggle building grid | G |
 | Show walking routes | R (or Routes on the left-hand bar) |
 | Rotate the view a quarter turn | Q / E (or the turn buttons bottom right) |
+| Be a doctor | O (or Doctor on the left-hand bar), pick a doctor; then arrow keys (or WASD) walk, Shift hurries, E uses, G walks you there, H gives a hint, the wheel zooms, Esc leaves |
 | Look at the floor above / below | Page Up / Page Down (or ▲ ▼ bottom right) |
 | Play or Build mode | The Play / Build switch in the top bar, or B to swap |
 | Open a patient's record | Play mode: left-click the patient, a notification, or a row in the Patients list |

@@ -642,13 +642,34 @@ public partial class BuildTool : Node2D
 
         if (Mode == BuildMode.Room && Check.Preview is { } room)
         {
-            // Furniture outlines, and the doorways in a brighter colour.
+            // The furniture as it will stand, faint, each piece outlined; and the doorways in a brighter colour.
             foreach (var item in room.Furniture)
             {
                 var f = new[] { P(item.X, item.Y), P(item.X + item.Width, item.Y), P(item.X + item.Width, item.Y + item.Length), P(item.X, item.Y + item.Length) };
-                DrawColoredPolygon(f, new Color(1, 1, 1, 0.45f));
+                DrawColoredPolygon(f, new Color(1, 1, 1, 0.3f));
                 DrawPolyline(f.Append(f[0]).ToArray(), new Color(colour, 0.9f), 1.5f, true);
             }
+
+            var pen = TopDown.Pen.OnMap(this);
+            pen.Alpha = 0.7f;
+            foreach (var item in room.Furniture)
+            {
+                if (!_sim.Database.Furniture.TryGetValue(item.ItemId, out var def) || def.Style == Simulation.Data.Models.FurnitureStyle.Bed)
+                {
+                    continue;
+                }
+
+                if (def.Style == Simulation.Data.Models.FurnitureStyle.Chair)
+                {
+                    TopDown.FurnitureKit.Chair(pen, def.Id, item.CentreX, item.CentreY, (0, 1), new Color(def.Colour));
+                }
+                else if (def.Style != Simulation.Data.Models.FurnitureStyle.Monitor)
+                {
+                    TopDown.FurnitureKit.Draw(pen, def.Id, item.X, item.Y, item.Width, item.Length, TopDown.RoomsLayer.FrontOf(room, item, def.Id), new Color(def.Colour), 0);
+                }
+            }
+
+            pen.Done();
 
             foreach (var door in room.Doors)
             {
@@ -674,7 +695,11 @@ public partial class BuildTool : Node2D
             DrawPolyline(quad.Append(quad[0]).ToArray(), ok ? Good : Bad, 2f, true);
             if (ok)
             {
-                ChairArt.Whole(this, tile, facing, new Color(colour, 0.85f), _sim.ChairShift(tile));
+                var pen = TopDown.Pen.OnMap(this);
+                pen.Alpha = 0.85f;
+                var (cx, cy) = ChairArt.Centre(tile, facing, _sim.ChairShift(tile));
+                TopDown.FurnitureKit.Chair(pen, "waiting_seat", cx, cy, ChairArt.Direction(facing), colour);
+                pen.Done();
             }
 
             // An arrow showing which way people will sit.
@@ -707,7 +732,12 @@ public partial class BuildTool : Node2D
             var def = _sim.Database.Furniture.GetValueOrDefault(HospitalSimulation.ResusTrolleyItem);
             var w = (def?.WidthM ?? 0.6) / Units.MetresPerTile;
             var l = (def?.DepthM ?? 0.7) / Units.MetresPerTile;
-            Figures.ResusTrolleyAt(this, t.X + 0.5, t.Y + 0.5, w, l, (float)((def?.HeightM ?? 1.0) * IsoDraw.PixelsPerMetre), new Color(def?.Colour ?? "#D84B3E", 0.8f), (0, 1));
+            var pen = TopDown.Pen.OnMap(this);
+            pen.Alpha = 0.8f;
+            pen.Push(t.X + 0.5, t.Y + 0.5);
+            TopDown.FurnitureKit.ResusTrolley(pen, Math.Max(w, 1.0), Math.Max(l, 1.5), new Color(def?.Colour ?? "#D84B3E"));
+            pen.Pop();
+            pen.Done();
         }
 
         CostTag(P(t.X + 1, t.Y));
@@ -748,7 +778,7 @@ public partial class BuildTool : Node2D
 
             var f = layout.Furniture;
             var top = new[] { P(f.X, f.Y), P(f.X + f.Width, f.Y), P(f.X + f.Width, f.Y + f.Length), P(f.X, f.Y + f.Length) };
-            DrawColoredPolygon(Array.ConvertAll(top, v => v + new Vector2(0, -30)), new Color("#8C6D4F", 0.75f));
+            DrawColoredPolygon(top, new Color("#8C6D4F", 0.75f));
             CostTag(P(layout.DeskTiles.Max(t => t.X) + 1, layout.DeskTiles.Min(t => t.Y)));
             return;
         }

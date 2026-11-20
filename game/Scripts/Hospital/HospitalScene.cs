@@ -35,7 +35,6 @@ public partial class HospitalScene : Node2D
     private bool _showGrid;
     private WorldLayer _world = null!;
     private OverlayLayer _overlay = null!;
-    private PlanLayer _plan = null!;
     private RouteLayer _routes = null!;
     private TileCursor _cursor = null!;
     private BuildTool _build = null!;
@@ -43,7 +42,7 @@ public partial class HospitalScene : Node2D
     private MainHUD _hud = null!;
     private SelectionHighlight _highlight = null!;
     private SelectionHighlight _itemHighlight = null!;
-    private BlueprintHospital.World3D.View3D _view3D = null!;
+    private BlueprintHospital.TopDown.TopDownView _view = null!;
     private DoctorMode _doctor = null!;
     private BlueprintHospital.UI.DoctorHud _doctorHud = null!;
 
@@ -59,20 +58,15 @@ public partial class HospitalScene : Node2D
 
     public MainHUD Hud => _hud;
 
-    /// <summary>Be A Doctor: playing one of the doctors in first person.</summary>
+    /// <summary>Be A Doctor: walking one of the doctors round the hospital with the arrow keys.</summary>
     public DoctorMode Doctor => _doctor;
 
     public BlueprintHospital.UI.DoctorHud DoctorHud => _doctorHud;
 
-    /// <summary>The player becomes this doctor: the view drops to their eyes and the Be A Doctor panel takes over the screen.</summary>
+    /// <summary>The player becomes this doctor: the view closes in and follows them, and the Be A Doctor panel takes over the screen.</summary>
     public bool EnterDoctorMode(StaffMember member)
     {
         SetMode(GameMode.Play);
-        if (PlanView)
-        {
-            SetPlanView(false);
-        }
-
         var result = _doctor.Enter(member);
         if (!result.Ok)
         {
@@ -98,7 +92,7 @@ public partial class HospitalScene : Node2D
             _routes.ShowAll = _routesBeforeDoctor;
         }
 
-        // Everything drawn for the view from above steps aside: the map's labels, cursor and outlines, and the main screen.
+        // Everything for running the hospital steps aside: the map's labels, cursor and outlines, and the main screen.
         _hud.Visible = !playing;
         foreach (var layer in new CanvasItem[] { _overlay, _routes, _cursor, _highlight, _itemHighlight })
         {
@@ -129,27 +123,20 @@ public partial class HospitalScene : Node2D
 
         _showGrid = settings.ShowGridByDefault;
 
-        // Outline of the selected room or item, on the floor under everything standing on it.
-        _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
-        AddChild(_highlight);
-
         // Keeps track of the layout and where everyone is between ticks; draws nothing itself.
         _world = new WorldLayer { Name = "World", Visible = false };
         AddChild(_world);
         _world.Initialise(_session.Simulation, _session.Clock);
 
-        // The hospital in 3D, drawn under everything 2D (labels, cursor and build outlines stay on top).
-        _view3D = new BlueprintHospital.World3D.View3D { Name = "World3D" };
-        AddChild(_view3D);
-        _view3D.Initialise(this, _session.Simulation, _world);
-        _view3D.ShowGrid = _showGrid;
+        // The hospital from above, drawn under the labels, cursor and build outlines.
+        _view = new BlueprintHospital.TopDown.TopDownView { Name = "TopDown" };
+        AddChild(_view);
+        _view.Initialise(_session.Simulation, _world);
+        _view.ShowGrid = _showGrid;
 
-        // The plan view (V): the 3D world straight from above, with everyone marked by a circle. Hidden until turned on.
-        IsoDraw.SetPlan(false);
-        _plan = new PlanLayer { Name = "Plan", Visible = false };
-        AddChild(_plan);
-        _plan.Initialise(_world);
-        _view3D.SetShown(true);
+        // Outline of the selected room, on the floor under everything standing on it.
+        _highlight = new SelectionHighlight { Name = "SelectionHighlight" };
+        _view.FloorSlot.AddChild(_highlight);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -182,13 +169,15 @@ public partial class HospitalScene : Node2D
 
         if (_session.InitialCamera is { } saved)
         {
-            _camera.SnapTo(new Vector2((float)saved.X, (float)saved.Y), (float)saved.Zoom);
+            // Saves keep the camera the way the old angled view counted it; turn that into a spot on the grid.
+            var (a, b) = (saved.X / 32.0, saved.Y / 16.0);
+            _camera.SnapTo(IsoDraw.ToScreenGround((a + b) / 2, (b - a) / 2), (float)saved.Zoom * SavedZoomScale);
         }
         else
         {
             // Start looking at the emergency department.
             var footprint = StarterSite.MainBuildingFootprint;
-            _camera.SnapTo(IsoDraw.ToScreenGround(footprint.X + 22, footprint.Y + 16), 0.56f);
+            _camera.SnapTo(IsoDraw.ToScreenGround(footprint.X + 22, footprint.Y + 16), 0.56f * SavedZoomScale);
         }
 
         _hud = new MainHUD { Name = "HUD" };
@@ -248,8 +237,6 @@ public partial class HospitalScene : Node2D
         _hud.StaffInfo.FocusRequested += m => FocusOn(m);
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
         _hud.RotateRequested += RotateView;
-        _hud.PlanToggled += TogglePlanView;
-        _hud.WallsToggled += ToggleWalls;
         _hud.FloorStepRequested += step => ShowFloor(ViewFloor + step);
         _hud.AddFloorRequested += () =>
         {
@@ -361,9 +348,6 @@ public partial class HospitalScene : Node2D
         _highlight.Hover = _hud.Build.Decorating && GetViewport().GuiGetHoveredControl() is null ? DecorTarget(GetGlobalMousePosition())?.Rect : null;
         var shown = _hud.ItemInfo.Visible && _hud.ItemInfo.Room is { } itemRoom && _hud.ItemInfo.Item is { } item ? (itemRoom, item) : default;
         _itemHighlight.Item = shown.item is null ? null : Footprint(shown.itemRoom, shown.item);
-        _itemHighlight.ItemHeight = shown.item is not null && _session.Database.Furniture.TryGetValue(shown.item.ItemId, out var shownDef)
-            ? (float)System.Math.Min(System.Math.Max(shownDef.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
-            : 0;
         if (_layoutDirty)
         {
             _layoutDirty = false;
@@ -463,12 +447,6 @@ public partial class HospitalScene : Node2D
             case Key.R:
                 ToggleRoutes();
                 break;
-            case Key.V:
-                TogglePlanView();
-                break;
-            case Key.X:
-                ToggleWalls();
-                break;
             case Key.Q:
                 RotateView(-1);
                 break;
@@ -496,7 +474,7 @@ public partial class HospitalScene : Node2D
     {
         if (Mode == GameMode.Play)
         {
-            switch (IsoDraw.Plan ? _plan.HitTest(world) : _world.HitTest(world))
+            switch (_view.HitTest(world))
             {
                 case Patient patient:
                     SelectPatient(patient);
@@ -570,13 +548,16 @@ public partial class HospitalScene : Node2D
     }
 
     /// <summary>
-    /// The furniture under a point on screen, counting its height so clicking the top of a cupboard
-    /// works. Beds are the patient beds on wards and in cubicles (not X-ray tables).
+    /// The furniture under a point on screen: the smallest piece whose footprint the point is on.
+    /// Beds are the patient beds on wards and in cubicles (not X-ray tables).
     /// </summary>
     public (CareSpace Room, PlacedFurniture Item)? ItemAt(Vector2 world, bool bedsOnly)
     {
         (CareSpace, PlacedFurniture)? best = null;
-        var bestDepth = float.MinValue;
+        var bestArea = double.MaxValue;
+        var (gx, gy) = IsoDraw.ScreenToGrid(world);
+        const double pad = 0.1;
+        bool Hit((double X, double Y, double W, double L) f) => gx >= f.X - pad && gx <= f.X + f.W + pad && gy >= f.Y - pad && gy <= f.Y + f.L + pad;
         foreach (var space in _session.Simulation.Spaces.Where(s => IsoDraw.OnViewFloor(s.Rect.Y)))
         {
             foreach (var item in space.Furniture)
@@ -592,26 +573,12 @@ public partial class HospitalScene : Node2D
                     continue;
                 }
 
-                const double pad = 0.1;
-                var (x, y, w, l) = Footprint(space, item);
-                var lift = new Vector2(0, -(float)System.Math.Max(def.HeightM, 0.3) * IsoDraw.PixelsPerMetre);
-                var floor = new[]
-                {
-                    IsoDraw.ToScreen(x - pad, y - pad), IsoDraw.ToScreen(x + w + pad, y - pad),
-                    IsoDraw.ToScreen(x + w + pad, y + l + pad), IsoDraw.ToScreen(x - pad, y + l + pad),
-                };
-                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
-                if (!Geometry2D.IsPointInPolygon(world, hull))
-                {
-                    continue;
-                }
-
-                // Nearest the viewer wins when two overlap on screen.
-                var depth = IsoDraw.ToScreen(x + (w / 2), y + (l / 2)).Y;
-                if (depth > bestDepth)
+                var footprint = Footprint(space, item);
+                var area = footprint.W * footprint.L;
+                if (Hit(footprint) && area < bestArea)
                 {
                     best = (space, item);
-                    bestDepth = depth;
+                    bestArea = area;
                 }
             }
         }
@@ -628,20 +595,11 @@ public partial class HospitalScene : Node2D
                     continue;
                 }
 
-                const double pad = 0.1;
                 var chair = new PlacedFurniture(HospitalSimulation.ChairItem, placed.Tile.X + 0.08, placed.Tile.Y + 0.08, 0.84, 0.84);
-                var lift = new Vector2(0, -0.9f * IsoDraw.PixelsPerMetre);
-                var floor = new[]
-                {
-                    IsoDraw.ToScreen(chair.X - pad, chair.Y - pad), IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y - pad),
-                    IsoDraw.ToScreen(chair.X + chair.Width + pad, chair.Y + chair.Length + pad), IsoDraw.ToScreen(chair.X - pad, chair.Y + chair.Length + pad),
-                };
-                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
-                var depth = IsoDraw.ToScreen(chair.CentreX, chair.CentreY).Y;
-                if (Geometry2D.IsPointInPolygon(world, hull) && depth > bestDepth)
+                if (Hit((chair.X, chair.Y, chair.Width, chair.Length)) && chair.Width * chair.Length < bestArea)
                 {
                     best = (home, chair);
-                    bestDepth = depth;
+                    bestArea = chair.Width * chair.Length;
                 }
             }
         }
@@ -663,20 +621,21 @@ public partial class HospitalScene : Node2D
         }
 
         var spot = space.IsWard ? item.Tile : space.PatientSpot;
-        return (spot.X + 0.5 - 0.8, spot.Y + 0.5 - 2.1, 1.6, 4.2);
+        return (spot.X + 0.5 - 1.14, spot.Y + 0.5 - 2.45, 2.28, 4.9);
     }
 
-    /// <summary>The camera, saved as if the view were not rotated (saves always load facing the default way).</summary>
+    /// <summary>How much closer the view from above has to be than the old angled view to show the same stretch of hospital.</summary>
+    private const float SavedZoomScale = 1.3f;
+
+    /// <summary>
+    /// The camera for a save: the spot on the grid in the middle of the screen, written the way saves
+    /// have always kept it (as the old angled view counted it, not rotated), so old and new saves load alike.
+    /// </summary>
     public CameraState CaptureCamera()
     {
         var state = _camera.CaptureState();
-        if (IsoDraw.Rotation == 0 && !IsoDraw.Plan)
-        {
-            return state;
-        }
-
         var (gx, gy) = IsoDraw.ScreenToGroundGrid(new Vector2((float)state.X, (float)state.Y));
-        return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16 };
+        return state with { X = (gx - gy) * 32, Y = (gx + gy) * 16, Zoom = state.Zoom / SavedZoomScale };
     }
 
     /// <summary>Turns the view a quarter turn (Q anticlockwise, E clockwise), keeping the same spot in the middle of the screen.</summary>
@@ -690,37 +649,11 @@ public partial class HospitalScene : Node2D
         _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
     }
 
-    /// <summary>True while the flat 2D plan view is showing instead of the isometric view.</summary>
-    public bool PlanView => IsoDraw.Plan;
-
-    /// <summary>Switches between the isometric view and the flat 2D plan (V or the 2D button), keeping the same spot in the middle of the screen.</summary>
-    public void TogglePlanView() => SetPlanView(!IsoDraw.Plan);
-
-    public void SetPlanView(bool on)
-    {
-        if (on == IsoDraw.Plan)
-        {
-            return;
-        }
-
-        var state = _camera.CaptureState();
-        var (gx, gy) = IsoDraw.ScreenToGrid(new Vector2((float)state.X, (float)state.Y));
-        IsoDraw.SetPlan(on);
-        _overlay.Visible = !on;
-        _plan.Visible = on;
-        _world.RebuildStatic();
-        _camera.Bounds = SiteBounds();
-        _camera.SnapTo(IsoDraw.ToScreen(gx, gy), (float)state.Zoom);
-        _hud.SetPlanShown(on, _session.Simulation);
-    }
-
     /// <summary>The floor in view (0 = ground).</summary>
     public int ViewFloor => IsoDraw.ViewFloor;
 
-    public BlueprintHospital.World3D.View3D View3D => _view3D;
-
-    /// <summary>Cuts the walls down low (or puts them back up) so you can see into every room.</summary>
-    public void ToggleWalls() => _view3D.Cutaway = !_view3D.Cutaway;
+    /// <summary>The drawing of the hospital from above.</summary>
+    public BlueprintHospital.TopDown.TopDownView View => _view;
 
     /// <summary>Looks at another floor: only its rooms and people are drawn, over the grounds faded below.</summary>
     public void ShowFloor(int floor)
@@ -747,7 +680,7 @@ public partial class HospitalScene : Node2D
     private void ToggleGrid()
     {
         _showGrid = !_showGrid;
-        _view3D.ShowGrid = _showGrid;
+        _view.ShowGrid = _showGrid;
         _hud.SetGridShown(_showGrid);
     }
 

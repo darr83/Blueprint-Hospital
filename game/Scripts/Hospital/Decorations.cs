@@ -384,10 +384,10 @@ public static class Decorations
                 }
             }
 
-            // Not over the service panel at the head of a bed (World3D.SetDressing puts one there).
+            // Not over the service panel at the head of a bed (the rooms layer draws one there).
             foreach (var bed in space.Beds)
             {
-                if (World3D.SetDressing.HeadWall(space, bed) is not { } head)
+                if (TopDown.RoomsLayer.HeadWall(space, bed) is not { } head)
                 {
                     continue;
                 }

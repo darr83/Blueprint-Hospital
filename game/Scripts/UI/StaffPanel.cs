@@ -220,7 +220,7 @@ public partial class StaffPanel : PanelContainer
         _name.Text = m.Name;
         _play.Visible = m.Role == StaffRole.Doctor;
         _play.Disabled = !_sim.CanBePlayed(m);
-        _play.TooltipText = _play.Disabled ? "Only a doctor who is on shift can be played." : "See the hospital through this doctor's eyes and do their work yourself.";
+        _play.TooltipText = _play.Disabled ? "Only a doctor who is on shift can be played." : "Walk this doctor round the hospital yourself and do their work.";
         var place = m.BaseRoomId is { } roomId && _sim.Spaces.FirstOrDefault(s => s.Id == roomId) is { } room ? room.Name : "A&E";
         _role.Text = $"{m.Grade} · {place}";
         var uniform = Looks.UniformColour(m);

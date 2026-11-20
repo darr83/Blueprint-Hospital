@@ -39,6 +39,8 @@ public partial class SmokeTest : Node
     private int _savedFloors;
     private Simulation.Staff.StaffMember? _climber;
 
+    private int _wallsBeforeTurn;
+
     private enum Stage
     {
         WaitForMenu,
@@ -66,8 +68,8 @@ public partial class SmokeTest : Node
         PlanWard,
         PlanEmergency,
         PlanOverview,
-        World3D,
-        World3DTurned,
+        FromAbove,
+        FromAboveTurned,
         WardBed,
         CrashCall,
         CrashPanelOpen,
@@ -153,19 +155,6 @@ public partial class SmokeTest : Node
                 }
 
                 GD.Print("[smoke] Settings and Load Game panels open and close.");
-                foreach (var name in World3D.Models3D.All())
-                {
-                    var model = World3D.Models3D.Make(name);
-                    Check(model is not null, $"The Blender model '{name}' did not load.");
-                    if (model is not null)
-                    {
-                        var triangles = World3D.Models3D.Triangles(model);
-                        Check(triangles > 0 && (World3D.Models3D.IsKit(name) || triangles <= World3D.Models3D.TriangleLimit), $"The Blender model '{name}' has {triangles} triangles (limit {World3D.Models3D.TriangleLimit}).");
-                        model.Free();
-                    }
-                }
-
-                GD.Print($"[smoke] Blender models load within budget: {string.Join(", ", World3D.Models3D.All())}.");
                 Check(manager.Database is not null, "Game data failed to load: " + manager.DataLoadError);
                 ((UI.MainMenu)scene).ShowNewGame();
                 _frame = 0;
@@ -192,7 +181,7 @@ public partial class SmokeTest : Node
             case Stage.WaitForHospital when scene is HospitalScene hospital && hospital.IsNodeReady():
                 Check(hospital.Session.Site.Buildings.Count == 1, "Starter building missing.");
                 Check(hospital.Camera.IsCurrent(), "Camera is not active.");
-                Check(hospital.View3D.Visible, "The hospital did not open in 3D.");
+                Check(hospital.View.Visible && hospital.View.WallCount > 0, "The hospital did not open in the view from above.");
                 hospital.Session.Clock.SetSpeed(SimulationSpeed.VeryFast);
                 GD.Print("[smoke] Hospital scene loaded.");
                 FitOutWaitingRoom(hospital);
@@ -231,9 +220,9 @@ public partial class SmokeTest : Node
 
             case Stage.CloseUp when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("03_close_up");
-                Check(hospital.View3D.FillEnergy == 0f, "Turning enhanced lighting off left the fill light on.");
+                Check(!hospital.View.Shadows, "Turning the lighting setting off left the shadows on.");
                 manager.Settings.EnhancedLighting = true;
-                Check(!hospital.View3D.Floors.Detailed, "Turning surface textures off left the floor detailed.");
+                Check(!hospital.View.Detailed && !hospital.View.Ground.Detailed, "Turning the detail setting off left the grounds detailed.");
                 manager.Settings.SurfaceTextures = true;
                 LookAtWaitingRoom(hospital);
                 _frame = 0;
@@ -242,22 +231,11 @@ public partial class SmokeTest : Node
 
             case Stage.WaitingRoom when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("03a_waiting_room");
-                Check(hospital.View3D.FillEnergy > 0f, "Turning enhanced lighting on did not light the fill light.");
+                Check(hospital.View.Shadows && hospital.View.Rooms.Shadows, "Turning the lighting setting on did not bring the shadows back.");
                 manager.Settings.EnhancedLighting = _lightingWas;
-                GD.Print("[smoke] Enhanced lighting switches off and on.");
-                Check(hospital.View3D.Floors.Detailed, "Turning surface textures on did not detail the floor.");
-                _ = World3D.SurfaceDetail.Detail;
-                _ = World3D.SurfaceDetail.Normals;
-                Check(World3D.SurfaceDetail.Missing == 0, $"{World3D.SurfaceDetail.Missing} surface texture files are missing.");
-                var finishes = hospital.View3D.Floors.Finishes;
-                var waiting = hospital.Session.Simulation.Spaces.FirstOrDefault(sp => sp.Kind == Simulation.Hospital.CareSpaceKind.Waiting && IsoDraw.OnViewFloor(sp.Rect.Y));
-                if (finishes is not null && waiting is not null && hospital.Session.Simulation.DecorOf(waiting).Floor == Simulation.Hospital.FloorFinish.Terrazzo)
-                {
-                    var kinds = Enumerable.Range(0, finishes.GetWidth()).SelectMany(x => Enumerable.Range(0, finishes.GetHeight()).Select(y => (int)Math.Round(finishes.GetPixel(x, y).R * 255))).ToHashSet();
-                    Check(kinds.Contains((int)World3D.SurfaceKind.Terrazzo), "The waiting room's terrazzo floor is not in the floor finish map.");
-                }
-
-                GD.Print("[smoke] Surface textures switch off and on, every texture loads, floors know their finish.");
+                GD.Print("[smoke] Shadows switch off and on.");
+                Check(hospital.View.Detailed && hospital.View.Ground.Detailed, "Turning the detail setting on did not bring the detail back.");
+                GD.Print("[smoke] Fine detail switches off and on.");
                 hospital.RotateView(1);
                 LookAtWaitingRoom(hospital);
                 _frame = 0;
@@ -459,8 +437,7 @@ public partial class SmokeTest : Node
 
             case Stage.Ward when scene is HospitalScene hospital && _frame >= 90:
                 Screenshot("07_ward");
-                hospital.TogglePlanView();
-                Check(hospital.PlanView && IsoDraw.Plan && hospital.View3D.Visible, "V did not switch to the plan from above.");
+                Check(IsoDraw.Plan && hospital.View.Visible, "The ward is not shown from above.");
                 _frame = 0;
                 _stage = Stage.PlanWard;
                 break;
@@ -486,45 +463,40 @@ public partial class SmokeTest : Node
 
             case Stage.PlanOverview when scene is HospitalScene hospital && _frame >= 5:
                 Screenshot("07r_plan_overview");
-                hospital.TogglePlanView();
-                Check(!hospital.PlanView && !IsoDraw.Plan, "V did not switch back to the 3D view.");
-                GD.Print("[smoke] 2D plan view: on, click picks a circle, back to 3D.");
+                GD.Print("[smoke] View from above: clicking someone picks them.");
                 _frame = 0;
-                _stage = Stage.World3D;
+                _stage = Stage.FromAbove;
                 break;
 
-            case Stage.World3D when scene is HospitalScene hospital && _frame >= 5:
-                Screenshot("07s_world3d");
-                Check(hospital.View3D.Visible, "The 3D world did not show.");
-                Check(hospital.View3D.Root.GetNode("Walls").GetChildCount() > 0, "The 3D world has no walls.");
-                Check(hospital.View3D.People.Count > 0, "Nobody is standing in the 3D world.");
-                Check(hospital.View3D.Outside.SignTexts.Contains(hospital.Session.HospitalName), "The hospital's name is not on the sign over the main entrance.");
-                Check(hospital.View3D.Outside.SignTexts.Contains("Accident & Emergency"), "There is no Accident & Emergency sign.");
-                Check(hospital.View3D.Outside.SignTexts.Contains("TAXI"), "The taxi rank has no sign.");
+            case Stage.FromAbove when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07s_from_above");
+                var view = hospital.View;
+                Check(view.Visible, "The view from above did not show.");
+                Check(view.WallCount > 0, "The view from above has no walls.");
+                Check(view.Actors.PeopleDrawn > 0, "Nobody is drawn in the view from above.");
+                Check(view.SignTexts.Contains(hospital.Session.HospitalName), "The hospital's name is not on the sign over the main entrance.");
+                Check(view.SignTexts.Contains("Accident & Emergency"), "There is no Accident & Emergency sign.");
+                Check(view.SignTexts.Contains("TAXI"), "The taxi rank has no sign.");
                 CheckCarArrival(hospital);
-                Check(hospital.View3D.Beds.Count > 0, "The 3D world has no beds.");
-                Check(hospital.View3D.Furniture.Count > 0, "The 3D world has no furniture.");
-                Check(hospital.View3D.Decor.WallArtCount > 0, "The 3D world has no pictures on the walls.");
-                Check(hospital.View3D.Decor.BoardCount > 0, "The 3D world has no name boards over the doors.");
-                Check(hospital.View3D.Decor.PropCount > 0, "The 3D world has no plants or props.");
-                var bedHeads = hospital.View3D.World.ViewSpaces.Sum(s => s.Beds.Count(b => World3D.SetDressing.HeadWall(s, b) is not null));
-                Check(bedHeads > 0 && hospital.View3D.Decor.BedHeadCount == bedHeads, $"{hospital.View3D.Decor.BedHeadCount} bed-head panels for {bedHeads} beds against a wall.");
-                var decor = hospital.View3D.Decor;
-                Check(decor.RailCount > 0 && decor.GuardCount > 0 && decor.DoorKitCount > 0, $"Corridors have {decor.RailCount} handrails and {decor.GuardCount} corner guards; {decor.DoorKitCount} doors have gel and gloves.");
-                GD.Print($"[smoke] Set dressing: {bedHeads} bed-head panels, {decor.RailCount} handrail pieces, {decor.GuardCount} corner guards, {decor.DoorKitCount} doors with gel and gloves.");
-                CheckActs(hospital);
+                Check(view.Rooms.Beds.Count > 0, "The view from above has no beds.");
+                Check(view.Rooms.FurnitureCount > 0, "The view from above has no furniture.");
+                Check(view.Walls.LabelCount > 0, "No room has its name on it.");
+                Check(view.Rooms.PropCount > 0 && view.Ground.PlantCount > 0, "The view from above has no plants or props.");
+                Check(view.Doors.LeafCount > 0, "No room has a door.");
+                var bedHeads = hospital.World.ViewSpaces.Sum(s => s.Beds.Count(b => TopDown.RoomsLayer.HeadWall(s, b) is not null));
+                Check(bedHeads > 0 && view.Rooms.BedHeadCount == bedHeads, $"{view.Rooms.BedHeadCount} bed-head panels for {bedHeads} beds against a wall.");
+                GD.Print($"[smoke] View from above: {view.WallCount} stretches of wall, {view.Rooms.FurnitureCount} pieces of furniture, {view.Rooms.Beds.Count} beds, {bedHeads} bed-head panels, {view.Walls.LabelCount} room names, {view.Actors.PeopleDrawn} people.");
+                _wallsBeforeTurn = view.WallCount;
                 hospital.RotateView(1);
-                hospital.ToggleWalls();
                 _frame = 0;
-                _stage = Stage.World3DTurned;
+                _stage = Stage.FromAboveTurned;
                 break;
 
-            case Stage.World3DTurned when scene is HospitalScene hospital && _frame >= 5:
-                Screenshot("07t_world3d_turned_cutaway");
-                Check(hospital.View3D.Cutaway, "X did not cut the walls down.");
-                hospital.ToggleWalls();
+            case Stage.FromAboveTurned when scene is HospitalScene hospital && _frame >= 5:
+                Screenshot("07t_from_above_turned");
+                Check(IsoDraw.Rotation == 1 && hospital.View.WallCount == _wallsBeforeTurn && hospital.View.Actors.PeopleDrawn > 0, "Turning the view lost walls or people.");
                 hospital.RotateView(-1);
-                GD.Print("[smoke] 3D world: walls and floors built, turned, walls cut down and back.");
+                GD.Print("[smoke] View from above: turned a quarter turn and back.");
                 {
                     var ward = hospital.Session.Simulation.Wards.Single().Rect;
                     hospital.Camera.SnapTo(IsoDraw.ToScreen(ward.X + (ward.Width / 2.0), ward.Y + (ward.Length / 2.0)), 0.9f);
@@ -1602,7 +1574,7 @@ public partial class SmokeTest : Node
         hospital.Hud.HideRightPanels();
         var sim = hospital.Session.Simulation;
         var chair = sim.Chairs.First(c => sim.Spaces.Any(s => s.Kind == Simulation.Hospital.CareSpaceKind.Corridor && s.Rect.Contains(c.Tile)) && !sim.Spaces.Any(s => s.HasWalls && s.Rect.Contains(c.Tile)));
-        hospital.ClickAt(IsoDraw.ToScreen(chair.Tile.X + 0.5, chair.Tile.Y + 0.5) + new Vector2(0, -8));
+        hospital.ClickAt(IsoDraw.ToScreen(chair.Tile.X + 0.5, chair.Tile.Y + 0.5));
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.Item?.Tile == chair.Tile, "Clicking a corridor chair in build mode did not open it.");
     }
 
@@ -1643,7 +1615,7 @@ public partial class SmokeTest : Node
     {
         var sim = hospital.Session.Simulation;
         var outpatient = sim.Outpatients.Where(o => !o.IsMoving).OrderBy(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting ? 0 : 1).First();
-        hospital.ClickAt(hospital.World.FootPosition(outpatient) + new Vector2(0, -30));
+        hospital.ClickAt(hospital.World.FootPosition(outpatient));
         Check(hospital.World.Selected == outpatient, "Clicking a clinic patient did not select them.");
         Check(hospital.Hud.Clinics.Visible, "Clicking a clinic patient did not open the clinic calendars.");
     }
@@ -1659,7 +1631,7 @@ public partial class SmokeTest : Node
         Check(hospital.Hud.RoomInfo.Visible && hospital.Hud.RoomInfo.RoomId == room.Id, "Clicking the room in build mode did not open it.");
 
         var member = hospital.Session.Simulation.Staff.First();
-        hospital.ClickAt(hospital.World.FootPosition(member) + new Vector2(0, -30));
+        hospital.ClickAt(hospital.World.FootPosition(member));
         Check(hospital.World.Selected is null && !hospital.Hud.StaffInfo.Visible, "Build mode should not select staff.");
         hospital.ClickAt(floor);
     }
@@ -1685,7 +1657,7 @@ public partial class SmokeTest : Node
         }
 
         hospital.ClickAt(hospital.World.FootPosition(member));
-        Check(hospital.World.Selected is StaffMember, "Clicking a staff circle in the 2D plan did not pick anyone.");
+        Check(hospital.World.Selected is StaffMember, "Clicking a member of staff did not pick them.");
         hospital.Hud.HideRightPanels();
         hospital.World.Selected = null;
     }
@@ -1696,7 +1668,7 @@ public partial class SmokeTest : Node
         var ward = sim.Wards.Single();
         Check(hospital.Mode == GameMode.Play, "Should be in play mode on the ward.");
         var floor = IsoDraw.ToScreen(ward.Rect.X + 0.5, ward.Rect.Y + (ward.Rect.Length / 2.0));
-        if (hospital.World.HitTest(floor) is null && hospital.ItemAt(floor, bedsOnly: true) is null)
+        if (hospital.View.HitTest(floor) is null && hospital.ItemAt(floor, bedsOnly: true) is null)
         {
             hospital.ClickAt(floor);
             Check(!hospital.Hud.RoomInfo.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should not select rooms.");
@@ -1705,7 +1677,7 @@ public partial class SmokeTest : Node
         var bed = ward.Furniture
             .Where(f => sim.Database.Furniture[f.ItemId].Style == Simulation.Data.Models.FurnitureStyle.Bed)
             .Select(f => (Item: f, At: IsoDraw.ToScreen(f.Tile.X + 0.5, f.Tile.Y + 0.5)))
-            .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.World.HitTest(b.At) is null);
+            .First(b => ItemPanel.BedOccupant(ward, b.Item) is null && hospital.View.HitTest(b.At) is null);
         hospital.ClickAt(bed.At);
         Check(hospital.Hud.ItemInfo.Visible && hospital.Hud.ItemInfo.AsBed, "Clicking an empty bed in play mode did not open it.");
     }
@@ -1776,27 +1748,6 @@ public partial class SmokeTest : Node
     }
 
     /// <summary>The build bar fits on screen and every room can be reached from it.</summary>
-    /// <summary>Every animated action poses a figure, standing and sitting, without throwing, and the hand props appear.</summary>
-    private void CheckActs(HospitalScene hospital)
-    {
-        var person = World3D.Person3D.Build(Looks.Staff(hospital.Session.Simulation.Staff.First()));
-        hospital.View3D.Root.AddChild(person);
-        foreach (var act in Enum.GetValues<World3D.Act>())
-        {
-            foreach (var pose in new[] { World3D.Pose.Standing, World3D.Pose.Seated })
-            {
-                person.SetPose(pose, 0);
-                person.SetAct(act, pose, 5.5);
-            }
-        }
-
-        person.SetAct(World3D.Act.Phone, World3D.Pose.Seated, 1);
-        Check(person.FindChild("Phone", true, false) is Node3D { Visible: true }, "Someone looking at their phone has no phone in their hand.");
-        person.SetAct(World3D.Act.None, World3D.Pose.Standing, 1);
-        Check(person.FindChild("Phone", true, false) is Node3D { Visible: false }, "The phone stayed in their hand after they put it away.");
-        person.QueueFree();
-    }
-
     private void CheckBuildBar(HospitalScene hospital)
     {
         var bar = hospital.Hud.Build;
@@ -2015,18 +1966,17 @@ public partial class SmokeTest : Node
         var patient = sim.GenerateWalkIn();
         Check(sim.SpawnCarArrival(patient, Simulation.Transport.CarTrip.Taxi), "A taxi had nowhere to stop.");
         hospital.Session.Clock.Step();
-        hospital.View3D._Process(0.016);
-        Check(hospital.View3D.People.FindChild("Car", true, false) is not null, "The taxi is not drawn.");
+        Check(sim.Cars.Any(c => c.IsTaxi && c.State != Simulation.Transport.CarState.Gone), "The taxi is not on its way in.");
         for (var i = 0; i < 2000 && !sim.Patients.Contains(patient); i++)
         {
             hospital.Session.Clock.Step();
         }
 
         Check(sim.Patients.Contains(patient), "The taxi's passenger never got out.");
-        GD.Print($"[smoke] Outside: signs {string.Join(" | ", hospital.View3D.Outside.SignTexts.Distinct())}; taxi delivered {patient.FullName}.");
+        GD.Print($"[smoke] Outside: signs {string.Join(" | ", hospital.View.SignTexts.Distinct())}; taxi delivered {patient.FullName}.");
     }
 
-    /// <summary>Be A Doctor: pick a doctor, see through their eyes, walk, open a patient's card and a hint, and hand them back.</summary>
+    /// <summary>Be A Doctor: pick a doctor, follow them from above, walk, open a patient's card and a hint, and hand them back.</summary>
     private static void CheckDoctorMode(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
@@ -2040,26 +1990,33 @@ public partial class SmokeTest : Node
         var doctor = doctors[0];
         Check(hospital.EnterDoctorMode(doctor), $"{doctor.Name} could not be played.");
         Check(hospital.Doctor.Active && sim.PlayerDoctorId == doctor.Id, "Doctor mode did not start.");
-        Check(hospital.View3D.FirstPerson is { } eye && ReferenceEquals(eye.Body, doctor), "The view did not move to the doctor's eyes.");
-        Check(hospital.View3D.FirstPersonParts.Visible, "The ceiling and floor arrows are not shown in first person.");
-        var parts = hospital.View3D.FirstPersonParts;
-        parts.RebuildCeiling();
-        Check(parts.LampCount == parts.LightCount && parts.LampCount > 0, $"Only {parts.LampCount} of {parts.LightCount} ceiling light panels give off light.");
-        Check(hospital.View3D.Reflecting == (GameManager.Instance?.Settings.EnhancedLighting ?? true), "Floor reflections do not follow the lighting setting in first person.");
+        Check(ReferenceEquals(hospital.View.Player, doctor), "The doctor is not marked as the player's.");
+        Check(hospital.Camera.Position.DistanceTo(hospital.Doctor.CameraSpot(doctor)) < 2 && Math.Abs(hospital.Camera.Zoom.X - DoctorMode.StartZoom) < 0.01, "The view did not close in on the doctor.");
+        Check(hospital.ViewFloor == sim.FloorOf(doctor), "The view is not on the doctor's floor.");
         Check(hospital.DoctorHud.Visible && !hospital.Hud.Visible, "The Be A Doctor screen did not take over from the main screen.");
         Check(!hospital.Hud.Doctors.Visible, "The list of doctors stayed open.");
 
-        // Walking: at least one of the four ways is free, and the eye follows.
+        // The arrow keys move the doctor the way they point on screen, however the view is turned.
+        var (rightX, rightY) = DoctorMode.Step(1, 0, 2);
+        var (downX, downY) = DoctorMode.Step(0, 1, 2);
+        Check(Math.Abs(rightX - 2) < 1e-6 && Math.Abs(rightY) < 1e-6 && Math.Abs(downX) < 1e-6 && Math.Abs(downY - 2) < 1e-6, "The arrow keys do not move the doctor the way they point.");
+        hospital.RotateView(1);
+        var (turnedX, turnedY) = DoctorMode.Step(1, 0, 2);
+        Check(Math.Abs(turnedX) < 1e-6 && Math.Abs(turnedY + 2) < 1e-6, "With the view turned, the right arrow does not move the doctor to the right of the screen.");
+        hospital.RotateView(-1);
+
+        // Walking: at least one of the four ways is free, and the view follows.
         var (startX, startY) = (doctor.X, doctor.Y);
         foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
         {
-            hospital.Doctor.LookForTest(yaw, 0);
+            hospital.Doctor.LookForTest(yaw);
             hospital.Doctor.StepForwardForTest(0.6);
         }
 
         _ = (startX, startY);
-        hospital.Doctor.LookForTest(0, 0);
-        Check(hospital.View3D.FirstPerson is { } moved && Math.Abs(moved.X - doctor.X) < 0.01 && Math.Abs(moved.Y - doctor.Y) < 0.01, "The eye did not follow the doctor.");
+        hospital.Doctor.LookForTest(0);
+        hospital.Doctor._Process(10);
+        Check(hospital.Camera.Position.DistanceTo(hospital.Doctor.CameraSpot(doctor)) < 2, "The view did not follow the doctor.");
 
         // A patient's card and the Hint card.
         var patient = sim.Patients.FirstOrDefault(p => p.IsInDepartment && p.IsInEmergency);
@@ -2074,7 +2031,7 @@ public partial class SmokeTest : Node
 
         hospital.Doctor.Exit();
         Check(!hospital.Doctor.Active && sim.PlayerDoctorId is null, "Leaving doctor mode did not hand the doctor back.");
-        Check(hospital.View3D.FirstPerson is null && !hospital.View3D.FirstPersonParts.Visible, "The view did not go back above the hospital.");
+        Check(hospital.View.Player is null, "The doctor is still marked as the player's.");
         Check(hospital.Hud.Visible && !hospital.DoctorHud.Visible, "The main screen did not come back.");
         Check(Input.MouseMode == Input.MouseModeEnum.Visible, "The mouse pointer was not given back.");
         hospital.Hud.HideRightPanels();

@@ -52,12 +52,10 @@ public static class IsoDraw
     public const float PlanTile = 32f;
 
     /// <summary>
-    /// True while the 2D plan view is on (V): the grid is drawn straight down from above instead of
-    /// isometric, so every floor, cursor, route and highlight that goes through this class lines up.
+    /// Always true: the game is drawn straight down from above, so every floor, cursor, route and
+    /// highlight that goes through this class lines up. (The isometric maths is kept for old saves' camera positions.)
     /// </summary>
-    public static bool Plan { get; private set; }
-
-    public static void SetPlan(bool on) => Plan = on;
+    public static bool Plan { get; private set; } = true;
 
     /// <summary>
     /// Draws flat from above, unrotated, until disposed: used to paint the floors into the texture
@@ -308,7 +306,7 @@ public static class IsoDraw
         for (var i = 0; i < segments; i++)
         {
             var a = i * Mathf.Tau / segments;
-            points[i] = centre + new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius * 0.5f);
+            points[i] = centre + new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius * (Plan ? 1f : 0.5f));
         }
 
         return points;

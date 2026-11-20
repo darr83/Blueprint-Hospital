@@ -65,16 +65,6 @@ public partial class ArtShots : Node
                     GameManager.Instance.Settings.SurfaceTextures = false;
                 }
 
-                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
-                {
-                    h.ToggleWalls();
-                }
-
-                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-plan") >= 0)
-                {
-                    h.SetPlanView(true);
-                }
-
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-wing") >= 0)
                 {
                     BuildShowroom(h);
@@ -187,6 +177,17 @@ public partial class ArtShots : Node
                     }
 
                     GD.Print($"[art] Minors room: {minors.PlacesUsed} of {minors.Beds.Count} beds in use");
+                }
+
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-doctor") >= 0)
+                {
+                    // Be A Doctor: the view follows the first doctor on shift, with their panel up.
+                    var doctor = h.Session.Simulation.PlayableDoctors.First();
+                    GD.Print($"[art] Playing {doctor.Name}: {h.EnterDoctorMode(doctor)}");
+                    if (h.Session.Simulation.Patients.FirstOrDefault(p => p.IsInDepartment && p.IsInEmergency) is { } patient)
+                    {
+                        h.DoctorHud.OpenCard(patient);
+                    }
                 }
 
                 _frame = 0;
