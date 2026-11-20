@@ -45,7 +45,7 @@ public partial class PeopleShots3D : Node
         ("Matron", StaffRole.Nurse, "Band 8 nurse"), ("HCA", StaffRole.HealthcareAssistant, "Healthcare assistant"), ("Outreach", StaffRole.OutreachNurse, "Band 7 nurse"),
         ("Midwife", StaffRole.Midwife, "Band 6 midwife"), ("Senior midwife", StaffRole.Midwife, "Band 7 midwife"), ("Junior doctor", StaffRole.Doctor, "Junior Doctor"),
         ("Doctor", StaffRole.Doctor, "Doctor"), ("Registrar", StaffRole.Doctor, "Registrar"), ("Consultant", StaffRole.Doctor, "Consultant"),
-        ("Surgeon", StaffRole.Surgeon, "Consultant"), ("Anaesthetist", StaffRole.Anaesthetist, "Consultant"), ("Endoscopist", StaffRole.Endoscopist, "Endoscopist"),
+        ("Surgeon", StaffRole.Surgeon, "Consultant"), ("Anaesthetist", StaffRole.Anaesthetist, "Consultant"), ("Scrub nurse", StaffRole.ScrubNurse, "Band 5 scrub nurse"), ("Theatre sister", StaffRole.ScrubNurse, "Band 7 theatre sister"), ("Endoscopist", StaffRole.Endoscopist, "Endoscopist"),
         ("Radiographer", StaffRole.Radiographer, "Radiographer"), ("Sonographer", StaffRole.Sonographer, "Sonographer"), ("Cardiac phys.", StaffRole.CardiacPhysiologist, "Cardiac physiologist"),
         ("Neurophys.", StaffRole.Neurophysiologist, "Neurophysiologist"), ("Pharmacist", StaffRole.Pharmacist, "Pharmacist"), ("Physio", StaffRole.Physiotherapist, "Physiotherapist"),
         ("Plaster tech", StaffRole.PlasterTechnician, "Plaster technician"), ("Porter", StaffRole.Porter, "Porter"), ("Reception", StaffRole.Receptionist, "Receptionist"), ("Cleaner", StaffRole.Cleaner, "Cleaner"),

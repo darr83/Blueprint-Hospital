@@ -211,4 +211,61 @@ public class SurgeryCareTests
             h.Sim.Staff.Where(s => s.Role == StaffRole.Surgeon).Select(s => s.Specialty),
             restored.Sim.Staff.Where(s => s.Role == StaffRole.Surgeon).Select(s => s.Specialty));
     }
+
+    [Fact]
+    public void Every_theatre_needs_a_scrub_nurse_who_scrubs_in_for_the_whole_operation()
+    {
+        var h = SurgeryTests.Wing(recovery: true);
+        var theatre = h.Sim.SpacesOfKind(CareSpaceKind.Theatre).Single();
+        Assert.Contains(h.Sim.RecommendedStaffing(), n => n.RoomId == theatre.Id && n.Role == StaffRole.ScrubNurse);
+        Assert.Contains(h.Sim.PostingsFor(StaffRole.ScrubNurse), p => p.RoomId == theatre.Id);
+        Assert.True(h.Sim.IsStaffed(theatre));
+
+        // Without a scrub nurse the theatre is shut.
+        var nurses = h.Sim.Staff.Where(s => s.Role == StaffRole.ScrubNurse).ToList();
+        Assert.NotEmpty(nurses);
+        foreach (var nurse in nurses)
+        {
+            h.Sim.Fire(nurse.Id);
+        }
+
+        Assert.Contains("a scrub nurse", h.Sim.TheatreProblems(theatre));
+        Assert.False(h.Sim.IsStaffed(theatre));
+        h.StaffToRecommended();
+        Assert.True(h.Sim.IsStaffed(theatre));
+
+        h.Sim.NextComplication = "none";
+        var patient = h.Sim.SpawnPatient(ArrivalMethod.Ambulance, "acute_appendicitis");
+        var scrubbed = false;
+        h.RunUntil(() =>
+        {
+            if (h.Sim.Tasks.FirstOrDefault(t => t.Kind == TaskKind.Surgery && t.PatientId == patient.Id && t.Started) is { } op
+                && h.Sim.ScrubNurseOn(op) is { } scrub && !scrub.IsMoving && theatre.Rect.Contains(scrub.Tile))
+            {
+                scrubbed = true;
+                Assert.Equal(theatre.Id, scrub.BaseRoomId);
+                Assert.NotEqual(theatre.StaffSpot, scrub.Tile);
+            }
+
+            return patient.HadSurgery;
+        }, TimeSpan.FromHours(24), "the operation");
+
+        var journey = h.Journey(patient);
+        Assert.True(scrubbed, journey);
+        Assert.Contains("(scrub nurse) scrubbed in", journey);
+        h.RunFor(TimeSpan.FromMinutes(5));
+        Assert.All(h.Sim.Staff.Where(s => s.Role == StaffRole.ScrubNurse), s => Assert.Null(s.AssistingTaskId));
+    }
+
+    [Fact]
+    public void There_are_about_45_operations_and_every_planned_theatre_list_has_a_surgical_department()
+    {
+        var db = new SimulationHarness().Database;
+        var operations = db.Conditions.Values.Where(c => c.Operation is not null).ToList();
+        Assert.True(operations.Count >= 45, $"{operations.Count} operations");
+        var theatreLists = operations.Where(c => c.IsPlanned && c.Operation!.Room == CareSpaceKind.Theatre).ToList();
+        Assert.True(theatreLists.Count >= 20, $"{theatreLists.Count} planned theatre lists");
+        Assert.All(theatreLists, c => Assert.Contains(HospitalSimulation.SpecialtyFor(c.Department), HospitalSimulation.SurgicalSpecialties));
+        Assert.Equal(theatreLists.Count, theatreLists.Select(c => c.Operation!.Name).Distinct().Count());
+    }
 }

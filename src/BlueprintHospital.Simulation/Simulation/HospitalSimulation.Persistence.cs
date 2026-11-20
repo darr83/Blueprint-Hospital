@@ -699,8 +699,9 @@ public sealed partial class HospitalSimulation
 
         RestoreDecor(state.Decor, state.DecorDefaults);
 
-        // A saved game can't carry on the old random sequence, so start a new one.
-        Random.Reseed(HashCode.Combine(Random.Seed, Now.Ticks));
+        // A saved game can't carry on the old random sequence, so start a new one. The mix is fixed (not
+        // HashCode.Combine, which changes every time the program runs) so a loaded game plays the same way each time.
+        Random.Reseed(unchecked((int)((Random.Seed * 1_000_003L) ^ Now.Ticks ^ (Now.Ticks >> 32))));
 
         // Anything a dropped room or person left behind is cleaned up, and walkers set off again.
         foreach (var patient in _patients.Values)

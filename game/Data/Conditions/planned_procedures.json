@@ -685,5 +685,1365 @@
       ],
       "tariff": 900
     }
+  },
+  {
+    "id": "planned_umbilical_hernia_repair",
+    "name": "Umbilical hernia (planned repair)",
+    "department": "general_surgery",
+    "description": "A hernia at the belly button, booked for a planned repair as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      80
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "swelling",
+    "symptoms": [
+      {
+        "symptom": "swelling",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned umbilical hernia repair as a day case.",
+    "operation": {
+      "name": "Umbilical hernia repair",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1900
+    }
+  },
+  {
+    "id": "planned_haemorrhoidectomy",
+    "name": "Haemorrhoids (planned operation)",
+    "department": "general_surgery",
+    "description": "Large piles that keep bleeding, booked for removal as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      80
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "rectal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "rectal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned haemorrhoidectomy as a day case.",
+    "operation": {
+      "name": "Haemorrhoidectomy",
+      "minutes": 40,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1700
+    }
+  },
+  {
+    "id": "planned_lipoma_excision",
+    "name": "Lipoma (planned excision)",
+    "department": "general_surgery",
+    "description": "A soft fatty lump under the skin, booked to be cut out as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      80
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "swelling",
+    "symptoms": [
+      {
+        "symptom": "swelling",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned excision of a lipoma as a day case.",
+    "operation": {
+      "name": "Excision of lipoma",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 900
+    }
+  },
+  {
+    "id": "planned_pilonidal_sinus",
+    "name": "Pilonidal sinus (planned excision)",
+    "department": "general_surgery",
+    "description": "A sinus at the top of the buttocks that keeps getting infected, booked for excision.",
+    "prevalence": 1,
+    "age_range": [
+      16,
+      45
+    ],
+    "female_fraction": 0.25,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "perianal_pain",
+    "symptoms": [
+      {
+        "symptom": "perianal_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned excision of a pilonidal sinus as a day case.",
+    "operation": {
+      "name": "Pilonidal sinus excision",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1500
+    }
+  },
+  {
+    "id": "planned_varicose_veins",
+    "name": "Varicose veins (planned treatment)",
+    "department": "general_surgery",
+    "description": "Painful varicose veins, booked for closing off with a heated catheter as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      30,
+      80
+    ],
+    "female_fraction": 0.65,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned endovenous ablation as a day case.",
+    "operation": {
+      "name": "Endovenous ablation of varicose veins",
+      "minutes": 60,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1800
+    }
+  },
+  {
+    "id": "planned_circumcision",
+    "name": "Phimosis (planned circumcision)",
+    "department": "general_surgery",
+    "description": "A tight foreskin that can't be pulled back, booked for circumcision as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      16,
+      80
+    ],
+    "female_fraction": 0.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "dysuria",
+    "symptoms": [
+      {
+        "symptom": "dysuria",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned circumcision as a day case.",
+    "operation": {
+      "name": "Circumcision",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1100
+    }
+  },
+  {
+    "id": "planned_bunion_correction",
+    "name": "Bunion (planned correction)",
+    "department": "trauma_orthopaedics",
+    "description": "A painful bunion at the base of the big toe, booked for correction as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      30,
+      80
+    ],
+    "female_fraction": 0.85,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned bunion correction as a day case.",
+    "operation": {
+      "name": "Bunion correction (scarf osteotomy)",
+      "minutes": 60,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 2600
+    }
+  },
+  {
+    "id": "planned_trigger_finger_release",
+    "name": "Trigger finger (planned release)",
+    "department": "trauma_orthopaedics",
+    "description": "A finger that locks when bent, booked for a small release operation.",
+    "prevalence": 1,
+    "age_range": [
+      35,
+      85
+    ],
+    "female_fraction": 0.6,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned trigger finger release as a day case.",
+    "operation": {
+      "name": "Trigger finger release",
+      "minutes": 20,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 900
+    }
+  },
+  {
+    "id": "planned_dupuytren_fasciectomy",
+    "name": "Dupuytren's contracture (planned fasciectomy)",
+    "department": "trauma_orthopaedics",
+    "description": "Fingers being pulled into the palm by thickened tissue, booked for fasciectomy.",
+    "prevalence": 1,
+    "age_range": [
+      45,
+      85
+    ],
+    "female_fraction": 0.2,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "numbness",
+    "symptoms": [
+      {
+        "symptom": "numbness",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned fasciectomy as a day case.",
+    "operation": {
+      "name": "Fasciectomy for Dupuytren's contracture",
+      "minutes": 60,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 2200
+    }
+  },
+  {
+    "id": "planned_shoulder_decompression",
+    "name": "Shoulder impingement (planned decompression)",
+    "department": "trauma_orthopaedics",
+    "description": "Pain lifting the arm from a pinched tendon, booked for keyhole decompression.",
+    "prevalence": 1,
+    "age_range": [
+      35,
+      75
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned arthroscopic shoulder decompression as a day case.",
+    "operation": {
+      "name": "Arthroscopic subacromial decompression",
+      "minutes": 60,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 2800
+    }
+  },
+  {
+    "id": "planned_metalwork_removal",
+    "name": "Metalwork after a fracture (planned removal)",
+    "department": "trauma_orthopaedics",
+    "description": "Plates or screws from an old fracture that rub or ache, booked for removal.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      70
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "limb_pain",
+    "symptoms": [
+      {
+        "symptom": "limb_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned removal of metalwork as a day case.",
+    "operation": {
+      "name": "Removal of metalwork",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1600
+    }
+  },
+  {
+    "id": "planned_laparoscopic_sterilisation",
+    "name": "Sterilisation (planned)",
+    "department": "gynaecology",
+    "description": "A woman who has decided not to have more children, booked for keyhole sterilisation.",
+    "prevalence": 1,
+    "age_range": [
+      28,
+      48
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned laparoscopic sterilisation as a day case.",
+    "operation": {
+      "name": "Laparoscopic sterilisation",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1500
+    }
+  },
+  {
+    "id": "planned_diagnostic_laparoscopy",
+    "name": "Pelvic pain (planned laparoscopy)",
+    "department": "gynaecology",
+    "description": "Long-standing pelvic pain, booked for a keyhole look for endometriosis.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      50
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned diagnostic laparoscopy as a day case.",
+    "operation": {
+      "name": "Diagnostic laparoscopy",
+      "minutes": 45,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 2000
+    }
+  },
+  {
+    "id": "planned_miscarriage_management",
+    "name": "Miscarriage (planned surgical management)",
+    "department": "gynaecology",
+    "description": "A miscarriage that hasn't passed on its own, booked for surgical management.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      45
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "vaginal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned surgical management of miscarriage as a day case.",
+    "operation": {
+      "name": "Surgical management of miscarriage",
+      "minutes": 20,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1100
+    }
+  },
+  {
+    "id": "planned_endometrial_ablation",
+    "name": "Heavy periods (planned endometrial ablation)",
+    "department": "gynaecology",
+    "description": "Very heavy periods, booked to have the womb lining treated as a day case.",
+    "prevalence": 1,
+    "age_range": [
+      30,
+      52
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "vaginal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned endometrial ablation as a day case.",
+    "operation": {
+      "name": "Endometrial ablation",
+      "minutes": 30,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 1600
+    }
+  },
+  {
+    "id": "planned_lletz",
+    "name": "Abnormal smear (planned LLETZ)",
+    "department": "gynaecology",
+    "description": "Abnormal cells on a smear test, booked to have them removed with a wire loop.",
+    "prevalence": 1,
+    "age_range": [
+      25,
+      60
+    ],
+    "female_fraction": 1.0,
+    "ambulance_probability": 0,
+    "crew_assessment": "planned admission",
+    "presenting_complaint": "vaginal_bleeding",
+    "symptoms": [
+      {
+        "symptom": "vaginal_bleeding",
+        "probability": 1.0
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        76,
+        8
+      ],
+      "systolic_bp": [
+        132,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.04,
+      0.1
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [],
+    "recovery_per_hour": 0.2,
+    "disposition": "surgery",
+    "disposition_note": "Planned LLETZ as a day case.",
+    "operation": {
+      "name": "LLETZ (loop excision of the cervix)",
+      "minutes": 20,
+      "day_case": true
+    },
+    "length_of_stay_hours": [
+      4,
+      24
+    ],
+    "planned": {
+      "per_day": [
+        0,
+        1
+      ],
+      "tariff": 800
+    }
   }
 ]

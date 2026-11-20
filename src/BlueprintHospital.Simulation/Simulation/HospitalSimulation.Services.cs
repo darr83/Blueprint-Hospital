@@ -76,7 +76,7 @@ public sealed partial class HospitalSimulation
                && !_recovering.Values.Any(r => r.RoomId == room.Id)
                && DeliveryRoomFreeFor(room, task.PatientId)
                && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre
-                   || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null && SessionTakes(room, task)));
+                   || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null && FreeScrubNurse(room) is not null && SessionTakes(room, task)));
     }
 
     /// <summary>The member of staff starts work in their room; for a scan or an operation the patient is taken there.</summary>
@@ -171,7 +171,7 @@ public sealed partial class HospitalSimulation
                 : SpacesOfKind(CareSpaceKind.Theatre).Any(IsStaffed)
                     ? $"no theatre here takes {DepartmentName(diagnosed.Department)} patients"
                     : SpacesOfKind(CareSpaceKind.Theatre).Any(t => _staff.Any(s => s.BaseRoomId == t.Id))
-                        ? "the theatre needs both a surgeon and an anaesthetist"
+                        ? "the theatre needs a surgeon, an anaesthetist and a scrub nurse"
                         : "there is no operating theatre on site";
             ArrangeTransfer(patient, diagnosed, $"Needs {LowerFirst(operation.Name)}, but {why}, so they are being transferred to a neighbouring hospital.");
             return;

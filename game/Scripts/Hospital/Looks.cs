@@ -165,7 +165,7 @@ public static class Looks
         var female = member.Role switch
         {
             StaffRole.Midwife => Roll(seed, 3, 10) != 0,
-            StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.Receptionist => Roll(seed, 3, 10) < 7,
+            StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.ScrubNurse or StaffRole.Receptionist => Roll(seed, 3, 10) < 7,
             StaffRole.Porter => Roll(seed, 3, 10) < 3,
             _ => Roll(seed, 3, 2) == 0,
         };
@@ -207,6 +207,9 @@ public static class Looks
             // Theatre and procedure staff: scrubs, a cap and a mask.
             StaffRole.Surgeon => Scrubs("#4E9C6F") with { Cap = new Color("#3E7F5A"), Mask = true, Lanyard = false, ShoeColour = new Color("#E8ECEF") },
             StaffRole.Anaesthetist => Scrubs("#3F5FA8") with { Cap = cap, Mask = true, Stethoscope = true, ShoeColour = new Color("#2F6FD0") },
+            // Scrub nurses: plum theatre scrubs, a patterned cap, mask and blue gloves; the theatre sister's are darker with a fob watch.
+            StaffRole.ScrubNurse when Is("Band 7") => Scrubs("#4A2445") with { Cap = cap, Mask = true, Gloves = new Color("#8FC3E6"), FobWatch = true, ShoeColour = new Color("#E8ECEF") },
+            StaffRole.ScrubNurse => Scrubs("#8C4A7E") with { Cap = cap, Mask = true, Gloves = new Color("#8FC3E6"), ShoeColour = new Color("#E8ECEF") },
             StaffRole.Endoscopist => Scrubs("#5A4E9C") with { Cap = new Color("#5A4E9C"), Apron = new Color("#DDEBF2") },
 
             // Diagnostics and therapy.

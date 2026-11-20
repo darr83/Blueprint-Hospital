@@ -228,7 +228,7 @@ public partial class SurgeryPanel : PanelContainer
     {
         if (theatres.Count == 0)
         {
-            _body.AddChild(UiStyle.Body("Build an operating theatre, then an anaesthetic room against one of its walls: the two are joined by automatic sliding doors. Each theatre needs a surgeon and an anaesthetist.", muted: true));
+            _body.AddChild(UiStyle.Body("Build an operating theatre, then an anaesthetic room against one of its walls: the two are joined by automatic sliding doors. Each theatre needs a surgeon, an anaesthetist and a scrub nurse.", muted: true));
             return;
         }
 
@@ -306,7 +306,12 @@ public partial class SurgeryPanel : PanelContainer
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", 8);
             var avatar = HudWidgets.Avatar(26);
-            HudWidgets.SetAvatar(avatar, member.Name, member.Role == StaffRole.Anaesthetist ? new Color("#6A4FB3") : UiStyle.Blue);
+            HudWidgets.SetAvatar(avatar, member.Name, member.Role switch
+            {
+                StaffRole.Anaesthetist => new Color("#6A4FB3"),
+                StaffRole.ScrubNurse => new Color("#7A3B69"),
+                _ => UiStyle.Blue,
+            });
             row.AddChild(avatar.Badge);
             var who = new Label { Text = member.Name, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis, SizeFlagsHorizontal = SizeFlags.ExpandFill };
             who.AddThemeFontSizeOverride("font_size", 13);

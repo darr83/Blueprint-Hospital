@@ -405,6 +405,50 @@ public sealed partial class HospitalSimulation
         }
     }
 
+    // ---------------------------------------------------------------- scrub nurses
+
+    /// <summary>A scrub nurse in this theatre who is free to scrub in now.</summary>
+    private StaffMember? FreeScrubNurse(CareSpace theatre) =>
+        _staff.FirstOrDefault(s => s.Role == StaffRole.ScrubNurse && s.BaseRoomId == theatre.Id && s.IsOnDuty && !s.IsOnBreak
+                                   && s.CurrentTaskId is null && s.AssistingTaskId is null && s.PagedUntil is null);
+
+    /// <summary>The scrub nurse on this operation, if one has scrubbed in.</summary>
+    public StaffMember? ScrubNurseOn(ClinicalTask task) => _staff.FirstOrDefault(s => s.AssistingTaskId == task.Id && s.Role == StaffRole.ScrubNurse);
+
+    /// <summary>While the patient is put to sleep, a scrub nurse scrubs in, lays out the instruments and stays for the whole operation.</summary>
+    private void JoinScrubNurse(ClinicalTask task, CareSpace theatre, Patient patient)
+    {
+        if (ScrubNurseOn(task) is not null || FreeScrubNurse(theatre) is not { } nurse)
+        {
+            return;
+        }
+
+        nurse.AssistingTaskId = task.Id;
+        nurse.Activity = StaffActivity.Working;
+        nurse.StatusText = $"Scrubbed in: laying out instruments for {patient.FullName}";
+        WalkTo(nurse, ScrubSpot(theatre));
+        patient.Log(Now, $"{nurse.Name} (scrub nurse) scrubbed in and laid out the instruments in {theatre.Name}.");
+    }
+
+    /// <summary>Across the table from the surgeon, beside the instrument trolley.</summary>
+    private GridCoord ScrubSpot(CareSpace theatre)
+    {
+        var table = theatre.PatientSpot;
+        var surgeon = theatre.StaffSpot;
+        var anaesthetist = AnaesthetistSpot(theatre);
+        var across = new GridCoord(table.X + Math.Sign(table.X - surgeon.X), table.Y + Math.Sign(table.Y - surgeon.Y));
+        foreach (var t in new[] { across, new GridCoord(table.X, table.Y + 1), new GridCoord(table.X + 1, table.Y), new GridCoord(table.X - 1, table.Y), new GridCoord(table.X, table.Y - 1),
+                     new GridCoord(surgeon.X + 1, surgeon.Y), new GridCoord(surgeon.X - 1, surgeon.Y), new GridCoord(surgeon.X, surgeon.Y + 1), new GridCoord(surgeon.X, surgeon.Y - 1) })
+        {
+            if (t != table && t != surgeon && t != anaesthetist && theatre.Rect.Contains(t) && Nav.IsWalkable(t))
+            {
+                return t;
+            }
+        }
+
+        return surgeon;
+    }
+
     // ---------------------------------------------------------------- theatre sessions
 
     /// <summary>What each session of a theatre's week is for (14 sessions, Monday morning first).</summary>

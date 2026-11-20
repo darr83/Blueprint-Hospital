@@ -93,7 +93,7 @@ public sealed partial class HospitalSimulation
         else if (!HasProcedureRoomFor(operation, procedure.Department))
         {
             problems.Add(operation.Room == CareSpaceKind.Theatre
-                ? $"a theatre ticked for {DepartmentName(procedure.Department)} with a surgeon and an anaesthetist"
+                ? $"a theatre ticked for {DepartmentName(procedure.Department)} with a surgeon, an anaesthetist and a scrub nurse"
                 : operation.Room == CareSpaceKind.CathLab ? "a cath lab with a cardiac physiologist" : "an endoscopy room with an endoscopist");
         }
 
