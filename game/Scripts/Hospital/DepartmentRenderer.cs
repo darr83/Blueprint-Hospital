@@ -25,7 +25,7 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.NursesStation] = new Color("#DDE3E8"),
         [CareSpaceKind.DoctorsOffice] = new Color("#DDE3E8"),
         [CareSpaceKind.StaffRoom] = new Color("#EADFCF"),
-        [CareSpaceKind.Corridor] = new Color("#ECEAE5"),
+        [CareSpaceKind.Corridor] = new Color("#D9DEDB"),
         [CareSpaceKind.Ward] = new Color("#DCE8F0"),
         [CareSpaceKind.XRay] = new Color("#DFE3E8"),
         [CareSpaceKind.CT] = new Color("#DFE3E8"),
