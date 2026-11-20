@@ -260,6 +260,24 @@ public partial class Agents3D : Node3D
                 return;
             }
 
+            // In clinic: lying on the couch for the examination, or sat talking it through.
+            var clinic = _agent switch
+            {
+                Outpatient seen => Clinic3D.For(seen, sim, _owner.AnimTime),
+                StaffMember clinician => Clinic3D.For(clinician, sim, _owner.AnimTime),
+                _ => null,
+            };
+            if (_agent is Outpatient && clinic is { OnCouch: true })
+            {
+                OnCouch(world, clinic, look);
+                if (_person is not null)
+                {
+                    _person.Visible = false;
+                }
+
+                return;
+            }
+
             if (_agent is Parent sleeper && sleeper.Activity == ParentActivity.Sleeping && sleeper.FoldOutBed is { } foldOut)
             {
                 if (_person is not null)
@@ -335,6 +353,11 @@ public partial class Agents3D : Node3D
                 }
             }
 
+            if (clinic is not null)
+            {
+                (act, faceTo) = (_agent is Outpatient ? clinic.PatientAct : clinic.StaffAct, null);
+            }
+
             // A radiographer goes behind the lead screen to take the picture, then comes back to the patient.
             if (_agent is StaffMember radiographer && Activity3D.ScanVisit(radiographer, world, sim, _owner._tasks, _owner.AnimTime) is { } visit)
             {
@@ -402,6 +425,12 @@ public partial class Agents3D : Node3D
             // and back again when it is done.
             {
                 var careSpot = _agent is StaffMember carer ? Activity3D.CareSpot(carer, world, sim, _owner._tasks, _owner.AnimTime) : null;
+                if (careSpot is null && _agent is StaffMember && clinic is { StaffAt: { } beside })
+                {
+                    // Up from the desk to examine the patient.
+                    careSpot = (clinic.StaffAct, beside, clinic.StaffFacing);
+                }
+
                 if (_agent.IsMoving)
                 {
                     _careAt = null;
@@ -436,6 +465,7 @@ public partial class Agents3D : Node3D
                     if (_careAt is { } drawn)
                     {
                         (x, y) = drawn;
+                        seated = false;
                     }
                 }
             }
@@ -611,6 +641,28 @@ public partial class Agents3D : Node3D
             Ring(world, upright: false);
             SetAlert(alert, carrier == "floor" ? 1.1f : 1.35f, alert == AlertKind.Crash ? 74 : 100);
             return true;
+        }
+
+        /// <summary>A clinic patient lying on the examination couch (or the scan room's bed), under a paper sheet.</summary>
+        private void OnCouch(WorldLayer world, ClinicScene scene, PersonLook look)
+        {
+            Node.Position = Kit3D.At(scene.CouchAt.X, scene.CouchAt.Y);
+            var key = (look, "couch", scene.Care, scene.Side, scene.Height);
+            if (_lying is null || !Equals(_lyingKey, key))
+            {
+                ClearLying();
+                _lyingKey = key;
+                _lying = new Node3D { Name = "OnCouch" };
+                var figure = Lying3D.Build(look, new Color("#EEF3F6"), null, awake: true, care: scene.Care, careSide: scene.Side);
+                figure.Position = new Vector3(0, scene.Height, 0.15f);
+                _lying.AddChild(figure);
+                Node.AddChild(_lying);
+            }
+
+            _lying.Rotation = new Vector3(0, Kit3D.Yaw(scene.CouchFeet.X, scene.CouchFeet.Y), 0);
+            Wheelchair(false, 1);
+            Ring(world, upright: false);
+            SetAlert(null, 0, 0);
         }
 
         /// <summary>The edge of a parent's fold-out bed, a little lower than a hospital bed.</summary>

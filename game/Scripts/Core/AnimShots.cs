@@ -96,6 +96,14 @@ public partial class AnimShots : Node
         ("lumbar", null, (s, a) => AtBed(s, a, Care.LumbarPuncture), 3.4f, 110, new[] { "bacterial_meningitis" }),
         ("tap", null, (s, a) => AtBed(s, a, Care.AsciticTap), 3.4f, 110, new[] { "decompensated_cirrhosis" }),
         ("knee", null, (s, a) => AtBed(s, a, Care.JointAspiration), 3.4f, 110, new[] { "septic_arthritis_knee", "gout" }),
+        ("clinic_talk", null, (s, a) => InClinic(s, a, "medical_clinic", exam: false), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_medical", null, (s, a) => InClinic(s, a, "medical_clinic"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_cardio", null, (s, a) => InClinic(s, a, "cardiology_clinic"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_fracture", null, (s, a) => InClinic(s, a, "fracture_clinic"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_surgical", null, (s, a) => InClinic(s, a, "surgical_clinic"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_gynae", null, (s, a) => InClinic(s, a, "gynae_exam_room"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_antenatal", null, (s, a) => InClinic(s, a, "antenatal_clinic"), 3.2f, 110, System.Array.Empty<string>()),
+        ("clinic_scan", null, (s, a) => InClinic(s, a, "antenatal_scan_room"), 3.2f, 110, System.Array.Empty<string>()),
         ("oxygen", null, (s, a) => Putting(s, a, Wear.Oxygen), 3.4f, 130, new[] { "community_acquired_pneumonia", "acute_heart_failure" }),
         ("nebuliser", null, (s, a) => Putting(s, a, Wear.Nebuliser), 3.4f, 130, new[] { "asthma_exacerbation", "copd_exacerbation" }),
         ("entonox", null, (s, a) => Putting(s, a, Wear.Entonox), 3.4f, 110, new[] { "tibial_shaft_fracture", "shoulder_dislocation" }),
@@ -125,6 +133,12 @@ public partial class AnimShots : Node
     /// <summary>Someone putting this on a patient in a bed (a mask, a sling, a tube).</summary>
     private static bool Putting(HospitalSimulation s, Agent a, Wear wear) =>
         a is StaffMember m && Treating(s, m) is { } task && Procedure3D.WearOf(task.Label) == wear;
+
+    /// <summary>The clinician seeing a patient in a clinic built from this template: examining them, or (exam false) talking at the desk.</summary>
+    private static bool InClinic(HospitalSimulation s, Agent a, string template, bool exam = true) =>
+        a is StaffMember m && Clinic3D.For(m, s, 0) is { } scene && (scene.StaffAt is not null) == exam
+        && s.Consults.FirstOrDefault(c => c.StaffId == m.Id) is { } consult && s.FindSpace(consult.ClinicId)?.TemplateId == template
+        && s.FindOutpatient(consult.OutpatientId) is { BusyUntil: { } until } && (until - s.Now).TotalMinutes > 5;
 
     private static bool Set6 => OS.GetCmdlineUserArgs().Contains("--anim-set=6");
 
@@ -338,6 +352,11 @@ public partial class AnimShots : Node
                 && sim.FindPatient(treatment.PatientId) is { } treated && World!.InBed(treated))
             {
                 (fx, fy) = (treated.X + 0.5, treated.Y + 0.5);
+            }
+
+            if (_subject is StaffMember clinician && Clinic3D.For(clinician, sim, 0) is { } seen)
+            {
+                (fx, fy) = seen.StaffAt is { } stand ? ((seen.CouchAt.X + stand.X) / 2, (seen.CouchAt.Y + stand.Y) / 2) : seen.CouchAt;
             }
 
             if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
@@ -608,12 +627,22 @@ public partial class AnimShots : Node
         Report("north wing", sim.ExtendBuilding(R(40, 2, 60, 28)));
         Report("link", sim.BuildRoom(new RoomPlan("corridor", R(40, 13, 4, 34), Simulation.World.WallSide.South)));
         Report("corridor", sim.BuildRoom(new RoomPlan("corridor", R(44, 13, 56, 5), Simulation.World.WallSide.South)));
-        foreach (var (template, rect) in new[]
-                 {
-                     ("xray_room", R(44, 2, 11, 11)), ("ct_scanner", R(55, 2, 11, 11)), ("delivery_room", R(66, 3, 11, 10)),
-                     ("mother_baby_ward", R(44, 18, 25, 11)), ("echo_room", R(77, 3, 8, 10)), ("eeg_room", R(85, 3, 8, 10)),
-                     ("early_pregnancy_unit", R(69, 18, 9, 10)), ("endoscopy_room", R(78, 18, 10, 10)), ("endoscopy_recovery", R(88, 18, 11, 10)),
-                 })
+        // Clinic scenes get outpatient reception and one of each clinic instead of the scan and maternity rooms.
+        var clinics = OS.GetCmdlineUserArgs().Any(arg => arg.StartsWith("--anim-scenes=") && arg.Contains("clinic"));
+        foreach (var (template, rect) in clinics
+                     ? new[]
+                     {
+                         ("outpatient_reception", R(44, 3, 10, 10)), ("medical_clinic", R(54, 3, 7, 10)), ("cardiology_clinic", R(61, 3, 7, 10)),
+                         ("fracture_clinic", R(68, 3, 7, 10)), ("surgical_clinic", R(75, 3, 7, 10)), ("gynae_exam_room", R(82, 3, 7, 10)),
+                         ("neurology_clinic", R(89, 3, 7, 10)), ("antenatal_clinic", R(44, 18, 8, 10)), ("antenatal_scan_room", R(52, 18, 8, 10)),
+                         ("gastro_clinic", R(60, 18, 7, 10)), ("gynaecology_clinic", R(67, 18, 7, 10)),
+                     }
+                     : new[]
+                     {
+                         ("xray_room", R(44, 2, 11, 11)), ("ct_scanner", R(55, 2, 11, 11)), ("delivery_room", R(66, 3, 11, 10)),
+                         ("mother_baby_ward", R(44, 18, 25, 11)), ("echo_room", R(77, 3, 8, 10)), ("eeg_room", R(85, 3, 8, 10)),
+                         ("early_pregnancy_unit", R(69, 18, 9, 10)), ("endoscopy_room", R(78, 18, 10, 10)), ("endoscopy_recovery", R(88, 18, 11, 10)),
+                     })
         {
             Report(template, sim.BuildRoom(sim.AutoPlan(template, rect)));
         }
