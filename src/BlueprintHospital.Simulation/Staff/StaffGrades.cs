@@ -21,7 +21,9 @@ public static class StaffGrades
         new Grade(StaffRole.Doctor, "Registrar", 0.72, 0.85, 4, 9, 66_000, 2),
         new Grade(StaffRole.Doctor, "Consultant", 0.85, 0.97, 9, 25, 110_000, 1),
         new Grade(StaffRole.Radiographer, "Radiographer", 0.60, 0.85, 1, 15, 37_000, 2),
-        new Grade(StaffRole.Surgeon, "Consultant surgeon", 0.80, 0.97, 10, 25, 112_000, 1),
+        new Grade(StaffRole.Surgeon, "Core surgical trainee", 0.55, 0.70, 2, 4, 52_000, 2.5),
+        new Grade(StaffRole.Surgeon, "Surgical registrar", 0.70, 0.82, 4, 9, 68_000, 2),
+        new Grade(StaffRole.Surgeon, "Consultant surgeon", 0.82, 0.97, 10, 25, 112_000, 1),
         new Grade(StaffRole.Pharmacist, "Pharmacist", 0.60, 0.85, 1, 15, 46_000, 1.5),
         new Grade(StaffRole.Porter, "Porter", 0.30, 0.50, 0, 15, 24_000, 2.5),
         new Grade(StaffRole.CardiacPhysiologist, "Cardiac physiologist", 0.55, 0.85, 1, 15, 38_000, 1),
@@ -107,6 +109,9 @@ public sealed class JobCandidate
     public required StaffRole Role { get; init; }
 
     public required string Grade { get; init; }
+
+    /// <summary>For a surgeon: the department they specialise in (see <see cref="StaffMember.Specialty"/>).</summary>
+    public string? Specialty { get; init; }
 
     public required double Skill { get; init; }
 

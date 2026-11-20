@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlueprintHospital.Simulation.Data.Models;
+using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
@@ -12,7 +13,7 @@ namespace BlueprintHospital.UI;
 /// <summary>
 /// The Surgery panel (U): a theatre board like the whiteboard in a real theatre suite (one card per theatre
 /// with its status, team, the case in progress and who is next, and today's timeline under them), and the
-/// waiting list of everyone booked for an operation as the second tab.
+/// waiting list of everyone booked for an operation as the second tab, and the week's theatre sessions as the third.
 /// </summary>
 public partial class SurgeryPanel : PanelContainer
 {
@@ -21,16 +22,21 @@ public partial class SurgeryPanel : PanelContainer
     private readonly Label _caption = UiStyle.Caption(string.Empty, 13);
     private readonly Button _boardTab = UiStyle.SecondaryButton("Theatres", () => { });
     private readonly Button _listTab = UiStyle.SecondaryButton("Waiting list", () => { });
+    private readonly Button _sessionsTab = UiStyle.SecondaryButton("Sessions", () => { });
     private readonly List<(PanelContainer Tile, Label Value, Label Note)> _tiles = new();
     private readonly VBoxContainer _body = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private HospitalSimulation _sim = null!;
     private double _refresh;
+    private int _tab;
 
     /// <summary>A patient's name was clicked: open their record.</summary>
     public event Action<Patient>? PatientClicked;
 
     /// <summary>True while the waiting list tab is showing; false for the theatre board.</summary>
-    public bool ShowingWaitingList { get; private set; }
+    public bool ShowingWaitingList => _tab == 1;
+
+    /// <summary>True while the weekly sessions timetable is showing.</summary>
+    public bool ShowingSessions => _tab == 2;
 
     public void Initialise(HospitalSimulation simulation)
     {
@@ -52,6 +58,7 @@ public partial class SurgeryPanel : PanelContainer
             ("Over target", "Waiting longer than their urgency allows: Immediate 1 hour, Urgent 6 hours, Soon 24 hours"),
             ("Operations today", "Operations finished since midnight"),
             ("Theatre income today", "What today's operations were paid"),
+            ("Complications today", "Bleeding, wound infections and patients who needed critical care after today's operations. More likely with a junior or tired surgeon, a surgeon outside their specialty, a long wait or a major operation"),
         })
         {
             tiles.AddChild(Tile(caption, tip));
@@ -67,9 +74,14 @@ public partial class SurgeryPanel : PanelContainer
     }
 
     /// <summary>Shows the theatre board (false) or the waiting list (true).</summary>
-    public void ShowTab(bool waitingList)
+    public void ShowTab(bool waitingList) => ShowPage(waitingList ? 1 : 0);
+
+    /// <summary>Shows the weekly theatre sessions timetable.</summary>
+    public void ShowSessions() => ShowPage(2);
+
+    private void ShowPage(int tab)
     {
-        ShowingWaitingList = waitingList;
+        _tab = tab;
         Refresh();
     }
 
@@ -104,16 +116,17 @@ public partial class SurgeryPanel : PanelContainer
 
         var tabs = new HBoxContainer { SizeFlagsVertical = SizeFlags.ShrinkCenter };
         tabs.AddThemeConstantOverride("separation", 6);
-        foreach (var (button, list) in new[] { (_boardTab, false), (_listTab, true) })
+        foreach (var (button, tab) in new[] { (_boardTab, 0), (_listTab, 1), (_sessionsTab, 2) })
         {
             button.ToggleMode = true;
             button.FocusMode = FocusModeEnum.None;
-            button.Pressed += () => ShowTab(list);
+            button.Pressed += () => ShowPage(tab);
             tabs.AddChild(button);
         }
 
         _boardTab.TooltipText = "What each theatre is doing, its team and who is next";
         _listTab.TooltipText = "Everyone waiting for an operation, most urgent first";
+        _sessionsTab.TooltipText = "The week's morning and afternoon sessions: give each to a department's planned list, or keep it for emergencies";
         header.AddChild(tabs);
         var close = UiStyle.SecondaryButton("✕", () => Visible = false);
         close.TooltipText = "Close (Esc)";
@@ -173,6 +186,9 @@ public partial class SurgeryPanel : PanelContainer
         _tiles[2].Value.Text = today.Operations.ToString();
         _tiles[2].Note.Text = today.Postponed > 0 ? $"{today.Postponed} postponed" : string.Empty;
         _tiles[3].Value.Text = $"£{today.Income:N0}";
+        _tiles[4].Value.Text = today.Complications.ToString();
+        _tiles[4].Note.Text = today.Operations > 0 ? $"{100.0 * today.Complications / today.Operations:0}% of operations" : string.Empty;
+        SetTone(_tiles[4], today.Complications > 0);
 
         var theatres = _sim.TheatreBoard();
         var open = theatres.Count(t => t.State != TheatreState.Closed);
@@ -180,8 +196,9 @@ public partial class SurgeryPanel : PanelContainer
             ? "No operating theatres yet: build one in Build mode, with an anaesthetic room against it"
             : $"{theatres.Count} theatre{(theatres.Count == 1 ? string.Empty : "s")}, {open} open · {_sim.Now:HH:mm}";
         _listTab.Text = $"Waiting list · {queued.Count}";
-        _boardTab.SetPressedNoSignal(!ShowingWaitingList);
-        _listTab.SetPressedNoSignal(ShowingWaitingList);
+        _boardTab.SetPressedNoSignal(_tab == 0);
+        _listTab.SetPressedNoSignal(_tab == 1);
+        _sessionsTab.SetPressedNoSignal(_tab == 2);
 
         foreach (var child in _body.GetChildren())
         {
@@ -189,13 +206,17 @@ public partial class SurgeryPanel : PanelContainer
             child.QueueFree();
         }
 
-        if (ShowingWaitingList)
+        switch (_tab)
         {
-            BuildWaitingList(waiting);
-        }
-        else
-        {
-            BuildBoard(theatres);
+            case 1:
+                BuildWaitingList(waiting);
+                break;
+            case 2:
+                BuildSessions(theatres);
+                break;
+            default:
+                BuildBoard(theatres);
+                break;
         }
     }
 
@@ -219,13 +240,25 @@ public partial class SurgeryPanel : PanelContainer
             grid.AddChild(TheatreCard(entry));
         }
 
-        // One or two theatres still take a third of the width each, like columns on a whiteboard.
-        for (var i = theatres.Count; i < 3; i++)
+        // One or two theatres still take a third of the width each, like columns on a whiteboard, with recovery beside them.
+        var recoveryBeside = theatres.Count < 3;
+        if (recoveryBeside)
+        {
+            var recovery = RecoveryCard();
+            recovery.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+            grid.AddChild(recovery);
+        }
+
+        for (var i = theatres.Count + (recoveryBeside ? 1 : 0); i < 3; i++)
         {
             grid.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         }
 
         _body.AddChild(grid);
+        if (!recoveryBeside)
+        {
+            _body.AddChild(RecoveryCard());
+        }
 
         var timeline = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         timeline.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, Hair, 14));
@@ -256,11 +289,15 @@ public partial class SurgeryPanel : PanelContainer
         top.AddChild(chip.Chip);
         column.AddChild(top);
 
+        var session = _sim.TheatreSessionAt(entry.Theatre, _sim.Now);
         var depts = entry.Theatre.AllowedDepartments.Select(_sim.DepartmentName).OrderBy(n => n, StringComparer.Ordinal).ToList();
         var sub = $"{(depts.Count == 0 ? "No departments ticked" : string.Join(", ", depts))} · {entry.AnaestheticRoom?.Name ?? "no anaesthetic room"}";
         var subLabel = UiStyle.Caption(sub, 12);
         subLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         column.AddChild(subLabel);
+        var sessionLabel = UiStyle.Caption(session == TheatreSessions.Emergency ? "This session: emergencies" : $"This session: {_sim.SessionName(session)} planned list", 12);
+        sessionLabel.AddThemeColorOverride("font_color", session == TheatreSessions.Emergency ? UiStyle.TextMuted : SessionColour(session));
+        column.AddChild(sessionLabel);
         column.AddChild(PhaseStrip(entry.State));
 
         // The team.
@@ -274,7 +311,7 @@ public partial class SurgeryPanel : PanelContainer
             var who = new Label { Text = member.Name, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis, SizeFlagsHorizontal = SizeFlags.ExpandFill };
             who.AddThemeFontSizeOverride("font_size", 13);
             row.AddChild(who);
-            row.AddChild(UiStyle.Caption(member.Grade, 11));
+            row.AddChild(UiStyle.Caption(HospitalSimulation.JobTitle(member.Grade, member.Specialty), 11));
             column.AddChild(row);
         }
 
@@ -312,6 +349,7 @@ public partial class SurgeryPanel : PanelContainer
         {
             column.AddChild(UiStyle.Caption(entry.State switch
             {
+                TheatreState.WakingUp => "Last patient waking up on the table: no free recovery bay",
                 TheatreState.Cleaning when entry.CleanUntil is { } until => $"Being cleaned and set up, ready {until:HH:mm}",
                 TheatreState.Closed => "Closed",
                 _ => "Empty, ready for the next patient",
@@ -335,7 +373,7 @@ public partial class SurgeryPanel : PanelContainer
 
     private static readonly (TheatreState State, string Name)[] Phases =
     {
-        (TheatreState.Anaesthetic, "Sleep"), (TheatreState.IntoTheatre, "Into theatre"), (TheatreState.Operating, "Operating"), (TheatreState.Cleaning, "Clean"),
+        (TheatreState.Anaesthetic, "Sleep"), (TheatreState.IntoTheatre, "Into theatre"), (TheatreState.Operating, "Operating"), (TheatreState.WakingUp, "Wake"), (TheatreState.Cleaning, "Clean"),
     };
 
     private static Control PhaseStrip(TheatreState state)
@@ -477,6 +515,198 @@ public partial class SurgeryPanel : PanelContainer
         _ => "on the way",
     };
 
+    // ---------------------------------------------------------------- recovery
+
+    private Control RecoveryCard()
+    {
+        var card = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, Hair, 14));
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 8);
+        card.AddChild(column);
+        column.AddChild(HudWidgets.Section("Recovery"));
+
+        var rooms = _sim.SpacesOfKind(CareSpaceKind.TheatreRecovery).OrderBy(r => r.Name, StringComparer.Ordinal).ToList();
+        if (rooms.Count == 0)
+        {
+            var none = UiStyle.Body("No recovery room: patients wake up on the theatre table, and the theatre can't start its next case until they have. Build one from the Theatres build icons.", muted: false);
+            none.AddThemeColorOverride("font_color", UiStyle.AmberText);
+            none.AddThemeFontSizeOverride("font_size", 13);
+            column.AddChild(none);
+        }
+
+        foreach (var room in rooms)
+        {
+            var open = _sim.RecoveryBaysOpen(room);
+            var used = room.Beds.Count(b => b.OccupantId is not null);
+            var line = UiStyle.Caption($"{room.Name}: {used} of {room.Beds.Count} bays in use, {open} open", 12);
+            line.TooltipText = $"One recovery nurse on duty opens every {HospitalSimulation.BaysPerRecoveryNurse} bays";
+            line.MouseFilter = MouseFilterEnum.Pass;
+            line.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            if (open < room.Beds.Count)
+            {
+                line.AddThemeColorOverride("font_color", open == 0 ? UiStyle.Red : UiStyle.AmberText);
+            }
+
+            column.AddChild(line);
+        }
+
+        var waking = _sim.TheatreRecovery.OrderBy(e => e.Until ?? DateTime.MaxValue).ToList();
+        if (waking.Count == 0)
+        {
+            column.AddChild(UiStyle.Caption("Nobody waking up", 13));
+        }
+
+        if (waking.Count > 0)
+        {
+            column.AddChild(HudWidgets.Divider());
+        }
+
+        foreach (var entry in waking)
+        {
+            if (_sim.FindPatient(entry.PatientId) is not { } patient)
+            {
+                continue;
+            }
+
+            var row = new VBoxContainer();
+            row.AddThemeConstantOverride("separation", 0);
+            var where = entry.RecoveryRoomId is { } roomId && _sim.FindSpace(roomId) is { } recovery
+                ? $"{recovery.Name}, bay {(entry.Bay ?? 0) + 1}"
+                : $"On the table in {_sim.FindSpace(entry.TheatreId)?.Name ?? "theatre"}";
+            var state = entry.Returning
+                ? "Bleeding: going back to theatre"
+                : entry.Until is { } until && until > _sim.Now ? $"awake in {ClinicalText.Duration(until - _sim.Now)}" : "waking up";
+            row.AddChild(PatientButton(patient, patient.FullName));
+            var stateLabel = UiStyle.Caption($"{where} · {state}", 12);
+            stateLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            if (entry.Returning)
+            {
+                stateLabel.AddThemeColorOverride("font_color", UiStyle.Red);
+            }
+
+            row.AddChild(stateLabel);
+            var note = UiStyle.Caption(entry.Complication is { } c ? HospitalSimulation.ComplicationName(c) : entry.Note, 12);
+            note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            if (entry.Complication is not null)
+            {
+                note.AddThemeColorOverride("font_color", UiStyle.Red);
+            }
+
+            row.AddChild(note);
+            column.AddChild(row);
+        }
+
+        return card;
+    }
+
+    // ---------------------------------------------------------------- sessions
+
+    private static readonly string[] DayNames = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+
+    private void BuildSessions(IReadOnlyList<TheatreBoardEntry> theatres)
+    {
+        if (theatres.Count == 0)
+        {
+            _body.AddChild(UiStyle.Body("Build an operating theatre first: its morning and afternoon sessions show here.", muted: true));
+            return;
+        }
+
+        var card = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, Hair, 14));
+        var grid = new GridContainer { Columns = 1 + TheatreSessions.PerWeek, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        grid.AddThemeConstantOverride("h_separation", 4);
+        grid.AddThemeConstantOverride("v_separation", 6);
+        card.AddChild(grid);
+
+        var nowSlot = TheatreSessions.SlotOf(_sim.Now);
+        grid.AddChild(UiStyle.Caption("THEATRE", 11));
+        for (var slot = 0; slot < TheatreSessions.PerWeek; slot++)
+        {
+            var head = UiStyle.Caption($"{DayNames[slot / 2]} {(slot % 2 == 0 ? "AM" : "PM")}", 11);
+            head.HorizontalAlignment = HorizontalAlignment.Center;
+            head.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            if (slot == nowSlot)
+            {
+                head.AddThemeColorOverride("font_color", UiStyle.Red);
+            }
+
+            grid.AddChild(head);
+        }
+
+        foreach (var entry in theatres)
+        {
+            var theatre = entry.Theatre;
+            var name = new Label { Text = theatre.Name, CustomMinimumSize = new Vector2(150, 0), TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis, VerticalAlignment = VerticalAlignment.Center };
+            name.AddThemeFontSizeOverride("font_size", 13);
+            grid.AddChild(name);
+            var timetable = _sim.TheatreTimetable(theatre);
+            var choices = new[] { TheatreSessions.Emergency }.Concat(theatre.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal)).ToList();
+            for (var slot = 0; slot < TheatreSessions.PerWeek; slot++)
+            {
+                grid.AddChild(SessionCell(theatre.Id, slot, timetable[slot], choices, slot == nowSlot));
+            }
+        }
+
+        _body.AddChild(card);
+        _body.AddChild(UiStyle.Caption("Click a session to give it to the next department, or back to emergencies. Sessions run 08:00 to 13:00 and 13:00 to 18:00; nights are always for emergencies. A department's session only takes that department's planned cases, but an Immediate case can still use it.", 11));
+    }
+
+    private Control SessionCell(string theatreId, int slot, string use, IReadOnlyList<string> choices, bool now)
+    {
+        var colour = SessionColour(use);
+        var button = new Button
+        {
+            Text = use switch
+            {
+                TheatreSessions.Emergency => "Emergency",
+                "general_surgery" => "Gen surgery",
+                "trauma_orthopaedics" => "Orthopaedics",
+                "gynaecology" => "Gynae",
+                _ => _sim.SessionName(use),
+            },
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 40),
+            ClipText = true,
+            FocusMode = FocusModeEnum.None,
+            TooltipText = $"{DayNames[slot / 2]} {(slot % 2 == 0 ? "morning" : "afternoon")}: {_sim.SessionName(use)}. Click to change.",
+            MouseDefaultCursorShape = CursorShape.PointingHand,
+        };
+        button.AddThemeFontSizeOverride("font_size", 11);
+        button.AddThemeColorOverride("font_color", use == TheatreSessions.Emergency ? UiStyle.TextMuted : Colors.White);
+        button.AddThemeColorOverride("font_hover_color", use == TheatreSessions.Emergency ? UiStyle.TextDark : Colors.White);
+        var background = use == TheatreSessions.Emergency ? UiStyle.Ground : colour;
+        foreach (var (state, tint) in new[] { ("normal", 0f), ("hover", 0.12f), ("pressed", 0.2f) })
+        {
+            var box = UiStyle.Box(background.Darkened(tint), 6, now ? UiStyle.Red : null);
+            if (now)
+            {
+                box.BorderWidthLeft = box.BorderWidthRight = box.BorderWidthTop = box.BorderWidthBottom = 2;
+            }
+
+            box.ContentMarginLeft = box.ContentMarginRight = 4;
+            button.AddThemeStyleboxOverride(state, box);
+        }
+
+        button.Pressed += () =>
+        {
+            var next = choices[(choices.ToList().IndexOf(use) + 1) % choices.Count];
+            _sim.SetTheatreSession(theatreId, slot, next);
+            Refresh();
+        };
+        return button;
+    }
+
+    private static Color SessionColour(string use) => use switch
+    {
+        TheatreSessions.Emergency => UiStyle.Red,
+        "general_surgery" => UiStyle.Blue,
+        "trauma_orthopaedics" => new Color("#00897B"),
+        "gynaecology" => new Color("#6A4FB3"),
+        "maternity" => new Color("#C2185B"),
+        _ => new Color("#5D7080"),
+    };
+
     // ---------------------------------------------------------------- shared bits
 
     public static Color UrgencyColour(SurgeryUrgency urgency) => urgency switch
@@ -507,6 +737,7 @@ public partial class SurgeryPanel : PanelContainer
         TheatreState.IntoTheatre => "Into theatre",
         TheatreState.Operating => "Operating",
         TheatreState.Cleaning => "Cleaning",
+        TheatreState.WakingUp => "Waking up",
         _ => state.ToString(),
     };
 
@@ -517,6 +748,7 @@ public partial class SurgeryPanel : PanelContainer
         TheatreState.Preparing or TheatreState.Anaesthetic => new Color("#6A4FB3"),
         TheatreState.IntoTheatre or TheatreState.Operating => UiStyle.Blue,
         TheatreState.Cleaning => new Color("#B58A00"),
+        TheatreState.WakingUp => new Color("#00897B"),
         _ => UiStyle.TextMuted,
     };
 }

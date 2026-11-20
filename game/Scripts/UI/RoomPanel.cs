@@ -337,6 +337,16 @@ public partial class RoomPanel : PanelContainer
                 : "[color=#C4373D]Not joined to a theatre: build it against a theatre wall[/color]";
         }
 
+        if (room.Kind == CareSpaceKind.TheatreRecovery)
+        {
+            var open = _sim.RecoveryBaysOpen(room);
+            var used = room.Beds.Count(b => b.OccupantId is not null);
+            var line = $"{used} of {room.Beds.Count} bays in use · {open} open";
+            return open < room.Beds.Count
+                ? $"{line}\n[color=#C4373D]Needs a recovery nurse on duty for every {HospitalSimulation.BaysPerRecoveryNurse} bays[/color]"
+                : line;
+        }
+
         var inside = _sim.Patients.Count(p => room.Rect.Contains(p.Tile) && !p.IsMoving) + _sim.Staff.Count(s => s.IsInBuilding && room.Rect.Contains(s.Tile));
         return room.Kind switch
         {

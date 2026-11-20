@@ -29,6 +29,9 @@ public enum TheatreState
 
     /// <summary>Being cleaned and set up again after a case.</summary>
     Cleaning,
+
+    /// <summary>The last patient is waking up on the table (no recovery bay was free).</summary>
+    WakingUp,
 }
 
 /// <summary>A patient booked for an operation in theatre, for the Surgery panel's waiting list.</summary>
@@ -77,6 +80,8 @@ public sealed class SurgeryDay
     public int Postponed { get; set; }
 
     public long Income { get; set; }
+
+    public int Complications { get; set; }
 }
 
 /// <summary>Saved theatre state.</summary>
@@ -87,6 +92,11 @@ public sealed class SurgeryState
     public List<TheatreCaseLog> Log { get; init; } = new();
 
     public SurgeryDay? Today { get; init; }
+
+    /// <summary>Each theatre's weekly sessions (only theatres with a session given to a planned list).</summary>
+    public Dictionary<string, List<string>> Sessions { get; init; } = new();
+
+    public List<TheatreRecoveryEntry> Recovery { get; init; } = new();
 }
 
 /// <summary>
@@ -367,7 +377,7 @@ public sealed partial class HospitalSimulation
         }
 
         // Asleep: through the automatic doors once the theatre is clean and set up.
-        if (_theatreCleanUntil.TryGetValue(theatre.Id, out var clean) && Now < clean)
+        if ((_theatreCleanUntil.TryGetValue(theatre.Id, out var clean) && Now < clean) || TheatreHeldBy(theatre, patient))
         {
             anaesthetist.StatusText = $"Waiting for {theatre.Name} to be cleaned";
             return true;
@@ -472,9 +482,15 @@ public sealed partial class HospitalSimulation
             _theatreCleanUntil.Remove(expired);
         }
 
+        UpdateTheatreRecovery();
         if (Now.Second % 30 == 0)
         {
             MakeRoomForImmediateCases();
+        }
+
+        if (Now.Second == 0)
+        {
+            TidyTheatreSessions();
         }
     }
 
@@ -587,6 +603,10 @@ public sealed partial class HospitalSimulation
             {
                 problem = "Getting ready";
             }
+            else if (SpacesOfKind(CareSpaceKind.Theatre).Where(t => IsStaffed(t) && t.AllowedDepartments.Contains(dept)).All(t => !SessionTakes(t, task)))
+            {
+                problem = "Waiting for an emergency session";
+            }
         }
 
         return new SurgeryCase(patient, task.Label, dept, urgency, booked, Now - booked, UrgencyTarget(urgency),
@@ -634,7 +654,7 @@ public sealed partial class HospitalSimulation
             }
             else
             {
-                state = clean is not null ? TheatreState.Cleaning : TheatreState.Ready;
+                state = WakingOnTable(theatre) ? TheatreState.WakingUp : clean is not null || TheatreHeldBy(theatre) ? TheatreState.Cleaning : TheatreState.Ready;
             }
 
             var team = _staff.Where(s => s.BaseRoomId == theatre.Id).OrderBy(s => s.Role).ThenBy(s => s.Name, StringComparer.Ordinal).ToList();
@@ -652,12 +672,16 @@ public sealed partial class HospitalSimulation
         CleanUntil = new Dictionary<string, DateTime>(_theatreCleanUntil),
         Log = _theatreLog.ToList(),
         Today = _surgeryDay,
+        Sessions = _theatreSessions.ToDictionary(s => s.Key, s => s.Value.ToList()),
+        Recovery = _theatreRecovery.Values.ToList(),
     };
 
     private void RestoreSurgery(SurgeryState? state)
     {
         _theatreCleanUntil.Clear();
         _theatreLog.Clear();
+        _theatreSessions.Clear();
+        _theatreRecovery.Clear();
         _surgeryDay = new SurgeryDay { Date = Now.Date };
         if (state is null)
         {
@@ -670,6 +694,16 @@ public sealed partial class HospitalSimulation
         }
 
         _theatreLog.AddRange(state.Log);
+        foreach (var (id, slots) in state.Sessions.Where(s => s.Value.Count == TheatreSessions.PerWeek))
+        {
+            _theatreSessions[id] = slots.ToArray();
+        }
+
+        foreach (var entry in state.Recovery)
+        {
+            _theatreRecovery[entry.PatientId] = entry;
+        }
+
         if (state.Today is { } today)
         {
             _surgeryDay = today;

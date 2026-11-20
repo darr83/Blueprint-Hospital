@@ -141,6 +141,47 @@
     ]
   },
   {
+    "id": "theatre_recovery",
+    "name": "Recovery room",
+    "category": "Services",
+    "description": "Bays where patients wake up after their operation, each behind its own curtains, with a recovery nurse for every two bays. Without a free bay they wake up on the theatre table, and the theatre can't start its next case until they have.",
+    "kind": "theatre_recovery",
+    "department": "theatres",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "2 bays",
+        "width_m": 6.0,
+        "length_m": 5.5
+      },
+      {
+        "name": "4 bays",
+        "width_m": 10.5,
+        "length_m": 5.5
+      },
+      {
+        "name": "8 bays",
+        "width_m": 10.5,
+        "length_m": 8.0
+      }
+    ],
+    "min_width_m": 4,
+    "min_length_m": 5,
+    "max_width_m": 25,
+    "max_length_m": 12,
+    "door_width_m": 2.0,
+    "base_cost": 15000,
+    "cost_per_square_metre": 1200,
+    "staffing": "Recovery nurses: one for every two bays, day and night.",
+    "furniture": [
+      "hospital_bed",
+      "obs_monitor",
+      "bay_curtain",
+      "clinical_cupboard",
+      "hand_basin"
+    ]
+  },
+  {
     "id": "pharmacy",
     "name": "Pharmacy",
     "category": "Services",

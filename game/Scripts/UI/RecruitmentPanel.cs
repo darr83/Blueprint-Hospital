@@ -147,6 +147,10 @@ public partial class RecruitmentPanel : PanelContainer
         name.AddThemeFontSizeOverride("font_size", 16);
         who.AddChild(name);
         who.AddChild(UiStyle.Caption($"{Capitalise(candidate.Grade)} · age {candidate.Age}", 13));
+        if (candidate.Specialty is { } specialty)
+        {
+            who.AddChild(UiStyle.Caption(HospitalSimulation.SpecialtyTitle(specialty), 13));
+        }
         header.AddChild(who);
         var pay = new Label { Text = $"£{candidate.Salary:N0}", VerticalAlignment = VerticalAlignment.Center };
         pay.AddThemeFontSizeOverride("font_size", 15);

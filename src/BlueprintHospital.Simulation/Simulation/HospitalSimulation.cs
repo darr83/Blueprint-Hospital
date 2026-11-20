@@ -494,7 +494,7 @@ public sealed partial class HospitalSimulation
     {
         if (member.BaseRoomId is { } roomId && FindSpace(roomId) is { } room)
         {
-            return room.IsWard ? WardHome(member, room) : ServiceRoomHome(room);
+            return room.IsWard ? WardHome(member, room) : room.Kind == CareSpaceKind.TheatreRecovery ? RecoveryHome(member, room) : ServiceRoomHome(room);
         }
 
         switch (member.Role)
