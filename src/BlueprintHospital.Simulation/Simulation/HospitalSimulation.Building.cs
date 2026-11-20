@@ -631,8 +631,12 @@ public sealed partial class HospitalSimulation
 
     // ------------------------------------------------------------------ actions
 
-    /// <summary>Builds a room or corridor if the check passes. Returns the check either way.</summary>
-    public BuildCheck BuildRoom(RoomPlan plan, string? name = null)
+    /// <summary>
+    /// Builds a room or corridor if the check passes. Returns the check either way. With
+    /// <paramref name="withStaff"/> (the "new rooms come with their minimum staff" setting) the room
+    /// arrives with the staff it adds to the recommended headcount, hired and paid as normal.
+    /// </summary>
+    public BuildCheck BuildRoom(RoomPlan plan, string? name = null, bool withStaff = false)
     {
         var check = CheckRoom(plan);
         if (!check.CanBuild)
@@ -647,6 +651,7 @@ public sealed partial class HospitalSimulation
             return check;
         }
 
+        var needed = withStaff ? RecommendedStaffing() : null;
         var id = NewRoomId(template);
         var room = Furnish(plan, id, name ?? NextName(template));
         _spaces[id] = room;
@@ -654,6 +659,11 @@ public sealed partial class HospitalSimulation
         Book(MoneyCategory.Construction, -check.Cost);
         Notifications.Add(Now, NotificationLevel.Info, $"Built {room.Name} ({room.AreaSquareMetres:0} m²) for £{check.Cost:N0}.");
         AfterLayoutChange();
+        if (needed is not null)
+        {
+            StaffNewRoom(room, needed);
+        }
+
         return check;
     }
 

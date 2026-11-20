@@ -289,7 +289,7 @@ public sealed partial class HospitalSimulation
     private JobCandidate MakeCandidate(StaffGrades.Grade grade)
     {
         var (first, surname) = PickName();
-        var skill = Math.Round(RecruitRandom.Range(grade.MinSkill, grade.MaxSkill), 2);
+        var skill = Math.Min(grade.MaxSkill - 0.01, Math.Round(RecruitRandom.Range(grade.MinSkill, grade.MaxSkill), 2));
         var years = RecruitRandom.Range(grade.MinYears, grade.MaxYears + 1);
         var speed = Math.Round(RecruitRandom.Range(0.85, 1.15), 2);
 
@@ -338,6 +338,39 @@ public sealed partial class HospitalSimulation
 
                 hired.Add(member);
             }
+        }
+
+        return hired;
+    }
+
+    /// <summary>
+    /// Hires the staff a newly built room adds to the recommended headcount (its own team, day and
+    /// night, plus any extra the room means for A&amp;E or the whole hospital, such as porters), so
+    /// the room opens straight away. Shortages that were already there are left to the player.
+    /// New starters are on the lowest grade open for their role and are paid like anyone else.
+    /// </summary>
+    private IReadOnlyList<StaffMember> StaffNewRoom(CareSpace room, IReadOnlyList<StaffingNeed> before)
+    {
+        var had = before.ToDictionary(n => (n.RoomId, n.Role, n.Shift), n => n.Recommended);
+        var hired = new List<StaffMember>();
+        foreach (var need in RecommendedStaffing().ToList())
+        {
+            var added = need.Recommended - had.GetValueOrDefault((need.RoomId, need.Role, need.Shift));
+            for (var i = 0; i < Math.Min(added, need.Short); i++)
+            {
+                var grade = GradesOpenFor(need.Role)[0];
+                var skill = Math.Min(grade.MaxSkill - 0.01, Math.Round(RecruitRandom.Range(grade.MinSkill, grade.MaxSkill), 2));
+                var member = HireStaff(need.Role, need.RoomId, skill, need.Shift);
+                Tally(StatKeys.Hired);
+                hired.Add(member);
+            }
+        }
+
+        if (hired.Count > 0)
+        {
+            var who = string.Join(", ", hired.GroupBy(m => m.Role).Select(g => $"{g.Count()} {StaffGrades.RoleName(g.Key, g.Count() > 1).ToLowerInvariant()}"));
+            var pay = hired.Sum(m => m.Salary);
+            Notifications.Add(Now, NotificationLevel.Info, $"{room.Name} came with its minimum staff: {who} hired (£{pay:N0} a year in salaries).");
         }
 
         return hired;
