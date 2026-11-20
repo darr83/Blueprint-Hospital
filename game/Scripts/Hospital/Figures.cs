@@ -501,7 +501,7 @@ public static partial class Figures
     /// time; the big reading cycles every four seconds through heart rate, SpO₂, blood pressure and
     /// respiratory rate. An alarm bell shows at NEWS2 5 and flashes red at 7 or more.
     /// </summary>
-    public static void ObsScreen(CanvasItem c, double gx, double gy, double time, BlueprintHospital.Simulation.Medical.Observations? obs, Color? triage, int news2)
+    public static void ObsScreen(CanvasItem c, double gx, double gy, double time, BlueprintHospital.Simulation.Medical.Observations? obs, Color? triage, int news2, string? header = null)
     {
         var mount = IsoDraw.ToScreen(gx, gy) + new Vector2(0, -MonitorHeight);
         var casing = new Rect2(mount + new Vector2(-31, -42), new Vector2(62, 42));
@@ -562,7 +562,7 @@ public static partial class Figures
             c.DrawCircle(b + new Vector2(0, 3), 0.9f, bell);
         }
 
-        var news = $"NEWS2 {news2}";
+        var news = header ?? $"NEWS2 {news2}";
         var newsWidth = font.GetStringSize(news, HorizontalAlignment.Left, -1, 6).X;
         c.DrawString(font, screen.Position + new Vector2(screen.Size.X - (news2 >= 5 ? 12 : 3) - newsWidth, 7f), news, HorizontalAlignment.Left, -1, 6, news2 >= 5 ? new Color("#FFCC80") : new Color("#8FA3B1"));
 

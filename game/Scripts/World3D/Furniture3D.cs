@@ -280,7 +280,7 @@ public partial class Furniture3D : Node3D
             var headSouth = false;
             if (incubator)
             {
-                _index = space.Beds.Count == 0 ? -1 : Enumerable.Range(0, space.Beds.Count).MinBy(i => Math.Pow(space.Beds[i].PatientSpot.X - gx, 2) + Math.Pow(space.Beds[i].PatientSpot.Y - gy, 2));
+                _index = Simulation.Simulation.HospitalSimulation.IncubatorIndex(space, item);
                 headSouth = _index >= 0 && space.Beds[_index].HeadSouth;
             }
             else if (space.Beds.Count > 0)
@@ -305,7 +305,7 @@ public partial class Furniture3D : Node3D
             BabyLook? look = null;
             if (_incubator)
             {
-                var baby = sim.Babies.FirstOrDefault(b => b.Place == BabyPlace.NeonatalUnit && b.UnitId == _space.Id && b.CotIndex == _index);
+                var baby = sim.BabyInIncubator(_space, _index);
                 look = baby is null ? null : Looks.Baby(baby, sim.FindPatient(baby.MotherId));
             }
             else if (_bed?.OccupantId is { } id && sim.IsMotherAndBabyWard(_space) && sim.FindPatient(id) is { } mother

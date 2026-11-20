@@ -293,6 +293,19 @@ public partial class RoomPanel : PanelContainer
             return $"{room.PlacesUsed} of {room.Beds.Count} beds in use";
         }
 
+        if (room.IsWard && _sim.UnitOf(room) == Simulation.Data.Models.WardUnit.Neonatal)
+        {
+            // Babies, not patients, lie in a neonatal unit's incubators.
+            var babies = _sim.BabiesOnUnit(room).OrderBy(b => b.CotIndex).ToList();
+            var coming = _sim.BabiesIn(room).Count(b => b.Place != Simulation.Patients.BabyPlace.NeonatalUnit);
+            var nurses = _sim.Staff.Where(s => s.BaseRoomId == room.Id && s.Role == Simulation.Staff.StaffRole.Nurse).Select(s => s.Name).ToList();
+            var closed = _sim.IsNeonatalUnitOpen(room) ? string.Empty : "[color=#C4373D]Closed: post a nurse here to open it[/color]\n";
+            var list = babies.Count == 0 ? "none" : string.Join(", ", babies.Select(b => $"{b.FullName} (incubator {b.CotIndex + 1})"));
+            return $"{closed}{babies.Count} of {room.Beds.Count} incubators in use{(coming > 0 ? $" · {coming} on the way" : string.Empty)}"
+                   + $"\n[color=#5B6B79]Babies[/color]  {list}"
+                   + $"\n[color=#5B6B79]Nurses[/color]  {(nurses.Count > 0 ? string.Join(", ", nurses) : "[color=#C4373D]nobody[/color]")}";
+        }
+
         if (room.IsWard)
         {
             var used = room.Beds.Count(b => b.OccupantId is not null);

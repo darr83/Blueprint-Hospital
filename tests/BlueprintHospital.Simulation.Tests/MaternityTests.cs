@@ -222,6 +222,32 @@ public class MaternityTests
     }
 
     [Fact]
+    public void A_baby_on_the_neonatal_unit_is_found_in_its_incubator_with_newborn_obs()
+    {
+        var h = Wing(8, Labour, new[] { ("neonatal_unit", 18, 11) });
+        var unit = Room(h, "neonatal_unit");
+        var mother = h.Sim.SpawnMaternityPatient("preterm_labour")!;
+        h.RunUntil(() => h.Sim.BabiesOf(mother).Any(), TimeSpan.FromHours(10), "the baby to be born");
+        var baby = h.Sim.BabiesOf(mother).First();
+        Assert.Empty(h.Sim.BabiesOnUnit(unit));
+        h.RunUntil(() => baby.Place == BabyPlace.NeonatalUnit, TimeSpan.FromHours(3), "the baby to reach the neonatal unit");
+
+        // The unit counts the baby, and the incubator it was booked into (the one the monitor and the art use) holds it.
+        Assert.Contains(baby, h.Sim.BabiesOnUnit(unit));
+        var incubators = unit.Furniture.Where(f => f.ItemId == "incubator").ToList();
+        Assert.Equal(unit.Beds.Count, incubators.Select(i => HospitalSimulation.IncubatorIndex(unit, i)).Distinct().Count());
+        var mine = incubators.Single(i => HospitalSimulation.IncubatorIndex(unit, i) == baby.CotIndex);
+        Assert.Same(baby, h.Sim.BabyInIncubator(unit, mine));
+        Assert.All(incubators.Where(i => i != mine), i => Assert.Null(h.Sim.BabyInIncubator(unit, i)));
+
+        // The monitor shows newborn vital signs.
+        var obs = baby.CurrentObservations();
+        Assert.InRange(obs.HeartRate, 120, 180);
+        Assert.InRange(obs.RespiratoryRate, 40, 70);
+        Assert.InRange(obs.OxygenSaturation, 84, 100);
+    }
+
+    [Fact]
     public void Without_a_neonatal_unit_a_poorly_baby_is_transferred()
     {
         var h = Wing(9, Labour, Array.Empty<(string, int, int)>());

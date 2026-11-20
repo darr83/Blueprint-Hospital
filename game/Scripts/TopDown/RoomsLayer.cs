@@ -124,7 +124,7 @@ public partial class RoomsLayer : Node2D
         WardBed? bed = null;
         if (incubator)
         {
-            index = space.Beds.Count == 0 ? -1 : Enumerable.Range(0, space.Beds.Count).MinBy(i => Math.Pow(space.Beds[i].PatientSpot.X - gx, 2) + Math.Pow(space.Beds[i].PatientSpot.Y - gy, 2));
+            index = HospitalSimulation.IncubatorIndex(space, item);
             headSouth = index >= 0 && space.Beds[index].HeadSouth;
         }
         else if (space.Beds.Count > 0)

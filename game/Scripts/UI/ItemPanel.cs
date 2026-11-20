@@ -123,6 +123,13 @@ public partial class ItemPanel : PanelContainer
         }
     }
 
+    /// <summary>How old a baby is, in hours or days.</summary>
+    private string BabyAge(Baby baby)
+    {
+        var hours = baby.HoursOld(_sim.Now);
+        return hours < 48 ? $"{Math.Max(0, (int)hours)} h" : $"{(int)(hours / 24)} days";
+    }
+
     /// <summary>The patient in (or on their way to) a bed, if any.</summary>
     public static int? BedOccupant(CareSpace room, PlacedFurniture bed) =>
         room.HasBeds ? room.Beds.FirstOrDefault(b => b.PatientSpot == bed.Tile)?.OccupantId : room.OccupantId;
@@ -150,6 +157,21 @@ public partial class ItemPanel : PanelContainer
         _chairTools.Visible = false;
         if (AsBed)
         {
+            if (Item.ItemId == "incubator")
+            {
+                var index = HospitalSimulation.IncubatorIndex(room, Item);
+                _title.Text = index >= 0 ? $"Incubator {index + 1}" : "Incubator";
+                var baby = _sim.BabyInIncubator(room, index);
+                var mum = baby is null ? null : _sim.FindPatient(baby.MotherId);
+                var booked = baby is null && _sim.BabiesIn(room).Any(b => b.CotIndex == index) ? "Kept for a baby on the way" : "Empty";
+                _info.Text = baby is null
+                    ? $"{muted}In[/color]  {room.Name}\n{muted}Baby[/color]  {booked}"
+                    : $"{muted}In[/color]  {room.Name}\n{muted}Baby[/color]  {baby.FullName} ({(baby.Sex == Sex.Female ? "girl" : "boy")}, {baby.WeightKg:0.00} kg)\n{muted}Born[/color]  {baby.GestationWeeks} weeks, {BabyAge(baby)} old\n{muted}Why[/color]  {baby.NeonatalReason ?? "Needs a closer eye"}\n{muted}Mum[/color]  {mum?.FullName ?? "gone home"}";
+                _action.Text = "Open mum's record";
+                _action.Visible = mum is not null;
+                return;
+            }
+
             var number = room.HasBeds ? room.Beds.ToList().FindIndex(b => b.PatientSpot == Item.Tile) + 1 : 0;
             _title.Text = number > 0 ? $"Bed {number}" : "Bed";
             var patient = BedOccupant(room, Item) is { } id ? _sim.FindPatient(id) : null;
@@ -218,7 +240,14 @@ public partial class ItemPanel : PanelContainer
 
         if (AsBed)
         {
-            if (BedOccupant(room, item) is { } id && _sim.FindPatient(id) is { } patient)
+            if (item.ItemId == "incubator")
+            {
+                if (_sim.BabyInIncubator(room, item) is { } baby && _sim.FindPatient(baby.MotherId) is { } mum)
+                {
+                    PatientRequested?.Invoke(mum);
+                }
+            }
+            else if (BedOccupant(room, item) is { } id && _sim.FindPatient(id) is { } patient)
             {
                 PatientRequested?.Invoke(patient);
             }

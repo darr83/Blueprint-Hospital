@@ -76,6 +76,23 @@ public sealed class Baby
 
     public DateTime? LeftAt { get; set; }
 
+    /// <summary>
+    /// The baby's vital signs on the incubator monitor: newborn ranges (heart rate 120-160, breathing 40-60),
+    /// faster and lower in oxygen the more unwell the baby is.
+    /// </summary>
+    public Medical.Observations CurrentObservations()
+    {
+        var s = Math.Clamp(Severity, 0, 1);
+        var heart = 128 + (Id % 13) + (int)Math.Round(s * 40);
+        var breathing = 42 + (Id % 7) + (int)Math.Round(s * 24);
+        var oxygen = Math.Max(84, 98 - (Id % 2) - (int)Math.Round(s * 14));
+        var systolic = Math.Clamp(30 + GestationWeeks, 50, 75);
+        return new Medical.Observations(heart, systolic, systolic - 25, breathing, oxygen, Math.Round(37.0 - (s * 0.8), 1), Medical.Consciousness.Alert, 0, OnSupplementalOxygen: s >= 0.4);
+    }
+
+    /// <summary>The incubator monitor's colour: green when settled, amber when poorly, red when very unwell.</summary>
+    public Medical.TriageCategory MonitorColour => Severity >= 0.6 ? Medical.TriageCategory.Red : Severity >= 0.4 ? Medical.TriageCategory.Amber : Medical.TriageCategory.Green;
+
     public bool IsInHospital => Place is BabyPlace.WithMother or BabyPlace.Carried or BabyPlace.NeonatalUnit;
 
     /// <summary>Hours old at <paramref name="now"/>.</summary>
