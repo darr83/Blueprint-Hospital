@@ -221,18 +221,52 @@ public partial class Beds3D : Node3D
             }
             else
             {
-                _mattress = table is { } t ? Carriers3D.Table(frame, t.Id, t.Colour) : Carriers3D.Bed(frame, made: false);
+                _mattress = table is { } t ? Carriers3D.Table(frame, t.Id, t.Colour) : Carriers3D.Bed(frame, made: false, back: null);
             }
 
             frame.AddTo(_node);
             if (!_table)
             {
+                Recline(0);
+
                 // An empty bed is made up, with its blanket on.
                 var made = new MeshBatch();
                 Carriers3D.BedMade(made);
                 _made = made.AddTo(_node);
             }
         }
+
+        private readonly System.Collections.Generic.Dictionary<float, Node3D> _backs = new();
+        private InBed _doing;
+
+        /// <summary>
+        /// Sets the bed's backrest at <paramref name="angle"/>: each angle it has been at is built once and kept, and
+        /// only the one in use is shown.
+        /// </summary>
+        private void Recline(float angle)
+        {
+            if (!_backs.ContainsKey(angle))
+            {
+                var b = new MeshBatch();
+                Carriers3D.Back(b, "bed", Carriers3D.BedBack, _mattress, angle);
+                var back = b.AddTo(_node)!;
+                back.Name = $"Back{Mathf.RoundToInt(Mathf.RadToDeg(angle))}";
+                _backs[angle] = back;
+            }
+
+            foreach (var (at, back) in _backs)
+            {
+                back.Visible = at == angle;
+            }
+        }
+
+        /// <summary>How far the bed's back is up for <paramref name="patient"/>: sat up by day, lower asleep, flat for CPR.</summary>
+        private static float BackAngle(Patient? patient, bool asleep) => patient switch
+        {
+            null or { InArrest: true } or { IsAlive: false } => 0f,
+            _ when asleep => Mathf.DegToRad(20),
+            _ => Carriers3D.BedBack.Raised,
+        };
 
         /// <summary>A plaster room couch: the cast goes on whoever lies on it.</summary>
         public bool Plaster { get; init; }
@@ -455,6 +489,11 @@ public partial class Beds3D : Node3D
         {
             if (patient is null)
             {
+                if (!_table)
+                {
+                    Recline(0);
+                }
+
                 Snore(false);
                 MealTable(false);
                 _lying?.QueueFree();
@@ -469,7 +508,8 @@ public partial class Beds3D : Node3D
             var asleep = !_table && Asleep(world.Simulation, patient);
             var doing = babies is { Length: > 0 } ? InBed.None : Doing(world.Simulation, patient, asleep, time);
             var cast = Plaster ? CastOn(world.Simulation, patient) : 0f;
-            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast);
+            var angle = _table ? 0f : BackAngle(patient, asleep);
+            var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle);
             Breathe(asleep, time);
             MealTable(doing == InBed.Meal);
             Busy(time);
@@ -480,7 +520,13 @@ public partial class Beds3D : Node3D
 
             _lying?.QueueFree();
             _lyingKey = key;
-            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast);
+            _lying = Lying3D.Build(look, _blanket, band, babies, awake: !asleep, doing, cast, _table ? null : Carriers3D.BedBack, angle);
+            _doing = doing;
+            if (!_table)
+            {
+                Recline(angle);
+            }
+
             Snore(asleep);
             _lying.Position = new Vector3(0, _mattress, 0);
             _top.AddChild(_lying);
@@ -503,13 +549,13 @@ public partial class Beds3D : Node3D
         /// <summary>The raised hands move a little: turning a page, scrolling, a forkful now and then.</summary>
         private void Busy(double time)
         {
-            if (_lying?.GetNodeOrNull<Node3D>("Holding") is not { } hands)
+            if (_lying?.FindChild("Holding", true, false) is not Node3D hands)
             {
                 return;
             }
 
             var f = (float)time + (_spot.X * 0.7f);
-            var doing = _lyingKey is ValueTuple<PersonLook, Color?, int, BabyLook?, bool, InBed, float> k ? k.Item6 : InBed.None;
+            var doing = _doing;
             hands.Rotation = doing switch
             {
                 InBed.Meal => new Vector3(-0.9f * Mathf.Max(0, Mathf.Sin(f * 1.3f)), 0, 0),

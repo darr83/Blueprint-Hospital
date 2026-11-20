@@ -9,6 +9,7 @@ BUDGET = 3000
 
 PX = 1 / 28
 TOP = 16 * PX
+HINGE = 0.2  # the backrest hinges up from here to the head
 
 
 def build():
@@ -19,6 +20,7 @@ def build():
     seam = mat("Seam", "#444B52", 0.7)
     yellow = mat("Yellow", "#F2C230", 0.5)
     grip = mat("Grip", "#2B3238", 0.7)
+    white = mat("Pillow", "#F4F6F8", 0.9)
 
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -35,9 +37,15 @@ def build():
     tube("Pivot", [(-0.3, 0, (base + under) / 2), (0.3, 0, (base + under) / 2)], 0.02, grey)
 
     cube("Deck", (0, 0, 13 * PX), (0.66, 2.0, 0.06), steel, bevel=0.02)
-    cube("Mattress", (0, -0.02, TOP - 0.045), (0.6, 1.9, 0.085), pad, bevel=0.03, bevel_segments=3)
-    for y in (-0.5, 0.2):
-        cube(f"Seam{y}", (0, y, TOP - 0.002), (0.6, 0.012, 0.006), seam, smooth=False)
+    # The mattress in two sections: the head end lifts with the backrest (part "Back"), with a pillow.
+    lo, end = -0.97, 0.93
+    foot_len, head_len = HINGE - lo - 0.005, end - HINGE - 0.005
+    foot_y, head_y = HINGE - 0.005 - foot_len / 2, HINGE + 0.005 + head_len / 2
+    cube("Mattress", (0, foot_y, TOP - 0.045), (0.6, foot_len, 0.085), pad, bevel=0.03, bevel_segments=3)
+    cube("Seam", (0, -0.5, TOP - 0.002), (0.6, 0.012, 0.006), seam, smooth=False)
+    cube("MattressBack", (0, head_y, TOP - 0.045), (0.6, head_len, 0.085), pad, bevel=0.03, bevel_segments=3, part="Back")
+    cube("BackPanel", (0, head_y, TOP - 0.1), (0.56, head_len, 0.02), grey, bevel=0.006, part="Back")
+    cube("Pillow", (0, end - 0.22, TOP + 0.035), (0.44, 0.28, 0.07), white, bevel=0.03, bevel_segments=3, part="Back")
 
     rail = 17.5 * PX
     for sx in (-1, 1):

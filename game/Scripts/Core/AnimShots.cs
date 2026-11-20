@@ -100,6 +100,7 @@ public partial class AnimShots : Node
             {
                 var shots = new AnimShots { Name = "AnimShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--anim-shots=".Length..] };
                 GameManager.Instance.AddChild(shots);
+                GameManager.Instance.Settings.View3D = true;
                 Callable.From(() => GameManager.Instance.StartNewGame("Animation Review General")).CallDeferred();
                 return true;
             }
