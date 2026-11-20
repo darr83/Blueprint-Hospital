@@ -48,6 +48,33 @@ public enum Care
 
     /// <summary>An endoscopy: turned on their left side, a mouth guard in, the scope in the doctor's hands.</summary>
     Endoscopy,
+
+    /// <summary>Observations: a blood pressure cuff on the arm and a probe on the finger, wired to the machine on its stand.</summary>
+    Obs,
+
+    /// <summary>Taking blood: the arm out straight with a tourniquet above the elbow, a tray of tubes on the bed.</summary>
+    Bloods,
+
+    /// <summary>A finger-prick test (glucose, ketones): a hand held out for the nurse.</summary>
+    FingerPrick,
+
+    /// <summary>Peak flow: sat up, blowing hard into the meter.</summary>
+    PeakFlow,
+
+    /// <summary>A lumbar puncture: curled up on their side with their back to the doctor, a sterile drape on it.</summary>
+    LumbarPuncture,
+
+    /// <summary>An ascitic tap: the gown lifted, a sterile drape on the side of the tummy.</summary>
+    AsciticTap,
+
+    /// <summary>A joint aspiration: the covers off the knee, a sterile drape round it.</summary>
+    JointAspiration,
+
+    /// <summary>A urine test done at the bedside: nothing changes on the patient, the nurse dips the sample.</summary>
+    Urine,
+
+    /// <summary>A nose and throat swab.</summary>
+    Swab,
 }
 
 /// <summary>Works out, from the simulation alone, which procedure a lying patient is in the middle of. Changes nothing.</summary>
@@ -67,6 +94,12 @@ public static class Procedure3D
             {
                 case TaskKind.BedsideTest when task.Started && task.Detail == "ecg":
                     return (Care.Ecg, task);
+                case TaskKind.BedsideTest when task.Started && Bedside(task.Detail) is var test and not Care.None:
+                    return (test, task);
+                case TaskKind.TakeBloods when task.Started:
+                    return (Care.Bloods, task);
+                case TaskKind.Observations or TaskKind.Triage when task.Started:
+                    return (Care.Obs, task);
                 case TaskKind.Surgery when task.Started && task.SpaceId is { } id && sim.FindSpace(id) is { } place && place.PatientSpot == patient.Tile:
                     if (place.Kind == CareSpaceKind.DeliveryRoom)
                     {
@@ -105,6 +138,27 @@ public static class Procedure3D
 
         return (Care.None, null);
     }
+
+    /// <summary>The care a bedside test is drawn as, from the test's id.</summary>
+    private static Care Bedside(string? test) => test switch
+    {
+        "venous_blood_gas" => Care.Bloods,
+        "capillary_glucose" or "blood_ketones" => Care.FingerPrick,
+        "peak_flow" => Care.PeakFlow,
+        "lumbar_puncture" => Care.LumbarPuncture,
+        "ascitic_tap" => Care.AsciticTap,
+        "joint_aspiration" => Care.JointAspiration,
+        "urine_dipstick" or "pregnancy_test" => Care.Urine,
+        "viral_swab" => Care.Swab,
+        _ => Care.None,
+    };
+
+    /// <summary>Care given at the bedside by someone standing beside the bed (so it needs them there, and a side to work from).</summary>
+    public static bool AtBedside(Care care) => care is Care.Ecg or Care.Birth or Care.Obs or Care.Bloods or Care.FingerPrick or Care.PeakFlow
+        or Care.LumbarPuncture or Care.AsciticTap or Care.JointAspiration or Care.Urine or Care.Swab;
+
+    /// <summary>Where the tube from the blood pressure cuff plugs into the machine on its stand, in the bed's frame above the mattress.</summary>
+    public static Vector3 ObsSocket(float side) => new(side * 1.28f, 0.62f, 0.2f);
 
     private static bool ArmInjury(string condition) =>
         condition.Contains("wrist") || condition.Contains("shoulder") || condition.Contains("elbow") || condition.Contains("hand") || condition.Contains("finger");

@@ -33,6 +33,24 @@ public enum Act
     /// <summary>At the operating table: leaning in, both hands working.</summary>
     Operate,
 
+    /// <summary>Taking blood, or a needle test (blood gas, lumbar puncture, a tap): bent over with a syringe.</summary>
+    Needle,
+
+    /// <summary>A finger-prick test: the meter in one hand, the patient's finger in the other.</summary>
+    Prick,
+
+    /// <summary>A urine test: the sample pot in one hand, dipping the strip and reading it.</summary>
+    Dip,
+
+    /// <summary>Taking a swab from the nose and throat.</summary>
+    Swab,
+
+    /// <summary>Observations: the thermometer in the patient's ear.</summary>
+    Thermometer,
+
+    /// <summary>Observations: writing the numbers on the chart.</summary>
+    Write,
+
     /// <summary>Talking someone through something: hands gesturing.</summary>
     Talk,
 
@@ -173,8 +191,8 @@ public static class Activity3D
             TaskKind.DoctorAssessment or TaskKind.DoctorReview or TaskKind.WardRound or TaskKind.WardClerking
                 or TaskKind.RedReview or TaskKind.EmergencyReview or TaskKind.OutreachReview
                 => Habit(member.Id, time, 9) < 0.7 ? Act.Examine : Act.Talk,
-            TaskKind.Observations or TaskKind.Triage or TaskKind.AmbulanceHandover => Act.Observations,
-            TaskKind.TakeBloods or TaskKind.BedsideTest => Act.Bloods,
+            TaskKind.Observations or TaskKind.Triage or TaskKind.AmbulanceHandover => ObsAct(member.Id, time),
+            TaskKind.TakeBloods or TaskKind.BedsideTest => TestAct(task, member.Id, time),
             TaskKind.GiveMedication or TaskKind.EmergencyTreatment => Act.Medicine,
             TaskKind.Register or TaskKind.Imaging or TaskKind.DispenseMedicines => Act.Typing,
             TaskKind.Surgery when member.Role == StaffRole.Anaesthetist => Act.Bag,
@@ -634,6 +652,30 @@ public static class Activity3D
                 return (Act.Scope, Bed(side * 1.35, -1.25), (-f * side, f * 0.15));
             }
 
+            case Care.Obs:
+            {
+                // Beside the patient's shoulder: cuff, then the thermometer in their ear, then the chart.
+                double side = Procedure3D.Side(patient, member, sim);
+                var act = ObsAct(member.Id, time);
+                return (act, Bed(side * 1.4, act == Act.Thermometer ? -1.0 : -0.75), (-f * side, act == Act.Thermometer ? -f * 0.45 : 0));
+            }
+
+            case Care.Bloods or Care.FingerPrick or Care.PeakFlow or Care.AsciticTap or Care.LumbarPuncture or Care.JointAspiration or Care.Urine or Care.Swab:
+            {
+                double side = Procedure3D.Side(patient, member, sim);
+                var along = care switch
+                {
+                    Care.Swab => -1.1,
+                    Care.PeakFlow => -0.8,
+                    Care.JointAspiration => 0.45,
+                    Care.LumbarPuncture => -0.35,
+                    Care.Urine => 0.1,
+                    _ => -0.3,
+                };
+                var out_ = care == Care.Urine ? 1.6 : 1.38;
+                return (TestAct(task, member.Id, time), Bed(side * out_, along), (-f * side, care == Care.Swab ? -f * 0.4 : 0));
+            }
+
             default:
                 return null;
         }
@@ -659,6 +701,24 @@ public static class Activity3D
         var at = (machine.CentreX + (dx / d * 0.8), machine.CentreY + (dy / d * 0.8));
         return (at, (dx, dy));
     }
+
+    /// <summary>A round of observations: blood pressure, then temperature, then writing it all down.</summary>
+    public static Act ObsAct(int who, double time)
+    {
+        var phase = (time + (who * 1.3)) % 13;
+        return phase < 5.5 ? Act.Observations : phase < 8.5 ? Act.Thermometer : Act.Write;
+    }
+
+    /// <summary>What the hands do for taking blood or a bedside test, from which test it is.</summary>
+    public static Act TestAct(ClinicalTask task, int who, double time) => task.Kind == TaskKind.TakeBloods ? Act.Needle : task.Detail switch
+    {
+        "urine_dipstick" or "pregnancy_test" => Act.Dip,
+        "capillary_glucose" or "blood_ketones" => Act.Prick,
+        "viral_swab" => Act.Swab,
+        "venous_blood_gas" or "lumbar_puncture" or "ascitic_tap" or "joint_aspiration" => Act.Needle,
+        "peak_flow" => Habit(who, time, 6) < 0.7 ? Act.Talk : Act.Write,
+        _ => Act.Bloods,
+    };
 
     /// <summary>How far through their job (0 to 1) whoever is doing <paramref name="task"/> is.</summary>
     public static double Progress(ClinicalTask task, HospitalSimulation sim)
