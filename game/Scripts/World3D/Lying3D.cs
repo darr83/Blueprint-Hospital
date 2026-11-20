@@ -31,6 +31,7 @@ public static class Lying3D
     private static readonly Color Sheet = new("#F7F9FA");
     private static readonly Color Plaster = new("#F5F5F0");
     private static readonly Color Gel = new("#9AD8F2");
+    private static readonly Color Drape = new("#3F8FD6");
 
     /// <summary>
     /// Where the middle of the chest is, in the bed's frame above the mattress, for someone of this size with the
@@ -75,9 +76,10 @@ public static class Lying3D
 
         var ecg = care == Care.Ecg;
         var birth = care == Care.Birth && rest is not null;
-        var scan = Procedure3D.OnScanner(care) || care == Care.Endoscopy;
+        var lumbar = care == Care.LumbarPuncture;
+        var scan = Procedure3D.OnScanner(care) || care == Care.Endoscopy || lumbar;
         var chestBare = ecg || care == Care.Echo;
-        var tummyBare = care == Care.Ultrasound;
+        var tummyBare = care is Care.Ultrasound or Care.AsciticTap;
 
         // ---- the body plan along the bed, from the head (t = 0) to the toes (t = 1)
         var headR = 0.215f * Mathf.Lerp(1f, look.HeadScale, 0.5f) * (0.75f + (0.25f * sz));
@@ -156,7 +158,26 @@ public static class Lying3D
             var front = 0.12f + (0.18f * Mathf.Lerp(sz, 1f, 0.4f));
             var mid = Mathf.Lerp(shZ, hipZ, 0.78f);
             u.Ball(new Vector3(0, front - 0.03f + (look.Bump ? 0.12f : 0f), mid), new Vector3(shW * 1.7f, look.Bump ? 0.46f : 0.16f, (hipZ - shZ) * 0.62f), skin);
-            u.Ball(new Vector3(0.04f, front + 0.04f + (look.Bump ? 0.3f : 0f), mid), new Vector3(0.24f, 0.04f, 0.2f), Gel, small: true);
+            if (care == Care.AsciticTap)
+            {
+                // A sterile drape on the side of the tummy with a window where the needle goes in.
+                var at = new Vector3(careSide * shW * 0.62f, front + 0.02f, mid + 0.04f);
+                u.Box(at, new Vector3(0.36f, 0.03f, 0.36f), new Basis(Vector3.Back, -careSide * 0.35f), Drape);
+                u.Ball(at + new Vector3(careSide * 0.01f, 0.014f, 0), new Vector3(0.12f, 0.03f, 0.12f), skin, small: true);
+            }
+            else
+            {
+                u.Ball(new Vector3(0.04f, front + 0.04f + (look.Bump ? 0.3f : 0f), mid), new Vector3(0.24f, 0.04f, 0.2f), Gel, small: true);
+            }
+        }
+
+        if (lumbar)
+        {
+            // The gown open at the back, a sterile drape low on the spine with a window in it.
+            var at = new Vector3(0, -0.07f, Mathf.Lerp(shZ, hipZ, 0.82f));
+            u.Ball(new Vector3(0, -0.03f, Mathf.Lerp(shZ, hipZ, 0.55f)), new Vector3(shW * 1.5f, 0.1f, (hipZ - shZ) * 0.9f), skin);
+            u.Box(at, new Vector3(shW * 1.9f, 0.03f, 0.46f), Drape);
+            u.Ball(at - new Vector3(0, 0.012f, 0), new Vector3(0.12f, 0.03f, 0.12f), skin, small: true);
         }
 
         if (care == Care.Eeg)
@@ -253,6 +274,35 @@ public static class Lying3D
             restL = new Vector3(-0.2f, 0.16f, headZ - 0.36f);
             restR = new Vector3(0.2f, 0.16f, headZ - 0.36f);
         }
+        else if (lumbar)
+        {
+            // Curled up, hugging their knees.
+            elbowL = new Vector3(-(shW + 0.02f), 0.3f, Mathf.Lerp(shZ, hipZ, 0.6f));
+            elbowR = new Vector3(shW + 0.02f, 0.3f, Mathf.Lerp(shZ, hipZ, 0.6f));
+            restL = new Vector3(-0.14f, 0.5f, hipZ + 0.12f);
+            restR = new Vector3(0.14f, 0.5f, hipZ + 0.12f);
+        }
+        else if (care is Care.Bloods or Care.FingerPrick)
+        {
+            // The arm on the nurse's side out straight beside them, palm up.
+            var z0 = raised ? hinge : hipZ;
+            var e = down * new Vector3(careSide * (shW + 0.17f), raised ? 0.2f : sy + 0.02f, z0 - 0.08f);
+            var h = down * new Vector3(careSide * (shW + 0.3f), raised ? 0.2f : sy + 0.02f, z0 + 0.3f);
+            if (careSide > 0)
+            {
+                (elbowR, restR) = (e, h);
+            }
+            else
+            {
+                (elbowL, restL) = (e, h);
+            }
+        }
+        else if (care == Care.PeakFlow)
+        {
+            // One hand up holding the meter to their mouth.
+            restR = head + new Vector3(0.05f, (headR * 0.95f) + 0.2f, (headR * 0.42f) + 0.07f);
+            elbowR = new Vector3(shW + 0.06f, 0.36f, shZ + 0.3f);
+        }
         else if (scan)
         {
             restL = new Vector3(-(shW + 0.06f), 0.1f, hipZ - 0.02f);
@@ -263,6 +313,43 @@ public static class Lying3D
 
         UpperArm(shoulderL, elbowL);
         UpperArm(shoulderR, elbowR);
+        var (nearShoulder, nearElbow, nearHand) = careSide > 0 ? (shoulderR, elbowR, restR) : (shoulderL, elbowL, restL);
+        if (care == Care.Obs)
+        {
+            // The blood pressure cuff round the upper arm, its tube going to the machine; the probe on a finger.
+            var navy = new Color("#1F3A5F");
+            var tube = new Color("#607D8B");
+            var top = nearShoulder.Lerp(nearElbow, 0.42f);
+            var bottom = nearShoulder.Lerp(nearElbow, 0.88f);
+            u.Capsule(top, bottom, armR * 1.45f, navy);
+            u.Ball(top.Lerp(bottom, 0.5f) + new Vector3(0, armR * 1.3f, 0), new Vector3(0.07f, 0.04f, 0.1f), Colors.White, small: true);
+            var socket = down * Procedure3D.ObsSocket(careSide);
+            var sag = bottom.Lerp(socket, 0.5f) + (down.Basis * new Vector3(0, -0.16f, 0));
+            u.Rod(bottom + new Vector3(careSide * armR, 0, 0), sag, 0.013f, tube, small: true);
+            u.Rod(sag, socket, 0.013f, tube, small: true);
+            var tip = nearHand + ((nearHand - nearElbow).Normalized() * foreR * 2.4f);
+            u.Ball(tip, new Vector3(0.075f, 0.07f, 0.1f), new Color("#ECEFF1"), small: true);
+            u.Ball(tip + new Vector3(0, 0.03f, 0), new Vector3(0.035f, 0.03f, 0.035f), new Color("#FF5252"), small: true);
+            var loop = tip.Lerp(socket, 0.5f) + (down.Basis * new Vector3(0, -0.2f, 0));
+            u.Rod(tip, loop, 0.008f, tube, small: true);
+            u.Rod(loop, socket + (down.Basis * new Vector3(0, -0.03f, 0)), 0.008f, tube, small: true);
+        }
+        else if (care == Care.Bloods)
+        {
+            // The tourniquet above the elbow.
+            var at = nearShoulder.Lerp(nearElbow, 0.8f);
+            var dir = (nearElbow - nearShoulder).Normalized();
+            u.Capsule(at - (dir * 0.025f), at + (dir * 0.025f), armR * 1.35f, new Color("#1E88E5"));
+        }
+        else if (care == Care.PeakFlow)
+        {
+            // The peak flow meter: a white tube with a blue mouthpiece and the red marker on its scale.
+            var mouth = head + new Vector3(0, headR * 0.95f, headR * 0.42f);
+            u.Box(mouth + new Vector3(0, 0.05f, 0), new Vector3(0.07f, 0.08f, 0.06f), new Color("#4FC3F7"));
+            u.Box(mouth + new Vector3(0, 0.24f, 0), new Vector3(0.09f, 0.32f, 0.07f), new Color("#F7F9FA"));
+            u.Box(mouth + new Vector3(0, 0.26f, 0.037f), new Vector3(0.03f, 0.24f, 0.006f), new Color("#FDD835"));
+            u.Ball(mouth + new Vector3(0, 0.2f, 0.045f), new Vector3(0.035f, 0.035f, 0.02f), new Color("#E53935"), small: true);
+        }
         if (cuddling)
         {
             // Baby skin to skin on their chest, held by both arms.
@@ -307,6 +394,21 @@ public static class Lying3D
             {
                 BirthLegs(bare, skin, gown, hinge + 0.15f);
             }
+            else if (lumbar)
+            {
+                // Knees drawn up towards the chest.
+                foreach (var s in new[] { -1f, 1f })
+                {
+                    var hip = new Vector3(s * 0.14f, 0.12f, hipZ);
+                    var knee = new Vector3(s * 0.15f, 0.56f, hipZ + 0.3f);
+                    var foot = new Vector3(s * 0.15f, 0.3f, hipZ + 0.85f);
+                    bare.Capsule(hip, knee, 0.14f * Mathf.Lerp(sz, 1f, 0.3f), gown);
+                    bare.Capsule(knee, foot, 0.085f * Mathf.Lerp(sz, 1f, 0.3f), skin);
+                    bare.Ball(foot + new Vector3(0, 0.08f, 0.06f), new Vector3(0.15f, 0.28f, 0.17f) * Mathf.Lerp(sz, 1f, 0.3f), skin);
+                }
+
+                bare.Ball(new Vector3(0, 0.1f, hipZ - 0.02f), new Vector3(shW * 2.1f, 0.34f * Mathf.Lerp(sz, 1f, 0.4f), 0.5f), gown);
+            }
             else
             {
                 ScanLegs(bare, skin, gown, care, shW, chestEdge, Z(0.76f), Z(0.97f), sz);
@@ -349,6 +451,29 @@ public static class Lying3D
             var ankle = new Vector3(legW * 0.75f, 0.2f, footZ - 0.12f);
             var knee = new Vector3(legW * 0.85f, 0.22f, kneeZ);
             b.Capsule(ankle, ankle.Lerp(knee, Mathf.Clamp(-cast, 0.15f, 1f)), W(9f) / 2 * sz, Plaster);
+        }
+
+        if (care is Care.Bloods or Care.FingerPrick or Care.AsciticTap or Care.JointAspiration)
+        {
+            // A cardboard tray on the bed with what is needed: tubes with coloured tops, a wipe.
+            var tray = new Vector3(careSide * 0.2f, 0.27f, Mathf.Min(1.5f, kneeZ + 0.34f));
+            b.Box(tray, new Vector3(0.3f, 0.05f, 0.18f), new Color("#B9B1A0"));
+            b.Box(tray + new Vector3(0, 0.02f, 0), new Vector3(0.25f, 0.03f, 0.13f), new Color("#D9D2C3"));
+            var caps = new[] { "#8E24AA", "#FDD835", "#1E88E5" };
+            for (var i = 0; i < (care == Care.FingerPrick ? 1 : caps.Length); i++)
+            {
+                var at = tray + new Vector3(-0.08f + (i * 0.08f), 0.045f, 0);
+                b.Capsule(at - new Vector3(0, 0, 0.04f), at + new Vector3(0, 0, 0.03f), 0.016f, new Color("#F4F6F7"));
+                b.Ball(at + new Vector3(0, 0, 0.045f), new Vector3(0.04f, 0.04f, 0.03f), new Color(caps[i]), small: true);
+            }
+        }
+
+        if (care == Care.JointAspiration)
+        {
+            // The covers off the knee, a sterile drape round it.
+            var knee = new Vector3(careSide * legW * 0.9f, 0.25f, kneeZ - 0.05f);
+            b.Box(knee, new Vector3(0.44f, 0.03f, 0.5f), Drape);
+            b.Ball(knee + new Vector3(0, 0.03f, 0), new Vector3(0.2f, 0.13f, 0.24f), skin);
         }
 
         if (chestBare || tummyBare)

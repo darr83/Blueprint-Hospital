@@ -87,11 +87,25 @@ public partial class AnimShots : Node
         ("ultrasound", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Ultrasound } c && Activity3D.Progress(c.Task!, s) < 0.6, 3.2f, 120, new[] { "ectopic_pregnancy", "ovarian_torsion" }),
         ("eeg", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Eeg } c && Activity3D.Progress(c.Task!, s) is > 0.22 and < 0.27, 3.2f, 150, new[] { "breakthrough_seizure" }),
         ("endoscopy", null, (s, a) => a is StaffMember m && CareOf(s, m) is { Care: Care.Endoscopy } c && Activity3D.Progress(c.Task!, s) < 0.6, 3.2f, 120, new[] { "upper_gi_bleed", "ulcerative_colitis_flare" }),
+        ("obs", null, (s, a) => AtBed(s, a, Care.Obs), 3.4f, 170, new[] { "community_acquired_pneumonia", "atrial_fibrillation" }),
+        ("bloods", null, (s, a) => AtBed(s, a, Care.Bloods), 3.4f, 110, new[] { "community_acquired_pneumonia", "pyelonephritis" }),
+        ("glucose", null, (s, a) => AtBed(s, a, Care.FingerPrick), 3.4f, 110, new[] { "diabetic_ketoacidosis", "hypoglycaemia" }),
+        ("peakflow", null, (s, a) => AtBed(s, a, Care.PeakFlow), 3.4f, 150, new[] { "asthma_exacerbation" }),
+        ("urine", null, (s, a) => AtBed(s, a, Care.Urine), 3.4f, 150, new[] { "pyelonephritis", "renal_colic" }),
+        ("swab", null, (s, a) => AtBed(s, a, Care.Swab), 3.4f, 130, new[] { "influenza" }),
+        ("lumbar", null, (s, a) => AtBed(s, a, Care.LumbarPuncture), 3.4f, 110, new[] { "bacterial_meningitis" }),
+        ("tap", null, (s, a) => AtBed(s, a, Care.AsciticTap), 3.4f, 110, new[] { "decompensated_cirrhosis" }),
+        ("knee", null, (s, a) => AtBed(s, a, Care.JointAspiration), 3.4f, 110, new[] { "septic_arthritis_knee", "gout" }),
     };
 
     private static (Care Care, ClinicalTask? Task)? CareOf(HospitalSimulation s, StaffMember m) =>
         !m.IsMoving && m.CurrentTaskId is { } id && s.Tasks.FirstOrDefault(t => t.Id == id) is { Started: true } task && s.FindPatient(task.PatientId) is { IsMoving: false } p
         && Procedure3D.For(p, s) is var c && c.Task == task ? c : null;
+
+    /// <summary>Someone part way through this kind of care on a patient who is in a bed.</summary>
+    private static bool AtBed(HospitalSimulation s, Agent a, Care care) =>
+        a is StaffMember m && CareOf(s, m) is { } c && c.Care == care && Activity3D.Progress(c.Task!, s) is > 0.12 and < 0.5
+        && s.FindPatient(c.Task!.PatientId) is { } onBed && World!.InBed(onBed);
 
     private static bool Set6 => OS.GetCmdlineUserArgs().Contains("--anim-set=6");
 

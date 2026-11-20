@@ -515,14 +515,14 @@ public partial class Beds3D : Node3D
             var sim = world.Simulation;
             var (care, careTask) = Procedure3D.For(patient, sim);
             var worker = careTask is null ? null : Procedure3D.Doing(careTask, sim);
-            if (babies is { Length: > 0 } || (care is Care.Ecg or Care.Birth && worker is null) || (_table && care is Care.Ecg or Care.Birth))
+            if (babies is { Length: > 0 } || (Procedure3D.AtBedside(care) && (worker is null || _table)))
             {
                 (care, careTask) = (Care.None, null);
             }
 
             var side = care switch
             {
-                Care.Ecg or Care.Birth or Care.Endoscopy => _careFor == careTask?.Id ? _careSide : Procedure3D.Side(patient, worker, sim),
+                _ when Procedure3D.AtBedside(care) || care == Care.Endoscopy => _careFor == careTask?.Id ? _careSide : Procedure3D.Side(patient, worker, sim),
                 Care.Echo or Care.Ultrasound or Care.Eeg => Procedure3D.MachineSide(patient, sim),
                 _ => 1f,
             };
@@ -539,9 +539,13 @@ public partial class Beds3D : Node3D
             {
                 (angle, asleep, doing) = (Mathf.DegToRad(58), false, InBed.None);
             }
-            else if (care == Care.Ecg)
+            else if (Procedure3D.AtBedside(care))
             {
                 (asleep, doing) = (false, InBed.None);
+                if (care == Care.PeakFlow)
+                {
+                    angle = Mathf.DegToRad(52);
+                }
             }
             else if (babies is { Length: > 0 })
             {
@@ -556,10 +560,12 @@ public partial class Beds3D : Node3D
             Labour(care == Care.Birth ? careTask : null, look, side, born, time, angle);
             Laser(care, careTask, time);
             EegWires(care == Care.Eeg ? Procedure3D.Machine(patient, sim) : null, sim);
+            ObsStand(care == Care.Obs, side, time);
+            Blow(care == Care.PeakFlow ? careTask : null, angle, time);
             var rebuilt = _lying is null || !Equals(_lyingKey, key);
-            if (!rebuilt && care == Care.Endoscopy && _lying is not null)
+            if (!rebuilt && care is Care.Endoscopy or Care.LumbarPuncture && _lying is not null)
             {
-                OnSide(_lying, side);
+                OnSide(_lying, care == Care.LumbarPuncture ? -side : side);
             }
             if (_lying is not null && Equals(_lyingKey, key))
             {
@@ -577,9 +583,10 @@ public partial class Beds3D : Node3D
 
             Snore(asleep);
             _lying.Position = new Vector3(0, _mattress, 0);
-            if (care == Care.Endoscopy)
+            if (care is Care.Endoscopy or Care.LumbarPuncture)
             {
-                OnSide(_lying, side);
+                // For a lumbar puncture they turn their back to the doctor.
+                OnSide(_lying, care == Care.LumbarPuncture ? -side : side);
             }
 
             _top.AddChild(_lying);
@@ -686,6 +693,94 @@ public partial class Beds3D : Node3D
                 _cartPaper.Scale = new Vector3(Mathf.Max(0.02f, printed * 0.5f), 1, 1);
                 _cartPaper.Rotation = new Vector3(0, 0, -_cartSide * 0.5f * printed);
             }
+        }
+
+        private Node3D? _obs;
+        private Node3D? _obsBeat;
+        private float _obsSide;
+
+        /// <summary>
+        /// The observations machine on its wheeled stand beside the bed: a screen of numbers with a heart that
+        /// beats, a basket for the cuffs, and the socket the blood pressure cuff's tube plugs into.
+        /// </summary>
+        private void ObsStand(bool on, float side, double time)
+        {
+            if (_obs is not null && (!on || side != _obsSide))
+            {
+                _obs.QueueFree();
+                (_obs, _obsBeat) = (null, null);
+            }
+
+            if (!on)
+            {
+                return;
+            }
+
+            if (_obs is null)
+            {
+                _obsSide = side;
+                var socket = Procedure3D.ObsSocket(side) + new Vector3(0, _mattress, 0);
+                _obs = new Node3D { Name = "ObsStand", Position = new Vector3(socket.X + (side * 0.12f), 0, socket.Z) };
+                _node.AddChild(_obs);
+                var b = new MeshBatch();
+                var steel = new Color("#B0BEC5");
+                var top = socket.Y;
+                for (var i = 0; i < 5; i++)
+                {
+                    var a = i * Mathf.Tau / 5;
+                    var foot = new Vector3(Mathf.Cos(a) * 0.26f, 0.06f, Mathf.Sin(a) * 0.26f);
+                    b.Rod(new Vector3(0, 0.1f, 0), foot, 0.02f, steel, small: true);
+                    b.Ball(foot, new Vector3(0.09f, 0.1f, 0.09f), new Color("#263238"), small: true);
+                }
+
+                b.Rod(new Vector3(0, 0.08f, 0), new Vector3(0, top + 0.1f, 0), 0.024f, steel);
+                // The basket of cuffs half way up, and the monitor on top with its screen facing the foot of the bed.
+                b.Box(new Vector3(0, top - 0.32f, 0), new Vector3(0.3f, 0.14f, 0.24f), new Color("#CFD8DC"));
+                b.Ball(new Vector3(0.03f, top - 0.24f, 0), new Vector3(0.2f, 0.1f, 0.16f), new Color("#1F3A5F"), small: true);
+                b.Box(new Vector3(0, top + 0.16f, 0), new Vector3(0.36f, 0.3f, 0.2f), new Color("#F2F4F5"));
+                b.Box(new Vector3(0, top + 0.18f, 0.102f), new Vector3(0.3f, 0.2f, 0.01f), new Color("#0B1F17"));
+                b.Ball(new Vector3(-side * 0.18f, top, 0), new Vector3(0.06f, 0.06f, 0.06f), new Color("#546E7A"), small: true);
+                b.AddTo(_obs);
+
+                // The numbers: a green, a blue and a white row.
+                var marks = new MeshBatch();
+                var rows = new[] { "#5CFF8A", "#7FC4F0", "#FFFFFF" };
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    for (var i = 0; i < 3; i++)
+                    {
+                        marks.Box(new Vector3(-0.02f + (i * 0.045f), top + 0.245f - (row * 0.06f), 0.109f), new Vector3(0.03f, 0.04f, 0.004f), new Color(rows[row]));
+                    }
+                }
+
+                var lit = marks.AddTo(_obs, alpha: true, shadow: false)!;
+                lit.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+                var heart = new MeshBatch();
+                heart.Ball(Vector3.Zero, new Vector3(0.05f, 0.05f, 0.01f), new Color("#FF5252"), small: true);
+                _obsBeat = new Node3D { Name = "Beat", Position = new Vector3(-0.1f, top + 0.245f, 0.11f) };
+                _obs.AddChild(_obsBeat);
+                var dot = heart.AddTo(_obsBeat, alpha: true, shadow: false)!;
+                dot.MaterialOverride = Kit3D.VertexColoursUnshadedAlpha;
+            }
+
+            if (_obsBeat is not null)
+            {
+                var beat = Mathf.PosMod((float)time * 1.2f, 1f) < 0.25f ? 1.5f : 1f;
+                _obsBeat.Scale = new Vector3(beat, beat, 1);
+            }
+        }
+
+        /// <summary>Peak flow: a deep breath in, then a short hard blow into the meter, three goes with a rest between.</summary>
+        private void Blow(Simulation.Staff.ClinicalTask? task, float angle, double time)
+        {
+            if (task is null || _lying?.FindChild("Upper", false, false) is not Node3D upper)
+            {
+                return;
+            }
+
+            var phase = Mathf.PosMod((float)time + (task.Id * 1.3f), 6f);
+            var lean = phase < 2f ? -0.06f * Smooth(phase / 2f) : phase < 2.5f ? Mathf.Lerp(-0.06f, 0.16f, (phase - 2f) / 0.5f) : phase < 3.4f ? 0.16f * (1 - Smooth((phase - 2.5f) / 0.9f)) : 0f;
+            upper.Transform = Carriers3D.BedBack.Turn(0, angle + lean);
         }
 
         private int? _careFor;
