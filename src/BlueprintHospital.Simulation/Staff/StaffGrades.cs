@@ -53,6 +53,9 @@ public static class StaffGrades
         new Grade(StaffRole.Paediatrician, "Paediatric doctor", 0.60, 0.72, 2, 5, 55_000, 2.5),
         new Grade(StaffRole.Paediatrician, "Paediatric registrar", 0.72, 0.85, 4, 9, 66_000, 1.5),
         new Grade(StaffRole.Paediatrician, "Consultant paediatrician", 0.85, 0.97, 9, 25, 110_000, 0.8),
+        new Grade(StaffRole.PlaySpecialist, "Band 3 play assistant", 0.35, 0.60, 0, 10, 24_000, 1.5),
+        new Grade(StaffRole.PlaySpecialist, "Band 4 play specialist", 0.55, 0.80, 2, 15, 28_000, 2),
+        new Grade(StaffRole.PlaySpecialist, "Band 5 senior play specialist", 0.75, 0.95, 6, 25, 32_000, 0.8),
     };
 
     public static IEnumerable<Grade> For(StaffRole role) => All.Where(g => g.Role == role);
@@ -112,6 +115,8 @@ public static class StaffGrades
         (StaffRole.ChildrensNurse, true) => "children's nurses",
         (StaffRole.Paediatrician, false) => "paediatric doctor",
         (StaffRole.Paediatrician, true) => "paediatric doctors",
+        (StaffRole.PlaySpecialist, false) => "play specialist",
+        (StaffRole.PlaySpecialist, true) => "play specialists",
         _ => "healthcare assistants",
     };
 }

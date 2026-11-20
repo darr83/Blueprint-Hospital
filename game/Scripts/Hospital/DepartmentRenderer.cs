@@ -53,7 +53,37 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.Lift] = new Color("#C9CFD5"),
         [CareSpaceKind.Stairs] = new Color("#D8D4CC"),
         [CareSpaceKind.DeliveryRoom] = new Color("#F2DDE8"),
+        [CareSpaceKind.PlayRoom] = new Color("#E6F2D5"),
+        [CareSpaceKind.ParentsRoom] = new Color("#EFE4D6"),
     };
+
+    /// <summary>
+    /// A room's usual floor colour: by its kind, except the children's rooms, which have their own
+    /// brighter colours (sunny yellow wards, mint cubicles, sky blue waiting, lavender intensive care).
+    /// </summary>
+    public static Color FloorColourOf(CareSpace space)
+    {
+        if (space.DepartmentId == HospitalSimulation.PaediatricsDepartmentId)
+        {
+            switch (space.Kind)
+            {
+                case CareSpaceKind.Ward when space.TemplateId is "picu" or "childrens_hdu":
+                    return new Color("#E6E0F3");
+                case CareSpaceKind.Ward:
+                    return new Color("#F5ECC8");
+                case CareSpaceKind.Majors:
+                    return new Color("#DDF0E4");
+                case CareSpaceKind.Waiting:
+                    return new Color("#D3EAF7");
+                case CareSpaceKind.Clinic:
+                    return new Color("#F6E6D6");
+                case CareSpaceKind.PlayRoom when space.TemplateId == "teen_room":
+                    return new Color("#DCE1F2");
+            }
+        }
+
+        return FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
+    }
 
     private HospitalSimulation _sim = null!;
     private static HospitalSimulation? _current;
@@ -156,7 +186,7 @@ public partial class DepartmentRenderer : Node2D
     private void DrawRoom(CanvasItem canvas, CareSpace space)
     {
         var r = space.Rect;
-        var colour = FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
+        var colour = FloorColourOf(space);
         if (DecorArt.LookOf(_sim, space) is { IsStandard: false } look && look.Floor != FloorFinish.Standard)
         {
             DecorArt.DrawRoomFloor(canvas, space, look);
@@ -296,6 +326,8 @@ public partial class DepartmentRenderer : Node2D
             CareSpaceKind.PlasterRoom => new Color("#8D6E63"),
             CareSpaceKind.PhysioGym => new Color("#2E7D32"),
             CareSpaceKind.Lift or CareSpaceKind.Stairs => new Color("#37474F"),
+            CareSpaceKind.PlayRoom => new Color("#E39B00"),
+            CareSpaceKind.ParentsRoom => new Color("#8D6E63"),
             _ => (Color?)null,
         };
 

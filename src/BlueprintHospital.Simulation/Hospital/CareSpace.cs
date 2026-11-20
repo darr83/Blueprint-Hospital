@@ -96,6 +96,15 @@ public enum CareSpaceKind
 
     /// <summary>Theatre recovery: bays where patients wake up after an operation, watched by recovery nurses.</summary>
     TheatreRecovery,
+
+    /// <summary>
+    /// A children's play room or teenage room, run by a play specialist: children waiting in A&amp;E come in
+    /// to play with their parent, which keeps them happier while they wait.
+    /// </summary>
+    PlayRoom,
+
+    /// <summary>A parents' room on the children's wards: a sofa, a kettle and a table, where parents take a break.</summary>
+    ParentsRoom,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

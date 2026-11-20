@@ -55,6 +55,9 @@ public enum StaffRole
 
     /// <summary>Paediatric doctor: clerks, reviews and discharges children on the children's wards.</summary>
     Paediatrician,
+
+    /// <summary>Hospital play specialist: runs the play room or teenage room, where children waiting in A&amp;E come to play.</summary>
+    PlaySpecialist,
 }
 
 public enum StaffActivity

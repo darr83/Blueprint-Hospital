@@ -36,7 +36,7 @@ public static class DecorArt
             return new Color(hex);
         }
 
-        var tint = DepartmentRenderer.FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
+        var tint = DepartmentRenderer.FloorColourOf(space);
         return look.Floor switch
         {
             FloorFinish.WoodPlanks => Oak,

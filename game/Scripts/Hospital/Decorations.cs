@@ -24,6 +24,7 @@ public static class Decorations
         PastelPrint, BpCuff, DiabetesPoster, ClinicSign, PharmacySign, WarningLight, ApronRack, RadiationSign,
         ControlWindow, HeartPoster, Mirror, WardBoard, BonePoster, FireExtinguisher,
         Welcome, EmergencyDirections, ToiletSign, AccessibleSign, FireExit, StaffOnly, NoSmoking, MenuBoard, VisitingTimes, Defibrillator, OutpatientsWelcome,
+        MuralJungle, MuralSea, MuralSpace,
     }
 
     private enum Floor
@@ -72,6 +73,13 @@ public static class Decorations
 
     private static Recipe? RecipeFor(CareSpace space) => space.Kind switch
     {
+        // Children's rooms: big painted murals.
+        CareSpaceKind.Waiting when space.TemplateId == "childrens_waiting_room" => new(new[] { Wall.MuralJungle, Wall.MuralSea, Wall.HandWashPoster }, new[] { Floor.Plant, Floor.Bins }),
+        CareSpaceKind.Majors when space.DepartmentId == "paediatrics" => new(new[] { Wall.MuralSea, Wall.GloveDispenser, Wall.OxygenPanel }, NoFloors),
+        CareSpaceKind.PlayRoom when space.TemplateId == "teen_room" => new(new[] { Wall.MuralSpace, Wall.Noticeboard, Wall.Clock }, new[] { Floor.Plant, Floor.Bookshelf }),
+        CareSpaceKind.PlayRoom => new(new[] { Wall.MuralJungle, Wall.MuralSea, Wall.Clock }, new[] { Floor.Plant }),
+        CareSpaceKind.ParentsRoom => new(new[] { Wall.PastelPrint, Wall.Noticeboard, Wall.Clock }, new[] { Floor.Fridge, Floor.Plant },
+            new[] { ("kitchenette", new[] { OnTop.KettleMugs }) }),
         CareSpaceKind.Waiting => new(new[] { Wall.Welcome, Wall.Tv, Wall.EmergencyDirections, Wall.Defibrillator, Wall.HandWashPoster, Wall.NoSmoking }, new[] { Floor.WaterCooler, Floor.LeafletRack, Floor.Plant, Floor.Bins, Floor.Plant }),
         CareSpaceKind.Cafeteria => new(new[] { Wall.MenuBoard, Wall.Clock, Wall.NoSmoking, Wall.Defibrillator }, new[] { Floor.Bins, Floor.Plant, Floor.Plant }),
         CareSpaceKind.VendingPoint => new(new[] { Wall.HandWashPoster, Wall.NoSmoking }, new[] { Floor.Bins }),
@@ -99,6 +107,7 @@ public static class Decorations
             "gastro_clinic" => new(new[] { Wall.GutPoster }, new[] { Floor.GutModel }, ClinicDesk()),
             "gynaecology_clinic" or "gynae_exam_room" => new(new[] { Wall.PastelPrint }, new[] { Floor.PelvisModel, Floor.PrivacyScreen }, ClinicDesk()),
             "medical_clinic" => new(new[] { Wall.BpCuff, Wall.DiabetesPoster }, NoFloors, ClinicDesk()),
+            "childrens_clinic" => new(new[] { Wall.HeightChart, Wall.MuralSea }, new[] { Floor.Scales }, ClinicDesk()),
             "antenatal_clinic" => new(new[] { Wall.PastelPrint, Wall.BpCuff }, new[] { Floor.Scales, Floor.Plant }, ClinicDesk()),
             "antenatal_scan_room" => new(new[] { Wall.PastelPrint }, new[] { Floor.FloorLamp }, new[] { ("ultrasound_machine", new[] { OnTop.GelWarmer }) }),
             _ => new(new[] { Wall.HandWashPoster }, NoFloors, ClinicDesk()),
@@ -134,6 +143,7 @@ public static class Decorations
         "gastroenterology" => Wall.GutPoster,
         "gynaecology" or "maternity" => Wall.PastelPrint,
         "trauma_orthopaedics" => Wall.BonePoster,
+        "paediatrics" => (ward.Id.Length % 3) switch { 0 => Wall.MuralJungle, 1 => Wall.MuralSea, _ => Wall.MuralSpace },
         _ => Wall.HandWashPoster,
     };
 
@@ -474,6 +484,7 @@ public static class Decorations
         Wall.Defibrillator => 0.9,
         Wall.ToiletSign or Wall.AccessibleSign => 1.6,
         Wall.Welcome or Wall.OutpatientsWelcome => 3.4,
+        Wall.MuralJungle or Wall.MuralSea or Wall.MuralSpace => 4.0,
         Wall.PharmacySign or Wall.EmergencyDirections or Wall.ClinicSign or Wall.VisitingTimes or Wall.HandWashPoster => 2.4,
         Wall.OxygenPanel or Wall.ApronRack or Wall.GloveDispenser or Wall.FireExit or Wall.StaffOnly or Wall.NoSmoking or Wall.MenuBoard or Wall.RadiationSign or Wall.WarningLight => 2.0,
         _ => 1.7,
@@ -687,6 +698,99 @@ public static class Decorations
     private static void PicturePoster(CanvasItem c, Frame f, string colour, string title, Pictogram icon, string ink) =>
         Sign(c, (u, v) => f(0.08f + (u * 0.84f), v), 0.3f, 0.95f, (w, h) => Signs.Poster(c, w, h, new Color(colour), title,
             r => Signs.Draw(c, icon, r.GetCenter().X, r.GetCenter().Y, Math.Min(r.Size.X, r.Size.Y) * 0.92f, new Color(ink), Colors.White)));
+
+    /// <summary>A filled ellipse on the wall, centred at (u, v) with radii ru and rv in wall units.</summary>
+    private static void Blob(CanvasItem c, Frame f, float u, float v, float ru, float rv, Color colour, int sides = 14)
+    {
+        var points = new Vector2[sides];
+        for (var i = 0; i < sides; i++)
+        {
+            var a = i * Mathf.Tau / sides;
+            points[i] = f(u + (ru * Mathf.Cos(a)), v + (rv * Mathf.Sin(a)));
+        }
+
+        c.DrawColoredPolygon(points, colour);
+    }
+
+    private static void Tri(CanvasItem c, Frame f, (float U, float V) a, (float U, float V) b, (float U, float V) d, Color colour) =>
+        c.DrawColoredPolygon(new[] { f(a.U, a.V), f(b.U, b.V), f(d.U, d.V) }, colour);
+
+    /// <summary>A painted children's mural on the wall: a jungle, under the sea, or space.</summary>
+    private static void Mural(CanvasItem c, Wall kind, Frame f)
+    {
+        const float bottom = 0.18f, top = 0.92f;
+        switch (kind)
+        {
+            case Wall.MuralJungle:
+                Quad(c, f, 0.02f, bottom, 0.98f, top, new Color("#D9F2E3"));
+                Quad(c, f, 0.02f, bottom, 0.98f, 0.3f, new Color("#9CCC65"));
+                Blob(c, f, 0.85f, 0.8f, 0.06f, 0.08f, new Color("#FFD54F"));
+                foreach (var (u, h) in new[] { (0.12f, 0.75f), (0.5f, 0.85f), (0.9f, 0.7f) })
+                {
+                    Line(c, f, u, 0.3f, u, h, new Color("#8D6E63"), 2.2f);
+                    Blob(c, f, u, h, 0.09f, 0.08f, new Color("#43A047"));
+                    Blob(c, f, u - 0.05f, h - 0.04f, 0.06f, 0.05f, new Color("#66BB6A"));
+                }
+
+                // A giraffe and an elephant.
+                Line(c, f, 0.3f, 0.32f, 0.3f, 0.42f, new Color("#E0A030"), 1.6f);
+                Line(c, f, 0.38f, 0.32f, 0.38f, 0.42f, new Color("#E0A030"), 1.6f);
+                Blob(c, f, 0.34f, 0.46f, 0.06f, 0.05f, new Color("#FFC94D"));
+                Line(c, f, 0.38f, 0.48f, 0.42f, 0.7f, new Color("#FFC94D"), 3f);
+                Blob(c, f, 0.43f, 0.72f, 0.025f, 0.03f, new Color("#FFC94D"));
+                Blob(c, f, 0.33f, 0.47f, 0.012f, 0.015f, new Color("#B5761E"));
+                Blob(c, f, 0.68f, 0.42f, 0.09f, 0.08f, new Color("#90A4AE"));
+                Blob(c, f, 0.76f, 0.46f, 0.045f, 0.05f, new Color("#90A4AE"));
+                Line(c, f, 0.79f, 0.43f, 0.8f, 0.34f, new Color("#90A4AE"), 2.2f);
+                Line(c, f, 0.62f, 0.34f, 0.62f, 0.38f, new Color("#78909C"), 2.4f);
+                Line(c, f, 0.72f, 0.34f, 0.72f, 0.38f, new Color("#78909C"), 2.4f);
+                break;
+
+            case Wall.MuralSea:
+                Quad(c, f, 0.02f, bottom, 0.98f, top, new Color("#B3E5FC"));
+                Quad(c, f, 0.02f, bottom, 0.98f, 0.26f, new Color("#FFE0A3"));
+                foreach (var (u, v, colour) in new[] { (0.2f, 0.62f, "#FF8A65"), (0.55f, 0.48f, "#FFD54F"), (0.78f, 0.7f, "#BA68C8") })
+                {
+                    Blob(c, f, u, v, 0.07f, 0.05f, new Color(colour));
+                    Tri(c, f, (u - 0.06f, v), (u - 0.12f, v + 0.05f), (u - 0.12f, v - 0.05f), new Color(colour));
+                    Blob(c, f, u + 0.035f, v + 0.012f, 0.01f, 0.012f, new Color("#263238"));
+                }
+
+                foreach (var u in new[] { 0.1f, 0.42f, 0.9f })
+                {
+                    Line(c, f, u, 0.26f, u - 0.02f, 0.42f, new Color("#2E7D32"), 1.6f);
+                    Line(c, f, u + 0.03f, 0.26f, u + 0.05f, 0.38f, new Color("#43A047"), 1.6f);
+                }
+
+                foreach (var (u, v) in new[] { (0.35f, 0.78f), (0.38f, 0.85f), (0.66f, 0.82f) })
+                {
+                    c.DrawArc(f(u, v), 2.2f, 0, Mathf.Tau, 10, Colors.White, 0.8f, true);
+                }
+
+                Blob(c, f, 0.66f, 0.3f, 0.05f, 0.03f, new Color("#EF5350"));
+                break;
+
+            default:
+                Quad(c, f, 0.02f, bottom, 0.98f, top, new Color("#283593"));
+                foreach (var (u, v) in new[] { (0.1f, 0.8f), (0.25f, 0.6f), (0.45f, 0.86f), (0.62f, 0.66f), (0.8f, 0.84f), (0.93f, 0.55f), (0.35f, 0.4f), (0.72f, 0.36f) })
+                {
+                    Blob(c, f, u, v, 0.008f, 0.012f, new Color("#FFF59D"), 6);
+                }
+
+                Blob(c, f, 0.2f, 0.38f, 0.09f, 0.12f, new Color("#FF8A65"));
+                Line(c, f, 0.13f, 0.38f, 0.27f, 0.38f, new Color("#FFCC80"), 1.4f);
+                Blob(c, f, 0.82f, 0.6f, 0.07f, 0.1f, new Color("#B0BEC5"));
+                Blob(c, f, 0.84f, 0.63f, 0.02f, 0.025f, new Color("#90A4AE"));
+                // A rocket.
+                Quad(c, f, 0.48f, 0.4f, 0.56f, 0.7f, new Color("#ECEFF1"));
+                Tri(c, f, (0.48f, 0.7f), (0.56f, 0.7f), (0.52f, 0.8f), new Color("#E53935"));
+                Tri(c, f, (0.48f, 0.4f), (0.44f, 0.36f), (0.48f, 0.5f), new Color("#E53935"));
+                Tri(c, f, (0.56f, 0.4f), (0.6f, 0.36f), (0.56f, 0.5f), new Color("#E53935"));
+                Blob(c, f, 0.52f, 0.6f, 0.018f, 0.025f, new Color("#4FC3F7"));
+                Tri(c, f, (0.49f, 0.4f), (0.55f, 0.4f), (0.52f, 0.3f), new Color("#FFB300"));
+                break;
+        }
+    }
 
     private static void DrawWall(CanvasItem c, Wall kind, Frame f)
     {
@@ -905,6 +1009,12 @@ public static class Decorations
 
             case Wall.BonePoster:
                 PicturePoster(c, f, "#8D6E63", "BONES", Pictogram.Bone, "#B9A98C");
+                break;
+
+            case Wall.MuralJungle:
+            case Wall.MuralSea:
+            case Wall.MuralSpace:
+                Mural(c, kind, f);
                 break;
 
             case Wall.PastelPrint:

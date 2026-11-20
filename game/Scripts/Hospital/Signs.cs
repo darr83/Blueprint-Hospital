@@ -53,7 +53,8 @@ public static class Signs
         CareSpaceKind.Resus => Pictogram.Pulse,
         CareSpaceKind.NursesStation => Pictogram.Cross,
         CareSpaceKind.DoctorsOffice or CareSpaceKind.OutreachOffice => Pictogram.Staff,
-        CareSpaceKind.StaffRoom => Pictogram.Mug,
+        CareSpaceKind.StaffRoom or CareSpaceKind.ParentsRoom => Pictogram.Mug,
+        CareSpaceKind.PlayRoom => Pictogram.Baby,
         CareSpaceKind.Ward => space.TemplateId switch
         {
             "intensive_care_unit" or "high_dependency_unit" or "coronary_care_unit" => Pictogram.Monitor,

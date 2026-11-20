@@ -65,6 +65,9 @@ public static class BuildIcons
         ["resus_trolley"] = "<rect x='5' y='8' width='12' height='10' rx='1'/><path d='M5 11.5h12M5 15h12'/><path d='M17 9h2.5v-3'/><circle cx='7' cy='20' r='1.3'/><circle cx='15' cy='20' r='1.3'/><path d='M9 3.5l-1.5 2.5h3L9 8.5'/>",
         ["mop"] = "<path d='M15 3l-4 11'/><path d='M7 14h8l1 3H6z'/><path d='M7 17l-1 3M10 17v3M13 17v3M16 17l1 3'/><path d='M3 12h4v8H3'/>",
         ["baybeds"] = "<path d='M2 4h20'/><path d='M12 4c-1.6 2 1.6 3.5 0 5.5s1.6 3.5 0 5.5'/><path d='M2.5 20v-6M2.5 17.5h7v2.5M14.5 20v-6M14.5 17.5h7v2.5'/><circle cx='5' cy='15.6' r='1.1'/><circle cx='17' cy='15.6' r='1.1'/>",
+        ["blocks"] = "<rect x='3' y='13' width='8' height='8' rx='1'/><rect x='13' y='13' width='8' height='8' rx='1'/><rect x='8' y='4' width='8' height='8' rx='1'/><path d='M6 16v2M17 16v2M12 7v2'/>",
+        ["gamepad"] = "<path d='M7 8h10a4 4 0 0 1 4 4.5l-.6 3.5a2.5 2.5 0 0 1-4.3 1.2L14.5 15h-5l-1.6 2.2a2.5 2.5 0 0 1-4.3-1.2L3 12.5A4 4 0 0 1 7 8z'/><path d='M7.5 11v3M6 12.5h3'/><path d='M15.5 11.5h.01M17.5 13h.01'/>",
+        ["mug"] = "<path d='M5 9h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z'/><path d='M16 11h1.5a2.5 2.5 0 0 1 0 5H16'/><path d='M8.5 3c-1 1.2 1 2.2 0 3.5M12 3c-1 1.2 1 2.2 0 3.5'/>",
         ["lock"] = "<rect x='5' y='11' width='14' height='10' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
     };
 
@@ -82,6 +85,7 @@ public static class BuildIcons
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
         ["childrens_ward"] = "teddy", ["childrens_hdu"] = "icu", ["picu"] = "icu", ["childrens_assessment_unit"] = "teddy",
         ["childrens_waiting_room"] = "chairs", ["childrens_cubicle"] = "bed",
+        ["play_room"] = "blocks", ["teen_room"] = "gamepad", ["parents_room"] = "mug",
         ["outpatient_reception"] = "reception", ["pharmacy"] = "pharmacy", ["cafeteria"] = "facilities", ["vending_point"] = "vend",
         ["accessible_toilet"] = "access", ["cleaning_room"] = "mop",
     };

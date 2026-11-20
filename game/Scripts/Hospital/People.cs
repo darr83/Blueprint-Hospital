@@ -142,6 +142,9 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
 
     public bool Lanyard { get; init; }
 
+    /// <summary>The lanyard's colour, when it isn't the usual blue (a play specialist's is a rainbow, drawn in its first colour with stripes).</summary>
+    public Color? LanyardColour { get; init; }
+
     public bool Pocket { get; init; }
 
     public bool FobWatch { get; init; }
@@ -758,12 +761,12 @@ public static partial class Figures
         {
             if (away)
             {
-                pen.Line(P(-r.ShW * 0.28f, r.Ys - 0.5f), P(r.ShW * 0.28f, r.Ys - 0.5f), LanyardBlue, 1f);
+                pen.Line(P(-r.ShW * 0.28f, r.Ys - 0.5f), P(r.ShW * 0.28f, r.Ys - 0.5f), look.LanyardColour ?? LanyardBlue, 1f);
             }
             else
             {
                 var card = P(0, cradling ? r.ShY + (5 * s) : r.ShY + (10.5f * s));
-                pen.Open(LanyardBlue, 1f, P(-r.ShW * 0.24f, r.Ys), card + new Vector2(r.ShW * 0.12f, 0), P(r.ShW * 0.3f, r.Ys));
+                pen.Open(look.LanyardColour ?? LanyardBlue, 1f, P(-r.ShW * 0.24f, r.Ys), card + new Vector2(r.ShW * 0.12f, 0), P(r.ShW * 0.3f, r.Ys));
                 if (!cradling)
                 {
                     pen.Rect(card, new Vector2(4, 5), Colors.White);
