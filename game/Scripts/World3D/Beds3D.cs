@@ -177,6 +177,7 @@ public partial class Beds3D : Node3D
         private Node3D? _lying;
         private object? _lyingKey;
         private Node3D? _ring;
+        private Color? _ringColour;
         private Alert3D? _alert;
         private readonly Node3D _top;
         private readonly float _slide;
@@ -246,7 +247,10 @@ public partial class Beds3D : Node3D
 
             Lying(world, patient, time);
             Slide(ScanPhaseFor(sim, patient, time));
-            Ring(patient is not null && ReferenceEquals(world.Selected, patient));
+            Ring(patient is null ? null
+                : ReferenceEquals(world.Selected, patient) ? SelectedRing
+                : ReferenceEquals(world.Hovered, patient) ? Agents3D.HoverRing
+                : null);
             Alert(patient);
             CallLight(_onWard && patient is not null && calling.Contains(patient.Id) && !Asleep(sim, patient), time);
             DripPole(_onWard && patient is not null && dripping.Contains(patient.Id));
@@ -505,22 +509,24 @@ public partial class Beds3D : Node3D
             };
         }
 
-        private void Ring(bool selected)
+        /// <summary>The ring round the bed: yellow when its patient is selected, blue while the mouse is over them.</summary>
+        private void Ring(Color? colour)
         {
-            if (selected == (_ring is not null))
+            if (colour == _ringColour)
             {
                 return;
             }
 
-            if (!selected)
+            _ringColour = colour;
+            _ring?.QueueFree();
+            _ring = null;
+            if (colour is not { } c)
             {
-                _ring!.QueueFree();
-                _ring = null;
                 return;
             }
 
             var b = new MeshBatch();
-            b.Ring(new Vector3(0, 0.03f, 0), 1.35f, SelectedRing, Basis.FromScale(new Vector3(0.75f, 1, 1.75f)), 0.12f);
+            b.Ring(new Vector3(0, 0.03f, 0), 1.35f, c, Basis.FromScale(new Vector3(0.75f, 1, 1.75f)), 0.12f);
             _ring = new Node3D();
             _node.AddChild(_ring);
             b.AddTo(_ring, shadow: false);

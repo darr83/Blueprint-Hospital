@@ -187,6 +187,10 @@ public partial class ActorsLayer : Node2D
             {
                 p.Round(-half - 0.1, -2.6, (half * 2) + 0.2, 5.2, 0.3, Pen.A("#FFEB3B", 0.2f), PeopleArt.SelectedRing, 0.1);
             }
+            else if (ReferenceEquals(_world.Hovered, patient))
+            {
+                p.Round(-half - 0.1, -2.6, (half * 2) + 0.2, 5.2, 0.3, Pen.A("#FFFFFF", 0.3f), PeopleArt.HoverRing, 0.08);
+            }
 
             Alarm(p, patient, half + 0.22, 2.72);
             var (width, length) = isBed ? (FurnitureKit.MattressWidth, FurnitureKit.BedLength - 0.42) : (FurnitureKit.TableWidth(bed.TableId!), FurnitureKit.BedLength - 0.6);
@@ -297,7 +301,7 @@ public partial class ActorsLayer : Node2D
     private bool Lying(Pen p, Patient patient)
     {
         var look = Looks.Patient(patient);
-        var pose = new PersonPose { Selected = ReferenceEquals(_world.Selected, patient), Grey = !patient.IsAlive };
+        var pose = new PersonPose { Selected = ReferenceEquals(_world.Selected, patient), Hovered = ReferenceEquals(_world.Hovered, patient), Grey = !patient.IsAlive };
         var band = patient.Maternity ? (Color?)null : Looks.Wristband(patient.Triage);
         var (x, y) = _world.Interpolated(patient);
         if (_world.OnAmbulanceStretcher(patient))
@@ -440,6 +444,7 @@ public partial class ActorsLayer : Node2D
             Cpr = cpr,
             Ring = ring,
             Selected = ReferenceEquals(_world.Selected, agent),
+            Hovered = ReferenceEquals(_world.Hovered, agent),
             Baby = baby,
             Bag = bag,
             Grey = agent is Patient { IsAlive: false },
