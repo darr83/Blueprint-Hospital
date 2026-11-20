@@ -13,8 +13,11 @@ public class SurgeryTests
 {
     private static readonly GridRect B = StarterSite.MainBuildingFootprint;
 
-    /// <summary>A west wing: corridor, a theatre on the south side (and its anaesthetic room if asked), a surgical ward and the recommended staff.</summary>
-    private static SimulationHarness Wing(int seed = 7, bool anaestheticRoom = true, params string[] departments)
+    /// <summary>
+    /// A west wing: corridor, a theatre on the south side (and its anaesthetic room if asked), a surgical ward, a recovery
+    /// room on the north side if asked, and the recommended staff.
+    /// </summary>
+    internal static SimulationHarness Wing(int seed = 7, bool anaestheticRoom = true, bool recovery = false, params string[] departments)
     {
         var h = new SimulationHarness(seed);
         h.Sim.AdjustBalance(5_000_000);
@@ -32,6 +35,11 @@ public class SurgeryTests
         }
 
         Build(h.Sim.BuildRoom(h.Sim.AutoPlan("surgical_ward", new GridRect(B.X - 21, B.Y + 18, 16, 10))), "surgical ward");
+        if (recovery)
+        {
+            Build(h.Sim.BuildRoom(h.Sim.AutoPlan("theatre_recovery", new GridRect(B.X - 40, B.Y + 1, 21, 11))), "recovery room");
+        }
+
         var theatre = h.Sim.SpacesOfKind(CareSpaceKind.Theatre).Single();
         foreach (var department in h.Sim.SurgicalDepartments)
         {
@@ -42,7 +50,7 @@ public class SurgeryTests
         return h;
     }
 
-    private static void Build(BuildCheck result, string what) => Assert.True(result.CanBuild, $"{what}: {string.Join("; ", result.Problems)}");
+    internal static void Build(BuildCheck result, string what) => Assert.True(result.CanBuild, $"{what}: {string.Join("; ", result.Problems)}");
 
     [Fact]
     public void Shared_doors_go_in_the_middle_of_the_shared_wall_away_from_corners()

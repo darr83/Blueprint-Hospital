@@ -412,6 +412,15 @@ public sealed class Patient : Agent
     /// <summary>Their operation started later than its urgency allows.</summary>
     public bool SurgeryBreached { get; set; }
 
+    /// <summary>Going back to theatre to stop bleeding after their operation.</summary>
+    public bool ReturningToTheatre { get; set; }
+
+    /// <summary>A complication after their operation (bleeding, infection or critical_care), for their record.</summary>
+    public string? Complication { get; set; }
+
+    /// <summary>Extra hours on the ward, e.g. for a wound infection.</summary>
+    public double ExtraStayHours { get; set; }
+
     /// <summary>Already on a ward but needs a bed on another (up to ICU/HDU, down from them, or out of an assessment unit).</summary>
     public DateTime? WardMoveRequestedAt { get; set; }
 

@@ -98,6 +98,9 @@ public partial class RoomsLayer : Node2D
                     _ when space.IsMultiBed => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } bay
                         ? new BedSpot(space, bay.PatientSpot, bay.HeadSouth, null, () => bay.OccupantId, Looks.EdBlanket, false)
                         : null,
+                    _ when space.Kind == CareSpaceKind.TheatreRecovery => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } recoveryBay
+                        ? new BedSpot(space, recoveryBay.PatientSpot, recoveryBay.HeadSouth, null, () => recoveryBay.OccupantId, Looks.WardBlanket, false)
+                        : null,
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedSpot(space, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, _sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
                         : null,

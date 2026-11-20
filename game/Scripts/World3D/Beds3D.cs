@@ -70,6 +70,9 @@ public partial class Beds3D : Node3D
                     _ when space.IsMultiBed => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } bay
                         ? new BedView(this, bay.PatientSpot, bay.HeadSouth, null, () => bay.OccupantId, Looks.EdBlanket, false)
                         : null,
+                    _ when space.Kind == CareSpaceKind.TheatreRecovery => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } recoveryBay
+                        ? new BedView(this, recoveryBay.PatientSpot, recoveryBay.HeadSouth, null, () => recoveryBay.OccupantId, Looks.WardBlanket, false)
+                        : null,
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
                         ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
                         : null,

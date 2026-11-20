@@ -76,7 +76,7 @@ public sealed partial class HospitalSimulation
                && !_recovering.Values.Any(r => r.RoomId == room.Id)
                && DeliveryRoomFreeFor(room, task.PatientId)
                && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre
-                   || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null));
+                   || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null && SessionTakes(room, task)));
     }
 
     /// <summary>The member of staff starts work in their room; for a scan or an operation the patient is taken there.</summary>
@@ -216,6 +216,22 @@ public sealed partial class HospitalSimulation
         var operation = planned.Operation!;
         var inTheatre = operation.Room == CareSpaceKind.Theatre;
         var place = ProcedurePlace(operation.Room);
+        if (patient.ReturningToTheatre)
+        {
+            // Back in to stop bleeding: no new fee, and they go back to recovery to wake up again.
+            patient.ReturningToTheatre = false;
+            patient.Log(Now, $"Back in theatre: {surgeon.Name} found the bleeding point and stopped it.", important: true);
+            if (inTheatre)
+            {
+                OperationFinished(surgeon, patient, 0);
+            }
+
+            var repaired = Database.Conditions[patient.WorkingDiagnosis.ConditionId];
+            var stillNeeds = repaired.Operation?.Major == true ? "high dependency care to recover" : patient.DayCase ? "a few hours on the day surgery unit" : "a ward bed to recover";
+            StartTheatreRecovery(patient, surgeon, repaired, $"Back from {place} after stopping bleeding; needs {stillNeeds}.", null);
+            return;
+        }
+
         if (planned.Id == patient.Condition.Id)
         {
             patient.Log(Now, $"{operation.Name} performed by {surgeon.Name}. The {(inTheatre ? "operation" : "procedure")} went well.", important: true);
@@ -247,14 +263,26 @@ public sealed partial class HospitalSimulation
             OperationFinished(surgeon, patient, planned.IsPlanned ? planned.Planned?.Tariff ?? 0 : OperationFee(operation));
         }
 
-        ReturnFromServiceRoom(patient);
-
         // Big operations recover on HDU; small ones go home the same day from day surgery.
         var done = Database.Conditions[patient.WorkingDiagnosis.ConditionId];
         var after = planned.Id == done.Id ? operation : done.Operation ?? operation;
         patient.CareLevel = after.Major && HasHighDependencyBeds ? Math.Max(patient.CareLevel, 2) : 0;
         patient.DayCase = after.DayCase && Wards.Any(w => UnitOf(w) == WardUnit.DaySurgery);
         var needs = after.Major ? "high dependency care to recover" : patient.DayCase ? "a few hours on the day surgery unit" : "a ward bed to recover";
+        if (inTheatre)
+        {
+            // From theatre they go to recovery to wake up first; any complication shows as they come round.
+            var department = SurgeryDepartment(planned.Id);
+            if (!InSpecialty(surgeon, department))
+            {
+                patient.Log(Now, $"{surgeon.Name} ({SpecialtyTitle(surgeon.Specialty).ToLowerInvariant()}) operated outside their specialty: it took longer, with more risk.");
+            }
+
+            StartTheatreRecovery(patient, surgeon, done, $"Back from {place}; needs {needs}.", RollComplication(surgeon, patient, after));
+            return;
+        }
+
+        ReturnFromServiceRoom(patient);
         RequestWardBed(patient, done, $"Back from {place}; needs {needs}.");
     }
 

@@ -222,7 +222,7 @@ public partial class StaffPanel : PanelContainer
         _play.Disabled = !_sim.CanBePlayed(m);
         _play.TooltipText = _play.Disabled ? "Only a doctor who is on shift can be played." : BlueprintHospital.Core.GameView.ThreeD ? "See the hospital through this doctor's eyes and do their work yourself." : "Walk this doctor round the hospital yourself and do their work.";
         var place = m.BaseRoomId is { } roomId && _sim.Spaces.FirstOrDefault(s => s.Id == roomId) is { } room ? room.Name : "A&E";
-        _role.Text = $"{m.Grade} · {place}";
+        _role.Text = $"{HospitalSimulation.JobTitle(m.Grade, m.Specialty)} · {place}";
         var uniform = Looks.UniformColour(m);
         HudWidgets.SetAvatar(_avatar, m.Name, uniform.Luminance > 0.85f ? new Color("#5A6B7A") : uniform);
 

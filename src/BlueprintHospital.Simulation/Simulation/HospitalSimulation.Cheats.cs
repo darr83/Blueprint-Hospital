@@ -22,6 +22,7 @@ public sealed partial class HospitalSimulation
         "money <amount>   add money to the balance (e.g. money 500000, money 2m, money -10k)",
         "emergency [type] start a ward emergency for a patient in bed (types: fall, sepsis, heart_attack, stroke...)",
         "level <number>   jump to a Career level (e.g. level 4)",
+        "complication <type>  the next operation has a complication (bleeding, infection, critical_care, none)",
         "help             list the commands",
     };
 
@@ -68,6 +69,15 @@ public sealed partial class HospitalSimulation
 
                 SetLevel(level);
                 return new CheatResult(true, $"Now on level {Level}: {CurrentLevel!.Name}.");
+
+            case "complication":
+                if (words.Length != 2 || words[1].ToLowerInvariant() is not ("bleeding" or "infection" or "critical_care" or "none"))
+                {
+                    return new CheatResult(false, "Usage: complication <bleeding, infection, critical_care or none>");
+                }
+
+                NextComplication = words[1].ToLowerInvariant();
+                return new CheatResult(true, NextComplication == "none" ? "The next operation will go smoothly." : $"The next operation will end with: {ComplicationName(NextComplication).ToLowerInvariant()}.");
 
             case "emergency":
                 return CheatEmergency(words.Length > 1 ? words[1].ToLowerInvariant() : null);

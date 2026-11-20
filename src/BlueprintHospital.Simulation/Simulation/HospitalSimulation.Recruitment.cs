@@ -117,6 +117,12 @@ public sealed partial class HospitalSimulation
             postings.AddRange(Wards.Select(w => new StaffPosting(w.Id, w.Name)));
         }
 
+        if (role == StaffRole.Nurse)
+        {
+            // Recovery nurses watch patients waking up after their operations.
+            postings.AddRange(SpacesOfKind(CareSpaceKind.TheatreRecovery).OrderBy(r => r.Id, StringComparer.Ordinal).Select(r => new StaffPosting(r.Id, r.Name)));
+        }
+
         postings.AddRange(ClinicsRunBy(role).Select(c => new StaffPosting(c.Id, c.Name)));
 
         if (role == StaffRole.Receptionist)
@@ -212,6 +218,11 @@ public sealed partial class HospitalSimulation
             {
                 needs.Add(new(room.Name, room.Id, StaffRole.Anaesthetist, 1, Have(StaffRole.Anaesthetist, room.Id)));
             }
+        }
+
+        foreach (var recovery in SpacesOfKind(CareSpaceKind.TheatreRecovery).OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            needs.Add(new(recovery.Name, recovery.Id, StaffRole.Nurse, Math.Max(1, (recovery.Beds.Count + BaysPerRecoveryNurse - 1) / BaysPerRecoveryNurse), Have(StaffRole.Nurse, recovery.Id)));
         }
 
         foreach (var reception in SpacesOfKind(CareSpaceKind.OutpatientReception).OrderBy(s => s.Id, StringComparer.Ordinal))
@@ -326,6 +337,7 @@ public sealed partial class HospitalSimulation
             Name = $"{(grade.Role is StaffRole.Doctor or StaffRole.Surgeon or StaffRole.Endoscopist or StaffRole.Anaesthetist ? "Dr " : string.Empty)}{first} {surname}",
             Role = grade.Role,
             Grade = grade.Title,
+            Specialty = grade.Role == StaffRole.Surgeon ? PickSpecialty() : null,
             Skill = skill,
             Speed = speed,
             YearsExperience = years,
@@ -438,6 +450,7 @@ public sealed partial class HospitalSimulation
             Name = candidate.Name,
             Role = candidate.Role,
             Grade = candidate.Grade,
+            Specialty = candidate.Specialty,
             DepartmentId = EmergencyDepartmentLayout.Department,
             BaseRoomId = roomId,
             Skill = candidate.Skill,
@@ -460,7 +473,8 @@ public sealed partial class HospitalSimulation
     public StaffMember HireStaff(StaffRole role, string? roomId = null, double? skill = null, StaffShift? shift = null)
     {
         var grades = StaffGrades.For(role).ToList();
-        var grade = skill is { } s ? StaffGrades.Of(role, s) : grades[0];
+        // Surgeons taken on without a candidate are consultants unless told otherwise, as they always were.
+        var grade = skill is { } s ? StaffGrades.Of(role, s) : role == StaffRole.Surgeon ? grades[^1] : grades[0];
         var candidate = MakeCandidate(grade);
         var member = new StaffMember
         {
@@ -468,6 +482,7 @@ public sealed partial class HospitalSimulation
             Name = candidate.Name,
             Role = role,
             Grade = grade.Title,
+            Specialty = role == StaffRole.Surgeon ? SpecialtyForRoom(roomId) : null,
             DepartmentId = EmergencyDepartmentLayout.Department,
             BaseRoomId = roomId,
             Skill = skill ?? candidate.Skill,

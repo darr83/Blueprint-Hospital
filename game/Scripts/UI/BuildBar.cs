@@ -999,6 +999,7 @@ public partial class BuildBar : Control
         CareSpaceKind.XRay or CareSpaceKind.CT => "1 patient at a time",
         CareSpaceKind.Theatre => "1 operation at a time",
         CareSpaceKind.AnaestheticRoom => "1 patient being put to sleep, for the theatre it is built against",
+        CareSpaceKind.TheatreRecovery => room.Beds.Count == 1 ? "1 recovery bay" : $"{room.Beds.Count} recovery bays",
         CareSpaceKind.Pharmacy => "Dispenses for every ward",
         CareSpaceKind.Clinic => "1 booked patient at a time",
         CareSpaceKind.CathLab => "1 procedure at a time",

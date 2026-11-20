@@ -174,6 +174,12 @@ public sealed class PatientState
 
     public bool SurgeryBreached { get; init; }
 
+    public bool ReturningToTheatre { get; init; }
+
+    public string? Complication { get; init; }
+
+    public double ExtraStayHours { get; init; }
+
     public DateTime? WardMoveRequestedAt { get; init; }
 
     public double IntensiveCareHours { get; init; }
@@ -208,6 +214,8 @@ public sealed class StaffState
     public StaffRole Role { get; init; }
 
     public string Grade { get; init; } = string.Empty;
+
+    public string? Specialty { get; init; }
 
     public string DepartmentId { get; init; } = string.Empty;
 
@@ -811,7 +819,7 @@ public sealed partial class HospitalSimulation
         ReservedBedIndex = p.ReservedBedIndex, BedRequestedAt = p.BedRequestedAt, LeftEmergencyAt = p.LeftEmergencyAt,
         AdmittedAt = p.AdmittedAt, DischargeDueAt = p.DischargeDueAt, MedicinesReadyAt = p.MedicinesReadyAt, Timeline = p.Timeline.ToList(),
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
-        CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, WardMoveRequestedAt = p.WardMoveRequestedAt,
+        CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
         LastRefreshmentAt = p.LastRefreshmentAt, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
@@ -891,6 +899,9 @@ public sealed partial class HospitalSimulation
         p.GroupAndSaveAt = s.GroupAndSaveAt;
         p.LastAteAt = s.LastAteAt;
         p.SurgeryBreached = s.SurgeryBreached;
+        p.ReturningToTheatre = s.ReturningToTheatre;
+        p.Complication = s.Complication;
+        p.ExtraStayHours = s.ExtraStayHours;
         p.WardMoveRequestedAt = s.WardMoveRequestedAt;
         p.IntensiveCareHours = s.IntensiveCareHours;
         p.HighDependencyHours = s.HighDependencyHours;
@@ -914,7 +925,7 @@ public sealed partial class HospitalSimulation
 
     private static StaffState SaveStaff(StaffMember m) => new()
     {
-        Id = m.Id, Name = m.Name, Role = m.Role, Grade = m.Grade, DepartmentId = m.DepartmentId, WardId = m.BaseRoomId, Age = m.Age,
+        Id = m.Id, Name = m.Name, Role = m.Role, Grade = m.Grade, Specialty = m.Specialty, DepartmentId = m.DepartmentId, WardId = m.BaseRoomId, Age = m.Age,
         YearsExperience = m.YearsExperience, Skill = m.Skill, Speed = m.Speed, Salary = m.Salary, Fatigue = m.Fatigue, Morale = m.Morale,
         Activity = m.Activity, CurrentTaskId = m.CurrentTaskId, WorkRemainingSeconds = m.WorkRemainingSeconds, BreakEndsAt = m.BreakEndsAt,
         StatusText = m.StatusText, Caseload = m.Caseload.ToList(), TasksCompleted = m.TasksCompleted, Position = PositionOf(m),
@@ -926,7 +937,7 @@ public sealed partial class HospitalSimulation
     {
         var m = new StaffMember
         {
-            Id = s.Id, Name = s.Name, Role = s.Role, Grade = s.Grade, DepartmentId = s.DepartmentId, BaseRoomId = s.WardId, Age = s.Age,
+            Id = s.Id, Name = s.Name, Role = s.Role, Grade = s.Grade, Specialty = s.Specialty, DepartmentId = s.DepartmentId, BaseRoomId = s.WardId, Age = s.Age,
             YearsExperience = s.YearsExperience, Skill = s.Skill, Speed = s.Speed, Salary = s.Salary,
         };
         m.Fatigue = s.Fatigue;

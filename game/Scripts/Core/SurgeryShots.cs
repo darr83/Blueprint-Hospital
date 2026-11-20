@@ -14,7 +14,7 @@ namespace BlueprintHospital.Core;
 /// <summary>
 /// Review shots of a theatre suite, run with: godot --path game -- --surgery-shots=DIR [--3d] (needs a display).
 /// Builds a theatre with its anaesthetic room and a surgical ward, fills them with surgical patients, then
-/// photographs a patient being put to sleep, the operation, and the Surgery panel's two tabs.
+/// photographs a patient being put to sleep, the operation, waking up in recovery, and the Surgery panel's three tabs.
 /// </summary>
 public partial class SurgeryShots : Node
 {
@@ -79,21 +79,36 @@ public partial class SurgeryShots : Node
                 break;
             case 2:
                 Save("2_operating");
+                var recovery = sim.SpacesOfKind(CareSpaceKind.TheatreRecovery).First();
+                Run(h2, () => sim.TheatreRecovery.Any(e => e.RecoveryRoomId == recovery.Id && e.Until is not null), TimeSpan.FromHours(3));
+                Focus(h2, recovery.Rect.X + (recovery.Rect.Width / 2.0), recovery.Rect.Y + (recovery.Rect.Length / 2.0));
+                break;
+            case 3:
+                Save("3_recovery");
                 h2.Hud.Visible = true;
                 h2.Hud.ToggleSurgery();
                 break;
-            case 3:
-                Save("3_panel_board");
+            case 4:
+                Save("4_panel_board");
                 h2.Hud.Surgery.ShowTab(waitingList: true);
                 break;
-            case 4:
-                Save("4_panel_waiting_list");
+            case 5:
+                Save("5_panel_waiting_list");
+                for (var slot = 0; slot < TheatreSessions.PerWeek; slot += 3)
+                {
+                    sim.SetTheatreSession(theatre.Id, slot, slot % 2 == 0 ? "general_surgery" : "gynaecology");
+                }
+
+                h2.Hud.Surgery.ShowSessions();
+                break;
+            case 6:
+                Save("6_panel_sessions");
                 h2.Hud.ToggleSurgery();
                 h2.SetMode(GameMode.Build);
-                h2.Hud.ShowRoom(anaesthetic);
+                h2.Hud.ShowRoom(sim.SpacesOfKind(CareSpaceKind.TheatreRecovery).First());
                 break;
-            case 5:
-                Save("5_room_panel");
+            case 7:
+                Save("7_room_panel");
                 GD.Print("[surgery] Done.");
                 GetTree().Quit(0);
                 return;
@@ -141,6 +156,7 @@ public partial class SurgeryShots : Node
         Report("theatre", sim.BuildRoom(sim.AutoPlan("operating_theatre", new GridRect(B.X - 40, B.Y + 18, 12, 12))));
         Report("anaesthetic room", sim.BuildRoom(sim.AutoPlan("anaesthetic_room", new GridRect(B.X - 28, B.Y + 18, 7, 10))));
         Report("surgical ward", sim.BuildRoom(sim.AutoPlan("surgical_ward", new GridRect(B.X - 21, B.Y + 18, 16, 12))));
+        Report("recovery room", sim.BuildRoom(sim.AutoPlan("theatre_recovery", new GridRect(B.X - 40, B.Y + 1, 21, 11))));
         var theatre = sim.SpacesOfKind(CareSpaceKind.Theatre).Single();
         foreach (var department in sim.SurgicalDepartments)
         {

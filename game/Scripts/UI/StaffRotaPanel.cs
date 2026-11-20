@@ -1338,7 +1338,7 @@ public partial class StaffRotaPanel : PanelContainer
         }
 
         _name.Text = m.Name;
-        _role.Text = $"{Capitalise(m.Grade)} · {_sim.PlaceName(m.Role, m.BaseRoomId)}";
+        _role.Text = $"{Capitalise(HospitalSimulation.JobTitle(m.Grade, m.Specialty))} · {_sim.PlaceName(m.Role, m.BaseRoomId)}";
         HudWidgets.SetAvatar(_avatar, m.Name.Replace("Dr ", string.Empty), RecruitmentPanel.RoleColour(m.Role));
 
         _now.Heading.Text = StatusWord(m).ToUpperInvariant();
@@ -1510,7 +1510,8 @@ public partial class StaffRotaPanel : PanelContainer
 
     private static Control Spacer(int height) => new Control { CustomMinimumSize = new Vector2(0, height), MouseFilter = MouseFilterEnum.Ignore };
 
-    private static string ShortGrade(string grade) => grade.Replace(" nurse", string.Empty).Replace("Healthcare assistant (Band 3)", "Band 3");
+    private static string ShortGrade(string grade) => grade.Replace(" nurse", string.Empty).Replace("Healthcare assistant (Band 3)", "Band 3")
+        .Replace("Core surgical trainee", "Trainee").Replace("Surgical registrar", "Registrar");
 
     private static string Capitalise(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 }

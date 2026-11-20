@@ -287,7 +287,7 @@ public sealed partial class HospitalSimulation
             : patient.ForObservation && diagnosed.ObserveHours is { } observe ? observe
             : diagnosed.LengthOfStayHours;
         var hours = Random.Range(stay[0], stay[1]);
-        return Now.AddHours(moved ? hours * 0.6 : hours);
+        return Now.AddHours((moved ? hours * 0.6 : hours) + patient.ExtraStayHours);
     }
 
     // ---------------------------------------------------------------- care on the ward

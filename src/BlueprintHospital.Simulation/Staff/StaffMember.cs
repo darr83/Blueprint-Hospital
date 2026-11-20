@@ -104,6 +104,13 @@ public sealed class StaffMember : Agent
 
     public required string DepartmentId { get; init; }
 
+    /// <summary>
+    /// For a surgeon: the department whose operations they specialise in (general surgery, trauma and
+    /// orthopaedics or gynaecology, whose gynaecologists also do caesarean sections). Null for everyone else
+    /// and for surgeons from older saves, who operate on anything at their usual pace.
+    /// </summary>
+    public string? Specialty { get; set; }
+
     /// <summary>The room this member of staff is based in (a ward, X-ray, CT, theatre or pharmacy); null for A&amp;E staff.</summary>
     public string? BaseRoomId { get; set; }
 

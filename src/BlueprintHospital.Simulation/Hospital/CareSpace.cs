@@ -93,6 +93,9 @@ public enum CareSpaceKind
     /// the anaesthetist puts the patient to sleep here, then they are wheeled straight through into theatre.
     /// </summary>
     AnaestheticRoom,
+
+    /// <summary>Theatre recovery: bays where patients wake up after an operation, watched by recovery nurses.</summary>
+    TheatreRecovery,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

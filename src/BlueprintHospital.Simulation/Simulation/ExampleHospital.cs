@@ -215,8 +215,8 @@ public static class ExampleHospital
         new("operating_theatre", 68, NorthRowY, 13, NorthRowDepth, WallSide.South, "Theatre 2"),
         new("anaesthetic_room", 48, NorthRowY, 7, NorthRowDepth, WallSide.South, "Anaesthetic room 1"),
         new("anaesthetic_room", 81, NorthRowY, 7, NorthRowDepth, WallSide.South, "Anaesthetic room 2"),
-        new("doctors_office", 88, NorthRowY, 6, NorthRowDepth, WallSide.South, "Theatre office"),
-        new("staff_room", 94, NorthRowY, 6, NorthRowDepth, WallSide.South, "Theatre staff room"),
+        // Recovery beside the theatres: patients wake up here so the theatres can start their next case.
+        new("theatre_recovery", 88, NorthRowY, 12, NorthRowDepth, WallSide.South, "Theatre recovery"),
 
         // Middle row: surgical admissions, day surgery and endoscopy.
         new("surgical_assessment_unit", 24, MiddleRowY, 30, MiddleRowDepth, WallSide.South),

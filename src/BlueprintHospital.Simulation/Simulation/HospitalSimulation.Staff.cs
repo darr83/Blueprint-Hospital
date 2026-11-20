@@ -429,6 +429,12 @@ public sealed partial class HospitalSimulation
             return patient.PendingMove is not null;
         }
 
+        // Coming round after an operation: nothing else until they are awake (except going back to theatre).
+        if (_theatreRecovery.TryGetValue(patient.Id, out var waking) && !(waking.Returning && task.Kind == TaskKind.Surgery))
+        {
+            return false;
+        }
+
         if (task.Kind is TaskKind.StayWithPatient or TaskKind.CarryBaby or TaskKind.DeliverMedicines)
         {
             return true;
@@ -582,6 +588,12 @@ public sealed partial class HospitalSimulation
             task.Started = true;
             member.Activity = StaffActivity.Working;
             member.WorkRemainingSeconds = task.Minutes * 60 * member.DurationFactor * Random.Range(0.85, 1.15);
+            if (task.Kind == TaskKind.Surgery && member.Role == StaffRole.Surgeon)
+            {
+                // Consultants are quickest; anyone operating outside their specialty is slower.
+                member.WorkRemainingSeconds *= OperatingPace(member, SurgeryDepartment(task.Detail));
+            }
+
             OperationStarted(task, patient);
         }
 

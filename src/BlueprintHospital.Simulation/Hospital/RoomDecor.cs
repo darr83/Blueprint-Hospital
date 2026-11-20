@@ -113,8 +113,8 @@ public static class DecorCatalogue
     public static RoomDecor StartingLook(CareSpaceKind kind) => kind switch
     {
         CareSpaceKind.Ward or CareSpaceKind.Majors or CareSpaceKind.Minors or CareSpaceKind.Resus or CareSpaceKind.Triage
-            or CareSpaceKind.EndoscopyRecovery or CareSpaceKind.DeliveryRoom => new(FloorFinish.SafetyVinyl, null, WallFinish.TwoTone),
-        CareSpaceKind.Theatre or CareSpaceKind.Endoscopy or CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.CathLab
+            or CareSpaceKind.EndoscopyRecovery or CareSpaceKind.DeliveryRoom or CareSpaceKind.TheatreRecovery => new(FloorFinish.SafetyVinyl, null, WallFinish.TwoTone),
+        CareSpaceKind.Theatre or CareSpaceKind.AnaestheticRoom or CareSpaceKind.Endoscopy or CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.CathLab
             or CareSpaceKind.PlasterRoom => new(FloorFinish.SafetyVinyl, null, WallFinish.Tiles),
         CareSpaceKind.Toilets or CareSpaceKind.AccessibleToilet or CareSpaceKind.StaffToilet or CareSpaceKind.CleaningRoom => new(FloorFinish.CeramicTiles, null, WallFinish.Tiles),
         CareSpaceKind.Waiting or CareSpaceKind.OutpatientReception => new(FloorFinish.Terrazzo, null, WallFinish.Paint),

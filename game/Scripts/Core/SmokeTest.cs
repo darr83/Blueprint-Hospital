@@ -88,6 +88,7 @@ public partial class SmokeTest : Node
         Theatre,
         SurgeryBoard,
         SurgeryList,
+        SurgerySessions,
         Clinics,
         ReceptionistPanel,
         ClinicChair,
@@ -690,12 +691,26 @@ public partial class SmokeTest : Node
 
             case Stage.SurgeryList when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09b3_surgery_waiting_list");
+                hospital.Session.Simulation.SetTheatreSession(hospital.Session.Simulation.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Theatre).First().Id, 0, "gynaecology");
+                hospital.Hud.Surgery.ShowSessions();
+                Check(hospital.Hud.Surgery.ShowingSessions, "The Surgery panel did not switch to the sessions tab.");
+                _frame = 0;
+                _stage = Stage.SurgerySessions;
+                break;
+
+            case Stage.SurgerySessions when scene is HospitalScene hospital && _frame >= 6:
+            {
+                Screenshot("09b4_surgery_sessions");
+                var panel = hospital.Hud.Surgery;
+                Check(panel.GetCombinedMinimumSize().X <= panel.Size.X + 1, $"The Surgery sessions tab is wider than the screen ({panel.GetCombinedMinimumSize().X:0} > {panel.Size.X:0}).");
+                Check(hospital.Session.Simulation.TheatreTimetable(hospital.Session.Simulation.SpacesOfKind(Simulation.Hospital.CareSpaceKind.Theatre).First())[0] == "gynaecology", "The Monday morning session was not given to gynaecology.");
                 hospital.Hud.ToggleSurgery();
                 Check(!hospital.Hud.Surgery.Visible, "The Surgery panel did not close.");
                 BuildClinics(hospital);
                 _frame = 0;
                 _stage = Stage.Clinics;
                 break;
+            }
 
             case Stage.Clinics when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09c_clinic_waiting");
