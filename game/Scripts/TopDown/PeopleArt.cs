@@ -185,6 +185,12 @@ public static class PeopleArt
             p.Poly(Grey(tie, pose.Grey), null, 0, (-0.05, -0.2), (0.05, -0.2), (0.03, -0.02), (-0.03, -0.02));
         }
 
+        if (look.BowTie is { } bow)
+        {
+            p.Poly(Grey(bow, pose.Grey), null, 0, (0, -0.19), (-0.08, -0.24), (-0.08, -0.14));
+            p.Poly(Grey(bow, pose.Grey), null, 0, (0, -0.19), (0.08, -0.24), (0.08, -0.14));
+        }
+
         if (look.Stethoscope)
         {
             p.Arc(0, 0, 0.23, 0.2, Math.PI - 0.2, new Color("#2B333C"), 0.035);

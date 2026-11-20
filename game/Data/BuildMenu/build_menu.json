@@ -31,7 +31,9 @@
         { "id": "gynaecology", "label": "Gynae", "name": "Gynaecology", "department": "gynaecology", "colour": "#8E24AA", "glyph": "gynae",
           "items": ["gynaecology_clinic", "gynae_exam_room", "early_pregnancy_unit", "gynaecology_ward", "operating_theatre", "anaesthetic_room", "theatre_recovery", "nurses_station", "doctors_office"] },
         { "id": "maternity", "label": "Maternity", "name": "Maternity", "department": "maternity", "colour": "#F48FB1", "glyph": "maternity",
-          "items": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "anaesthetic_room", "theatre_recovery", "nurses_station", "doctors_office"] }
+          "items": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "anaesthetic_room", "theatre_recovery", "nurses_station", "doctors_office"] },
+        { "id": "paediatrics", "label": "Children", "name": "Paediatrics", "department": "paediatrics", "colour": "#F4B400", "glyph": "teddy",
+          "items": ["childrens_ward", "childrens_hdu", "nurses_station", "doctors_office"] }
       ]
     },
     {

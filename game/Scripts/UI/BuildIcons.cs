@@ -25,6 +25,7 @@ public static class BuildIcons
         ["surgery"] = "<path d='M3.5 20.5l8-8'/><path d='M11.5 12.5l7-7c1.8 1.8 1.6 4.6-.3 6.4L14.4 15.6z'/><path d='M7 17l-1.5-1.5'/>",
         ["icu"] = "<rect x='3' y='4' width='18' height='13' rx='2'/><path d='M5.5 11h3l1.8-3 2.4 6 1.8-3h4'/><path d='M9 21h6M12 17v4'/>",
         ["maternity"] = "<path d='M3.5 10.5h12a5.5 5.5 0 0 1-5.5 5.5H9a5.5 5.5 0 0 1-5.5-5.5z'/><path d='M15.5 10.5V4.5a6 6 0 0 1 5 6z'/><circle cx='7' cy='19.5' r='1.8'/><circle cx='14' cy='19.5' r='1.8'/>",
+        ["teddy"] = "<circle cx='7' cy='5.5' r='2.2'/><circle cx='17' cy='5.5' r='2.2'/><circle cx='12' cy='9' r='4.5'/><path d='M10.5 9.5h.01M13.5 9.5h.01'/><path d='M11 11.5h2'/><path d='M8.2 13.6a5.5 5.5 0 1 0 7.6 0'/><path d='M6.5 15l-2.5 1.5M17.5 15l2.5 1.5'/>",
         ["clinics"] = "<rect x='4.5' y='4' width='15' height='17' rx='2'/><path d='M9 4V2.5h6V4'/><path d='M8 10h8M8 13.5h8M8 17h5'/>",
         ["imaging"] = "<rect x='3' y='3' width='18' height='18' rx='2.5'/><path d='M12 6v12'/><path d='M7.5 8.5c2.4-.6 4.5.8 4.5.8s2.1-1.4 4.5-.8M7 12.3c2.6-.6 5 .9 5 .9s2.4-1.5 5-.9M7.5 16c2.4-.5 4.5.9 4.5.9s2.1-1.4 4.5-.9'/>",
         ["theatres"] = "<path d='M3.5 12a8.5 5.5 0 0 1 17 0z'/><path d='M12 2.5v4'/><path d='M7.5 15.5l-1.5 3M12 15.5v4M16.5 15.5l1.5 3'/>",
@@ -79,6 +80,7 @@ public static class BuildIcons
         ["early_pregnancy_unit"] = "wave", ["ultrasound_room"] = "wave", ["endoscopy_room"] = "scope",
         ["plaster_room"] = "cast", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
+        ["childrens_ward"] = "teddy", ["childrens_hdu"] = "icu",
         ["outpatient_reception"] = "reception", ["pharmacy"] = "pharmacy", ["cafeteria"] = "facilities", ["vending_point"] = "vend",
         ["accessible_toilet"] = "access", ["cleaning_room"] = "mop",
     };

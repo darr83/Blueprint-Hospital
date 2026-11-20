@@ -100,8 +100,14 @@ public static class Carriers3D
         return H(18);
     }
 
-    /// <summary>The blanket and turned-down sheet of a made-up, empty bed.</summary>
-    public static void BedMade(MeshBatch b) => b.Model("bed", "Made");
+    /// <summary>The blanket and turned-down sheet of a made-up, empty bed; <paramref name="blanket"/> recolours the blanket.</summary>
+    public static void BedMade(MeshBatch b, Color? blanket = null)
+    {
+        if (blanket is not { } colour || !b.ModelRecoloured("bed", "Made", colour))
+        {
+            b.Model("bed", "Made");
+        }
+    }
 
     // ------------------------------------------------------------------ tables and couches
 

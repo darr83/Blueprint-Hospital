@@ -50,7 +50,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A nurse takes the one-to-one themselves when no healthcare assistant has come.</summary>
     private bool NurseCanSit(ClinicalTask task, StaffMember member) =>
-        task.Kind == TaskKind.StayWithPatient && member.Role == StaffRole.Nurse && Now - task.CreatedAt >= NurseSitsAfter;
+        task.Kind == TaskKind.StayWithPatient && member.Role is StaffRole.Nurse or StaffRole.ChildrensNurse && Now - task.CreatedAt >= NurseSitsAfter;
 
     /// <summary>
     /// Calls someone to sit with, and a doctor to review, every red monitor; stands the sitter down once their

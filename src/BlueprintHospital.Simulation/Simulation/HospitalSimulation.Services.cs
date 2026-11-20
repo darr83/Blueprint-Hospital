@@ -266,7 +266,7 @@ public sealed partial class HospitalSimulation
         // Big operations recover on HDU; small ones go home the same day from day surgery.
         var done = Database.Conditions[patient.WorkingDiagnosis.ConditionId];
         var after = planned.Id == done.Id ? operation : done.Operation ?? operation;
-        patient.CareLevel = after.Major && HasHighDependencyBeds ? Math.Max(patient.CareLevel, 2) : 0;
+        patient.CareLevel = after.Major && HasHighDependencyBedsFor(patient) ? Math.Max(patient.CareLevel, 2) : 0;
         patient.DayCase = after.DayCase && Wards.Any(w => UnitOf(w) == WardUnit.DaySurgery);
         var needs = after.Major ? "high dependency care to recover" : patient.DayCase ? "a few hours on the day surgery unit" : "a ward bed to recover";
         if (inTheatre)

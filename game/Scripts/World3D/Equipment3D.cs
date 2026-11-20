@@ -28,6 +28,8 @@ public static partial class Furnish3D
                 b.Ball(new Vector3(0, Math.Min(w, d) * 0.45f, 0), new Vector3(Math.Min(w, d) * 0.9f, Math.Min(w, d) * 0.88f, Math.Min(w, d) * 0.9f), colour);
                 return true;
             case "baby_changing_unit": ChangingUnit(b, w, d, h, colour); return true;
+            case "parent_bed": ParentBed(b, w, d, h, colour); return true;
+            case "toy_box": ToyBox(b, w, d, h, colour, seed); return true;
             case "breast_pump": BreastPump(b, glass, h, colour); return true;
             case "toilet_pan": Toilet(b, w, d, false); return true;
             case "accessible_wc": Toilet(b, w, d, true); return true;
@@ -219,6 +221,52 @@ public static partial class Furnish3D
         Blk(b, 0, 0, w * 0.85f, d * 0.75f, h, H(2), new Color("#80CBC4"));
         Blk(b, -w * 0.32f, -d * 0.2f, 0.18f, 0.12f, h, H(4), new Color("#FFF9C4"));
         Blk(b, w * 0.32f, -d * 0.2f, 0.16f, 0.1f, h, H(2), new Color("#B3E5FC"));
+    }
+
+    /// <summary>A parent's fold-out chair bed, opened out flat: a padded frame, a raised back at the head and a folded blanket.</summary>
+    private static void ParentBed(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        // Lies along its longer side; the head (the chair's back) is at the -z (or -x) end.
+        var alongZ = d >= w;
+        void Part(float along, float across, float lengthShare, float widthShare, float y0, float height, Color c)
+        {
+            if (alongZ)
+            {
+                Blk(b, across, along, w * widthShare, d * lengthShare, y0, height, c);
+            }
+            else
+            {
+                Blk(b, along, across, w * lengthShare, d * widthShare, y0, height, c);
+            }
+        }
+
+        var length = alongZ ? d : w;
+        var legs = new Color("#3A3F4A");
+        foreach (var end in new[] { -0.42f, 0.42f })
+        {
+            foreach (var side in new[] { -0.36f, 0.36f })
+            {
+                Part(length * end, (alongZ ? w : d) * side, 0.05f, 0.08f, 0, h * 0.3f, legs);
+            }
+        }
+
+        Part(0, 0, 0.98f, 0.96f, h * 0.3f, h * 0.35f, colour.Darkened(0.18f));
+        Part(0, 0, 0.94f, 0.9f, h * 0.65f, h * 0.35f, colour);
+        Part(-length * 0.4f, 0, 0.16f, 0.96f, h * 0.65f, h * 1.25f, colour.Darkened(0.08f));
+        Part(-length * 0.26f, 0, 0.12f, 0.6f, h, h * 0.2f, new Color("#F4F6F8"));
+        Part(length * 0.18f, 0, 0.3f, 0.86f, h, h * 0.16f, new Color("#C5CAE9"));
+    }
+
+    /// <summary>A low wooden toy box in a bright colour with toys poking out of the open lid.</summary>
+    private static void ToyBox(MeshBatch b, float w, float d, float h, Color colour, int seed)
+    {
+        Blk(b, 0, 0, w, d, 0, h * 0.85f, colour);
+        Blk(b, 0, 0, w * 0.9f, d * 0.85f, h * 0.85f, h * 0.04f, colour.Darkened(0.3f));
+        Blk(b, 0, -d * 0.48f, w, d * 0.06f, h * 0.85f, h * 0.7f, colour.Lightened(0.15f));
+        var toys = new[] { new Color("#FFD54F"), new Color("#4FC3F7"), new Color("#81C784"), new Color("#BA68C8") };
+        b.Ball(new Vector3(-w * 0.22f, h * 0.95f, d * 0.05f), new Vector3(w * 0.22f, w * 0.22f, w * 0.22f), toys[seed % 4]);
+        Blk(b, w * 0.18f, 0, w * 0.2f, d * 0.3f, h * 0.8f, h * 0.3f, toys[(seed + 1) % 4]);
+        b.Ball(new Vector3(w * 0.02f, h * 0.98f, -d * 0.12f), new Vector3(w * 0.16f, w * 0.18f, w * 0.14f), new Color("#C9925A"));
     }
 
     private static void BreastPump(MeshBatch b, MeshBatch glass, float h, Color colour)

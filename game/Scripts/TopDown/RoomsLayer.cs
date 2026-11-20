@@ -102,7 +102,7 @@ public partial class RoomsLayer : Node2D
                         ? new BedSpot(space, recoveryBay.PatientSpot, recoveryBay.HeadSouth, null, () => recoveryBay.OccupantId, Looks.WardBlanket, false)
                         : null,
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
-                        ? new BedSpot(space, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, _sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
+                        ? new BedSpot(space, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, Looks.WardBlanketFor(_sim, space, wardBed), true)
                         : null,
                     _ => new BedSpot(space, space.PatientSpot, false, null, () => space.OccupantId, Looks.EdBlanket, false),
                 };

@@ -74,7 +74,7 @@ public partial class Beds3D : Node3D
                         ? new BedView(this, recoveryBay.PatientSpot, recoveryBay.HeadSouth, null, () => recoveryBay.OccupantId, Looks.WardBlanket, false)
                         : null,
                     _ when space.IsWard => space.Beds.FirstOrDefault(b => b.PatientSpot == item.Tile) is { } wardBed
-                        ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, sim.IsMotherAndBabyWard(space) ? Looks.MaternityBlanket : Looks.WardBlanket, true)
+                        ? new BedView(this, wardBed.PatientSpot, wardBed.HeadSouth, null, () => wardBed.OccupantId, Looks.WardBlanketFor(sim, space, wardBed), true)
                         : null,
                     _ => new BedView(this, space.PatientSpot, false, null, () => space.OccupantId, Looks.EdBlanket, false),
                 };
@@ -234,7 +234,7 @@ public partial class Beds3D : Node3D
 
                 // An empty bed is made up, with its blanket on.
                 var made = new MeshBatch();
-                Carriers3D.BedMade(made);
+                Carriers3D.BedMade(made, System.Array.IndexOf(Looks.ChildrensBlankets, _blanket) >= 0 ? _blanket : null);
                 _made = made.AddTo(_node);
             }
         }

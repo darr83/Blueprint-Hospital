@@ -30,12 +30,12 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
     /// <summary>Lets loaded games continue numbering where they left off.</summary>
     public void SetNextId(int next) => _nextId = Math.Max(_nextId, next);
 
-    /// <summary>Generates a patient. Pass <paramref name="forcedMethod"/> or <paramref name="conditionId"/> to control the scenario.</summary>
-    public Patient Generate(DateTime now, ArrivalMethod? forcedMethod = null, string? conditionId = null)
+    /// <summary>Generates a patient. Pass <paramref name="forcedMethod"/>, <paramref name="conditionId"/> or <paramref name="age"/> to control the scenario.</summary>
+    public Patient Generate(DateTime now, ArrivalMethod? forcedMethod = null, string? conditionId = null, int? age = null)
     {
         if (conditionId is not null || Suits is not { } suits)
         {
-            return GenerateOnce(now, forcedMethod, conditionId);
+            return GenerateOnce(now, forcedMethod, conditionId, age);
         }
 
         for (var attempt = 1; ; attempt++)
@@ -51,14 +51,14 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
         }
     }
 
-    private Patient GenerateOnce(DateTime now, ArrivalMethod? forcedMethod, string? conditionId)
+    private Patient GenerateOnce(DateTime now, ArrivalMethod? forcedMethod, string? conditionId, int? forcedAge = null)
     {
         var condition = conditionId is null
             ? PickCondition(forcedMethod)
             : database.Conditions[conditionId];
 
         var sex = condition.IsMaternity ? Sex.Female : random.Chance(condition.FemaleFraction) ? Sex.Female : Sex.Male;
-        var age = SampleAge(condition);
+        var age = forcedAge ?? SampleAge(condition);
         var dob = now.Date.AddYears(-age).AddDays(-random.Range(1, 364));
         var names = database.Names.Values.First();
         var first = random.Pick(sex == Sex.Female ? names.FemaleFirstNames : names.MaleFirstNames);

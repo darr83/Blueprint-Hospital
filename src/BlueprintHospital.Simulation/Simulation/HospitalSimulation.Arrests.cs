@@ -280,7 +280,7 @@ public sealed partial class HospitalSimulation
     private int NursesNear(Patient patient)
     {
         var room = patient.CareSpaceId is { } id ? FindSpace(id) : null;
-        return _staff.Count(s => s.IsOnDuty && !s.IsOnBreak && s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife
+        return _staff.Count(s => s.IsOnDuty && !s.IsOnBreak && s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.ChildrensNurse
             && (room is not null ? room.Rect.Contains(s.Tile) : Chebyshev(s.Tile, patient.Tile) <= 12));
     }
 
@@ -338,11 +338,11 @@ public sealed partial class HospitalSimulation
     private bool CanRespond(StaffMember s, Patient patient) =>
         !IsPlayer(s) && s.IsOnDuty && !s.IsOnBreak && s.CrashPatientId is null && s.AssistingTaskId is null && s.PushingPatientId is null
         && (s.BedsidePatientId is null || s.BedsidePatientId == patient.Id)
-        && s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.OutreachNurse or StaffRole.Doctor or StaffRole.Anaesthetist
+        && s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.OutreachNurse or StaffRole.Doctor or StaffRole.Anaesthetist or StaffRole.ChildrensNurse or StaffRole.Paediatrician
         && !IsClinicStaff(s)
         && !(s.CurrentTaskId is { } t && _tasks.TryGetValue(t, out var task) && task.Kind == TaskKind.Surgery && task.Started);
 
-    private static bool IsNurseLike(StaffMember s) => s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.OutreachNurse;
+    private static bool IsNurseLike(StaffMember s) => s.Role is StaffRole.Nurse or StaffRole.HealthcareAssistant or StaffRole.Midwife or StaffRole.OutreachNurse or StaffRole.ChildrensNurse;
 
     /// <summary>Walking distance in tiles (a long way when there is no route).</summary>
     private int DistanceTo(StaffMember s, GridCoord to)
@@ -399,8 +399,8 @@ public sealed partial class HospitalSimulation
             Call(first, CrashRole.Compressions);
         }
 
-        if (!Has(CrashRole.Leader) && pool.Where(s => s.Role == StaffRole.Doctor && D(s) < 100_000)
-                .OrderBy(s => D(s) * (s.Grade is "Registrar" or "Consultant" ? 0.75 : 1.0)).ThenBy(s => s.Id).FirstOrDefault() is { } leader)
+        if (!Has(CrashRole.Leader) && pool.Where(s => s.Role is StaffRole.Doctor or StaffRole.Paediatrician && D(s) < 100_000)
+                .OrderBy(s => D(s) * (s.Grade is "Registrar" or "Consultant" or "Paediatric registrar" or "Consultant paediatrician" ? 0.75 : 1.0)).ThenBy(s => s.Id).FirstOrDefault() is { } leader)
         {
             Call(leader, CrashRole.Leader);
         }

@@ -479,6 +479,14 @@ public static class FurnitureKit
                 Cot(p, w, d, true);
                 return true;
 
+            case "parent_bed":
+                ParentBed(p, w, d, colour);
+                return true;
+
+            case "toy_box":
+                ToyBox(p, w, d, colour, seed);
+                return true;
+
             default:
                 return false;
         }
@@ -774,6 +782,39 @@ public static class FurnitureKit
             p.Circle(l + 0.12, 0, 0.09, Pen.A("#FFFFFF", 0.7f), C("#5A8DB8"), 0.02);
             p.Circle(l + w - 0.12, 0, 0.09, Pen.A("#FFFFFF", 0.7f), C("#5A8DB8"), 0.02);
         }
+    }
+
+    /// <summary>A parent's fold-out bed, opened flat: a padded frame with a raised back at the head and a folded blanket.</summary>
+    public static void ParentBed(Pen p, double w, double d, Color colour)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Box(l, t, w, d, 0.12, Pen.Dark(colour, 0.15f));
+        if (d >= w)
+        {
+            p.Round(l + 0.08, t + 0.08, w - 0.16, d * 0.18, 0.08, Pen.Dark(colour, 0.05f));
+            p.Round(l + 0.1, t + (d * 0.22), w - 0.2, d * 0.72, 0.08, colour);
+            p.Round(l + (w * 0.2), t + (d * 0.24), w * 0.6, d * 0.12, 0.06, C("#F4F6F8"));
+            p.Round(l + 0.14, t + (d * 0.55), w - 0.28, d * 0.22, 0.05, C("#C5CAE9"));
+        }
+        else
+        {
+            p.Round(l + 0.08, t + 0.08, w * 0.18, d - 0.16, 0.08, Pen.Dark(colour, 0.05f));
+            p.Round(l + (w * 0.22), t + 0.1, w * 0.72, d - 0.2, 0.08, colour);
+            p.Round(l + (w * 0.24), t + (d * 0.2), w * 0.12, d * 0.6, 0.06, C("#F4F6F8"));
+            p.Round(l + (w * 0.55), t + 0.14, w * 0.22, d - 0.28, 0.05, C("#C5CAE9"));
+        }
+    }
+
+    /// <summary>A bright toy box, open, with toys inside.</summary>
+    public static void ToyBox(Pen p, double w, double d, Color colour, int seed)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Box(l, t, w, d, 0.08, colour);
+        p.Round(l + 0.12, t + 0.12, w - 0.24, d - 0.24, 0.05, Pen.Dark(colour, 0.35f));
+        var toys = new[] { C("#FFD54F"), C("#4FC3F7"), C("#81C784"), C("#BA68C8") };
+        p.Dot(l + (w * 0.3), t + (d * 0.45), Math.Min(w, d) * 0.16, toys[seed % 4]);
+        p.Round(l + (w * 0.52), t + (d * 0.3), w * 0.22, d * 0.36, 0.04, toys[(seed + 1) % 4]);
+        p.Dot(l + (w * 0.42), t + (d * 0.68), Math.Min(w, d) * 0.12, C("#C9925A"));
     }
 
     // ------------------------------------------------------------------ props

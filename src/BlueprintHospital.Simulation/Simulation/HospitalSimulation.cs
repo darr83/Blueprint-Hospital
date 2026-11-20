@@ -308,9 +308,9 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>Brings a specific patient into the hospital. Used by arrivals and by scenarios/tests.</summary>
-    public Patient SpawnPatient(ArrivalMethod method, string? conditionId = null)
+    public Patient SpawnPatient(ArrivalMethod method, string? conditionId = null, int? age = null)
     {
-        var patient = _generator.Generate(Now, method, conditionId);
+        var patient = _generator.Generate(Now, method, conditionId, age);
         AdmitNewPatient(patient);
         return patient;
     }

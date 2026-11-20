@@ -249,7 +249,9 @@ public static class RoomLayoutEngine
         var monitored = template.Furniture.Contains("obs_monitor");
         // A mother and baby ward has a cot beside every bed.
         var cot = template.Furniture.Contains("cot");
-        var pitch = ventilated ? BedTilesX + 4 : cot ? BedTilesX + 3 : BedTilesX + 2;
+        // A children's ward has a fold-out bed beside every bed, for a parent to stay the night.
+        var parentBed = template.Furniture.Contains("parent_bed");
+        var pitch = ventilated ? BedTilesX + 4 : cot || parentBed ? BedTilesX + 3 : BedTilesX + 2;
         var north = (r.Y + 1, false);
         var south = (r.Bottom - 1 - BedTilesY, true);
         var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
@@ -265,7 +267,7 @@ public static class RoomLayoutEngine
         foreach (var (rowY, headSouth) in rows)
         {
             int? lastX = null;
-            for (var x = r.X + 1; x + BedTilesX + (cot ? 2 : 0) <= r.Right - 1; x += pitch)
+            for (var x = r.X + 1; x + BedTilesX + (cot || parentBed ? 2 : 0) <= r.Right - 1; x += pitch)
             {
                 if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
                 {
@@ -297,6 +299,10 @@ public static class RoomLayoutEngine
                 {
                     plan.AddWorld("cot", x + BedTilesX + 0.4, headSouth ? rowY + BedTilesY - 2.4 : rowY + 0.8, 1.2, 1.6);
                 }
+                else if (parentBed && x + BedTilesX + 2 <= r.Right - 1)
+                {
+                    plan.AddWorld("parent_bed", x + BedTilesX + 0.6, headSouth ? rowY + BedTilesY - 3.9 : rowY + 0.1, 1.5, 3.8);
+                }
                 else if (monitored && !locker && x + BedTilesX + 1 <= r.Right - 1)
                 {
                     plan.AddWorld("obs_monitor", x + BedTilesX + 0.2, headY, 0.6, 0.6);
@@ -312,7 +318,7 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot" and not BayCurtain))
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot" and not "parent_bed" and not BayCurtain))
         {
             plan.TryPlaceAgainstWalls(item);
         }

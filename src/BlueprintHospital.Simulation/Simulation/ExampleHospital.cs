@@ -255,13 +255,15 @@ public static class ExampleHospital
         new("neurology_clinic", 74, MiddleRowY, 7, MiddleRowDepth, WallSide.South),
         new("antenatal_clinic", 81, MiddleRowY, 7, MiddleRowDepth, WallSide.South),
 
-        // South of the spine: cardiology, neurology and gynaecology beds.
-        new("cath_lab", 6, SouthY, 19, 23, WallSide.North),
-        new("coronary_care_unit", 25, SouthY, 14, 23, WallSide.North),
-        new("cardiology_ward", 39, SouthY, 15, 23, WallSide.North),
-        new("stroke_unit", 54, SouthY, 15, 23, WallSide.North),
-        new("neurology_ward", 69, SouthY, 15, 23, WallSide.North),
-        new("gynaecology_ward", 84, SouthY, 16, 23, WallSide.North),
+        // South of the spine: cardiology, neurology, gynaecology and children's beds.
+        new("cath_lab", 6, SouthY, 12, 23, WallSide.North),
+        new("coronary_care_unit", 18, SouthY, 12, 23, WallSide.North),
+        new("cardiology_ward", 30, SouthY, 12, 23, WallSide.North),
+        new("stroke_unit", 42, SouthY, 11, 23, WallSide.North),
+        new("neurology_ward", 53, SouthY, 11, 23, WallSide.North),
+        new("gynaecology_ward", 64, SouthY, 12, 23, WallSide.North),
+        new("childrens_ward", 76, SouthY, 14, 23, WallSide.North),
+        new("childrens_hdu", 90, SouthY, 10, 23, WallSide.North),
     };
 
     // ------------------------------------------------------------------ helpers

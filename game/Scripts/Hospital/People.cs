@@ -152,6 +152,9 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
 
     public Color? Tie { get; init; }
 
+    /// <summary>A bow tie at the collar (consultant paediatricians: nothing dangling for little hands to grab).</summary>
+    public Color? BowTie { get; init; }
+
     public Color? Apron { get; init; }
 
     public Color? Epaulettes { get; init; }
@@ -537,6 +540,14 @@ public static partial class Figures
                     if (look.Tie is { } tie)
                     {
                         pen.Poly(new[] { P(-1.2f, r.Ys + (2.6f * s)), P(1.2f, r.Ys + (2.6f * s)), P(1.9f, r.WaistY + 2), P(0, r.WaistY + 4.5f), P(-1.9f, r.WaistY + 2) }, tie);
+                    }
+
+                    if (look.BowTie is { } bow)
+                    {
+                        var by = r.Ys + (3.2f * s);
+                        pen.Poly(new[] { P(0, by), P(-3.4f, by - 1.8f), P(-3.4f, by + 1.8f) }, bow);
+                        pen.Poly(new[] { P(0, by), P(3.4f, by - 1.8f), P(3.4f, by + 1.8f) }, bow);
+                        pen.Poly(new[] { P(-0.9f, by - 0.9f), P(0.9f, by - 0.9f), P(0.9f, by + 0.9f), P(-0.9f, by + 0.9f) }, bow.Darkened(0.25f));
                     }
 
                     break;
