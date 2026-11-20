@@ -28,6 +28,9 @@ public readonly record struct PersonPose
     /// <summary>The yellow ring of whoever the player has picked.</summary>
     public bool Selected { get; init; }
 
+    /// <summary>The blue ring of whoever is under the mouse in play mode (a click would pick them).</summary>
+    public bool Hovered { get; init; }
+
     /// <summary>A baby carried in their arms.</summary>
     public BabyLook? Baby { get; init; }
 
@@ -50,6 +53,9 @@ public readonly record struct PersonPose
 public static class PeopleArt
 {
     public static readonly Color SelectedRing = new("#F5C400");
+
+    /// <summary>The ring under whoever the mouse is over in play mode: the interface blue.</summary>
+    public static readonly Color HoverRing = new("#1F5FBF");
     private static readonly Color Shoe = new("#2A2F36");
 
     private static Color Grey(Color c, bool grey) => grey ? c.Lerp(new Color("#9AA3AB"), 0.7f) : c;
@@ -226,6 +232,10 @@ public static class PeopleArt
         if (pose.Selected)
         {
             p.Circle(x, y, radius + 0.16, Pen.A("#FFEB3B", 0.3f), SelectedRing, 0.09);
+        }
+        else if (pose.Hovered)
+        {
+            p.Circle(x, y, radius + 0.16, Pen.A("#FFFFFF", 0.45f), HoverRing, 0.08);
         }
 
         if (pose.Ring is { } ring)

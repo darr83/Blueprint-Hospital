@@ -28,6 +28,9 @@ public partial class MainHUD : CanvasLayer
     private readonly Label _hoverLabel = new();
     private readonly Label _tagLabel = new();
     private readonly PanelContainer _tag = new() { MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+    private readonly PanelContainer _pickTag = new() { MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+    private readonly Label _pickName = new();
+    private readonly Label _pickDetail = new();
     private readonly Button _balanceButton = new() { FocusMode = Control.FocusModeEnum.None };
     private readonly Dictionary<SimulationSpeed, Button> _speedButtons = new();
     private readonly Dictionary<string, Button> _nav = new();
@@ -282,6 +285,7 @@ public partial class MainHUD : CanvasLayer
         Level.ShowMeRequested += ShowBuildIcon;
         Level.PopupRequested += popup => root.AddChild(popup);
         root.AddChild(BuildTag());
+        root.AddChild(BuildPickTag());
         root.AddChild(BuildTopBar());
         root.AddChild(BuildNav());
         root.AddChild(BuildHoverPanel());
@@ -783,6 +787,66 @@ public partial class MainHUD : CanvasLayer
         _tagLabel.AddThemeFontSizeOverride("font_size", 13);
         _tag.AddChild(_tagLabel);
         return _tag;
+    }
+
+    private Control BuildPickTag()
+    {
+        var box = UiStyle.Box(new Color(1, 1, 1, 0.96f), 8, UiStyle.Blue);
+        box.BorderWidthLeft = 4;
+        box.ContentMarginLeft = 10;
+        box.ContentMarginRight = 10;
+        box.ContentMarginTop = box.ContentMarginBottom = 4;
+        box.ShadowColor = new Color(0.09f, 0.14f, 0.18f, 0.25f);
+        box.ShadowSize = 6;
+        _pickTag.AddThemeStyleboxOverride("panel", box);
+        var column = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        column.AddThemeConstantOverride("separation", 0);
+        _pickName.AddThemeColorOverride("font_color", UiStyle.TextDark);
+        _pickName.AddThemeFontSizeOverride("font_size", 14);
+        _pickDetail.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _pickDetail.AddThemeFontSizeOverride("font_size", 12);
+        column.AddChild(_pickName);
+        column.AddChild(_pickDetail);
+        _pickTag.AddChild(column);
+        return _pickTag;
+    }
+
+    /// <summary>
+    /// Play mode: a small card beside the mouse naming who (or whose bed) a click would pick. Null hides it.
+    /// </summary>
+    public void ShowPickTag((string Name, string Detail)? tag, Vector2 mouse)
+    {
+        if (tag is not { } t)
+        {
+            _pickTag.Visible = false;
+            return;
+        }
+
+        if (_pickName.Text != t.Name || _pickDetail.Text != t.Detail)
+        {
+            _pickName.Text = t.Name;
+            _pickDetail.Text = t.Detail;
+            _pickTag.Size = Vector2.Zero;
+        }
+
+        _pickTag.Visible = true;
+        MovePickTag(mouse);
+    }
+
+    /// <summary>Keeps the play mode name card just below and right of the mouse, inside the screen.</summary>
+    public void MovePickTag(Vector2 mouse)
+    {
+        if (!_pickTag.Visible)
+        {
+            return;
+        }
+
+        var size = _pickTag.GetCombinedMinimumSize();
+        var screen = GetViewport().GetVisibleRect().Size;
+        var at = mouse + new Vector2(20, 22);
+        at.X = Mathf.Min(at.X, screen.X - size.X - 8);
+        at.Y = Mathf.Min(at.Y, screen.Y - size.Y - 8);
+        _pickTag.Position = at;
     }
 
     /// <summary>Keeps the name tag floating above the selected person's head.</summary>

@@ -65,6 +65,9 @@ public partial class WorldLayer : Node2D
     /// <summary>The patient or staff member the player has selected, if any.</summary>
     public Agent? Selected { get; set; }
 
+    /// <summary>In play mode: the person under the mouse, who a click would pick. Gets a blue ring.</summary>
+    public Agent? Hovered { get; set; }
+
     /// <summary>Leg swing (radians) per tile walked, so steps keep time with how fast someone moves on screen.</summary>
     private const double StridePerTile = 1.6;
 
