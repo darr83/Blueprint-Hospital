@@ -23,9 +23,9 @@ public sealed record ChairInfo(GridCoord Tile, WallSide Facing, Color Colour, (d
 public sealed record ObsMonitorInfo(CareSpace Space, double X, double Y, WardBed? Bed = null);
 
 /// <summary>
-/// Everything that stands up from the floor: walls, furniture, equipment, people and vehicles.
-/// Each object is its own node positioned at its depth anchor, and Godot's Y-sort draws them
-/// back to front, so people pass correctly behind and in front of walls, desks and beds.
+/// Keeps track of the layout and of where everyone is between simulation ticks: wall and doorway
+/// edges, chairs and who sits on them, beds and who lies in them, monitors, trolleys and babies.
+/// It draws nothing itself; the 2D view from above and the 3D view read it every frame.
 /// </summary>
 public partial class WorldLayer : Node2D
 {
@@ -112,7 +112,7 @@ public partial class WorldLayer : Node2D
 
     public override void _ExitTree() => _layoutSubscription?.Dispose();
 
-    /// <summary>Counts rebuilds, so the 3D view knows when to rebuild its walls and floors too.</summary>
+    /// <summary>Counts rebuilds, so the view knows when to redraw its walls, floors and furniture.</summary>
     public int StaticVersion { get; private set; }
 
     /// <summary>Rebuilds walls and furniture, after rooms are built, moved or demolished.</summary>

@@ -203,7 +203,11 @@ public partial class DoctorHud : CanvasLayer
         _keys.OffsetBottom = -Gap;
         _keys.OffsetTop = -Gap - 44;
         _keys.GrowVertical = Control.GrowDirection.Begin;
-        var keys = UiStyle.Caption("W A S D  walk     Mouse  look     Shift  hurry     E  use     G  walk me there     H  hint     Tab  free the mouse", 14);
+        var keys = UiStyle.Caption(
+            BlueprintHospital.Core.GameView.ThreeD
+                ? "W A S D  walk     Mouse  look     Shift  hurry     E  use     G  walk me there     H  hint     Tab  free the mouse"
+                : "Arrow keys  walk     Shift  hurry     E  use     G  walk me there     H  hint     Wheel  zoom     Esc  leave",
+            14);
         _keys.AddChild(keys);
         _root.AddChild(_keys);
 
@@ -437,7 +441,7 @@ public partial class DoctorHud : CanvasLayer
         }
         else if (doctor.IsMoving)
         {
-            text = "Walking there…  press W A S D to take over";
+            text = BlueprintHospital.Core.GameView.ThreeD ? "Walking there…  press W A S D to take over" : "Walking there…  press an arrow key to take over";
         }
         else
         {

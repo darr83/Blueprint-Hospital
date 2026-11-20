@@ -14,8 +14,8 @@ public partial class SettingsPanel : ModalPanel
 
         var fullscreen = new CheckBox { Text = "Fullscreen", ButtonPressed = settings.Fullscreen };
         var vsync = new CheckBox { Text = "VSync", ButtonPressed = settings.VSync };
-        var lighting = new CheckBox { Text = "Enhanced lighting (turn off on slower computers)", ButtonPressed = settings.EnhancedLighting };
-        var surfaces = new CheckBox { Text = "Surface textures on walls, floors and furniture", ButtonPressed = settings.SurfaceTextures };
+        var lighting = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Enhanced lighting (turn off on slower computers)" : "Shadows and evening light (turn off on slower computers)", ButtonPressed = settings.EnhancedLighting };
+        var surfaces = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Surface textures on walls, floors and furniture" : "Fine detail on the grounds and floors", ButtonPressed = settings.SurfaceTextures };
         var edge = new CheckBox { Text = "Scroll the camera at screen edges", ButtonPressed = settings.EdgeScrolling };
         var grid = new CheckBox { Text = "Show building grid when a game starts", ButtonPressed = settings.ShowGridByDefault };
 

@@ -34,6 +34,7 @@ public partial class MainMenu : Control
         var loadGame = UiStyle.SecondaryButton("Load Game", () => AddChild(new LoadGamePanel()));
         column.AddChild(newGame);
         column.AddChild(loadGame);
+        column.AddChild(BuildViewChoice());
         column.AddChild(UiStyle.SecondaryButton("Settings", () => AddChild(new SettingsPanel())));
         column.AddChild(UiStyle.SecondaryButton("Quit", () => GetTree().Quit()));
 
@@ -58,10 +59,89 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin())
+        else if (!BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin())
         {
             ArtShots.Begin(this);
         }
+    }
+
+    /// <summary>The 2D button of the view choice.</summary>
+    public Button View2DButton { get; private set; } = null!;
+
+    /// <summary>The 3D button of the view choice.</summary>
+    public Button View3DButton { get; private set; } = null!;
+
+    /// <summary>
+    /// How the hospital is drawn, 2D from above or 3D. It is chosen here, before a game is started or
+    /// loaded, and stays as it is until the player comes back to this menu.
+    /// </summary>
+    private Control BuildViewChoice()
+    {
+        var box = new VBoxContainer();
+        box.AddThemeConstantOverride("separation", 6);
+        var caption = UiStyle.Caption("VIEW", 12);
+        caption.HorizontalAlignment = HorizontalAlignment.Center;
+        box.AddChild(caption);
+
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        box.AddChild(row);
+        var group = new ButtonGroup();
+        var note = UiStyle.Body(string.Empty, muted: true);
+        note.HorizontalAlignment = HorizontalAlignment.Center;
+        note.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        note.CustomMinimumSize = new Vector2(380, 0);
+
+        Button Option(string text, bool threeD)
+        {
+            var button = new Button
+            {
+                Text = text,
+                ToggleMode = true,
+                ButtonGroup = group,
+                ThemeTypeVariation = UiStyle.Secondary,
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                CustomMinimumSize = new Vector2(0, 44),
+                FocusMode = FocusModeEnum.None,
+            };
+            button.Toggled += on =>
+            {
+                // The chosen one is tinted blue.
+                var style = UiStyle.Box(on ? UiStyle.BlueTint : UiStyle.Surface, 10, on ? UiStyle.Blue : UiStyle.Border, 12);
+                foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+                {
+                    button.AddThemeStyleboxOverride(state, style);
+                }
+
+                if (!on)
+                {
+                    return;
+                }
+
+                note.Text = threeD
+                    ? "The hospital in 3D. Be A Doctor is played through the doctor's eyes."
+                    : "The hospital in 2D from directly above. Be A Doctor is played from above with the arrow keys.";
+                var manager = GameManager.Instance;
+                if (manager.Settings.View3D != threeD)
+                {
+                    manager.Settings.View3D = threeD;
+                    manager.SaveSettings();
+                }
+            };
+            row.AddChild(button);
+            return button;
+        }
+
+        View2DButton = Option("2D from above", false);
+        View3DButton = Option("3D", true);
+        var chosen = GameManager.Instance.Settings.View3D ? View3DButton : View2DButton;
+        var other = chosen == View3DButton ? View2DButton : View3DButton;
+        chosen.ButtonPressed = true;
+        other.EmitSignal(BaseButton.SignalName.Toggled, false);
+        box.AddChild(note);
+        box.AddChild(UiStyle.Caption("Pick this before you start or load. It cannot be changed during a game.", 12));
+        ((Label)box.GetChild(box.GetChildCount() - 1)).HorizontalAlignment = HorizontalAlignment.Center;
+        return box;
     }
 
     /// <summary>Opens the New Game panel: the hospital's name and how to start.</summary>

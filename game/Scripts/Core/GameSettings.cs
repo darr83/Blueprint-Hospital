@@ -22,13 +22,19 @@ public sealed class GameSettings
     public float UiScale { get; set; } = 1.0f;
 
     /// <summary>
-    /// Deeper contact shading, finer shadows, a fill light and smoothed edges in the 3D view.
-    /// On by default; turning it off gives the plain lighting, which is lighter work for slower computers.
+    /// In 3D: deeper contact shading, finer shadows, a fill light and smoothed edges. In 2D: shadows
+    /// and evening light. On by default; turning it off is lighter work for slower computers.
     /// </summary>
     public bool EnhancedLighting { get; set; } = true;
 
     /// <summary>Walls, floors and furniture drawn with surface detail (paint, vinyl, wood grain, fabric...).</summary>
     public bool SurfaceTextures { get; set; } = true;
+
+    /// <summary>
+    /// How the hospital is drawn: false for the 2D view from directly above, true for the 3D view.
+    /// Chosen on the main menu; a game keeps the view it was started or loaded with.
+    /// </summary>
+    public bool View3D { get; set; }
 
     public static GameSettings Load()
     {
@@ -43,6 +49,7 @@ public sealed class GameSettings
         settings.VSync = (bool)config.GetValue("display", "vsync", settings.VSync);
         settings.EnhancedLighting = (bool)config.GetValue("display", "enhanced_lighting", settings.EnhancedLighting);
         settings.SurfaceTextures = (bool)config.GetValue("display", "surface_textures", settings.SurfaceTextures);
+        settings.View3D = (bool)config.GetValue("display", "view_3d", settings.View3D);
         settings.UiScale = Mathf.Clamp((float)config.GetValue("display", "ui_scale", settings.UiScale), 0.75f, 1.5f);
         settings.CameraPanSpeed = Mathf.Clamp((float)config.GetValue("camera", "pan_speed", settings.CameraPanSpeed), 0.25f, 3f);
         settings.EdgeScrolling = (bool)config.GetValue("camera", "edge_scrolling", settings.EdgeScrolling);
@@ -57,6 +64,7 @@ public sealed class GameSettings
         config.SetValue("display", "vsync", VSync);
         config.SetValue("display", "enhanced_lighting", EnhancedLighting);
         config.SetValue("display", "surface_textures", SurfaceTextures);
+        config.SetValue("display", "view_3d", View3D);
         config.SetValue("display", "ui_scale", UiScale);
         config.SetValue("camera", "pan_speed", CameraPanSpeed);
         config.SetValue("camera", "edge_scrolling", EdgeScrolling);

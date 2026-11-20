@@ -41,5 +41,8 @@ jobs:
       - name: Import project
         run: timeout 300 "$GODOT" --headless --path game --import
 
-      - name: Smoke test (launch, play, save, load)
+      - name: Smoke test in 2D (launch, play, save, load)
         run: timeout 300 "$GODOT" --headless --path game -- --smoke-test
+
+      - name: Smoke test in 3D (launch, play, save, load)
+        run: timeout 300 "$GODOT" --headless --path game -- --smoke-test --smoke-3d
