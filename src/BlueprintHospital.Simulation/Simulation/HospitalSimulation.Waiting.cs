@@ -776,8 +776,17 @@ public sealed partial class HospitalSimulation
     {
         var rect = EmergencyDepartmentLayout.StarterWaitingRoom(MainBuilding.Footprint, Site.Layout?.Plan);
         var inner = Site.Layout?.Plan is { EntranceSide: WallSide.North } plan0 && EmergencyDepartmentLayout.FitsStarter(plan0) ? WallSide.South : WallSide.North;
+        return BuildFittedWaitingRoom(rect, inner, "waiting_room", "Waiting room");
+    }
+
+    /// <summary>
+    /// Builds a waiting room already fitted out (desk, doors and seats, as the old automatic layout put them), free of charge.
+    /// Its inner door is on <paramref name="inner"/>; an entrance door is added where it covers the main entrance.
+    /// </summary>
+    internal CareSpace BuildFittedWaitingRoom(GridRect rect, WallSide inner, string id, string name)
+    {
         var plan = new RoomPlan("waiting_room", rect, inner);
-        var (room, chairs) = UpgradeOldWaitingRoom(plan, "waiting_room", "Waiting room");
+        var (room, chairs) = UpgradeOldWaitingRoom(plan, id, name);
         _spaces[room.Id] = room;
         _chairs.RemoveAll(c => room.Rect.Contains(c.Tile));
         _chairs.AddRange(chairs);

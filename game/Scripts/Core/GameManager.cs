@@ -113,6 +113,25 @@ public partial class GameManager : Node
         ChangeScene(HospitalScene);
     }
 
+    /// <summary>Where the ready-built example hospital ships, beside the game data.</summary>
+    public const string ExampleHospitalPath = "res://Data/Examples/" + Simulation.Simulation.ExampleHospital.FileName;
+
+    /// <summary>Loads the example hospital: three floors, every department, fully staffed.</summary>
+    public void LoadExampleHospital()
+    {
+        SitePlanning = null;
+        if (Database is null)
+        {
+            return;
+        }
+
+        using var file = FileAccess.Open(ExampleHospitalPath, FileAccess.ModeFlags.Read)
+            ?? throw new InvalidOperationException($"Could not open {ExampleHospitalPath}: {FileAccess.GetOpenError()}");
+        var save = SaveSerializer.Deserialize(file.GetAsText());
+        Session = GameSession.FromSave(Database, save);
+        ChangeScene(HospitalScene);
+    }
+
     public void SaveGame(string displayName, CameraState camera)
     {
         if (Session is null)

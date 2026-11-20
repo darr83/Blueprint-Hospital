@@ -5,6 +5,19 @@ using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.World;
 
 // Usage: dotnet run --project tools/SimulationRunner -- [hours=24] [seed=42] [arrival-multiplier=1] [journeys=3]
+//    or: dotnet run --project tools/SimulationRunner -- --example-hospital   (rebuilds game/Data/Examples/example_hospital.json)
+if (args.Length > 0 && args[0] == "--example-hospital")
+{
+    var root = FindRepoRoot();
+    var database = GameDatabase.Load(new FileSystemDataSource(Path.Combine(root, "game", "Data")));
+    var example = ExampleHospital.CreateSave(database);
+    var path = Path.Combine(root, "game", "Data", "Examples", ExampleHospital.FileName);
+    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+    File.WriteAllText(path, SaveSerializer.Serialize(example));
+    Console.WriteLine($"Wrote {path}: {example.Layout!.Rooms.Count} rooms, {example.People!.Staff.Count} staff.");
+    return;
+}
+
 var hours = args.Length > 0 ? double.Parse(args[0]) : 24;
 var seed = args.Length > 1 ? int.Parse(args[1]) : 42;
 var multiplier = args.Length > 2 ? double.Parse(args[2]) : 1.0;
