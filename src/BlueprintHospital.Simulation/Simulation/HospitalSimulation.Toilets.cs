@@ -80,7 +80,7 @@ public sealed class ToiletTrip
 public sealed partial class HospitalSimulation
 {
     /// <summary>How long a patient waits before they might need the toilet.</summary>
-    public static readonly TimeSpan ToiletAfterWaiting = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan ToiletAfterWaiting = TimeSpan.FromMinutes(20);
 
     /// <summary>After going, how long before they might need to go again.</summary>
     public static readonly TimeSpan ToiletGap = TimeSpan.FromMinutes(90);
@@ -101,7 +101,7 @@ public sealed partial class HospitalSimulation
     public const int ChildAge = 12;
 
     /// <summary>On average, an eligible waiting patient needs the toilet about once in this many minutes.</summary>
-    private const double ToiletEveryMinutes = 120;
+    private const double ToiletEveryMinutes = 75;
 
     /// <summary>On average, a member of staff on a break goes about once in this many minutes.</summary>
     private const double StaffToiletEveryMinutes = 15;
@@ -217,7 +217,7 @@ public sealed partial class HospitalSimulation
 
     private bool RecentlyWent(Agent person) => _lastToiletAt.TryGetValue(person, out var at) && Now - at < ToiletGap;
 
-    private bool Away(Agent person) => _toiletTrips.ContainsKey(person) || _trips.ContainsKey(person) || (person is Patient p && _playVisits.ContainsKey(p));
+    private bool Away(Agent person) => _toiletTrips.ContainsKey(person) || _trips.ContainsKey(person) || _strolls.ContainsKey(person) || (person is Patient p && _playVisits.ContainsKey(p));
 
     /// <summary>A walking A&amp;E patient sitting in the waiting room (not Red) who has waited a while.</summary>
     private bool CanGoToToilet(Patient p) =>
@@ -257,6 +257,7 @@ public sealed partial class HospitalSimulation
                          || p.BusyWithTaskId is not null || p.CareSpaceId is not null || p.PendingMove is not null,
             Outpatient o => o.Stage != OutpatientStage.Waiting,
             StaffMember m => m.Activity != StaffActivity.OnBreak || m.CurrentTaskId is not null,
+            Visitor v => v.Activity != VisitorActivity.Away,
             _ => true,
         };
     }
@@ -452,6 +453,9 @@ public sealed partial class HospitalSimulation
                 }
 
                 break;
+            case Visitor v:
+                VisitorBack(v);
+                break;
         }
     }
 
@@ -492,6 +496,9 @@ public sealed partial class HospitalSimulation
                 break;
             case StaffMember m:
                 WalkTo(m, tile);
+                break;
+            case Visitor v:
+                Head(v, tile, force: true);
                 break;
         }
     }

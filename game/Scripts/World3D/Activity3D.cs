@@ -154,7 +154,7 @@ public static class Activity3D
         {
             case StaffMember member:
                 return ForStaff(member, world, sim, tasks, time);
-            case Patient or Outpatient:
+            case Patient or Outpatient or Visitor:
                 return ForVisitor(agent, world, sim, time);
             default:
                 return (Act.None, null);
@@ -163,6 +163,12 @@ public static class Activity3D
 
     private static (Act, (double, double)?) ForStaff(StaffMember member, WorldLayer world, HospitalSimulation sim, IReadOnlyDictionary<int, ClinicalTask> tasks, double time)
     {
+        if (member.Activity == StaffActivity.OnBreak && sim.TripOf(member) is not null)
+        {
+            // Nipped out to the café or the vending machine for a coffee.
+            return ForVisitor(member, world, sim, time);
+        }
+
         if (member.Activity == StaffActivity.OnBreak)
         {
             // Tea, and a chat with whoever else is on their break.
@@ -310,6 +316,14 @@ public static class Activity3D
             return (Habit(person.Id, time, 6) < 0.6 ? Act.CheckIn : Act.Talk, counter);
         }
 
+        if (person is Visitor { Activity: VisitorActivity.Visiting } visitor && sim.FindPatient(visitor.PatientId) is { } visited)
+        {
+            // At the bedside: chatting with the patient, now and then a look at their phone.
+            var bed = visitor.BabyId is null ? Centre(visited, world) : ((double, double)?)null;
+            var h = Habit(visitor.Id, time, 9);
+            return (h < 0.55 ? Act.Talk : h < 0.7 && world.IsSeated(visitor) ? Act.Phone : Act.None, bed);
+        }
+
         if (!world.IsSeated(person) || person is Patient { Stage: PatientStage.InTreatmentSpace })
         {
             return (Act.None, null);
@@ -391,6 +405,7 @@ public static class Activity3D
     private static bool CheckingIn(Agent person, HospitalSimulation sim) => person switch
     {
         Outpatient { Stage: OutpatientStage.CheckingIn } => true,
+        Visitor { Activity: VisitorActivity.CheckingIn } => true,
         Patient p => p.Stage == PatientStage.WaitingToRegister && sim.Tasks.Any(t => t.Started && t.Kind == TaskKind.Register && t.PatientId == p.Id),
         _ => false,
     };

@@ -135,6 +135,15 @@ public static class PeopleArt
 
             p.Dot(-0.45, -0.22 + a, 0.085, skin, 0.02);
             p.Dot(0.45, -0.22 - a, 0.085, skin, 0.02);
+            if (look.Flowers && !pose.Seated)
+            {
+                // A bunch of flowers held in front, heads first.
+                p.Ellipse(-0.36, -0.42, 0.1, 0.2, new Color("#F4EFE6"));
+                p.Dot(-0.42, -0.58, 0.07, new Color("#E8456B"), 0.015);
+                p.Dot(-0.3, -0.6, 0.07, new Color("#F6C343"), 0.015);
+                p.Dot(-0.36, -0.68, 0.07, new Color("#B26BD8"), 0.015);
+            }
+
             if (pose.Bag)
             {
                 p.Solid(0.36, -0.5, 0.22, 0.26, 0.04, new Color("#2E9E57"), 0.02);

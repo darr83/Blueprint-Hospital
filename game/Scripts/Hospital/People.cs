@@ -137,6 +137,9 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
 
     public bool Teddy { get; init; }
 
+    /// <summary>Carrying a bunch of flowers (a visitor on their way to the ward).</summary>
+    public bool Flowers { get; init; }
+
     // Staff kit.
     public bool Stethoscope { get; init; }
 

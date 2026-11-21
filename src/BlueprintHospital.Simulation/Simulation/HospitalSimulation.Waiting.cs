@@ -593,6 +593,9 @@ public sealed partial class HospitalSimulation
     {
         var taken = _patients.Values.Where(p => p.Seat.HasValue && p.Stage != PatientStage.Gone).Select(p => p.Seat!.Value).ToHashSet();
         taken.UnionWith(_outpatients.Where(o => o.Seat.HasValue).Select(o => o.Seat!.Value));
+        // Someone still sitting on (or walking to) a chair they no longer have booked, such as a patient waiting
+        // for the porter after being called, keeps it until they have gone.
+        taken.UnionWith(TakenSpots(null));
         return taken;
     }
 

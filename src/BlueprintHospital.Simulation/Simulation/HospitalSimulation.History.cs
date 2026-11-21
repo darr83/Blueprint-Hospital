@@ -26,6 +26,7 @@ public static class StatKeys
     public const string DiagnosesCorrect = "ae.diagnoses_correct";
     public const string MissedDiagnoses = "ae.missed";
     public const string WardDischarges = "ward.discharges";
+    public const string Visits = "ward.visits";
     public const string WardDeaths = "ward.deaths";
     public const string WardCorrections = "ward.corrections";
     public const string Arrests = "arrests.total";

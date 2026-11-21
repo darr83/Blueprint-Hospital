@@ -3,6 +3,7 @@ using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
 
 namespace BlueprintHospital.Simulation.Simulation;
@@ -37,6 +38,9 @@ public sealed class RefreshmentTrip
 
     /// <summary>When the current stage (paying, eating) finishes.</summary>
     public DateTime? Until { get; set; }
+
+    /// <summary>Where a member of staff on a break goes back to afterwards.</summary>
+    public GridCoord? ReturnTo { get; init; }
 }
 
 /// <summary>
@@ -49,13 +53,18 @@ public sealed class RefreshmentTrip
 public sealed partial class HospitalSimulation
 {
     /// <summary>How long a patient waits before they think about getting something.</summary>
-    public static readonly TimeSpan RefreshmentAfterWaiting = TimeSpan.FromMinutes(20);
+    public static readonly TimeSpan RefreshmentAfterWaiting = TimeSpan.FromMinutes(15);
 
     /// <summary>Once they have had something, how long before they want anything else (and how long it keeps them patient).</summary>
     public static readonly TimeSpan RefreshmentLasts = TimeSpan.FromHours(3);
 
     /// <summary>On average, an eligible waiting patient goes for something about once in this many minutes.</summary>
-    private const double RefreshmentEveryMinutes = 60;
+    private const double RefreshmentEveryMinutes = 35;
+
+    /// <summary>Staff on a break nip out for a coffee about once in this many minutes of break.</summary>
+    private const double StaffCoffeeEveryMinutes = 12;
+
+    private readonly Dictionary<int, DateTime> _staffCoffeeAt = new();
 
     /// <summary>Outpatients only go if their appointment is at least this far off.</summary>
     private static readonly TimeSpan OutpatientRefreshmentMargin = TimeSpan.FromMinutes(25);
@@ -122,7 +131,30 @@ public sealed partial class HospitalSimulation
                 StartTrip(outpatient, rooms);
             }
         }
+
+        if (!_options.LivelyPeople)
+        {
+            return;
+        }
+
+        // Staff on a break: a coffee from the café, or a can from the machine, and back to the staff room.
+        var staffChance = dt / (StaffCoffeeEveryMinutes * 60);
+        foreach (var member in _staff.Where(CanFetchRefreshments).ToList())
+        {
+            if (RefreshmentRandom.Chance(staffChance))
+            {
+                _staffCoffeeAt[member.Id] = Now;
+                StartTrip(member, rooms);
+            }
+        }
     }
+
+    /// <summary>Staff sitting down on a break with a good while of it left, who haven't been for a coffee this break.</summary>
+    private bool CanFetchRefreshments(StaffMember m) =>
+        m.Activity == StaffActivity.OnBreak && !m.IsMoving && m.CurrentTaskId is null && m.BedsidePatientId is null
+        && m.BreakEndsAt is { } ends && ends - Now >= TimeSpan.FromMinutes(12)
+        && !_trips.ContainsKey(m) && !_toiletTrips.ContainsKey(m)
+        && (!_staffCoffeeAt.TryGetValue(m.Id, out var last) || Now - last >= TimeSpan.FromHours(2));
 
     /// <summary>A walking A&amp;E patient sitting in the waiting room (not Red) who has waited a while and hasn't had anything lately.</summary>
     private bool CanFetchRefreshments(Patient p) =>
@@ -132,7 +164,7 @@ public sealed partial class HospitalSimulation
         && p.Seat is { } seat && p.Tile == seat && !p.IsMoving
         && p.BusyWithTaskId is null && p.CareSpaceId is null && p.PendingMove is null
         && Now - p.QueuedSince >= RefreshmentAfterWaiting
-        && !_trips.ContainsKey(p) && !_playVisits.ContainsKey(p)
+        && !_trips.ContainsKey(p) && !_playVisits.ContainsKey(p) && !_strolls.ContainsKey(p)
         && (p.LastRefreshmentAt is null || Now - p.LastRefreshmentAt >= RefreshmentLasts);
 
     /// <summary>A checked-in clinic patient sitting down, whose appointment isn't due for a while.</summary>
@@ -141,7 +173,7 @@ public sealed partial class HospitalSimulation
         && o.Seat is { } seat && o.Tile == seat && !o.IsMoving
         && FindAppointment(o.AppointmentId) is { } appointment && appointment.Time - Now >= OutpatientRefreshmentMargin
         && appointment.CheckedInAt is { } checkedIn && Now - checkedIn >= RefreshmentAfterWaiting / 2
-        && !_trips.ContainsKey(o)
+        && !_trips.ContainsKey(o) && !_strolls.ContainsKey(o)
         && (o.LastRefreshmentAt is null || Now - o.LastRefreshmentAt >= RefreshmentLasts);
 
     /// <summary>Called, moved, gone home or otherwise taken over by something else: the trip is off.</summary>
@@ -164,6 +196,8 @@ public sealed partial class HospitalSimulation
             Patient p => p.Stage is not (PatientStage.WaitingForTriage or PatientStage.WaitingForSpace)
                          || p.BusyWithTaskId is not null || p.CareSpaceId is not null || p.PendingMove is not null,
             Outpatient o => o.Stage != OutpatientStage.Waiting,
+            StaffMember m => m.Activity != StaffActivity.OnBreak || m.CurrentTaskId is not null,
+            Visitor v => v.Activity != VisitorActivity.Away,
             _ => true,
         };
     }
@@ -187,7 +221,7 @@ public sealed partial class HospitalSimulation
             }
 
             var spot = free[RefreshmentRandom.Range(0, free.Count - 1)];
-            _trips[person] = new RefreshmentTrip { Person = person, RoomId = room.Id, BuyAt = spot };
+            _trips[person] = new RefreshmentTrip { Person = person, RoomId = room.Id, BuyAt = spot, ReturnTo = person is StaffMember ? person.Tile : null };
             Send(person, spot);
             Describe(person, room.Kind == CareSpaceKind.Cafeteria ? $"Going to {room.Name}" : "Getting a snack");
             return;
@@ -258,6 +292,9 @@ public sealed partial class HospitalSimulation
             case Outpatient o:
                 o.LastRefreshmentAt = Now;
                 break;
+            case StaffMember m:
+                m.StatusText = $"On a break · in {room.Name} · back at {m.BreakEndsAt:HH:mm}";
+                break;
         }
     }
 
@@ -285,6 +322,17 @@ public sealed partial class HospitalSimulation
                     Walk(o, chair);
                 }
 
+                break;
+            case StaffMember m:
+                m.StatusText = $"On a break · back at {m.BreakEndsAt:HH:mm}";
+                if (trip.ReturnTo is { } back)
+                {
+                    WalkTo(m, back);
+                }
+
+                break;
+            case Visitor v:
+                VisitorBack(v);
                 break;
         }
     }
@@ -327,14 +375,28 @@ public sealed partial class HospitalSimulation
             case Outpatient o:
                 Walk(o, tile);
                 break;
+            case StaffMember m:
+                WalkTo(m, tile);
+                break;
+            case Visitor v:
+                Head(v, tile, force: true);
+                break;
         }
     }
 
     private static void Describe(Agent person, string text)
     {
-        if (person is Outpatient o)
+        switch (person)
         {
-            o.StatusText = text;
+            case Outpatient o:
+                o.StatusText = text;
+                break;
+            case StaffMember m:
+                m.StatusText = $"On a break · {char.ToLowerInvariant(text[0])}{text[1..]} · back at {m.BreakEndsAt:HH:mm}";
+                break;
+            case Visitor v:
+                v.StatusText = text;
+                break;
         }
     }
 

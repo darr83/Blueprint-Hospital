@@ -29,6 +29,12 @@ public sealed class SimulationOptions
     /// <summary>Some walk-in patients come by car or taxi rather than on foot.</summary>
     public bool CarArrivals { get; init; } = true;
 
+    /// <summary>
+    /// Visitors on the wards, patients stretching their legs and staff walking about between jobs. Tests that
+    /// count steps and minutes exactly can turn this off.
+    /// </summary>
+    public bool LivelyPeople { get; init; } = true;
+
     /// <summary>What the player starts with.</summary>
     public StartingHospital Start { get; init; } = StartingHospital.SmallEmergency;
 
@@ -247,6 +253,7 @@ public sealed partial class HospitalSimulation
 
         KeepPushersWithPatients();
         UpdateParents(dt);
+        UpdateVisitors(dt);
 
         UpdateAmbulances();
         UpdateCars();
@@ -264,6 +271,7 @@ public sealed partial class HospitalSimulation
         UpdateRefreshments(dt);
         UpdatePlay(dt);
         UpdateToilets(dt);
+        UpdateStrolls(dt);
         UpdatePharmacyTrips();
         UpdateRecovery();
         UpdateBabies(dt);

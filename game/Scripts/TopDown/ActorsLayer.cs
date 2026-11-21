@@ -282,7 +282,7 @@ public partial class ActorsLayer : Node2D
     private void People(Pen p)
     {
         var tasks = _sim.Tasks.Where(t => t.Started).ToDictionary(t => t.Id);
-        var agents = _world.AgentsInView().Where(a => a is Patient or StaffMember or Outpatient or Parent).ToList();
+        var agents = _world.AgentsInView().Where(a => a is Patient or StaffMember or Outpatient or Parent or Visitor).ToList();
 
         // Whoever is lying down goes underneath whoever is standing over them.
         foreach (var patient in agents.OfType<Patient>())
@@ -560,6 +560,7 @@ public partial class ActorsLayer : Node2D
             StaffMember member => Looks.Staff(member),
             Outpatient outpatient => Looks.Outpatient(outpatient, _sim.FindAppointment(outpatient.AppointmentId)),
             Parent parent => Looks.Parent(parent, _sim.FindPatient(parent.ChildId)),
+            Visitor guest => Looks.Visitor(guest, _sim.FindPatient(guest.PatientId)),
             _ => null,
         };
         if (look is null)
@@ -581,6 +582,12 @@ public partial class ActorsLayer : Node2D
             var edge = (Math.Abs(facing.X) > 0 ? foldOut.Width : foldOut.Length) / 2 - 0.25;
             (x, y) = (x + (facing.X * edge), y + (facing.Y * edge));
             (seated, onFoldOut) = (true, true);
+        }
+
+        // A visitor standing at the bedside turns to the patient they came to see.
+        if (agent is Visitor { Activity: VisitorActivity.Visiting, BabyId: null } visitor && !seated && !agent.IsMoving && _sim.FindPatient(visitor.PatientId) is { } visited)
+        {
+            facing = (visited.X - agent.X, visited.Y - agent.Y);
         }
         var walking = agent.IsMoving || (PlayerWalking && ReferenceEquals(agent, Player));
         var pushing = false;

@@ -436,6 +436,23 @@ public static class Looks
         return child is null ? look : look with { Skin = Patient(child).Skin };
     }
 
+    /// <summary>
+    /// A visitor: everyday clothes, a coat on until they have settled at the bedside, family share the
+    /// patient's skin tone, and some carry flowers in.
+    /// </summary>
+    public static PersonLook Visitor(Visitor visitor, Patient? patient)
+    {
+        var seed = visitor.Id + 300_007;
+        var settled = visitor.Activity is VisitorActivity.Visiting or VisitorActivity.Away;
+        var look = Civilian(seed, visitor.Sex, visitor.Age, coat: !settled && Roll(seed, 54, 3) != 0, bump: false) with
+        {
+            Flowers = visitor.Flowers && !settled,
+            Teddy = false,
+        };
+        var family = patient is not null && visitor.Relation != "friend";
+        return family ? look with { Skin = Patient(patient!).Skin } : look;
+    }
+
     /// <summary>The blanket a parent sleeps under on the fold-out bed: a soft hospital-issue blue.</summary>
     public static readonly Color ParentBlanket = new("#9FA8DA");
 

@@ -278,6 +278,15 @@ public partial class PatientRecordPanel : PanelContainer
             sb.Append('\n');
         }
 
+        if (p.Stage == PatientStage.OnWard)
+        {
+            // Mood, and who has come to see them.
+            var mood = p.Happiness >= 0.75 ? "cheerful" : p.Happiness >= 0.55 ? "settled" : p.Happiness >= 0.4 ? "a bit low" : "fed up";
+            var with = _sim.VisitorsOf(p).Where(v => v.Activity is VisitorActivity.Visiting or VisitorActivity.Away).Select(v => $"{E(v.FirstName)} ({v.Relation})").ToList();
+            sb.Append($"[b]Mood:[/b] {mood} · {p.VisitsReceived} visit{(p.VisitsReceived == 1 ? string.Empty : "s")} so far");
+            sb.Append(with.Count > 0 ? $" · with them now: {string.Join(", ", with)}\n" : "\n");
+        }
+
         if (p.Triage is not null)
         {
             sb.Append($"[b]Triage:[/b] {E(p.TriageReason)}\n");

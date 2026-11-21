@@ -307,6 +307,24 @@ public partial class Person3D : Node3D
             teddy.AddTo(_armL);
         }
 
+        if (look.Flowers)
+        {
+            // A bunch of flowers in paper, held up in front: green stems, then four bright heads.
+            var bunch = new MeshBatch();
+            var paper = new Color("#F4EFE6");
+            bunch.Rod(new Vector3(0, -armLength - V(1.5f), W(3)), new Vector3(0, -armLength + V(4), W(6)), W(2.2f), paper, small: true);
+            bunch.Rod(new Vector3(0, -armLength - V(3), W(2.4f)), new Vector3(0, -armLength + V(5), W(6.5f)), W(0.9f), new Color("#4E9A4F"), small: true);
+            var heads = new[] { new Color("#E8456B"), new Color("#F6C343"), new Color("#B26BD8"), new Color("#F08A3C") };
+            for (var i = 0; i < heads.Length; i++)
+            {
+                var a = i * Mathf.Tau / heads.Length;
+                var at = new Vector3(Mathf.Cos(a) * W(1.8f), -armLength + V(6) + (Mathf.Sin(a) * V(1)), W(7) + (Mathf.Sin(a) * W(1.4f)));
+                bunch.Ball(at, new Vector3(W(2.4f), V(2.2f), W(2.4f)), heads[i], small: true);
+            }
+
+            bunch.AddTo(_armL);
+        }
+
         _ = bodyMesh;
     }
 

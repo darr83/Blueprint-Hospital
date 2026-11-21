@@ -192,6 +192,10 @@ public sealed class PatientState
 
     public DateTime? LastRefreshmentAt { get; init; }
 
+    public double? Happiness { get; init; }
+
+    public int VisitsReceived { get; init; }
+
     public bool Maternity { get; init; }
 
     public int GestationWeeks { get; init; }
@@ -429,6 +433,9 @@ public sealed class PeopleState
     /// <summary>Each theatre's ticked departments (null in older saves: every theatre takes everyone).</summary>
     public Dictionary<string, List<string>>? TheatreAccess { get; init; }
 
+    /// <summary>Visiting hours the player has set, by ward id.</summary>
+    public Dictionary<string, VisitingHours>? VisitingHours { get; init; }
+
     /// <summary>Each room's floor and wall finish (null in older saves: every room standard).</summary>
     public Dictionary<string, RoomDecor>? Decor { get; init; }
 
@@ -528,6 +535,7 @@ public sealed partial class HospitalSimulation
         NextCandidateId = _nextCandidateId,
         UnlockedDepartments = _unlockedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList(),
         TheatreAccess = SpacesOfKind(CareSpaceKind.Theatre).ToDictionary(t => t.Id, t => t.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList()),
+        VisitingHours = CaptureVisitingHours(),
         Decor = CaptureDecor(),
         DecorDefaults = _decorDefaults.OrderBy(d => d.Key, StringComparer.Ordinal).ToDictionary(d => d.Key, d => d.Value),
         Appointments = _appointments.ToList(),
@@ -697,6 +705,7 @@ public sealed partial class HospitalSimulation
             }
         }
 
+        RestoreVisitingHours(state.VisitingHours);
         RestoreDecor(state.Decor, state.DecorDefaults);
 
         // A saved game can't carry on the old random sequence, so start a new one. The mix is fixed (not
@@ -822,7 +831,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
+        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -909,6 +918,8 @@ public sealed partial class HospitalSimulation
         p.PhysioSessions = s.PhysioSessions;
         p.LastPhysioAt = s.LastPhysioAt;
         p.LastRefreshmentAt = s.LastRefreshmentAt;
+        p.Happiness = s.Happiness ?? UsualHappiness;
+        p.VisitsReceived = s.VisitsReceived;
         p.Maternity = s.Maternity;
         p.GestationWeeks = s.GestationWeeks;
         p.Delivered = s.Delivered;

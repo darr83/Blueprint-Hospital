@@ -309,9 +309,20 @@ public sealed partial class HospitalSimulation
         if (best is null)
         {
             member.Activity = StaffActivity.Idle;
+            if (IdleWalkabout(member))
+            {
+                return;
+            }
+
             member.StatusText = "Available";
             WalkTo(member, HomeTile(member));
             return;
+        }
+
+        if (_walkabouts.TryGetValue(member.Id, out var walkabout))
+        {
+            walkabout.To = null;
+            walkabout.Until = null;
         }
 
         best.AssignedStaffId = member.Id;
@@ -420,6 +431,12 @@ public sealed partial class HospitalSimulation
 
         // Nothing else happens to a patient in cardiac arrest.
         if (patient.InArrest)
+        {
+            return false;
+        }
+
+        // Up for a walk on the ward: they are on their way back to bed.
+        if (OutOfBedForWalk(patient))
         {
             return false;
         }
