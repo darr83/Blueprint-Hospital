@@ -425,6 +425,12 @@ public partial class Agents3D : Node3D
             // and back again when it is done.
             {
                 var careSpot = _agent is StaffMember carer ? Activity3D.CareSpot(carer, world, sim, _owner._tasks, _owner.AnimTime) : null;
+                if (careSpot is null && _agent is StaffMember gasDoc && act is Act.Needle or Act.Fit && Activity3D.InductionSpot(gasDoc, sim) is { } shoulder)
+                {
+                    // Round to the patient's shoulder to put them to sleep.
+                    careSpot = (act, shoulder.At, shoulder.Facing);
+                }
+
                 if (careSpot is null && _agent is StaffMember && clinic is { StaffAt: { } beside })
                 {
                     // Up from the desk to examine the patient.
@@ -610,7 +616,11 @@ public partial class Agents3D : Node3D
             // Sat up on a trolley or stretcher, laid flat for CPR.
             var rest = carrier switch { "stretcher" => Carriers3D.StretcherBack, "trolley" => Carriers3D.TrolleyBack, _ => (Carriers3D.Backrest?)null };
             var angle = rest is { } r && alert != AlertKind.Crash && patient.IsAlive ? r.Raised : 0f;
-            var key = (look, carrier, blanket, band, babies?.Length ?? 0, angle);
+            // Being put to sleep in the anaesthetic room: awake for the cannula, then the mask on and their eyes close.
+            var under = carrier == "trolley" ? Procedure3D.GoingUnder(patient, sim) : null;
+            var masked = under is >= 0.4f;
+            var eyesOpen = under is < 0.55f;
+            var key = (look, carrier, blanket, band, babies?.Length ?? 0, angle, masked, eyesOpen);
             if (_lying is null || !Equals(_lyingKey, key))
             {
                 ClearLying();
@@ -629,7 +639,7 @@ public partial class Agents3D : Node3D
                 }
 
                 b.AddTo(_lying);
-                var figure = Lying3D.Build(look, blanket, band, babies, rest: rest, angle: angle);
+                var figure = Lying3D.Build(look, blanket, band, babies, awake: eyesOpen, rest: rest, angle: angle, wear: masked ? Wear.Oxygen : Wear.None);
                 figure.Position = new Vector3(0, mattress, 0);
                 _lying.AddChild(figure);
                 Node.AddChild(_lying);

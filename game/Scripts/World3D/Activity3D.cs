@@ -182,6 +182,13 @@ public static class Activity3D
         }
 
         var taskId = member.CurrentTaskId ?? member.AssistingTaskId;
+        if (member is { Role: StaffRole.Anaesthetist, IsMoving: false } && taskId is { } gasId && sim.Tasks.FirstOrDefault(t => t.Id == gasId) is { Kind: TaskKind.Surgery, Phase: SurgeryPhase.Anaesthetic } induction
+            && sim.FindPatient(induction.PatientId) is { IsMoving: false } sleepy && Procedure3D.GoingUnder(sleepy, sim) is { } under)
+        {
+            // In the anaesthetic room: the cannula in the hand, then the mask held on as they drift off.
+            return (under < 0.4f ? Act.Needle : Act.Fit, (sleepy.X + 0.5, sleepy.Y + 0.5));
+        }
+
         if (member.Activity != StaffActivity.Working || taskId is not { } id || !tasks.TryGetValue(id, out var task) || !task.Started)
         {
             return (Act.None, null);
@@ -593,7 +600,7 @@ public static class Activity3D
     /// </summary>
     public static (Act Act, (double X, double Y) At, (double X, double Y) Facing)? CareSpot(StaffMember member, WorldLayer world, HospitalSimulation sim, IReadOnlyDictionary<int, ClinicalTask> tasks, double time)
     {
-        if (member.IsMoving || member.CurrentTaskId is not { } id || !tasks.TryGetValue(id, out var task)
+        if (member.IsMoving || (member.CurrentTaskId ?? (member.Role == StaffRole.ScrubNurse ? member.AssistingTaskId : null)) is not { } id || !tasks.TryGetValue(id, out var task)
             || sim.FindPatient(task.PatientId) is not { IsMoving: false } patient || !world.InBed(patient))
         {
             return null;
@@ -602,6 +609,23 @@ public static class Activity3D
         var (care, careTask) = Procedure3D.For(patient, sim);
         var f = Procedure3D.Turn(patient, sim);
         (double, double) Bed(double across, double along) => Procedure3D.BedPoint(patient, sim, across, along);
+        if (care is Care.Surgery or Care.Cath && careTask == task && member.Role != StaffRole.Anaesthetist)
+        {
+            // Round the table: the surgeon at the tummy on one side, the scrub nurse across from them passing
+            // instruments (or further down the same side if the far side is blocked).
+            var lead = Procedure3D.Doing(task, sim);
+            double side = care == Care.Cath ? Procedure3D.Side(patient, lead, sim) : Procedure3D.Side(patient, lead, sim);
+            if (member.Role == StaffRole.ScrubNurse)
+            {
+                var hands = Habit(member.Id, time, 5) < 0.55 ? Act.Operate : Act.Carry;
+                return Procedure3D.Free(patient, sim, (float)-side)
+                    ? (hands, Bed(-side * 1.35, 0.1), (f * side, 0))
+                    : (hands, Bed(side * 1.35, 0.8), (-f * side, -f * 0.2));
+            }
+
+            return member.Id == lead?.Id ? (Act.Operate, Bed(side * 1.35, care == Care.Cath ? 0.05 : -0.2), (-f * side, 0)) : null;
+        }
+
         if (care == Care.None && task.Kind is TaskKind.Procedure or TaskKind.GiveMedication or TaskKind.EmergencyTreatment
             && member.Role != StaffRole.PlasterTechnician && member.Role != StaffRole.Anaesthetist && TreatAct(task, member, sim, time) is { } treat)
         {
@@ -729,6 +753,32 @@ public static class Activity3D
         var d = Math.Max(0.01, Math.Sqrt((dx * dx) + (dy * dy)));
         var at = (machine.CentreX + (dx / d * 0.8), machine.CentreY + (dy / d * 0.8));
         return (at, (dx, dy));
+    }
+
+    /// <summary>
+    /// Putting a patient to sleep on their trolley in the anaesthetic room: the anaesthetist stands at their
+    /// shoulder, on whichever side of the trolley has room, rather than hidden behind its raised back.
+    /// </summary>
+    public static ((double X, double Y) At, (double X, double Y) Facing)? InductionSpot(StaffMember member, HospitalSimulation sim)
+    {
+        if (member is not { Role: StaffRole.Anaesthetist, IsMoving: false } || (member.CurrentTaskId ?? member.AssistingTaskId) is not { } id
+            || sim.Tasks.FirstOrDefault(t => t.Id == id) is not { Kind: TaskKind.Surgery, Phase: SurgeryPhase.Anaesthetic } task
+            || sim.FindPatient(task.PatientId) is not { IsMoving: false } patient || Procedure3D.GoingUnder(patient, sim) is null
+            || sim.Spaces.FirstOrDefault(r => r.Rect.Contains(patient.Tile)) is not { } room)
+        {
+            return null;
+        }
+
+        var (px, py) = (patient.X + 0.5, patient.Y + 0.5);
+        var (fx, fy) = (patient.Facing.X, patient.Facing.Y);
+        var len = Math.Sqrt((fx * fx) + (fy * fy));
+        (fx, fy) = len < 1e-6 ? (0, 1) : (fx / len, fy / len);
+        (double X, double Y) Spot(double s) => (px + (-fy * s * 1.2) - (fx * 0.45), py + (fx * s * 1.2) - (fy * 0.45));
+        bool Free((double X, double Y) at) => at.X > room.Rect.X + 0.4 && at.X < room.Rect.Right - 0.4 && at.Y > room.Rect.Y + 0.4 && at.Y < room.Rect.Bottom - 0.4
+            && !room.Furniture.Any(f => at.X > f.X - 0.2 && at.X < f.X + f.Width + 0.2 && at.Y > f.Y - 0.2 && at.Y < f.Y + f.Length + 0.2);
+        var side = Free(Spot(1)) || !Free(Spot(-1)) ? 1.0 : -1.0;
+        var at = Spot(side);
+        return (at, (px - (fx * 0.45) - at.X, py - (fy * 0.45) - at.Y));
     }
 
     private static Dictionary<string, string>? _routes;

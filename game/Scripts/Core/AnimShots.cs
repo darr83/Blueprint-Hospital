@@ -60,6 +60,11 @@ public partial class AnimShots : Node
         ("checkin", Act.CheckIn, (_, a) => a is not StaffMember, 3.0f, 90, Array.Empty<string>()),
         ("pharmacy", null, (s, a) => a is StaffMember m && Activity3D.PharmacyVisit(m, World!, s, s.Tasks.Where(t => t.Started).ToDictionary(t => t.Id), 0) is not null, 2.8f, 180, Array.Empty<string>()),
         ("theatre", Act.Bag, (_, a) => a is StaffMember, 3.2f, 120, new[] { "acute_appendicitis" }),
+        ("anaes", null, (s, a) => a is StaffMember { Role: StaffRole.Anaesthetist, IsMoving: false, Activity: StaffActivity.Working } m && InKind(s, m, CareSpaceKind.AnaestheticRoom)
+            && s.Patients.Any(p => !p.IsMoving && InKind(s, p, CareSpaceKind.AnaestheticRoom) && Procedure3D.GoingUnder(p, s) is > 0.33f and < 0.4f), 3.2f, 120, new[] { "acute_appendicitis" }),
+        ("recovery", null, (s, a) => a is Patient { IsMoving: false } p && s.RecoveryOf(p) is not null && InKind(s, p, CareSpaceKind.TheatreRecovery), 3.2f, 120, new[] { "acute_appendicitis" }),
+        ("cath", null, (s, a) => a is StaffMember { IsMoving: false, Activity: StaffActivity.Working, CurrentTaskId: not null } m && InKind(s, m, CareSpaceKind.CathLab)
+            && s.Patients.Any(p => !p.IsMoving && InKind(s, p, CareSpaceKind.CathLab)), 3.2f, 120, new[] { "acute_myocardial_infarction" }),
         ("plaster", Act.Wrap, (_, a) => a is StaffMember, 2.8f, 150, new[] { "ankle_fracture", "wrist_fracture" }),
         ("maternity", null, (s, a) => a is Patient { Maternity: true, Stage: PatientStage.OnWard } p && World!.BabiesWith(p).Length > 0 && World.InBed(p), 2.4f, 90, new[] { "established_labour" }),
         ("night4", null, (s, a) => a is Patient p && OnWardBed(p) && s.Now.Hour is >= 23 or < 4 && WardCount(s, p) >= 3, 1.8f, 45, new[] { "ischaemic_stroke" }),
@@ -139,6 +144,8 @@ public partial class AnimShots : Node
         a is StaffMember m && Clinic3D.For(m, s, 0) is { } scene && (scene.StaffAt is not null) == exam
         && s.Consults.FirstOrDefault(c => c.StaffId == m.Id) is { } consult && s.FindSpace(consult.ClinicId)?.TemplateId == template
         && s.FindOutpatient(consult.OutpatientId) is { BusyUntil: { } until } && (until - s.Now).TotalMinutes > 5;
+
+    private static bool InKind(HospitalSimulation s, Agent a, CareSpaceKind kind) => s.Spaces.Any(r => r.Kind == kind && r.Rect.Contains(a.Tile));
 
     private static bool Set6 => OS.GetCmdlineUserArgs().Contains("--anim-set=6");
 
@@ -359,7 +366,17 @@ public partial class AnimShots : Node
                 (fx, fy) = seen.StaffAt is { } stand ? ((seen.CouchAt.X + stand.X) / 2, (seen.CouchAt.Y + stand.Y) / 2) : seen.CouchAt;
             }
 
-            if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "theatre" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
+            if (scene.Name is "theatre" or "cath" or "anaes" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } suiteRoom)
+            {
+                (fx, fy) = (suiteRoom.PatientSpot.X + 0.5, suiteRoom.PatientSpot.Y + 0.5);
+                _hospital.RotateView(0 - IsoDraw.Rotation);
+            }
+            else if (scene.Name is "recovery")
+            {
+                // From the foot of the bed, so the headboard isn't in the way.
+                _hospital.RotateView(2 - IsoDraw.Rotation);
+            }
+            else if (scene.Name is "xray" or "ct" or "pharmacy" or "plaster" or "cupboard" && sim.Spaces.FirstOrDefault(r => r.Rect.Contains(_subject.Tile)) is { } room)
             {
                 (fx, fy) = (room.Rect.X + (room.Rect.Width / 2.0), room.Rect.Y + (room.Rect.Length / 2.0) - 1);
             }
@@ -531,7 +548,16 @@ public partial class AnimShots : Node
         Report("north wing", sim.ExtendBuilding(R(40, 2, 60, 28)));
         Report("link", sim.BuildRoom(new RoomPlan("corridor", R(40, 13, 4, 34), Simulation.World.WallSide.South)));
         Report("corridor", sim.BuildRoom(new RoomPlan("corridor", R(44, 13, 56, 5), Simulation.World.WallSide.South)));
-        foreach (var (template, rect) in new[]
+        // The theatre clips want the whole suite: an anaesthetic room against the theatre, recovery and a cath lab.
+        var suite = OS.GetCmdlineUserArgs().Any(arg => arg.StartsWith("--anim-scenes=") && (arg.Contains("theatre") || arg.Contains("anaes") || arg.Contains("recovery") || arg.Contains("cath")));
+        foreach (var (template, rect) in suite
+                     ? new[]
+                     {
+                         ("cath_lab", R(44, 18, 14, 12)), ("theatre_recovery", R(58, 18, 14, 11)), ("operating_theatre", R(81, 18, 12, 12)),
+                         ("anaesthetic_room", R(73, 18, 8, 9)), ("pharmacy", R(93, 18, 7, 7)),
+                         ("xray_room", R(44, 2, 11, 11)), ("staff_room", R(55, 5, 10, 8)), ("coronary_care_unit", R(66, 2, 16, 11)),
+                     }
+                     : new[]
                  {
                      ("stroke_unit", R(44, 18, 16, 11)), ("physio_gym", R(60, 18, 12, 10)), ("plaster_room", R(72, 18, 9, 8)),
                      ("operating_theatre", R(81, 18, 12, 12)), ("pharmacy", R(93, 18, 7, 7)),
