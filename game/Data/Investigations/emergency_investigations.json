@@ -935,6 +935,9 @@
    ]
   },
   "abnormal": [
+      {"condition": "heat_exhaustion", "probability": 0.5, "value_range": [8.5, 14], "summaries": ["Urea {value} mmol/L (raised, consistent with dehydration)."], "analytes": {"creat": [80, 100]}},
+      {"condition": "heatstroke", "probability": 0.7, "value_range": [180, 420], "summaries": ["Creatinine {value} µmol/L (raised; baseline 85 last year). Potassium 5.6.", "Creatinine {value} µmol/L (raised from baseline). Urea 18."], "analytes": {"k": [5.6, 5.6], "urea": [18, 18]}},
+      {"condition": "hypothermia", "probability": 0.3, "value_range": [8.5, 14], "summaries": ["Urea {value} mmol/L (raised, consistent with dehydration)."], "analytes": {"creat": [80, 100]}},
    {
     "condition": "gastroenteritis",
     "probability": 0.5,
@@ -1663,6 +1666,7 @@
    }
   },
   "abnormal": [
+      {"condition": "heatstroke", "probability": 0.6, "summaries": ["ALT 240 U/L (raised): early liver injury."], "analytes": {"alt": [240, 240]}},
    {
     "condition": "biliary_colic",
     "probability": 0.35,
@@ -1978,6 +1982,7 @@
    ]
   },
   "abnormal": [
+      {"condition": "heatstroke", "probability": 0.85, "summaries": ["pH 7.28, lactate 4.6: raised lactate with a metabolic acidosis."]},
       {"condition": "paediatric_sepsis", "probability": 0.8, "summaries": ["pH 7.28, lactate 4.6: raised lactate with a metabolic acidosis."]},
    {
     "condition": "diabetic_ketoacidosis",

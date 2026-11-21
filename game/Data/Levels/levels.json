@@ -34,7 +34,7 @@
     "rooms": ["majors_cubicle", "xray_room", "emergency_ward", "accessible_toilet", "staff_toilet"],
     "staff": ["radiographer", "healthcare_assistant", "porter"],
     "grades": ["Band 7 nurse"],
-    "features": ["ambulances", "amber_patients", "children"],
+    "features": ["ambulances", "amber_patients", "children", "seasons"],
     "goals": [
       { "type": "count", "text": "Treat 40 A&E patients", "stat": "ae.departed", "target": 40 },
       { "type": "average_at_most", "text": "Ambulance handovers average 30 minutes or less", "stat": "ae.handover_minutes", "of": ["ae.handovers"], "target": 30, "min_count": 10 },

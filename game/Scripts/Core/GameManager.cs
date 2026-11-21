@@ -53,15 +53,15 @@ public partial class GameManager : Node
         }
     }
 
-    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency, bool unlimitedMoney = false, Simulation.Simulation.WardEmergencyFrequency wardEmergencies = Simulation.Simulation.WardEmergencyFrequency.Realistic, Simulation.Simulation.GameType type = Simulation.Simulation.GameType.Sandbox, Simulation.World.SitePlan? plan = null, bool chooseSite = false)
+    public void StartNewGame(string hospitalName, Simulation.Simulation.StartingHospital start = Simulation.Simulation.StartingHospital.SmallEmergency, bool unlimitedMoney = false, Simulation.Simulation.WardEmergencyFrequency wardEmergencies = Simulation.Simulation.WardEmergencyFrequency.Realistic, Simulation.Simulation.GameType type = Simulation.Simulation.GameType.Sandbox, Simulation.World.SitePlan? plan = null, bool chooseSite = false, SeasonChoice? seasons = null)
     {
         if (Database is null)
         {
             return;
         }
 
-        Session = GameSession.CreateNew(Database, hospitalName, start, unlimitedMoney, wardEmergencies, type, plan);
-        SitePlanning = chooseSite ? new NewGameChoices(hospitalName, start, unlimitedMoney, wardEmergencies, type) : null;
+        Session = GameSession.CreateNew(Database, hospitalName, start, unlimitedMoney, wardEmergencies, type, plan, seasons);
+        SitePlanning = chooseSite ? new NewGameChoices(hospitalName, start, unlimitedMoney, wardEmergencies, type, seasons ?? SeasonChoice.Default) : null;
         SitePlanStep = Hospital.SitePlanStep.MainEntrance;
         ChangeScene(HospitalScene);
     }
@@ -83,7 +83,7 @@ public partial class GameManager : Node
             return;
         }
 
-        Session = GameSession.CreateNew(Database, c.HospitalName, c.Start, c.UnlimitedMoney, c.WardEmergencies, c.Type, plan);
+        Session = GameSession.CreateNew(Database, c.HospitalName, c.Start, c.UnlimitedMoney, c.WardEmergencies, c.Type, plan, c.Seasons);
         SitePlanStep = next;
         ChangeScene(HospitalScene);
     }
@@ -172,4 +172,4 @@ public partial class GameManager : Node
 }
 
 /// <summary>The New Game panel's choices, kept while the player plans the site.</summary>
-public sealed record NewGameChoices(string HospitalName, Simulation.Simulation.StartingHospital Start, bool UnlimitedMoney, Simulation.Simulation.WardEmergencyFrequency WardEmergencies, Simulation.Simulation.GameType Type);
+public sealed record NewGameChoices(string HospitalName, Simulation.Simulation.StartingHospital Start, bool UnlimitedMoney, Simulation.Simulation.WardEmergencyFrequency WardEmergencies, Simulation.Simulation.GameType Type, SeasonChoice Seasons);

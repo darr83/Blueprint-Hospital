@@ -43,6 +43,12 @@ public sealed class DiagnosisEngine(GameDatabase database)
     /// <summary>Whether a test can be done here (an X-ray needs an X-ray room). Doctors diagnose without the tests they can't get.</summary>
     public Func<InvestigationDefinition, bool> CanDo { get; init; } = _ => true;
 
+    /// <summary>
+    /// How much commoner an illness is right now than usual (flu in winter, sunburn in summer). Doctors know
+    /// what is going round, so it shifts their first guess. 1 for all, if not set.
+    /// </summary>
+    public Func<ConditionDefinition, double>? Prior { get; init; }
+
     public IReadOnlyList<DifferentialEntry> Differential(Patient patient)
     {
         var known = patient.HistoryTaken ? patient.Symptoms.ToHashSet() : patient.KnownSymptoms;
@@ -54,7 +60,7 @@ public sealed class DiagnosisEngine(GameDatabase database)
         // booked in advance: neither is ever diagnosed in A&E.
         foreach (var condition in database.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal))
         {
-            var log = Math.Log(condition.Prevalence);
+            var log = Math.Log(condition.Prevalence * Math.Max(Prior?.Invoke(condition) ?? 1, 0.01));
 
             // Demographics.
             if (age < condition.AgeRange[0] || age > condition.AgeRange[1])

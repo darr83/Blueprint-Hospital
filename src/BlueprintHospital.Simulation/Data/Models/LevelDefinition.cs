@@ -178,8 +178,11 @@ public static class LevelFeatures
     /// <summary>Women in labour and antenatal appointments.</summary>
     public const string Maternity = "maternity";
 
+    /// <summary>The time of year changes who comes in (when the game has seasons switched on).</summary>
+    public const string Seasons = "seasons";
+
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        Ambulances, AmberPatients, Children, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity,
+        Ambulances, AmberPatients, Children, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity, Seasons,
     };
 }

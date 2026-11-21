@@ -107,6 +107,7 @@ public partial class SmokeTest : Node
         MaternityRecord,
         Rotate,
         Ambulance,
+        Calendar,
         Finances,
         WaitForLoad,
         ExampleHospital,
@@ -217,6 +218,12 @@ public partial class SmokeTest : Node
 
             case Stage.NewGameChoice when _frame >= 5:
                 Screenshot("01b_new_game");
+                {
+                    var menu = (UI.MainMenu)scene;
+                    Check(menu.NewGameSeasons?.ButtonPressed == true, "Seasons should be on by default on the New Game screen.");
+                    Check(menu.NewGameMonth?.Selected == 3, "A new game should start in April by default.");
+                }
+
                 manager.StartNewGame("Smoke Test Empty", Simulation.Simulation.StartingHospital.EmptyBuilding);
                 _frame = 0;
                 _stage = Stage.EmptyBuilding;
@@ -227,6 +234,8 @@ public partial class SmokeTest : Node
                 Check(!empty.Session.Simulation.Spaces.Any(), "The empty building should have no rooms, not even a waiting room.");
                 Check(!empty.Session.Simulation.Staff.Any(), "The empty building should have no staff.");
                 Check(!empty.Session.Simulation.IsEmergencyOpen, "A&E should be closed in an empty building.");
+                Check(empty.Session.Clock.Now.Month == 4 && empty.Session.Clock.Now.DayOfWeek == System.DayOfWeek.Monday, $"A new game should start on the first Monday in April, not {empty.Session.Clock.Now:dddd d MMMM}.");
+                Check(empty.Session.Simulation.SeasonsEnabled && empty.Session.Simulation.Seasons is not null, "A new game should have seasons on.");
                 GD.Print($"[smoke] Empty building: no rooms, no staff, £{empty.Session.Simulation.Balance:N0}, closed until it has {string.Join(", ", empty.Session.Simulation.ClosedReasons)}.");
                 manager.StartNewGame("Smoke Test General");
                 _stage = Stage.WaitForHospital;
@@ -911,7 +920,19 @@ public partial class SmokeTest : Node
 
                 CheckDoctorMode(hospital);
                 CheckCheatConsole(hospital);
+                hospital.Hud.ToggleCalendar();
+                Check(hospital.Hud.Calendar.Visible, "The Calendar did not open.");
+                Check(hospital.Hud.SeasonPill.Text.StartsWith("Spring", System.StringComparison.Ordinal), $"The season pill says '{hospital.Hud.SeasonPill.Text}' in {hospital.Session.Clock.Now:MMMM}.");
+                Check(hospital.Hud.PressureBadge.Text.StartsWith("Pressure ", System.StringComparison.Ordinal), "The pressure badge is missing.");
+                Check(hospital.Session.Simulation.WeekOutlook().Count == 7, "The week ahead should have seven days.");
+                _frame = 0;
+                _stage = Stage.Calendar;
+                break;
+
+            case Stage.Calendar when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("08a_calendar");
                 hospital.Hud.ToggleFinances();
+                Check(!hospital.Hud.Calendar.Visible, "Opening Finances should close the Calendar.");
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
                 Check(hospital.Session.Simulation.Accounts.Any(d => d[Simulation.Simulation.MoneyCategory.Construction] < 0), "Building work was not booked.");
                 _frame = 0;

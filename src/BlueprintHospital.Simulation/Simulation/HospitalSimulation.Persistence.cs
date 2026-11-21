@@ -407,6 +407,12 @@ public sealed class PeopleState
     /// <summary>How often patients in bed have sudden emergencies (left out of older saves: Realistic).</summary>
     public WardEmergencyFrequency WardEmergencies { get; init; } = WardEmergencyFrequency.Realistic;
 
+    /// <summary>The time of year changes who comes in (left out of older saves: on).</summary>
+    public bool Seasons { get; init; } = true;
+
+    /// <summary>Sets when each year's flu and RSV come (left out of older saves: made from the game's seed).</summary>
+    public int? SeasonSeed { get; init; }
+
     public double UnpaidUpkeep { get; init; }
 
     public List<Notification> Notifications { get; init; } = new();
@@ -523,6 +529,8 @@ public sealed partial class HospitalSimulation
         UnpaidWages = _unpaidWages,
         UnlimitedMoney = UnlimitedMoney,
         WardEmergencies = WardEmergencies,
+        Seasons = SeasonsEnabled,
+        SeasonSeed = SeasonSeed,
         UnpaidUpkeep = _unpaidUpkeep,
         Notifications = Notifications.Recent.Take(60).ToList(),
         NextNotificationId = Notifications.NextId,
@@ -667,6 +675,7 @@ public sealed partial class HospitalSimulation
         _unpaidWages = state.UnpaidWages;
         UnlimitedMoney = state.UnlimitedMoney;
         WardEmergencies = state.WardEmergencies;
+        SetUpSeasons(state.Seasons, state.SeasonSeed ?? _options.Seed);
         _unpaidUpkeep = state.UnpaidUpkeep;
         Notifications.Restore(state.Notifications, state.NextNotificationId);
         _generator.SetNextId(state.NextPatientId);

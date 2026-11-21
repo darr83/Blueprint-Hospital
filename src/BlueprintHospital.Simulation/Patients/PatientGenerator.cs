@@ -24,6 +24,11 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
     /// </summary>
     public Func<Patient, bool>? Suits { get; set; }
 
+    /// <summary>
+    /// How much commoner an illness is on a given day than its usual prevalence (seasons, flu waves). 1 for all, if not set.
+    /// </summary>
+    public Func<ConditionDefinition, DateTime, double>? Seasonal { get; set; }
+
     /// <summary>How many times a random patient is made again before the last one is taken anyway.</summary>
     public const int SuitsAttempts = 40;
 
@@ -54,7 +59,7 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
     private Patient GenerateOnce(DateTime now, ArrivalMethod? forcedMethod, string? conditionId, int? forcedAge = null)
     {
         var condition = conditionId is null
-            ? PickCondition(forcedMethod)
+            ? PickCondition(forcedMethod, now)
             : database.Conditions[conditionId];
 
         var sex = condition.IsMaternity ? Sex.Female : random.Chance(condition.FemaleFraction) ? Sex.Female : Sex.Male;
@@ -85,7 +90,7 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
             DiastolicBp: (int)Math.Round(Math.Clamp(random.Normal(o.DiastolicBp[0], o.DiastolicBp[1]), 40, 120)),
             RespiratoryRate: (int)Math.Round(Math.Clamp(random.Normal(o.RespiratoryRate[0], o.RespiratoryRate[1]), 10, 40)),
             OxygenSaturation: (int)Math.Round(Math.Clamp(random.Normal(o.OxygenSaturation[0], o.OxygenSaturation[1]), 85, 100)),
-            Temperature: Math.Round(Math.Clamp(random.Normal(o.Temperature[0], o.Temperature[1]), 35, 40.5), 1),
+            Temperature: Math.Round(Math.Clamp(random.Normal(o.Temperature[0], o.Temperature[1]), 30, 42), 1),
             Consciousness: Consciousness.Alert,
             PainScore: random.Range((int)o.PainScore[0], (int)o.PainScore[1]));
 
@@ -134,8 +139,11 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
         return Generate(now, ArrivalMethod.WalkIn, condition);
     }
 
-    private ConditionDefinition PickCondition(ArrivalMethod? method)
+    private ConditionDefinition PickCondition(ArrivalMethod? method, DateTime now)
     {
+        var seasonal = Seasonal;
+        double Common(ConditionDefinition c) => c.Prevalence * (seasonal?.Invoke(c, now) ?? 1);
+
         // Women in labour go to the maternity unit, and planned patients are booked in: neither comes to A&E.
         var conditions = database.Conditions.Values.Where(c => !c.IsMaternity && !c.IsPlanned).OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
         if (Allows is { } allows && conditions.Where(allows).ToList() is { Count: > 0 } allowed)
@@ -145,9 +153,9 @@ public sealed class PatientGenerator(GameDatabase database, GameRandom random)
 
         return method switch
         {
-            ArrivalMethod.Ambulance => random.PickWeighted(conditions, c => c.Prevalence * c.AmbulanceProbability),
-            ArrivalMethod.WalkIn => random.PickWeighted(conditions, c => c.Prevalence * (1 - c.AmbulanceProbability)),
-            _ => random.PickWeighted(conditions, c => c.Prevalence),
+            ArrivalMethod.Ambulance => random.PickWeighted(conditions, c => Common(c) * c.AmbulanceProbability),
+            ArrivalMethod.WalkIn => random.PickWeighted(conditions, c => Common(c) * (1 - c.AmbulanceProbability)),
+            _ => random.PickWeighted(conditions, Common),
         };
     }
 

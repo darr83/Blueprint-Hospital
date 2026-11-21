@@ -1,0 +1,37 @@
+[
+  {
+    "id": "sunburnt_skin",
+    "name": "Sunburn",
+    "patient_description": "I fell asleep in the sun and my skin is bright red and blistering.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "overheated",
+    "name": "Overheated",
+    "patient_description": "I've been out in the heat all day and I feel awful.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "insect_sting",
+    "name": "Insect sting",
+    "patient_description": "A wasp stung me and it's really swollen.",
+    "body_system": "skin",
+    "is_red_flag": false
+  },
+  {
+    "id": "found_cold",
+    "name": "Found cold",
+    "patient_description": "They found me on the floor. I was there all night and I'm frozen.",
+    "body_system": "general",
+    "is_red_flag": true
+  },
+  {
+    "id": "neck_pain",
+    "name": "Neck pain",
+    "patient_description": "My neck hurts since the car crash.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  }
+]
