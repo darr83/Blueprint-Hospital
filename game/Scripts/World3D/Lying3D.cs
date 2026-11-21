@@ -186,6 +186,42 @@ public static class Lying3D
             }
         }
 
+        if (care is Care.Surgery or Care.Cath)
+        {
+            // Sterile drapes over the patient with a window where the work is: the tummy for an operation,
+            // the right wrist (out on an arm board) for the cath lab's wire.
+            var front = 0.14f + (0.18f * Mathf.Lerp(sz, 1f, 0.4f));
+            var mid = Mathf.Lerp(shZ, hipZ, 0.72f);
+            var cloth = care == Care.Surgery ? blanket.Darkened(0.12f) : Drape.Darkened(0.2f);
+            if (care == Care.Surgery)
+            {
+                u.Box(new Vector3(0, front, mid), new Vector3(shW * 2.5f, 0.03f, (hipZ - shZ) * 0.95f), cloth);
+            }
+            else
+            {
+                u.Box(new Vector3(0, front - 0.02f, Mathf.Lerp(shZ, hipZ, 0.9f)), new Vector3(shW * 2.3f, 0.03f, (hipZ - shZ) * 0.55f), cloth);
+            }
+            if (care == Care.Surgery)
+            {
+                var at = new Vector3(careSide * 0.05f, front + 0.012f, mid + 0.03f);
+                u.Ball(at, new Vector3(0.3f, 0.03f, 0.34f), skin, small: true);
+                u.Rod(at + new Vector3(0, 0.014f, -0.09f), at + new Vector3(0, 0.014f, 0.09f), 0.012f, new Color("#B5413B"), small: true);
+                foreach (var s in new[] { -1f, 1f })
+                {
+                    // Clips holding the drapes back from the window.
+                    u.Box(at + new Vector3(s * 0.16f, 0.01f, s * 0.1f), new Vector3(0.05f, 0.03f, 0.03f), new Color("#C9D1D6"));
+                }
+            }
+            else
+            {
+                var wrist = new Vector3(careSide * (shW + 0.3f), front - 0.06f, mid + 0.08f);
+                u.Box(wrist, new Vector3(0.34f, 0.03f, 0.3f), cloth);
+                u.Ball(wrist + new Vector3(0, 0.012f, 0), new Vector3(0.1f, 0.03f, 0.1f), skin, small: true);
+                u.Rod(wrist + new Vector3(0, 0.03f, 0), wrist + new Vector3(careSide * 0.1f, 0.1f, 0.22f), 0.012f, new Color("#F4F6F7"), small: true);
+                u.Rod(wrist + new Vector3(careSide * 0.1f, 0.1f, 0.22f), wrist + new Vector3(careSide * 0.06f, 0.04f, 0.6f), 0.008f, new Color("#90A4AE"), small: true);
+            }
+        }
+
         if (lumbar)
         {
             // The gown open at the back, a sterile drape low on the spine with a window in it.
@@ -608,6 +644,19 @@ public static class Lying3D
             // A fresh white dressing bandaged round the forearm.
             u.Capsule(elbowL.Lerp(handL, 0.3f), elbowL.Lerp(handL, 0.8f), foreR * 1.3f, new Color("#FAFAF5"));
             u.Capsule(elbowL.Lerp(handL, 0.48f), elbowL.Lerp(handL, 0.52f), foreR * 1.34f, new Color("#E3E3DA"));
+        }
+
+        if (wear.HasFlag(Wear.Airway))
+        {
+            // The breathing tube taped at the mouth, its ribbed hose going off the head of the table to the machine.
+            var top = mouth + new Vector3(0, headR * 0.5f, 0);
+            u.Rod(mouth, top, 0.02f, new Color("#DDE9F0"), small: true);
+            u.Box(mouth + new Vector3(0, headR * 0.05f, 0), new Vector3(headR * 1.5f, 0.015f, 0.05f), Colors.White);
+            var bend = head + new Vector3(headR * 0.9f, headR * 1.5f, -headR * 0.6f);
+            var away = head + new Vector3(headR * 2.2f, -headR * 0.2f, -headR * 2.6f);
+            u.Rod(top, bend, 0.028f, new Color("#9FC6D9"), small: true);
+            u.Rod(bend, away, 0.028f, new Color("#9FC6D9"), small: true);
+            u.Ball(top, new Vector3(0.07f, 0.07f, 0.07f), new Color("#4A90B8"), small: true);
         }
 
         if (wear.HasFlag(Wear.Pads))

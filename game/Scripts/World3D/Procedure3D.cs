@@ -75,6 +75,12 @@ public enum Care
 
     /// <summary>A nose and throat swab.</summary>
     Swab,
+
+    /// <summary>An operation on the table: asleep under the drapes, a window in them over the tummy.</summary>
+    Surgery,
+
+    /// <summary>The cath lab: awake under a sterile drape, the wire going in at the wrist.</summary>
+    Cath,
 }
 
 /// <summary>Things a patient in bed has on them because of a treatment: some only while it is given, some from then on.</summary>
@@ -109,6 +115,9 @@ public enum Wear
 
     /// <summary>Monitoring and pacing pads stuck on the chest.</summary>
     Pads = 256,
+
+    /// <summary>A breathing tube taped at the mouth, its hose off to the anaesthetic machine (asleep in theatre).</summary>
+    Airway = 512,
 }
 
 /// <summary>Works out, from the simulation alone, which procedure a lying patient is in the middle of. Changes nothing.</summary>
@@ -143,6 +152,16 @@ public static class Procedure3D
                     if (place.Kind == CareSpaceKind.Endoscopy)
                     {
                         return (Care.Endoscopy, task);
+                    }
+
+                    if (place.Kind == CareSpaceKind.Theatre)
+                    {
+                        return (Care.Surgery, task);
+                    }
+
+                    if (place.Kind == CareSpaceKind.CathLab)
+                    {
+                        return (Care.Cath, task);
                     }
 
                     break;
@@ -272,6 +291,18 @@ public static class Procedure3D
     /// Which side of the bed (-1 or +1 across it) the work is done from: the side whoever is doing it came to,
     /// unless a wall, another bed or furniture is in the way there and the other side is clear.
     /// </summary>
+    /// <summary>
+    /// How far through being put to sleep in the anaesthetic room a patient is (0 just started, 1 asleep and
+    /// ready to go through); null when they are not being anaesthetised.
+    /// </summary>
+    public static float? GoingUnder(Patient patient, HospitalSimulation sim) =>
+        sim.Tasks.FirstOrDefault(t => t.PatientId == patient.Id && t.Kind == TaskKind.Surgery && t.Phase == SurgeryPhase.Anaesthetic && t.AnaestheticSecondsLeft is not null) is { AnaestheticSecondsLeft: { } left }
+            ? Mathf.Clamp(1f - ((float)left / (float)(HospitalSimulation.AnaestheticMinutes * 60)), 0f, 1f)
+            : null;
+
+    /// <summary>Whether there is room to stand on that side of the bed or table.</summary>
+    public static bool Free(Patient patient, HospitalSimulation sim, float side) => Clear(patient, sim, side);
+
     public static float Side(Patient patient, StaffMember? member, HospitalSimulation sim)
     {
         var f = Turn(patient, sim);

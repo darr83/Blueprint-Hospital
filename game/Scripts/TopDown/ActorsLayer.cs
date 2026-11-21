@@ -416,6 +416,24 @@ public partial class ActorsLayer : Node2D
                 p.Ellipse(0, chestY + (0.55 * k), 0.42 * k, 0.3 * k, look.Skin);
                 p.Ellipse(0.04, chestY + (0.55 * k), 0.16, 0.11, Pen.A("#9AD8F2", 0.9f));
                 break;
+            case World3D.Care.Surgery:
+                // The drapes with a window over the tummy, and the breathing tube at the mouth.
+                p.Round(-0.5 * k, chestY + (0.2 * k), 1.0 * k, 0.8 * k, 0.06, new Color("#3E8A7E"), new Color("#2F6E64"), 0.03);
+                p.Ellipse(0, chestY + (0.6 * k), 0.2 * k, 0.24 * k, look.Skin);
+                p.Line(0, chestY + (0.5 * k), 0, chestY + (0.7 * k), new Color("#B5413B"), 0.03);
+                p.Line(0, headY + (0.16 * k), 0.3, headY - 0.25, new Color("#9FC6D9"), 0.07);
+                break;
+            case World3D.Care.Cath:
+            {
+                // A sterile drape across the hips and the wrist, the wire going in at the wrist.
+                double side = World3D.Procedure3D.Side(patient, worker, _sim);
+                p.Round(-0.48 * k, chestY + (0.55 * k), 0.96 * k, 0.6 * k, 0.06, new Color("#3273AB"), new Color("#2A6CB0"), 0.03);
+                p.Round((side * 0.6 * k) - 0.16, chestY + (0.45 * k), 0.32, 0.3, 0.05, new Color("#3273AB"), new Color("#2A6CB0"), 0.03);
+                p.Circle(side * 0.6 * k, chestY + (0.6 * k), 0.06, look.Skin);
+                p.Line(side * 0.6 * k, chestY + (0.6 * k), side * 0.66 * k, chestY + (1.1 * k), new Color("#90A4AE"), 0.025);
+                break;
+            }
+
             case World3D.Care.Eeg:
             {
                 var colours = new[] { "#E53935", "#FDD835", "#43A047", "#1E88E5", "#8E24AA" };

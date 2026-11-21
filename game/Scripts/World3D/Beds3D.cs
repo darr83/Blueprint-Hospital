@@ -553,6 +553,23 @@ public partial class Beds3D : Node3D
             }
 
             var wear = _table ? Wear.None : Procedure3D.Worn(patient, sim);
+            if (care == Care.Surgery)
+            {
+                // Under a general anaesthetic: asleep, with the breathing tube in.
+                (asleep, doing, wear) = (true, InBed.None, Wear.Airway);
+            }
+            else if (care == Care.Cath)
+            {
+                (asleep, doing) = (false, InBed.None);
+            }
+            else if (!_table && sim.RecoveryOf(patient) is { } waking)
+            {
+                // Coming round in recovery: oxygen on, asleep to begin with, awake before they go back to the ward.
+                wear |= Wear.Oxygen;
+                asleep = waking.Until is not { } until || (until - sim.Now).TotalMinutes > waking.Minutes * 0.45;
+                doing = InBed.None;
+            }
+
             BloodBag(wear.HasFlag(Wear.Blood));
             var key = (look, band, babies?.Length ?? 0, babies is { Length: > 0 } ? babies[0] : null, asleep, doing, cast, angle, care, side, wear);
             Breathe(asleep, time);
