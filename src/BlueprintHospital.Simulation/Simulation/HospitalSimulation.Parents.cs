@@ -103,6 +103,12 @@ public sealed partial class HospitalSimulation
         if (child.Stage == PatientStage.OnWard && !child.IsMoving && BedOf(child) is { } bed && child.Tile == bed.PatientSpot
             && FindSpace(child.CareSpaceId!) is { } ward && FoldOutBedBeside(ward, bed) is { } foldOut)
         {
+            // Now and then, by day, a break in the parents' room.
+            if (TakeParentsRoomBreak(parent, child))
+            {
+                return;
+            }
+
             var by = TileBeside(foldOut, ward);
             if (parent.Tile == by && !parent.IsMoving)
             {
@@ -123,11 +129,17 @@ public sealed partial class HospitalSimulation
         }
 
         parent.FoldOutBed = null;
+        parent.BreakUntil = null;
 
-        // Scans and operations: wait in the corridor outside until they come out.
+        // Scans and operations: wait in the parents' room if there is one, or in the corridor outside, until they come out.
         if (child.CareSpaceId is { } spaceId && FindSpace(spaceId) is { } room && !child.IsMoving && room.Rect.Contains(child.Tile)
             && (room.IsServiceRoom || room.Kind is CareSpaceKind.AnaestheticRoom or CareSpaceKind.TheatreRecovery))
         {
+            if (parent.Activity == ParentActivity.InParentsRoom || (parent.Activity != ParentActivity.WaitingOutside && ParentsRoomSeat(parent) is { } sofa && GoToParentsRoom(parent, sofa)))
+            {
+                return;
+            }
+
             if (parent.Activity != ParentActivity.WaitingOutside)
             {
                 parent.Activity = ParentActivity.WaitingOutside;
@@ -161,8 +173,11 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        // A free chair: next to theirs in the waiting room, or the visitor's chair in their cubicle.
-        var chair = child.Seat == child.Tile
+        // A free chair: in the play room with them, next to theirs in the waiting room, or the visitor's chair in their cubicle.
+        var chair = PlayRoomOf(child) is { } playRoom
+            ? SeatTiles.Where(t => playRoom.Rect.Contains(t) && t != child.Tile && !IsSpotTaken(t, parent) && !SeatBooked(t) && !PlaySeatBooked(t))
+                .OrderBy(t => Chebyshev(t, child.Tile)).Cast<GridCoord?>().FirstOrDefault()
+            : child.Seat == child.Tile
             ? Neighbours(child.Tile).Where(t => IsSeat(t) && !IsSpotTaken(t, parent) && !SeatBooked(t)).Cast<GridCoord?>().FirstOrDefault()
             : child.CareSpaceId is { } cubicleId && FindSpace(cubicleId) is { IsWard: false, Kind: not CareSpaceKind.Waiting } cubicle && cubicle.Rect.Contains(child.Tile)
                 ? SeatTiles.Where(t => cubicle.Rect.Contains(t) && !IsSpotTaken(t, parent) && !SeatBooked(t)).OrderBy(t => Chebyshev(t, child.Tile)).Cast<GridCoord?>().FirstOrDefault()
@@ -180,6 +195,77 @@ public sealed partial class HospitalSimulation
         }
 
         Head(parent, FreeSpot(parent, child.Tile));
+    }
+
+    /// <summary>How long a parent's break in the parents' room lasts, and roughly how often they take one by day.</summary>
+    private static readonly TimeSpan ParentsRoomBreak = TimeSpan.FromMinutes(25);
+
+    private static readonly TimeSpan ParentsRoomBreakEvery = TimeSpan.FromHours(3);
+
+    /// <summary>Parents' rooms.</summary>
+    public IEnumerable<CareSpace> ParentsRooms => SpacesOfKind(CareSpaceKind.ParentsRoom);
+
+    /// <summary>
+    /// A parent sitting with their child on the ward takes a break in the parents' room every few hours by
+    /// day (never at night), then goes back to the bedside. True while they are on one.
+    /// </summary>
+    private bool TakeParentsRoomBreak(Parent parent, Patient child)
+    {
+        if (parent.BreakUntil is { } until)
+        {
+            if (Now < until && !IsParentBedtime)
+            {
+                if (!parent.IsMoving && parent.Heading is { } sofa && parent.Tile != sofa)
+                {
+                    Head(parent, sofa, force: true);
+                }
+
+                return true;
+            }
+
+            parent.BreakUntil = null;
+            parent.NextBreakAt = Now + ParentsRoomBreakEvery + TimeSpan.FromMinutes(parent.Id % 60);
+            parent.Activity = ParentActivity.WithChild;
+            return false;
+        }
+
+        if (parent.NextBreakAt is null)
+        {
+            parent.NextBreakAt = Now + TimeSpan.FromMinutes(60 + (parent.Id % 120));
+            return false;
+        }
+
+        if (IsParentBedtime || Now.Hour < ParentWakeHour + 1 || Now < parent.NextBreakAt || parent.Activity != ParentActivity.SittingByBed
+            || ParentsRoomSeat(parent) is not { } seat)
+        {
+            return false;
+        }
+
+        parent.FoldOutBed = null;
+        parent.BreakUntil = Now + ParentsRoomBreak;
+        child.Log(Now, $"{parent.Relation} went for a cup of tea in the parents' room.");
+        GoToParentsRoom(parent, seat);
+        return true;
+    }
+
+    private bool GoToParentsRoom(Parent parent, GridCoord seat)
+    {
+        parent.Activity = ParentActivity.InParentsRoom;
+        Head(parent, seat, force: true);
+        return true;
+    }
+
+    /// <summary>A free seat in the nearest parents' room on the parent's floor, if there is one.</summary>
+    private GridCoord? ParentsRoomSeat(Parent parent)
+    {
+        var floor = Site.FloorOf(parent.Tile);
+        return ParentsRooms
+            .Where(r => Site.FloorOf(new GridCoord(r.Rect.X, r.Rect.Y)) == floor)
+            .SelectMany(r => r.Seats)
+            .Where(t => !IsSpotTaken(t, parent) && !_parents.Values.Any(o => o != parent && (o.Heading == t || o.Tile == t)))
+            .OrderBy(t => Chebyshev(t, parent.Tile))
+            .Cast<GridCoord?>()
+            .FirstOrDefault();
     }
 
     private bool SeatBooked(GridCoord tile) =>

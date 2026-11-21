@@ -198,7 +198,7 @@ public static class PeopleArt
         }
         else if (look.Lanyard)
         {
-            var cord = look.Jacket is not null ? new Color("#F3F0FA") : new Color("#3C6FA0");
+            var cord = look.LanyardColour ?? (look.Jacket is not null ? new Color("#F3F0FA") : new Color("#3C6FA0"));
             p.Line(-0.1, -0.18, 0, -0.05, cord, 0.03);
             p.Line(0.1, -0.18, 0, -0.05, cord, 0.03);
             p.Rect(-0.05, -0.25, 0.1, 0.07, Colors.White);

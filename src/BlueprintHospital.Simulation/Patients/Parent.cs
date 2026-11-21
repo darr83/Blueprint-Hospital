@@ -16,6 +16,9 @@ public enum ParentActivity
 
     /// <summary>Asleep on the fold-out bed beside their child's ward bed, at night.</summary>
     Sleeping,
+
+    /// <summary>In the parents' room: a cup of tea and a sit down, or waiting there while their child has a scan or an operation.</summary>
+    InParentsRoom,
 }
 
 /// <summary>
@@ -46,6 +49,12 @@ public sealed class Parent : Agent
 
     /// <summary>The fold-out bed they use on the ward, while they are sitting or sleeping on it.</summary>
     public Hospital.PlacedFurniture? FoldOutBed { get; set; }
+
+    /// <summary>When their break in the parents' room ends, while they are on one.</summary>
+    internal DateTime? BreakUntil { get; set; }
+
+    /// <summary>When they next feel like a break from the bedside.</summary>
+    internal DateTime? NextBreakAt { get; set; }
 
     /// <summary>Where they last set off for, so they don't keep starting the same walk.</summary>
     internal World.GridCoord? Heading { get; set; }

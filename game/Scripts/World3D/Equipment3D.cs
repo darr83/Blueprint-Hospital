@@ -30,6 +30,11 @@ public static partial class Furnish3D
             case "baby_changing_unit": ChangingUnit(b, w, d, h, colour); return true;
             case "parent_bed": ParentBed(b, w, d, h, colour); return true;
             case "toy_box": ToyBox(b, w, d, h, colour, seed); return true;
+            case "play_table": PlayTable(b, w, d, h, colour, seed); return true;
+            case "toy_shelf": Shelves(b, w, d, h, colour, seed, toys: true); return true;
+            case "games_shelf": Shelves(b, w, d, h, colour, seed, toys: false); return true;
+            case "play_mat": PlayMat(b, w, d, colour); return true;
+            case "tv_unit": TvUnit(b, w, d, h, colour); return true;
             case "breast_pump": BreastPump(b, glass, h, colour); return true;
             case "toilet_pan": Toilet(b, w, d, false); return true;
             case "accessible_wc": Toilet(b, w, d, true); return true;
@@ -267,6 +272,119 @@ public static partial class Furnish3D
         b.Ball(new Vector3(-w * 0.22f, h * 0.95f, d * 0.05f), new Vector3(w * 0.22f, w * 0.22f, w * 0.22f), toys[seed % 4]);
         Blk(b, w * 0.18f, 0, w * 0.2f, d * 0.3f, h * 0.8f, h * 0.3f, toys[(seed + 1) % 4]);
         b.Ball(new Vector3(w * 0.02f, h * 0.98f, -d * 0.12f), new Vector3(w * 0.16f, w * 0.18f, w * 0.14f), new Color("#C9925A"));
+    }
+
+    private static readonly Color[] ToyColours =
+    {
+        new("#FFD54F"), new("#4FC3F7"), new("#81C784"), new("#BA68C8"), new("#FF8A65"), new("#E57373"),
+    };
+
+    /// <summary>A low children's table on chunky legs, with paper, crayons and building blocks on top.</summary>
+    private static void PlayTable(MeshBatch b, float w, float d, float h, Color colour, int seed)
+    {
+        foreach (var (x, z) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        {
+            Blk(b, x * ((w / 2) - 0.08f), z * ((d / 2) - 0.08f), 0.1f, 0.1f, 0, h - H(3), colour.Darkened(0.15f));
+        }
+
+        Blk(b, 0, 0, w, d, h - H(3), H(3), colour);
+        Blk(b, -w * 0.2f, 0, w * 0.3f, d * 0.55f, h, H(0.5f), new Color("#FBFBF8"));
+        for (var i = 0; i < 4; i++)
+        {
+            Blk(b, w * (0.05f + (i * 0.06f)), -d * 0.15f, 0.04f, d * 0.3f, h, H(1), ToyColours[(seed + i) % ToyColours.Length]);
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            Blk(b, w * 0.35f, d * (0.2f - (i * 0.05f)), 0.12f, 0.12f, h + (i * H(2.2f)), H(2.2f), ToyColours[(seed + i + 2) % ToyColours.Length]);
+        }
+    }
+
+    /// <summary>Open shelves against the wall: coloured tubs of toys, or games boxes and books.</summary>
+    private static void Shelves(MeshBatch b, float w, float d, float h, Color colour, int seed, bool toys)
+    {
+        var back = -d / 2;
+        Blk(b, 0, back + 0.02f, w, 0.04f, 0, h, colour.Darkened(0.1f));
+        foreach (var x in new[] { -w / 2, w / 2 })
+        {
+            Blk(b, x - (Math.Sign(x) * 0.02f), 0, 0.04f, d, 0, h, colour);
+        }
+
+        const int Levels = 3;
+        for (var level = 0; level <= Levels; level++)
+        {
+            var y = level * (h / Levels);
+            Blk(b, 0, 0, w, d, Math.Min(y, h - H(1)), H(1), colour);
+            if (level == Levels)
+            {
+                break;
+            }
+
+            var n = Math.Max(2, (int)Math.Floor(w / 0.5f));
+            var step = (w - 0.1f) / n;
+            for (var i = 0; i < n; i++)
+            {
+                var x = (-w / 2) + 0.05f + (step * (i + 0.5f));
+                var c = ToyColours[(seed + i + (level * 2)) % ToyColours.Length];
+                if (toys)
+                {
+                    Blk(b, x, 0, step * 0.8f, d * 0.75f, y + H(1), (h / Levels) * 0.55f, c);
+                    if ((i + level) % 2 == 0)
+                    {
+                        b.Ball(new Vector3(x, y + H(1) + ((h / Levels) * 0.7f), 0), new Vector3(step * 0.35f, step * 0.35f, step * 0.35f), ToyColours[(seed + i + 3) % ToyColours.Length]);
+                    }
+                }
+                else
+                {
+                    for (var k = 0; k < 3; k++)
+                    {
+                        Blk(b, x + ((k - 1) * step * 0.25f), 0, step * 0.2f, d * 0.7f, y + H(1), (h / Levels) * (0.6f + (0.1f * ((seed + k + i) % 3))), ToyColours[(seed + i + k) % ToyColours.Length].Darkened(0.2f));
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>A soft play mat flat on the floor: coloured squares with a road round them.</summary>
+    private static void PlayMat(MeshBatch b, float w, float d, Color colour)
+    {
+        Blk(b, 0, 0, w, d, 0, H(1), colour);
+        const int Cols = 3, Rows = 2;
+        for (var i = 0; i < Cols; i++)
+        {
+            for (var j = 0; j < Rows; j++)
+            {
+                if ((i + j) % 2 == 0)
+                {
+                    Blk(b, (-w / 2) + (w * (i + 0.5f) / Cols), (-d / 2) + (d * (j + 0.5f) / Rows), (w / Cols) * 0.9f, (d / Rows) * 0.9f, H(1), H(0.3f), ToyColours[(i + (j * 2)) % ToyColours.Length].Lightened(0.25f));
+                }
+            }
+        }
+
+        foreach (var z in new[] { -d * 0.3f, d * 0.3f })
+        {
+            Blk(b, 0, z, w * 0.75f, 0.12f, H(1.3f), H(0.2f), new Color("#5D6770"));
+        }
+
+        foreach (var x in new[] { -w * 0.37f, w * 0.37f })
+        {
+            Blk(b, x, 0, 0.12f, d * 0.6f + 0.12f, H(1.3f), H(0.2f), new Color("#5D6770"));
+        }
+    }
+
+    /// <summary>A low cabinet with a television on top, and a games console and controllers on the shelf.</summary>
+    private static void TvUnit(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        var cabinet = h * 0.38f;
+        Blk(b, 0, 0, w, d, 0, cabinet, new Color("#E8E2D8"));
+        Blk(b, 0, d * 0.48f, w * 0.96f, 0.02f, cabinet * 0.45f, H(0.6f), new Color("#C9C1B4"));
+        Blk(b, w * 0.2f, d * 0.1f, w * 0.22f, d * 0.4f, cabinet * 0.1f, cabinet * 0.25f, new Color("#F2F4F6"));
+        Blk(b, 0, -d * 0.15f, 0.12f, 0.12f, cabinet, H(1), colour);
+        var screenH = h - cabinet - H(3);
+        Blk(b, 0, -d * 0.15f, w * 0.9f, 0.06f, cabinet + H(3), screenH, colour);
+        Blk(b, 0, -d * 0.15f + 0.031f, w * 0.85f, 0.005f, cabinet + H(4), screenH - H(2), new Color("#1F4F7F"));
+        Blk(b, -w * 0.3f, d * 0.3f, 0.14f, 0.08f, cabinet, H(1), new Color("#2B333C"));
+        Blk(b, w * 0.32f, d * 0.3f, 0.14f, 0.08f, cabinet, H(1), new Color("#D32F2F"));
     }
 
     private static void BreastPump(MeshBatch b, MeshBatch glass, float h, Color colour)

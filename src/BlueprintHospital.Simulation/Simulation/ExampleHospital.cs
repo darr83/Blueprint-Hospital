@@ -96,7 +96,7 @@ public static class ExampleHospital
         Corridor(sim, 0, 62, SouthY, 8, 10);            // central link to the front corridor
         Corridor(sim, 0, 6, 57, 94, 5);                 // front corridor
 
-        sim.BuildFittedWaitingRoom(new GridRect(52, 62, 28, 8), WallSide.North, "example_waiting_room", "Main waiting room");
+        sim.BuildFittedWaitingRoom(new GridRect(52, 62, 14, 8), WallSide.North, "example_waiting_room", "Main waiting room");
         BuildChildrensWaitingRoom(sim);
 
         // Lifts and stairs go through every floor, doors onto the spine.
@@ -197,11 +197,14 @@ public static class ExampleHospital
         new("outpatient_reception", 91, SouthY, 9, 10, WallSide.North),
 
         // Front row (4 m), doors onto the front corridor; the main waiting room sits in the middle.
-        new("fracture_clinic", 6, 62, 13, 8, WallSide.North),
-        new("medical_clinic", 19, 62, 8, 8, WallSide.North),
+        new("fracture_clinic", 6, 62, 7, 8, WallSide.North),
+        new("childrens_clinic", 13, 62, 7, 8, WallSide.North),
+        new("medical_clinic", 20, 62, 7, 8, WallSide.North),
         new("surgical_clinic", 27, 62, 8, 8, WallSide.North),
         new("public_toilets", 35, 62, 10, 8, WallSide.North),
         new("accessible_toilet", 45, 62, 7, 8, WallSide.North),
+        new("play_room", 66, 62, 7, 8, WallSide.North),
+        new("teen_room", 73, 62, 7, 8, WallSide.North),
         new("vending_point", 80, 62, 6, 8, WallSide.North),
         new("cleaning_room", 86, 62, 8, 8, WallSide.North),
         new("staff_toilet", 94, 62, 6, 6, WallSide.North),
@@ -244,8 +247,9 @@ public static class ExampleHospital
         new("neonatal_unit", 27, NorthRowY, 14, NorthRowDepth, WallSide.South),
         new("caesarean_theatre", 48, NorthRowY, 14, NorthRowDepth, WallSide.South),
         new("anaesthetic_room", 41, NorthRowY, 7, NorthRowDepth, WallSide.South, "Maternity anaesthetic room"),
-        new("delivery_room", 62, NorthRowY, 12, NorthRowDepth, WallSide.South, "Delivery room 1"),
-        new("delivery_room", 74, NorthRowY, 12, NorthRowDepth, WallSide.South, "Delivery room 2"),
+        new("delivery_room", 62, NorthRowY, 9, NorthRowDepth, WallSide.South, "Delivery room 1"),
+        new("delivery_room", 71, NorthRowY, 9, NorthRowDepth, WallSide.South, "Delivery room 2"),
+        new("parents_room", 80, NorthRowY, 6, NorthRowDepth, WallSide.South),
         new("ambulatory_care_unit", 86, NorthRowY, 14, NorthRowDepth, WallSide.South),
 
         // Middle row: clinics and tests.

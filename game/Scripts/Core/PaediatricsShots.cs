@@ -22,6 +22,7 @@ public partial class PaediatricsShots : Node
     private int _frame;
     private int _step;
     private HospitalScene? _hospital;
+    private bool _example;
 
     public static bool Begin()
     {
@@ -30,9 +31,20 @@ public partial class PaediatricsShots : Node
             if (arg.StartsWith("--paediatrics-shots=", StringComparison.Ordinal))
             {
                 GameManager.Instance.Settings.View3D = Array.IndexOf(OS.GetCmdlineUserArgs(), "--3d") >= 0;
-                var shots = new PaediatricsShots { Name = "PaediatricsShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--paediatrics-shots=".Length..] };
+                var example = Array.IndexOf(OS.GetCmdlineUserArgs(), "--example") >= 0;
+                var shots = new PaediatricsShots { Name = "PaediatricsShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--paediatrics-shots=".Length..], _example = example };
                 GameManager.Instance.AddChild(shots);
-                Callable.From(() => GameManager.Instance.StartNewGame("Children's Review General")).CallDeferred();
+                Callable.From(() =>
+                {
+                    if (example)
+                    {
+                        GameManager.Instance.LoadExampleHospital();
+                    }
+                    else
+                    {
+                        GameManager.Instance.StartNewGame("Children's Review General");
+                    }
+                }).CallDeferred();
                 return true;
             }
         }
@@ -49,7 +61,11 @@ public partial class PaediatricsShots : Node
             {
                 _hospital = h;
                 h.Session.Clock.SetSpeed(SimulationSpeed.Paused);
-                Build(h.Session.Simulation);
+                if (!_example)
+                {
+                    Build(h.Session.Simulation);
+                }
+
                 _frame = 0;
             }
 
@@ -63,6 +79,12 @@ public partial class PaediatricsShots : Node
 
         var h2 = _hospital;
         var sim = h2.Session.Simulation;
+        if (_example)
+        {
+            ExampleStep(h2, sim);
+            return;
+        }
+
         var ward = sim.Spaces.First(s => s.TemplateId == "childrens_ward");
         var hdu = sim.Spaces.First(s => s.TemplateId == "childrens_hdu");
         switch (_step)
@@ -103,6 +125,54 @@ public partial class PaediatricsShots : Node
                 break;
             case 6:
                 Save("6_picu");
+                GD.Print("[paediatrics] Done.");
+                GetTree().Quit(0);
+                return;
+        }
+
+        _step++;
+        _frame = 0;
+    }
+
+    /// <summary>Stage 4 shots in the example hospital: the play and teenage rooms, the parents' room and the children's clinic.</summary>
+    private void ExampleStep(HospitalScene h, HospitalSimulation sim)
+    {
+        var view3D = GameManager.Instance.Settings.View3D;
+        void Look(string template, int floor, double zoom3D, double zoom2D, double dx = 0)
+        {
+            h.ShowFloor(floor);
+            var r = Room(sim, template).Rect;
+            Focus(h, r.X + (r.Width / 2.0) + dx, r.Y + (r.Length / 2.0), (float)(view3D ? zoom3D : zoom2D));
+        }
+
+        switch (_step)
+        {
+            case 0:
+                h.Hud.Visible = false;
+                // Enough children to fill the cubicles, so some are left waiting and go to play.
+                foreach (var age in new[] { 4, 5, 7, 9, 13, 14, 3, 6, 8, 10, 12, 15, 4, 6, 9, 11, 13, 14, 5, 7 })
+                {
+                    sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration", age);
+                }
+
+                Run(h, () => sim.PlayVisits.Count(v => v.Playing) >= 2, TimeSpan.FromHours(6));
+                Look("play_room", 0, 1.9, 1.3, 3.5);
+                break;
+            case 1:
+                Save("7_play_and_teen_rooms");
+                Look("play_room", 0, 2.6, 1.9);
+                break;
+            case 2:
+                Save("8_play_room_close");
+                Run(h, () => sim.Parents.Any(p => p.Activity == ParentActivity.InParentsRoom && !p.IsMoving), TimeSpan.FromHours(12));
+                Look("parents_room", 2, 2.2, 1.6);
+                break;
+            case 3:
+                Save("9_parents_room");
+                Look("childrens_clinic", 0, 2.2, 1.6);
+                break;
+            case 4:
+                Save("10_childrens_clinic");
                 GD.Print("[paediatrics] Done.");
                 GetTree().Quit(0);
                 return;

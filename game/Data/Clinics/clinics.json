@@ -293,5 +293,28 @@
       "Placenta position check",
       "Scan for the baby's position"
     ]
+  },
+  {
+    "id": "childrens_clinic",
+    "appointment_minutes": 20,
+    "tariff": 180,
+    "clinician": "paediatrician",
+    "age_range": [
+      0,
+      15
+    ],
+    "reasons": [
+      "Asthma review",
+      "Eczema review",
+      "Food allergy review",
+      "Growth and weight check",
+      "Follow-up after a stay on the children's ward",
+      "Constipation",
+      "Bedwetting",
+      "Recurrent tummy pain",
+      "Diabetes review",
+      "Heart murmur check",
+      "Recurrent chest infections"
+    ]
   }
 ]

@@ -487,6 +487,26 @@ public static class FurnitureKit
                 ToyBox(p, w, d, colour, seed);
                 return true;
 
+            case "play_table":
+                PlayTable(p, w, d, colour, seed);
+                return true;
+
+            case "toy_shelf":
+                Shelf(p, w, d, colour, seed, toys: true);
+                return true;
+
+            case "games_shelf":
+                Shelf(p, w, d, colour, seed, toys: false);
+                return true;
+
+            case "play_mat":
+                PlayMat(p, w, d, colour);
+                return true;
+
+            case "tv_unit":
+                TvUnit(p, w, d, colour);
+                return true;
+
             default:
                 return false;
         }
@@ -817,6 +837,89 @@ public static class FurnitureKit
         p.Dot(l + (w * 0.3), t + (d * 0.45), Math.Min(w, d) * 0.16, toys[seed % 4]);
         p.Round(l + (w * 0.52), t + (d * 0.3), w * 0.22, d * 0.36, 0.04, toys[(seed + 1) % 4]);
         p.Dot(l + (w * 0.42), t + (d * 0.68), Math.Min(w, d) * 0.12, C("#C9925A"));
+    }
+
+    private static readonly Color[] Toys = { C("#FFD54F"), C("#4FC3F7"), C("#81C784"), C("#BA68C8"), C("#FF8A65"), C("#E57373") };
+
+    /// <summary>A low children's table with crayons, paper and a few building blocks on it.</summary>
+    public static void PlayTable(Pen p, double w, double d, Color colour, int seed)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Box(l, t, w, d, 0.16, colour);
+        p.Round(l + 0.08, t + 0.08, w - 0.16, d - 0.16, 0.12, Pen.Light(colour, 0.12f));
+        p.In(l + (w * 0.3), 0, 0.15, () => p.Round(-0.3, -0.4, 0.6, 0.8, 0.02, Paper, PaperEdge, 0.02));
+        p.Ellipse(l + (w * 0.3), 0.05, 0.14, 0.1, null, Toys[seed % Toys.Length], 0.03);
+        for (var i = 0; i < 4; i++)
+        {
+            var x = l + (w * 0.55) + (i * 0.1);
+            p.Line(x, t + (d * 0.3), x + 0.04, t + (d * 0.3) + 0.3, Toys[(seed + i) % Toys.Length], 0.05);
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            p.Box(l + w - 0.55 + ((i % 2) * 0.2), t + d - 0.55 + (i * 0.12), 0.2, 0.2, 0.02, Toys[(seed + i + 2) % Toys.Length], shadow: false);
+        }
+    }
+
+    /// <summary>Low shelves against the wall: tubs of toys (or games boxes and books) on each shelf.</summary>
+    public static void Shelf(Pen p, double w, double d, Color colour, int seed, bool toys)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Box(l, t, w, d, 0.04, colour);
+        p.Round(l + 0.05, t + 0.05, w - 0.1, d - 0.1, 0.03, Pen.Dark(colour, 0.12f));
+        var n = Math.Max(2, (int)Math.Floor(w / 0.55));
+        var step = (w - 0.2) / n;
+        for (var i = 0; i < n; i++)
+        {
+            var x = l + 0.1 + (i * step);
+            if (toys)
+            {
+                p.Round(x + 0.04, t + 0.1, step - 0.08, d - 0.2, 0.05, Toys[(seed + i) % Toys.Length], Pen.Outline(Toys[(seed + i) % Toys.Length]), 0.02);
+                p.Dot(x + (step / 2), t + (d / 2), Math.Min(step, d) * 0.18, Toys[(seed + i + 3) % Toys.Length]);
+            }
+            else
+            {
+                for (var b = 0; b < 3; b++)
+                {
+                    var spine = Toys[(seed + i + b) % Toys.Length].Darkened(0.15f);
+                    p.Rect(x + 0.04 + (b * (step - 0.08) / 3), t + 0.12, ((step - 0.08) / 3) - 0.02, d - 0.24, spine);
+                }
+            }
+        }
+    }
+
+    /// <summary>A soft play mat on the floor: coloured squares with a road running round it.</summary>
+    public static void PlayMat(Pen p, double w, double d, Color colour)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Round(l, t, w, d, 0.1, colour, Pen.Outline(colour), 0.02);
+        var cols = Math.Max(2, (int)Math.Round(w / 0.8));
+        var rows = Math.Max(2, (int)Math.Round(d / 0.8));
+        for (var i = 0; i < cols; i++)
+        {
+            for (var j = 0; j < rows; j++)
+            {
+                if ((i + j) % 2 == 0)
+                {
+                    p.Rect(l + 0.1 + (i * (w - 0.2) / cols), t + 0.1 + (j * (d - 0.2) / rows), (w - 0.2) / cols, (d - 0.2) / rows, Toys[(i + (j * 2)) % Toys.Length].Lightened(0.25f));
+                }
+            }
+        }
+
+        p.Round(l + 0.35, t + 0.35, w - 0.7, d - 0.7, 0.2, null, C("#5D6770"), 0.12);
+        p.Round(l + 0.35, t + 0.35, w - 0.7, d - 0.7, 0.2, null, Colors.White, 0.015);
+    }
+
+    /// <summary>A low TV cabinet with the television on top and a games console and two controllers.</summary>
+    public static void TvUnit(Pen p, double w, double d, Color colour)
+    {
+        var (l, t) = (-w / 2, -d / 2);
+        p.Box(l, t, w, d, 0.04, C("#E8E2D8"));
+        p.Round(l + (w * 0.1), t + 0.05, w * 0.8, d * 0.3, 0.03, colour, C("#11161A"), 0.03);
+        p.Line(l + (w * 0.15), t + 0.08, l + (w * 0.85), t + 0.08, C("#3F7FBF"), 0.03);
+        p.Round(l + (w * 0.4), t + (d * 0.5), w * 0.2, d * 0.25, 0.03, C("#F2F4F6"), C("#8A96A3"), 0.02);
+        p.Ellipse(l + (w * 0.22), t + (d * 0.68), 0.12, 0.08, C("#2B333C"));
+        p.Ellipse(l + (w * 0.78), t + (d * 0.68), 0.12, 0.08, C("#D32F2F"));
     }
 
     // ------------------------------------------------------------------ props

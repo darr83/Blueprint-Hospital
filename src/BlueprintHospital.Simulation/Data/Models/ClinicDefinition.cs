@@ -47,9 +47,9 @@ public sealed class ClinicDefinition : IDataRecord
             context.Error("age_range", "must be [youngest, oldest] between 0 and 110.");
         }
 
-        if (Clinician is not (StaffRole.Doctor or StaffRole.Midwife or StaffRole.Sonographer or StaffRole.Nurse))
+        if (Clinician is not (StaffRole.Doctor or StaffRole.Midwife or StaffRole.Sonographer or StaffRole.Nurse or StaffRole.Paediatrician))
         {
-            context.Error("clinician", "must be doctor, midwife, sonographer or nurse.");
+            context.Error("clinician", "must be doctor, midwife, sonographer, nurse or paediatrician.");
         }
 
         if (Reasons.Count == 0 && (Procedures.Count == 0 || ProcedureShare < 1))

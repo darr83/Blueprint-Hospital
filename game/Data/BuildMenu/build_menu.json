@@ -33,14 +33,14 @@
         { "id": "maternity", "label": "Maternity", "name": "Maternity", "department": "maternity", "colour": "#F48FB1", "glyph": "maternity",
           "items": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "anaesthetic_room", "theatre_recovery", "nurses_station", "doctors_office"] },
         { "id": "paediatrics", "label": "Children", "name": "Paediatrics", "department": "paediatrics", "colour": "#F4B400", "glyph": "teddy",
-          "items": ["childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu", "nurses_station", "doctors_office"] }
+          "items": ["childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu", "play_room", "teen_room", "parents_room", "childrens_clinic", "nurses_station", "doctors_office"] }
       ]
     },
     {
       "name": "Shared services",
       "icons": [
         { "id": "outpatients", "label": "Clinics", "name": "Outpatients", "department": "outpatients", "colour": "#00897B", "glyph": "clinics",
-          "items": ["outpatient_reception", "waiting_chairs", "medical_clinic", "surgical_clinic", "cardiology_clinic", "neurology_clinic", "gastro_clinic", "gynaecology_clinic", "gynae_exam_room", "fracture_clinic", "antenatal_clinic"] },
+          "items": ["outpatient_reception", "waiting_chairs", "medical_clinic", "surgical_clinic", "cardiology_clinic", "neurology_clinic", "gastro_clinic", "gynaecology_clinic", "gynae_exam_room", "fracture_clinic", "antenatal_clinic", "childrens_clinic"] },
         { "id": "radiology", "label": "Imaging", "name": "Radiology", "department": "radiology", "colour": "#90A4AE", "glyph": "imaging",
           "items": ["xray_room", "ct_scanner", "antenatal_scan_room"] },
         { "id": "theatres", "label": "Theatres", "name": "Operating Theatres", "department": "theatres", "colour": "#2E7D32", "glyph": "theatres",
