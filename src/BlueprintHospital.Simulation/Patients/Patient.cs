@@ -132,6 +132,12 @@ public sealed class Patient : Agent
 
     public required int Age { get; init; }
 
+    /// <summary>How happy they are, from 0 (miserable) to 1 (cheerful). Visits lift it a little; it drifts back to 0.6.</summary>
+    public double Happiness { get; set; } = 0.6;
+
+    /// <summary>How many visitors have come to see them on the ward.</summary>
+    public int VisitsReceived { get; set; }
+
     public required IReadOnlyList<string> PastHistory { get; init; }
 
     public required IReadOnlyList<string> RegularMedications { get; init; }

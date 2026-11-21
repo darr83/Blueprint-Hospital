@@ -61,10 +61,30 @@ public static class Decorations
     public static List<OverheadPiece> OverheadPieces { get; } = new();
 
     /// <summary>A wall piece drawn flat into a w × h pixel box (y down), for painting into a texture.</summary>
-    private static void DrawFlatWall(CanvasItem c, Wall kind, float w, float h) => DrawWall(c, kind, (u, v) => new Vector2(u * w, (1 - v) * h));
+    private static void DrawFlatWall(CanvasItem c, Wall kind, float w, float h, string? note = null) => DrawWall(c, kind, (u, v) => new Vector2(u * w, (1 - v) * h), note);
 
-    private static void AddWallPiece(GridRect r, WallSide side, double t0, double t1, Wall kind) =>
-        WallPieces.Add(new WallPiece(r, side, t0, t1, kind.ToString(), (c, w, h) => DrawFlatWall(c, kind, w, h)));
+    private static void AddWallPiece(GridRect r, WallSide side, double t0, double t1, Wall kind, string? note = null) =>
+        WallPieces.Add(new WallPiece(r, side, t0, t1, note is null ? kind.ToString() : $"{kind}:{note}", (c, w, h) => DrawFlatWall(c, kind, w, h, note)));
+
+    /// <summary>The ward's own visiting hours, for its "Visiting times" sign: "11 am to 8 pm every day".</summary>
+    private static string? VisitingNote(HospitalSimulation sim, CareSpace space)
+    {
+        if (!sim.HasVisiting(space))
+        {
+            return null;
+        }
+
+        static string Clock(int hour) => hour switch
+        {
+            0 or 24 => "midnight",
+            12 => "noon",
+            < 12 => $"{hour} am",
+            _ => $"{hour - 12} pm",
+        };
+
+        var hours = sim.VisitingHoursOf(space);
+        return $"{Clock(hours.FromHour)} to {Clock(hours.ToHour)} every day";
+    }
 
     private sealed record Recipe(Wall[] Walls, Floor[] Floors, (string Item, OnTop[] Things)[]? Tops = null);
 
@@ -465,12 +485,13 @@ public static class Decorations
                 var centre = run.Start + (run.Length / 2.0);
                 var (t0, t1) = (centre - (width / 2), centre + (width / 2));
                 var wallSide = side;
-                AddWallPiece(r, wallSide, t0, t1, kind);
+                var note = kind == Wall.VisitingTimes ? VisitingNote(sim, space) : null;
+                AddWallPiece(r, wallSide, t0, t1, kind, note);
                 props.Add((AfterWall(r, wallSide, t0, t1), c =>
                 {
                     if (Facing(r, wallSide))
                     {
-                        DrawWall(c, kind, (u, v) => WallPoint(r, wallSide, t0, t1, u, v));
+                        DrawWall(c, kind, (u, v) => WallPoint(r, wallSide, t0, t1, u, v), note);
                     }
                 }));
             }
@@ -792,7 +813,7 @@ public static class Decorations
         }
     }
 
-    private static void DrawWall(CanvasItem c, Wall kind, Frame f)
+    private static void DrawWall(CanvasItem c, Wall kind, Frame f, string? note = null)
     {
         var red = new Color("#E53935");
         var blue = new Color("#1F5FBF");
@@ -850,7 +871,7 @@ public static class Decorations
                 break;
 
             case Wall.VisitingTimes:
-                Sign(c, f, 0.52f, 0.84f, (w, h) => Signs.Notice(c, w, h, new Color("#1E88E5"), Pictogram.Chair, "Visiting times", "2 pm to 8 pm every day"));
+                Sign(c, f, 0.52f, 0.84f, (w, h) => Signs.Notice(c, w, h, new Color("#1E88E5"), Pictogram.Chair, "Visiting times", note ?? "2 pm to 8 pm every day"));
                 break;
 
             case Wall.Defibrillator:

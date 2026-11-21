@@ -22,6 +22,11 @@ public partial class RoomPanel : PanelContainer
     private readonly Button _move = new() { Text = "Move or resize", TooltipText = "Drag out the room again where you want it, at the size you want", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly Button _demolish = new() { Text = "Demolish", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly HBoxContainer _doorRow = new();
+    private readonly VBoxContainer _visiting = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly Label _visitFrom = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(58, 0) };
+    private readonly Label _visitTo = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(70, 0) };
+    private readonly Label _visitAtOnce = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(30, 0) };
+    private readonly Label _visitNote = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
     private readonly Dictionary<WallSide, Button> _doorButtons = new();
     private HospitalSimulation _sim = null!;
     private string? _roomId;
@@ -66,6 +71,8 @@ public partial class RoomPanel : PanelContainer
         column.AddChild(_info);
         _access.AddThemeConstantOverride("separation", 2);
         column.AddChild(_access);
+        BuildVisiting();
+        column.AddChild(_visiting);
 
         // Door: one button per wall. Moving the door turns the room's layout with it.
         _doorRow.AddThemeConstantOverride("separation", 4);
@@ -149,6 +156,81 @@ public partial class RoomPanel : PanelContainer
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";
         _move.Visible = room.Kind != CareSpaceKind.Corridor;
         RefreshDoors(room);
+        RefreshVisiting(room);
+    }
+
+    /// <summary>Visiting hours for a ward: from, to, and how many visitors may be at a bed at once.</summary>
+    private void BuildVisiting()
+    {
+        _visiting.AddThemeConstantOverride("separation", 4);
+        var heading = new Label { Text = "Visiting hours" };
+        heading.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _visiting.AddChild(heading);
+
+        var hours = new HBoxContainer();
+        hours.AddThemeConstantOverride("separation", 2);
+        hours.AddChild(Step("−", "Start visiting an hour earlier", h => h with { FromHour = h.FromHour - 1 }));
+        hours.AddChild(_visitFrom);
+        hours.AddChild(Step("+", "Start visiting an hour later", h => h with { FromHour = h.FromHour + 1 }));
+        var to = new Label { Text = "to", HorizontalAlignment = HorizontalAlignment.Center, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        to.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        hours.AddChild(to);
+        hours.AddChild(Step("−", "End visiting an hour earlier", h => h with { ToHour = h.ToHour - 1 }));
+        hours.AddChild(_visitTo);
+        hours.AddChild(Step("+", "End visiting an hour later", h => h with { ToHour = h.ToHour + 1 }));
+        _visiting.AddChild(hours);
+
+        var atOnce = new HBoxContainer();
+        atOnce.AddThemeConstantOverride("separation", 2);
+        var label = new Label { Text = "Visitors at a bed", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        label.AddThemeColorOverride("font_color", UiStyle.TextDark);
+        atOnce.AddChild(label);
+        atOnce.AddChild(Step("−", "Fewer visitors at a bed at a time", h => h with { AtOnce = h.AtOnce - 1 }));
+        atOnce.AddChild(_visitAtOnce);
+        atOnce.AddChild(Step("+", "More visitors at a bed at a time", h => h with { AtOnce = h.AtOnce + 1 }));
+        _visiting.AddChild(atOnce);
+
+        _visitNote.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _visiting.AddChild(_visitNote);
+        foreach (var l in new[] { _visitFrom, _visitTo, _visitAtOnce })
+        {
+            l.AddThemeColorOverride("font_color", UiStyle.TextDark);
+        }
+    }
+
+    private Button Step(string text, string tip, Func<VisitingHours, VisitingHours> change)
+    {
+        var button = new Button { Text = text, TooltipText = tip, FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(30, 28) };
+        button.Pressed += () =>
+        {
+            if (_roomId is null || _sim.FindSpace(_roomId) is not { } room || !_sim.HasVisiting(room))
+            {
+                return;
+            }
+
+            var next = change(_sim.VisitingHoursOf(room));
+            _sim.SetVisitingHours(room.Id, next.FromHour, next.ToHour, next.AtOnce);
+            RefreshVisiting(room);
+        };
+        return button;
+    }
+
+    private void RefreshVisiting(CareSpace room)
+    {
+        _visiting.Visible = _sim.HasVisiting(room);
+        if (!_visiting.Visible)
+        {
+            return;
+        }
+
+        var hours = _sim.VisitingHoursOf(room);
+        _visitFrom.Text = $"{hours.FromHour:00}:00";
+        _visitTo.Text = hours.ToHour == 24 ? "midnight" : $"{hours.ToHour:00}:00";
+        _visitAtOnce.Text = hours.AtOnce.ToString();
+        var here = _sim.VisitorsOnWard(room).Count();
+        var open = hours.IsOpenAt(_sim.Now) ? $"Open now · {here} visitor{(here == 1 ? string.Empty : "s")} on the ward" : $"Closed now · {here} visitor{(here == 1 ? string.Empty : "s")} on the ward";
+        var partner = _sim.IsMaternityWard(room) ? "\nPartners can visit at any time." : string.Empty;
+        _visitNote.Text = open + partner;
     }
 
     /// <summary>Lights the wall the door is on; the others say what moving it there would cost, or why it can't go there.</summary>

@@ -96,6 +96,15 @@ public sealed partial class HospitalSimulation
             Add(parent);
         }
 
+        foreach (var visitor in _visitors)
+        {
+            Add(visitor);
+            if (visitor.Spot is { } spot && visitor != except && visitor.Activity is VisitorActivity.Away or VisitorActivity.Visiting)
+            {
+                taken.Add(spot);
+            }
+        }
+
         foreach (var trip in _trips.Values)
         {
             if (trip.Table is { } table && trip.Person != except)

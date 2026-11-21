@@ -77,6 +77,11 @@ public partial class Agents3D : Node3D
             present.Add(parent);
         }
 
+        foreach (var visitor in sim.Visitors)
+        {
+            present.Add(visitor);
+        }
+
         foreach (var a in sim.Ambulances)
         {
             present.Add(a);
@@ -237,6 +242,7 @@ public partial class Agents3D : Node3D
                 StaffMember m => Looks.Staff(m),
                 Outpatient o => Looks.Outpatient(o, sim.FindAppointment(o.AppointmentId)),
                 Parent mumOrDad => Looks.Parent(mumOrDad, sim.FindPatient(mumOrDad.ChildId)),
+                Visitor visitor => Looks.Visitor(visitor, sim.FindPatient(visitor.PatientId)),
                 _ => null,
             };
             if (look is null)
