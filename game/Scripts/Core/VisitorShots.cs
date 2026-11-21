@@ -89,29 +89,25 @@ public partial class VisitorShots : Node
                 hs.Hud.Visible = false;
                 hs.SetMode(GameMode.Play);
                 hs.Hud.HideRightPanels();
-                var icu = sim.Wards.First(w => sim.UnitOf(w) == Simulation.Data.Models.WardUnit.IntensiveCare);
-                Run(hs, () => sim.VisitorsOnWard(icu).Any(v => v.Activity == VisitorActivity.Visiting), TimeSpan.FromHours(24));
-                Look(hs, icu, view3D ? 2.2 : 1.5);
-                break;
-            case 4:
-                Save("4_icu_visitors");
                 var cafe = sim.SpacesOfKind(CareSpaceKind.Cafeteria).First();
                 Run(hs, () => sim.RefreshmentTrips.Count(t => t.Person is Visitor or Simulation.Staff.StaffMember) >= 2 && sim.RefreshmentTrips.Count >= 4, TimeSpan.FromHours(6));
                 Look(hs, cafe, view3D ? 2.0 : 1.4);
                 break;
-            case 5:
-                Save("5_cafe");
-                var waiting = sim.MainWaitingRoom ?? sim.SpacesOfKind(CareSpaceKind.Waiting).First();
+            case 4:
+                Save("4_cafe");
                 foreach (var _ in Enumerable.Range(0, 30))
                 {
                     sim.SpawnPatient(ArrivalMethod.WalkIn, "simple_laceration");
                 }
 
-                Run(hs, () => sim.Strolls.Count >= 2, TimeSpan.FromHours(4));
-                Look(hs, waiting, view3D ? 1.6 : 1.0);
+                Run(hs, () => sim.Strolls.Any(s => s.Person is Patient && s.Stage == StrollStage.Pausing && !s.FromBed), TimeSpan.FromHours(4));
+                var walker = sim.Strolls.FirstOrDefault(s => s.Person is Patient && !s.FromBed)?.Person;
+                var waiting = sim.MainWaitingRoom ?? sim.SpacesOfKind(CareSpaceKind.Waiting).First();
+                hs.ShowFloor(0);
+                hs.Camera.SnapTo(walker is null ? IsoDraw.ToScreen(waiting.Rect.X + (waiting.Rect.Width / 2.0), waiting.Rect.Y + (waiting.Rect.Length / 2.0)) : IsoDraw.ToScreen(walker.X, walker.Y), view3D ? 1.7f : 1.1f);
                 break;
-            case 6:
-                Save("6_ae_waiting_and_walks");
+            case 5:
+                Save("5_ae_waiting_and_a_walk");
                 GD.Print("[visitors] Done.");
                 GetTree().Quit(0);
                 return;

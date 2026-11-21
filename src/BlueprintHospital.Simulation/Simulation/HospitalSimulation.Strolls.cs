@@ -63,7 +63,7 @@ internal sealed class Walkabout
 public sealed partial class HospitalSimulation
 {
     /// <summary>A waiting patient thinks about a walk once they have waited this long.</summary>
-    public static readonly TimeSpan StrollAfterWaiting = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan StrollAfterWaiting = TimeSpan.FromMinutes(20);
 
     /// <summary>On average an eligible waiting patient gets up for a walk about once in this many minutes.</summary>
     private const double StrollEveryMinutes = 45;
@@ -109,7 +109,7 @@ public sealed partial class HospitalSimulation
         {
             if (StrollRandom.Chance(chance))
             {
-                StartStroll(patient, patient.Seat!.Value, fromBed: false);
+                StartStroll(patient, patient.Seat ?? patient.Tile, fromBed: false);
             }
         }
 
@@ -134,12 +134,12 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    /// <summary>A walking A&amp;E patient sitting in the waiting area (not Red) who has waited a good while.</summary>
+    /// <summary>A walking A&amp;E patient waiting (on a chair, or standing when the chairs are full), not Red, who has waited a good while.</summary>
     private bool CanStroll(Patient p) =>
         p.Stage is PatientStage.WaitingForTriage or PatientStage.WaitingForSpace
         && p.Triage != TriageCategory.Red
         && p.Mobility == Mobility.Walking
-        && p.Seat is { } seat && p.Tile == seat && !p.IsMoving
+        && (p.Seat is not { } seat || p.Tile == seat) && !p.IsMoving
         && p.BusyWithTaskId is null && p.CareSpaceId is null && p.PendingMove is null
         && Now - p.QueuedSince >= StrollAfterWaiting
         && !Away(p) && !_strolls.ContainsKey(p) && !StrolledLately(p);
