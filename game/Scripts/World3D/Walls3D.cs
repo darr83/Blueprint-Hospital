@@ -68,6 +68,20 @@ public partial class Walls3D : Node3D
 
     public void Initialise(View3D view) => _view = view;
 
+    private static readonly Color Pane = new("#BFE3F2", 0.38f);
+
+    /// <summary>One tile of glass front: a low wall, frame rails, and a pane up to a header (the wall posts between tiles are the mullions).</summary>
+    private static void GlassFront(MeshBatch walls, MeshBatch panes, int x, int y, bool horizontal, float t, float h)
+    {
+        var (gx, gy, gw, gl) = horizontal ? ((double)x, y - (t / 2.0), 1.0, (double)t) : (x - (t / 2.0), (double)y, (double)t, 1.0);
+        var sill = h * 0.3f;
+        walls.Block(gx, gy, gw, gl, sill, WallFace);
+        walls.Block(gx, gy, gw, gl, h * 0.12f, WallFace, h * 0.88f);
+        walls.Block(gx - (horizontal ? 0 : 0.01), gy - (horizontal ? 0.01 : 0), gw + (horizontal ? 0 : 0.02), gl + (horizontal ? 0.02 : 0), h * 0.025f, FrameFace, sill);
+        walls.Block(gx - (horizontal ? 0 : 0.01), gy - (horizontal ? 0.01 : 0), gw + (horizontal ? 0 : 0.02), gl + (horizontal ? 0.02 : 0), h * 0.02f, FrameFace, h * 0.86f);
+        panes.Block(gx + (horizontal ? 0 : t * 0.4), gy + (horizontal ? t * 0.4 : 0), horizontal ? 1 : t * 0.2, horizontal ? t * 0.2 : 1, h * 0.58f, Pane, sill);
+    }
+
     public void Rebuild()
     {
         foreach (var child in GetChildren())
@@ -84,8 +98,31 @@ public partial class Walls3D : Node3D
 
         var walls = new MeshBatch { Kind = SurfaceKind.Paint };
         var points = new HashSet<(int X, int Y)>();
+
+        // Room fronts: a panel in the department's colour either side of each door, glass along the rest
+        // (low walls in the cutaway keep plain fronts).
+        var fronts = Cutaway ? new RoomFronts.Fronts() : RoomFronts.Of(_view.Simulation, world.ViewSpaces);
+        var panes = new MeshBatch { Kind = SurfaceKind.Glaze };
         foreach (var (x, y, horizontal) in world.WallEdges)
         {
+            if (fronts.Glass.ContainsKey((x, y, horizontal)))
+            {
+                GlassFront(walls, panes, x, y, horizontal, t, h);
+                points.Add((x, y));
+                points.Add(horizontal ? (x + 1, y) : (x, y + 1));
+                continue;
+            }
+
+            if (fronts.Panels.TryGetValue((x, y, horizontal), out var panel))
+            {
+                // A thin coloured facing on the corridor side, above the skirting.
+                var off = (t / 2) + 0.012;
+                var centre = horizontal
+                    ? new Vector3(x + 0.5f, skirt + ((h - skirt) / 2), (float)(y + (panel.OutY * off)))
+                    : new Vector3((float)(x + (panel.OutX * off)), skirt + ((h - skirt) / 2), y + 0.5f);
+                walls.Box(centre, horizontal ? new Vector3(1.0f, h - skirt, 0.02f) : new Vector3(0.02f, h - skirt, 1.0f), panel.Colour);
+            }
+
             if (horizontal)
             {
                 walls.Block(x, y - (t / 2), 1, t, h, WallFace);
@@ -141,6 +178,10 @@ public partial class Walls3D : Node3D
         }
 
         walls.AddTo(this);
+        if (panes.AddTo(this, alpha: true, shadow: false) is { } glass)
+        {
+            glass.Name = "Windows";
+        }
 
         if (Cutaway)
         {
