@@ -1003,6 +1003,11 @@ public partial class MainHUD : CanvasLayer
                 text += $" · {weather.Brief()}";
             }
 
+            if (sim.EventsNow.FirstOrDefault(d => d.Event.Show) is { } happening)
+            {
+                text += $" · {happening.Event.Name}";
+            }
+
             var flu = sim.Seasons!.Stage("flu", now);
             if (flu != WaveStage.None)
             {

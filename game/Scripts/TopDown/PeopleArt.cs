@@ -294,7 +294,20 @@ public static class PeopleArt
         p.Circle(0, 0, r, skin, Pen.Outline(skin), 0.03);
 
         // Hair on top: everything but the face at the front.
-        if (look.Cap is { } cap)
+        if (look.PoliceHat)
+        {
+            // A peaked cap from above: the black crown in a chequered ring, the peak to the front.
+            p.Circle(0, r * 0.05, r * 1.12, Grey(new Color("#E9ECEF"), grey));
+            for (var i = 0; i < 8; i++)
+            {
+                var a = (i / 8.0) * Math.PI * 2;
+                p.Circle(Math.Sin(a) * r * 1.02, (r * 0.05) + (Math.Cos(a) * r * 1.02), r * 0.16, Grey(new Color("#15181C"), grey));
+            }
+
+            p.Circle(0, r * 0.05, r * 0.92, Grey(new Color("#15181C"), grey));
+            p.Ellipse(0, -r * 0.95, r * 0.7, r * 0.28, Grey(new Color("#0B0C0E"), grey));
+        }
+        else if (look.Cap is { } cap)
         {
             p.Circle(0, r * 0.1, r * 0.98, Grey(cap, grey));
         }

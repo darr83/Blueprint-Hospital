@@ -513,6 +513,22 @@ public partial class Person3D : Node3D
             // A theatre cap: a soft dome over the hair.
             b.Ball(head + new Vector3(0, r * 0.38f, -r * 0.05f) + back * 0, new Vector3(r * 2.2f, r * 1.6f, r * 2.2f), c);
         }
+
+        if (look.PoliceHat)
+        {
+            // A peaked cap: chequered band, flat black top and a shiny peak over the eyes.
+            var black = new Color("#15181C");
+            var band = head + new Vector3(0, r * 0.62f, -r * 0.04f);
+            b.Cylinder(band, r * 1.1f, r * 0.34f, r * 1.12f, new Color("#E9ECEF"));
+            for (var i = 0; i < 8; i++)
+            {
+                var a = (i / 8f) * Mathf.Tau;
+                b.Box(band + new Vector3(Mathf.Sin(a) * r * 1.11f, 0, Mathf.Cos(a) * r * 1.13f), new Vector3(r * 0.36f, r * 0.34f, r * 0.36f), Basis.FromEuler(new Vector3(0, a, 0)), black);
+            }
+
+            b.Cylinder(head + new Vector3(0, r * 0.98f, -r * 0.06f), r * 1.28f, r * 0.42f, r * 1.3f, black);
+            b.Box(head + new Vector3(0, r * 0.5f, r * 1.05f), new Vector3(r * 1.5f, r * 0.08f, r * 0.7f), Basis.FromEuler(new Vector3(0.25f, 0, 0)), new Color("#0B0C0E"));
+        }
     }
 
     private Node3D Arm(int side, float x, float y, float length, float radius, Color cloth, Color? sleeve, Color skin, Color hand)

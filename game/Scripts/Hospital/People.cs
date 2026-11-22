@@ -171,6 +171,9 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
 
     public bool HiVis { get; init; }
 
+    /// <summary>A police officer's black peaked cap with the black-and-white chequered band.</summary>
+    public bool PoliceHat { get; init; }
+
     public bool Radio { get; init; }
 
     /// <summary>The hair style actually drawn.</summary>

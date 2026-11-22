@@ -24,6 +24,9 @@ public sealed class GameSettings
     /// </summary>
     public bool AutoStaffNewRooms { get; set; }
 
+    /// <summary>Christmas trees, Halloween pumpkins and Easter bunting go up by themselves at the right time of year (games with seasons).</summary>
+    public bool SeasonalDecorations { get; set; } = true;
+
     /// <summary>Scale applied to the whole interface, for readability on large or small screens.</summary>
     public float UiScale { get; set; } = 1.0f;
 
@@ -61,6 +64,7 @@ public sealed class GameSettings
         settings.EdgeScrolling = (bool)config.GetValue("camera", "edge_scrolling", settings.EdgeScrolling);
         settings.ShowGridByDefault = (bool)config.GetValue("gameplay", "show_grid", settings.ShowGridByDefault);
         settings.AutoStaffNewRooms = (bool)config.GetValue("gameplay", "auto_staff_new_rooms", settings.AutoStaffNewRooms);
+        settings.SeasonalDecorations = (bool)config.GetValue("gameplay", "seasonal_decorations", settings.SeasonalDecorations);
         return settings;
     }
 
@@ -77,6 +81,7 @@ public sealed class GameSettings
         config.SetValue("camera", "edge_scrolling", EdgeScrolling);
         config.SetValue("gameplay", "show_grid", ShowGridByDefault);
         config.SetValue("gameplay", "auto_staff_new_rooms", AutoStaffNewRooms);
+        config.SetValue("gameplay", "seasonal_decorations", SeasonalDecorations);
         return config.Save(FilePath);
     }
 

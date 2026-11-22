@@ -23,6 +23,7 @@ public sealed class GameDatabase
     public const string EmergenciesFolder = "Emergencies";
     public const string LevelsFolder = "Levels";
     public const string SeasonsFolder = "Seasons";
+    public const string EventsFolder = "Events";
 
     private GameDatabase()
     {
@@ -60,6 +61,9 @@ public sealed class GameDatabase
     /// <summary>How the year changes who comes in (by month, and the flu and RSV waves). Empty if the data has none.</summary>
     public IReadOnlyDictionary<string, SeasonProfile> Seasons { get; private init; } = new Dictionary<string, SeasonProfile>();
 
+    /// <summary>The days in the year that change A&amp;E (New Year's Eve, bank holidays, big matches). Empty if the data has none.</summary>
+    public IReadOnlyDictionary<string, CalendarEventDefinition> CalendarEvents { get; private init; } = new Dictionary<string, CalendarEventDefinition>();
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -85,6 +89,7 @@ public sealed class GameDatabase
             Emergencies = RecordLoader.LoadFolder<InpatientEmergencyDefinition>(source, EmergenciesFolder, errors),
             Levels = RecordLoader.LoadFolder<LevelDefinition>(source, LevelsFolder, errors).Values.OrderBy(l => l.Number).ToList(),
             Seasons = RecordLoader.LoadFolder<SeasonProfile>(source, SeasonsFolder, errors),
+            CalendarEvents = RecordLoader.LoadFolder<CalendarEventDefinition>(source, EventsFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);
@@ -117,6 +122,7 @@ public sealed class GameDatabase
 
         CheckLevels(errors);
         CheckSeasons(errors);
+        CheckCalendarEvents(errors);
 
         foreach (var template in RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Clinic && !Clinics.ContainsKey(t.Id)))
         {
@@ -254,6 +260,17 @@ public sealed class GameDatabase
             foreach (var id in named)
             {
                 errors.Add(new DataValidationError($"{SeasonsFolder}/", profile.Id, "condition_months", $"refers to unknown condition '{id}'."));
+            }
+        }
+    }
+
+    private void CheckCalendarEvents(List<DataValidationError> errors)
+    {
+        foreach (var e in CalendarEvents.Values)
+        {
+            foreach (var id in e.Conditions.Keys.Concat(e.Police.Keys).Where(id => !Conditions.ContainsKey(id)).Distinct())
+            {
+                errors.Add(new DataValidationError($"{EventsFolder}/", e.Id, "conditions", $"refers to unknown condition '{id}'."));
             }
         }
     }

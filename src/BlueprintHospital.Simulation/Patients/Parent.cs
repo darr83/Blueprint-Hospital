@@ -23,7 +23,8 @@ public enum ParentActivity
 
 /// <summary>
 /// A mum or dad who comes in with a child (under 16), stays beside them through A&amp;E and on the ward,
-/// sleeps on the fold-out bed beside their bed at night, and goes home with them.
+/// sleeps on the fold-out bed beside their bed at night, and goes home with them. Also a police officer
+/// who brings someone in (<see cref="Police"/>): they stay beside them until they leave A&amp;E.
 /// </summary>
 public sealed class Parent : Agent
 {
@@ -42,8 +43,14 @@ public sealed class Parent : Agent
 
     public required int Age { get; init; }
 
-    /// <summary>"Mum" or "Dad".</summary>
-    public string Relation => Sex == Sex.Female ? "Mum" : "Dad";
+    /// <summary>
+    /// A police officer who brought the patient in and stays with them in A&amp;E, instead of a parent
+    /// (their first name is then "PC").
+    /// </summary>
+    public bool Police { get; init; }
+
+    /// <summary>"Mum", "Dad" or "The police officer".</summary>
+    public string Relation => Police ? "The police officer" : Sex == Sex.Female ? "Mum" : "Dad";
 
     public ParentActivity Activity { get; set; } = ParentActivity.WithChild;
 

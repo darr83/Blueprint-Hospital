@@ -61,6 +61,7 @@ public sealed partial class HospitalSimulation
         var profile = Database.Seasons.Values.OrderBy(p => p.Id, StringComparer.Ordinal).FirstOrDefault();
         _seasonCalendar = enabled && profile is not null ? new SeasonCalendar(profile, seed) : null;
         _weather = _seasonCalendar is null ? null : new WeatherCalendar(_seasonCalendar.Profile, seed);
+        SetUpEvents(seed);
     }
 
     /// <summary>How much commoner an illness is today than its usual prevalence.</summary>
@@ -77,7 +78,7 @@ public sealed partial class HospitalSimulation
             weight *= effect.Conditions.GetValueOrDefault(condition.Id, 1);
         }
 
-        return weight;
+        return weight * EventConditionWeight(condition.Id, date);
     }
 
     /// <summary>The weather on a day, if this game has seasons (and so weather).</summary>
@@ -145,7 +146,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>How many people come to A&amp;E today compared with an average day (1 without seasons).</summary>
     public double SeasonalVolume(DateTime date) =>
-        SeasonsActive ? WeatherEffectsOn(date).Aggregate(_seasonCalendar!.Volume(date), (v, e) => v * e.Volume) : 1;
+        SeasonsActive ? WeatherEffectsOn(date).Aggregate(_seasonCalendar!.Volume(date), (v, e) => v * e.Volume) * EventVolumeAt(date) : 1;
 
     /// <summary>The share of A&amp;E patients who need a bed (admitted or operated on) on this day, from the season's mix of illnesses.</summary>
     public double ExpectedBedShare(DateTime date)
@@ -199,7 +200,14 @@ public sealed partial class HospitalSimulation
                 }
             }
 
-            list.Add(new DayOutlook(date.Date, SeasonCalendar.SeasonOf(date), SeasonalVolume(date) * weekday / weekdayAverage, ExpectedBedShare(date), notes) { Weather = WeatherOn(date) });
+            if (CalendarEventsActive)
+            {
+                notes.InsertRange(0, _eventCalendar!.On(date.Date).Where(d => d.Event.Show).Select(d => d.Event.Name).Distinct());
+            }
+
+            // Events count for the hours they are on (New Year's Eve for its evening), not just at midday.
+            var volume = SeasonalVolume(date) / EventVolumeAt(date) * EventDayVolume(date);
+            list.Add(new DayOutlook(date.Date, SeasonCalendar.SeasonOf(date), volume * weekday / weekdayAverage, ExpectedBedShare(date), notes) { Weather = WeatherOn(date) });
         }
 
         return list;

@@ -100,6 +100,8 @@
  "assess_croup": "Assessment: child with barking cough.",
  "assess_bronchiolitis": "Assessment: baby with breathing difficulty.",
  "assess_febrile_convulsion": "Assessment: child fitting with a high temperature.",
+ "assess_alcohol_intoxication": "Assessment: intoxicated, vomiting, maintaining own airway.",
+ "assess_nasal_fracture": "Assessment: assaulted, facial injury, nosebleed.",
  "assess_gastro_oesophageal_reflux": "Assessment: chest pain, query indigestion.",
  "assess_gastroenteritis": "Assessment: vomiting and diarrhoea, dehydrated.",
  "assess_upper_gi_bleed": "Assessment: vomiting blood, potential G I bleed.",
