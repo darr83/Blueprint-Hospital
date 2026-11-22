@@ -4,6 +4,7 @@ using System.Linq;
 using BlueprintHospital.Core;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Data;
+using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
 using BlueprintHospital.Simulation.World;
 using Godot;
@@ -114,6 +115,15 @@ public partial class MainHUD : CanvasLayer
 
     public FinancePanel Finances { get; } = new() { Name = "Finances", Visible = false };
 
+    /// <summary>The Calendar (K): the season, what is going round, the week ahead and the year at a glance.</summary>
+    public CalendarPanel Calendar { get; } = new() { Name = "Calendar", Visible = false };
+
+    /// <summary>The top bar's season pill (season, and flu when it is about); opens the Calendar.</summary>
+    public Button SeasonPill { get; } = new() { Name = "SeasonPill", FocusMode = Control.FocusModeEnum.None };
+
+    /// <summary>The top bar's hospital pressure badge (1 steady to 4 critical); opens the Calendar.</summary>
+    public Button PressureBadge { get; } = new() { Name = "PressureBadge", FocusMode = Control.FocusModeEnum.None };
+
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
     /// <summary>Be A Doctor: the doctors on shift, to pick one to play.</summary>
@@ -159,7 +169,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors, Calendar };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -170,7 +180,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Calendar.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = false;
         RoomInfo.Close();
         Decorate.Close();
         ItemInfo.Close();
@@ -182,6 +192,18 @@ public partial class MainHUD : CanvasLayer
         var show = !Finances.Visible;
         HideRightPanels();
         Finances.Visible = show;
+    }
+
+    /// <summary>Opens the Calendar, or closes it.</summary>
+    public void ToggleCalendar()
+    {
+        var show = !Calendar.Visible;
+        HideRightPanels();
+        Calendar.Visible = show;
+        if (show)
+        {
+            Calendar.Refresh();
+        }
     }
 
     /// <summary>Opens the clinic calendars, or closes them.</summary>
@@ -336,6 +358,9 @@ public partial class MainHUD : CanvasLayer
         Finances.Initialise(sim);
         DockRight(Finances, 452);
         root.AddChild(Finances);
+        Calendar.Initialise(sim);
+        DockRight(Calendar, 520);
+        root.AddChild(Calendar);
         Recruitment.Initialise(sim);
         DockRight(Recruitment, 440);
         root.AddChild(Recruitment);
@@ -542,6 +567,17 @@ public partial class MainHUD : CanvasLayer
         if (_session.Simulation.IsCareer)
         {
             row.AddChild(Level);
+        }
+
+        // The season and the pressure badge: both open the Calendar (K).
+        foreach (var pill in new[] { SeasonPill, PressureBadge })
+        {
+            pill.ThemeTypeVariation = UiStyle.Secondary;
+            pill.CustomMinimumSize = new Vector2(0, 40);
+            pill.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            pill.AddThemeFontSizeOverride("font_size", 14);
+            pill.Pressed += ToggleCalendar;
+            row.AddChild(pill);
         }
 
         // The latest notification fills the gap; hovering drops down the last five.
@@ -951,6 +987,39 @@ public partial class MainHUD : CanvasLayer
         var now = _session.Clock.Now;
         _dateLabel.Text = now.ToString("dddd d MMMM yyyy");
         _timeLabel.Text = now.ToString("HH:mm");
+        RefreshSeason();
+    }
+
+    private void RefreshSeason()
+    {
+        var sim = _session.Simulation;
+        var now = sim.Now;
+        var text = SeasonCalendar.Name(SeasonCalendar.SeasonOf(now));
+        var tip = "The season. Click for the Calendar (K)";
+        if (sim.SeasonsActive)
+        {
+            var flu = sim.Seasons!.Stage("flu", now);
+            if (flu != WaveStage.None)
+            {
+                text += $" · Flu {flu.ToString().ToLowerInvariant()}";
+            }
+
+            tip = "The season and what's going round. Click for the week ahead and the year (K)";
+        }
+
+        SeasonPill.Text = text;
+        SeasonPill.TooltipText = tip;
+
+        var pressure = sim.Pressure;
+        PressureBadge.Text = $"Pressure {pressure.Level}";
+        PressureBadge.TooltipText = $"Hospital pressure {pressure.Level} of 4: {pressure.Name}."
+            + (pressure.Reasons.Count == 0 ? " Beds free and A&E flowing." : "\n" + string.Join("\n", pressure.Reasons))
+            + "\nClick for the Calendar (K)";
+        var colour = new Color(CalendarPanel.PressureHex(pressure.Level));
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
+        {
+            PressureBadge.AddThemeColorOverride(state, colour);
+        }
     }
 
     private static string Describe(TileKind kind) => kind switch

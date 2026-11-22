@@ -22,6 +22,7 @@ public sealed class GameDatabase
     public const string ClinicsFolder = "Clinics";
     public const string EmergenciesFolder = "Emergencies";
     public const string LevelsFolder = "Levels";
+    public const string SeasonsFolder = "Seasons";
 
     private GameDatabase()
     {
@@ -56,6 +57,9 @@ public sealed class GameDatabase
     /// <summary>Career levels, lowest first. Empty if the data has none (then only Sandbox games can be played).</summary>
     public IReadOnlyList<LevelDefinition> Levels { get; private init; } = Array.Empty<LevelDefinition>();
 
+    /// <summary>How the year changes who comes in (by month, and the flu and RSV waves). Empty if the data has none.</summary>
+    public IReadOnlyDictionary<string, SeasonProfile> Seasons { get; private init; } = new Dictionary<string, SeasonProfile>();
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -80,6 +84,7 @@ public sealed class GameDatabase
             Clinics = RecordLoader.LoadFolder<ClinicDefinition>(source, ClinicsFolder, errors),
             Emergencies = RecordLoader.LoadFolder<InpatientEmergencyDefinition>(source, EmergenciesFolder, errors),
             Levels = RecordLoader.LoadFolder<LevelDefinition>(source, LevelsFolder, errors).Values.OrderBy(l => l.Number).ToList(),
+            Seasons = RecordLoader.LoadFolder<SeasonProfile>(source, SeasonsFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);
@@ -111,6 +116,7 @@ public sealed class GameDatabase
         }
 
         CheckLevels(errors);
+        CheckSeasons(errors);
 
         foreach (var template in RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Clinic && !Clinics.ContainsKey(t.Id)))
         {
@@ -236,6 +242,21 @@ public sealed class GameDatabase
     };
 
     /// <summary>Levels are numbered 1, 2, 3... and only refer to rooms and departments that exist.</summary>
+    private void CheckSeasons(List<DataValidationError> errors)
+    {
+        foreach (var profile in Seasons.Values)
+        {
+            var named = profile.ConditionMonths.Keys
+                .Concat(profile.Waves.SelectMany(w => w.Conditions.Keys))
+                .Where(id => !Conditions.ContainsKey(id))
+                .Distinct();
+            foreach (var id in named)
+            {
+                errors.Add(new DataValidationError($"{SeasonsFolder}/", profile.Id, "condition_months", $"refers to unknown condition '{id}'."));
+            }
+        }
+    }
+
     private void CheckLevels(List<DataValidationError> errors)
     {
         for (var i = 0; i < Levels.Count; i++)

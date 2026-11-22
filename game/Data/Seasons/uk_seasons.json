@@ -1,0 +1,667 @@
+// How the time of year changes who comes to A&E. months: January first; volume = how busy compared with an average month.
+// condition_months: how much commoner each illness is, January to December (1 = usual; illnesses not listed are the same all year).
+// waves: outbreaks that start on a random day between earliest_start and latest_start each year, rise to a peak over rise_days
+// and die away over fall_days. conditions = how much commoner at the peak of a typical year; extra_volume = how many more people come in.
+[
+  {
+    "id": "uk",
+    "description": "A UK year. Summer brings the most people to A&E (sprains, cuts, children out playing, sunburn and heat); winter brings the sickest, and the most who need a bed (chest infections, flu, heart failure, falls on ice). Monthly figures are blended day by day.",
+    "months": [
+      {
+        "season": "winter",
+        "volume": 0.97
+      },
+      {
+        "season": "winter",
+        "volume": 0.95
+      },
+      {
+        "season": "spring",
+        "volume": 0.98
+      },
+      {
+        "season": "spring",
+        "volume": 1.0
+      },
+      {
+        "season": "spring",
+        "volume": 1.03
+      },
+      {
+        "season": "summer",
+        "volume": 1.05
+      },
+      {
+        "season": "summer",
+        "volume": 1.07
+      },
+      {
+        "season": "summer",
+        "volume": 1.03
+      },
+      {
+        "season": "autumn",
+        "volume": 1.01
+      },
+      {
+        "season": "autumn",
+        "volume": 1.0
+      },
+      {
+        "season": "autumn",
+        "volume": 0.97
+      },
+      {
+        "season": "winter",
+        "volume": 0.99
+      }
+    ],
+    "condition_months": {
+      "sunburn": [
+        0.02,
+        0.02,
+        0.1,
+        0.4,
+        1.2,
+        2.6,
+        3.2,
+        2.6,
+        0.8,
+        0.1,
+        0.02,
+        0.02
+      ],
+      "heat_exhaustion": [
+        0.02,
+        0.02,
+        0.05,
+        0.2,
+        0.8,
+        2.4,
+        3.4,
+        2.6,
+        0.6,
+        0.05,
+        0.02,
+        0.02
+      ],
+      "heatstroke": [
+        0.01,
+        0.01,
+        0.02,
+        0.1,
+        0.5,
+        2.4,
+        3.6,
+        2.6,
+        0.4,
+        0.02,
+        0.01,
+        0.01
+      ],
+      "insect_sting_reaction": [
+        0.05,
+        0.05,
+        0.2,
+        0.6,
+        1.2,
+        1.8,
+        2.4,
+        2.8,
+        1.6,
+        0.6,
+        0.1,
+        0.05
+      ],
+      "anaphylaxis": [
+        0.85,
+        0.85,
+        0.9,
+        1,
+        1.1,
+        1.2,
+        1.3,
+        1.35,
+        1.15,
+        0.95,
+        0.85,
+        0.85
+      ],
+      "allergic_reaction": [
+        0.85,
+        0.85,
+        0.95,
+        1.1,
+        1.25,
+        1.3,
+        1.2,
+        1.1,
+        1.0,
+        0.9,
+        0.85,
+        0.85
+      ],
+      "ankle_sprain": [
+        0.8,
+        0.8,
+        0.9,
+        1.0,
+        1.15,
+        1.25,
+        1.3,
+        1.2,
+        1.05,
+        0.95,
+        0.85,
+        0.85
+      ],
+      "wrist_fracture": [
+        1.25,
+        1.15,
+        0.95,
+        0.95,
+        1.05,
+        1.1,
+        1.15,
+        1.05,
+        0.95,
+        0.9,
+        0.95,
+        1.15
+      ],
+      "simple_laceration": [
+        0.9,
+        0.9,
+        0.95,
+        1.0,
+        1.1,
+        1.15,
+        1.15,
+        1.1,
+        1.0,
+        0.95,
+        0.9,
+        1.0
+      ],
+      "minor_head_injury": [
+        0.95,
+        0.9,
+        0.95,
+        1.0,
+        1.05,
+        1.1,
+        1.1,
+        1.05,
+        1.0,
+        1.0,
+        0.95,
+        1.1
+      ],
+      "pulled_elbow": [
+        0.9,
+        0.9,
+        0.95,
+        1,
+        1.1,
+        1.15,
+        1.15,
+        1.1,
+        1,
+        0.95,
+        0.9,
+        0.9
+      ],
+      "minor_burn": [
+        1.0,
+        0.95,
+        0.95,
+        0.95,
+        1.0,
+        1.1,
+        1.1,
+        1.05,
+        0.95,
+        1.0,
+        1.15,
+        1.1
+      ],
+      "renal_colic": [
+        0.85,
+        0.85,
+        0.9,
+        0.95,
+        1.05,
+        1.15,
+        1.25,
+        1.2,
+        1.05,
+        0.95,
+        0.9,
+        0.85
+      ],
+      "cellulitis": [
+        0.85,
+        0.85,
+        0.9,
+        0.95,
+        1.05,
+        1.15,
+        1.25,
+        1.2,
+        1.1,
+        1.0,
+        0.9,
+        0.85
+      ],
+      "vasovagal_syncope": [
+        0.95,
+        0.95,
+        0.95,
+        1,
+        1,
+        1.1,
+        1.2,
+        1.15,
+        1,
+        0.95,
+        0.95,
+        0.95
+      ],
+      "gastroenteritis": [
+        1.1,
+        1.05,
+        0.95,
+        0.9,
+        0.95,
+        1.05,
+        1.1,
+        1.1,
+        0.95,
+        0.9,
+        0.95,
+        1.05
+      ],
+      "influenza": [
+        0.5,
+        0.4,
+        0.3,
+        0.15,
+        0.08,
+        0.05,
+        0.05,
+        0.05,
+        0.08,
+        0.15,
+        0.3,
+        0.5
+      ],
+      "bronchiolitis": [
+        1.0,
+        0.7,
+        0.4,
+        0.25,
+        0.2,
+        0.15,
+        0.15,
+        0.2,
+        0.35,
+        0.7,
+        1.0,
+        1.1
+      ],
+      "community_acquired_pneumonia": [
+        1.67,
+        1.53,
+        1.22,
+        0.92,
+        0.7,
+        0.55,
+        0.48,
+        0.48,
+        0.62,
+        0.85,
+        1.22,
+        1.6
+      ],
+      "copd_exacerbation": [
+        1.75,
+        1.6,
+        1.3,
+        0.92,
+        0.7,
+        0.55,
+        0.48,
+        0.48,
+        0.7,
+        0.92,
+        1.3,
+        1.67
+      ],
+      "asthma_exacerbation": [
+        1.1,
+        1.0,
+        0.95,
+        1.0,
+        1.15,
+        1.15,
+        0.85,
+        0.75,
+        1.4,
+        1.15,
+        1.05,
+        1.1
+      ],
+      "acute_heart_failure": [
+        1.45,
+        1.38,
+        1.15,
+        0.92,
+        0.77,
+        0.7,
+        0.7,
+        0.7,
+        0.77,
+        0.92,
+        1.15,
+        1.45
+      ],
+      "acute_myocardial_infarction": [
+        1.3,
+        1.22,
+        1.08,
+        1.0,
+        0.92,
+        0.85,
+        0.82,
+        0.82,
+        0.88,
+        1.0,
+        1.12,
+        1.3
+      ],
+      "nstemi": [
+        1.3,
+        1.22,
+        1.08,
+        1.0,
+        0.92,
+        0.85,
+        0.82,
+        0.82,
+        0.88,
+        1.0,
+        1.12,
+        1.3
+      ],
+      "ischaemic_stroke": [
+        1.18,
+        1.15,
+        1.08,
+        1.0,
+        0.92,
+        0.88,
+        0.88,
+        0.88,
+        0.92,
+        1.0,
+        1.08,
+        1.15
+      ],
+      "fractured_neck_of_femur": [
+        1.38,
+        1.3,
+        1.08,
+        0.92,
+        0.85,
+        0.82,
+        0.82,
+        0.82,
+        0.88,
+        1.0,
+        1.15,
+        1.38
+      ],
+      "fall_older_person": [
+        1.3,
+        1.22,
+        1.08,
+        0.92,
+        0.88,
+        0.85,
+        0.85,
+        0.85,
+        0.92,
+        1.0,
+        1.12,
+        1.3
+      ],
+      "hypothermia": [
+        3.0,
+        2.6,
+        1.4,
+        0.5,
+        0.15,
+        0.05,
+        0.03,
+        0.03,
+        0.15,
+        0.6,
+        1.6,
+        2.8
+      ],
+      "croup": [
+        1.1,
+        1.0,
+        0.9,
+        0.8,
+        0.75,
+        0.7,
+        0.65,
+        0.7,
+        1.0,
+        1.4,
+        1.5,
+        1.3
+      ],
+      "viral_wheeze": [
+        1.3,
+        1.2,
+        1.0,
+        0.85,
+        0.75,
+        0.65,
+        0.55,
+        0.55,
+        1.4,
+        1.4,
+        1.4,
+        1.4
+      ],
+      "childhood_pneumonia": [
+        1.53,
+        1.38,
+        1.08,
+        0.85,
+        0.62,
+        0.48,
+        0.4,
+        0.4,
+        0.7,
+        1.0,
+        1.3,
+        1.6
+      ],
+      "tonsillitis": [
+        1.25,
+        1.2,
+        1.1,
+        1.0,
+        0.9,
+        0.8,
+        0.75,
+        0.75,
+        0.9,
+        1.05,
+        1.15,
+        1.25
+      ],
+      "paediatric_sepsis": [
+        1.22,
+        1.15,
+        1.0,
+        0.92,
+        0.85,
+        0.85,
+        0.85,
+        0.85,
+        0.92,
+        1.0,
+        1.08,
+        1.22
+      ],
+      "bacterial_meningitis": [
+        1.3,
+        1.3,
+        1.1,
+        0.9,
+        0.8,
+        0.7,
+        0.7,
+        0.7,
+        0.9,
+        1.2,
+        1.2,
+        1.2
+      ],
+      "septic_shock": [
+        1.3,
+        1.22,
+        1.08,
+        0.92,
+        0.85,
+        0.77,
+        0.77,
+        0.77,
+        0.85,
+        1.0,
+        1.15,
+        1.3
+      ],
+      "alcohol_withdrawal": [
+        1.4,
+        1.0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0.9
+      ],
+      "epistaxis": [
+        1.25,
+        1.2,
+        1.05,
+        0.95,
+        0.9,
+        0.85,
+        0.85,
+        0.85,
+        0.9,
+        1.0,
+        1.1,
+        1.2
+      ],
+      "whiplash": [
+        1.15,
+        1.1,
+        1.0,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.95,
+        1.0,
+        1.1,
+        1.2,
+        1.2
+      ],
+      "dehydration_gastroenteritis": [
+        1.15,
+        1.1,
+        1.0,
+        0.9,
+        0.9,
+        0.95,
+        1.0,
+        1.0,
+        0.9,
+        0.9,
+        1.0,
+        1.1
+      ]
+    },
+    "waves": [
+      {
+        "id": "flu",
+        "name": "Flu",
+        "earliest_start": "11-10",
+        "latest_start": "12-28",
+        "rise_days": 32,
+        "fall_days": 55,
+        "strength": [
+          0.4,
+          1.6
+        ],
+        "extra_volume": 0.07,
+        "conditions": {
+          "influenza": 7,
+          "community_acquired_pneumonia": 1.6,
+          "copd_exacerbation": 1.5,
+          "acute_heart_failure": 1.25,
+          "fall_older_person": 1.1,
+          "childhood_pneumonia": 1.3,
+          "septic_shock": 1.15
+        }
+      },
+      {
+        "id": "rsv",
+        "name": "RSV",
+        "earliest_start": "10-15",
+        "latest_start": "11-15",
+        "rise_days": 28,
+        "fall_days": 50,
+        "strength": [
+          0.6,
+          1.4
+        ],
+        "extra_volume": 0.02,
+        "conditions": {
+          "bronchiolitis": 5,
+          "viral_wheeze": 1.5,
+          "childhood_pneumonia": 1.3
+        }
+      },
+      {
+        "id": "norovirus",
+        "name": "Norovirus",
+        "earliest_start": "12-01",
+        "latest_start": "01-20",
+        "rise_days": 21,
+        "fall_days": 45,
+        "strength": [
+          0.5,
+          1.4
+        ],
+        "extra_volume": 0.02,
+        "conditions": {
+          "gastroenteritis": 2.2,
+          "dehydration_gastroenteritis": 1.8
+        }
+      }
+    ]
+  }
+]

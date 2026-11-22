@@ -31,6 +31,18 @@ public sealed class SimulationClock
     /// <summary>The default start of a new game: a Monday morning.</summary>
     public static readonly DateTime DefaultStart = new(2027, 1, 4, 8, 0, 0, DateTimeKind.Unspecified);
 
+    /// <summary>A new game starting in <paramref name="month"/> (1-12): the first Monday of that month in the default year, at 8am.</summary>
+    public static DateTime StartIn(int month)
+    {
+        var day = new DateTime(DefaultStart.Year, Math.Clamp(month, 1, 12), 1, 8, 0, 0, DateTimeKind.Unspecified);
+        while (day.DayOfWeek != DayOfWeek.Monday)
+        {
+            day = day.AddDays(1);
+        }
+
+        return day;
+    }
+
     private readonly EventBus? _events;
     private double _accumulatedGameSeconds;
 

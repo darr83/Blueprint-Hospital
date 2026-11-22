@@ -1,3 +1,4 @@
+using System.Linq;
 using BlueprintHospital.Core;
 using BlueprintHospital.Simulation.Simulation;
 using Godot;
@@ -145,6 +146,11 @@ public partial class MainMenu : Control
     }
 
     /// <summary>Opens the New Game panel: the hospital's name and how to start.</summary>
+    /// <summary>The New Game panel's seasons tick box and start month (the smoke test checks them).</summary>
+    public CheckBox? NewGameSeasons { get; private set; }
+
+    public OptionButton? NewGameMonth { get; private set; }
+
     public void ShowNewGame()
     {
         var panel = new ModalPanel();
@@ -259,6 +265,45 @@ public partial class MainMenu : Control
         panel.Content.AddChild(frequencyNote);
         ShowNote();
 
+        // The year: seasons change who comes in, and the month the game starts in. One row, to keep the panel short.
+        var yearRow = new HBoxContainer();
+        yearRow.AddThemeConstantOverride("separation", 12);
+        var yearLabel = new Label { Text = "The year", SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        yearLabel.AddThemeColorOverride("font_color", UiStyle.TextDark);
+        yearRow.AddChild(yearLabel);
+        var seasons = new CheckBox
+        {
+            Text = "Seasons",
+            ButtonPressed = true,
+            FocusMode = FocusModeEnum.None,
+            TooltipText = "Winter brings flu, chest infections and falls on ice; summer brings sunburn, heat illness and more people.",
+        };
+        foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed", "focus" })
+        {
+            seasons.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
+        }
+
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })
+        {
+            seasons.AddThemeColorOverride(state, UiStyle.TextDark);
+        }
+
+        yearRow.AddChild(seasons);
+        var startsIn = new Label { Text = "Start in", SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        startsIn.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        yearRow.AddChild(startsIn);
+        var month = new OptionButton { FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(150, 34), SizeFlagsVertical = SizeFlags.ShrinkCenter, TooltipText = "The month the game starts in. April gives you spring and summer to build up before winter." };
+        foreach (var m in System.Globalization.CultureInfo.GetCultureInfo("en-GB").DateTimeFormat.MonthNames.Take(12))
+        {
+            month.AddItem(m);
+        }
+
+        month.Selected = SeasonChoice.Default.StartMonth - 1;
+        yearRow.AddChild(month);
+        panel.Content.AddChild(yearRow);
+        NewGameSeasons = seasons;
+        NewGameMonth = month;
+
         var unlimited = new CheckBox
         {
             Text = "Unlimited money: keep building and hiring when the balance goes into the red",
@@ -277,7 +322,7 @@ public partial class MainMenu : Control
 
         panel.Content.AddChild(unlimited);
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies, type, chooseSite: true);
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies, type, chooseSite: true, seasons: new SeasonChoice(seasons.ButtonPressed, month.Selected + 1));
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };

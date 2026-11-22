@@ -46,6 +46,12 @@ public sealed class SimulationOptions
 
     /// <summary>Sandbox (everything open) or Career (unlocked level by level).</summary>
     public GameType Type { get; init; } = GameType.Sandbox;
+
+    /// <summary>
+    /// The time of year changes who comes in (winter flu, summer sunburn...). New games from the menu turn it on;
+    /// tests leave it off unless they ask, so their patients don't depend on the date.
+    /// </summary>
+    public bool Seasons { get; init; }
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -104,8 +110,9 @@ public sealed partial class HospitalSimulation
             DecorateNewRoom(space);
         }
 
-        _generator = new PatientGenerator(database, Random) { Allows = CanArriveAtThisLevel, Suits = SuitsThisLevel };
-        _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo };
+        SetUpSeasons(_options.Seasons, _options.Seed);
+        _generator = new PatientGenerator(database, Random) { Allows = CanArriveAtThisLevel, Suits = SuitsThisLevel, Seasonal = SeasonalWeight };
+        _diagnosis = new DiagnosisEngine(database) { CanDo = CanDo, Prior = c => SeasonalWeight(c, Now) };
         _arrivalProfile = database.Arrivals.Values.FirstOrDefault(a => a.Department == EmergencyDepartmentLayout.Department);
 
         // The bays sit side by side against the wall, centred on the ambulance entrance. An ambulance
@@ -288,6 +295,7 @@ public sealed partial class HospitalSimulation
         ChargeRunningCosts(dt);
         RemoveDepartedPatients();
         Stats.Update(this);
+        UpdatePressure();
         UpdateHistory();
         UpdateProgression();
     }
@@ -301,7 +309,7 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var expected = _arrivalProfile.RateAt(Now) * _options.ArrivalRateMultiplier * LevelArrivalRate * dt / 3600.0;
+        var expected = _arrivalProfile.RateAt(Now) * _options.ArrivalRateMultiplier * LevelArrivalRate * SeasonalVolume(Now) * dt / 3600.0;
         var count = Random.Poisson(expected);
         for (var i = 0; i < count; i++)
         {

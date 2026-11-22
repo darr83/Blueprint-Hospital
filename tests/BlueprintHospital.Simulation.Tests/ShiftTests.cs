@@ -96,7 +96,10 @@ public class ShiftTests
             return h.Clock.Now.Hour >= 19;
         }, TimeSpan.FromHours(12), "the end of the day");
 
-        var dayTeam = h.Sim.Staff.Where(s => s.Shift == StaffShift.Day).ToList();
+        // Someone sitting 1:1 with a red patient waits for their break until the patient no longer needs them
+        // (A_break_waits_while_a_red_patient_needs_them), so whether they get one depends on who comes in.
+        var dayTeam = h.Sim.Staff.Where(s => s.Shift == StaffShift.Day && s.BedsidePatientId is null).ToList();
+        Assert.True(dayTeam.Count >= 8, $"only {dayTeam.Count} of the day team are free to check");
         Assert.All(dayTeam, s => Assert.Contains(s.Id, seenOnBreak));
         Assert.All(dayTeam, s => Assert.True(s.Breaks.Count(b => b.Done) >= 2, $"{s.Name} only had {s.Breaks.Count(b => b.Done)} breaks"));
     }
