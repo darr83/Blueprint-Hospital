@@ -1,0 +1,763 @@
+// Major incidents: ambulance control phones ahead with the METHANE message, then the casualties come in a few minutes apart.
+// "big" ones (8 or more casualties) only come on the Realistic setting and from career level 7. "weather" makes a kind likelier
+// on days with that weather; "months" limits when it can happen. Casualties: the crew's colour, how many, their age and how they come in.
+[
+  {
+    "id": "road_collision",
+    "name": "Road traffic collision",
+    "locations": [
+      "A34 northbound, junction 9",
+      "the ring road by the retail park",
+      "the B4044 near the level crossing",
+      "Station Road at the roundabout"
+    ],
+    "type": "minibus and two cars, head-on",
+    "hazards": "fuel spill, one lane closed",
+    "access": "from the south only",
+    "services": "4 ambulances, fire, police, air ambulance",
+    "weight": 4,
+    "weather": {
+      "icy": 2,
+      "fog": 2,
+      "heavy_rain": 1.5,
+      "snow": 1.5
+    },
+    "casualties": [
+      {
+        "label": "driver",
+        "conditions": [
+          "multiple_trauma",
+          "traumatic_pneumothorax",
+          "ruptured_spleen"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          25,
+          60
+        ],
+        "transport": "air"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "pelvic_fracture",
+          "tibial_shaft_fracture",
+          "fractured_neck_of_femur"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          40,
+          85
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "child",
+        "conditions": [
+          "minor_head_injury",
+          "wrist_fracture"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          6,
+          14
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "whiplash"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          18,
+          50
+        ],
+        "transport": "walking"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "simple_laceration",
+          "whiplash"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          18,
+          60
+        ],
+        "transport": "ambulance"
+      }
+    ],
+    "months": []
+  },
+  {
+    "id": "motorway_pileup",
+    "name": "Motorway pile-up",
+    "big": true,
+    "locations": [
+      "the M40 southbound between junctions 9 and 8",
+      "the M4 eastbound near the services"
+    ],
+    "type": "eleven vehicles including a lorry, in fog",
+    "hazards": "lorry on its side, diesel spill, both carriageways closed",
+    "access": "from the north on the hard shoulder",
+    "services": "8 ambulances, fire, police, 2 air ambulances",
+    "weight": 1,
+    "weather": {
+      "fog": 5,
+      "icy": 4,
+      "snow": 2
+    },
+    "casualties": [
+      {
+        "label": "driver",
+        "conditions": [
+          "multiple_trauma",
+          "major_head_injury",
+          "traumatic_pneumothorax"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          20,
+          70
+        ],
+        "transport": "air"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "pelvic_fracture",
+          "ruptured_spleen",
+          "crush_injury"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          18,
+          80
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "driver",
+        "conditions": [
+          "tibial_shaft_fracture",
+          "wrist_fracture",
+          "ankle_fracture",
+          "shoulder_dislocation"
+        ],
+        "triage": "amber",
+        "count": [
+          3,
+          4
+        ],
+        "age": [
+          18,
+          80
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "whiplash",
+          "simple_laceration",
+          "ankle_sprain",
+          "minor_head_injury"
+        ],
+        "triage": "green",
+        "count": [
+          2,
+          3
+        ],
+        "age": [
+          16,
+          75
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "passenger",
+        "conditions": [
+          "whiplash",
+          "simple_laceration"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          3
+        ],
+        "age": [
+          16,
+          75
+        ],
+        "transport": "walking"
+      }
+    ],
+    "months": []
+  },
+  {
+    "id": "house_fire",
+    "name": "House fire",
+    "locations": [
+      "Albert Terrace",
+      "a block of flats on Meadow Lane",
+      "Church Street above the chip shop"
+    ],
+    "type": "fire in a terraced house, family trapped upstairs",
+    "hazards": "smoke, gas supply not yet isolated",
+    "access": "from the high street end",
+    "services": "3 ambulances, 4 fire engines, police",
+    "weight": 2,
+    "months": [],
+    "weather": {
+      "snow": 1.5,
+      "icy": 1.5
+    },
+    "casualties": [
+      {
+        "label": "adult",
+        "conditions": [
+          "major_burns",
+          "smoke_inhalation"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          25,
+          80
+        ],
+        "transport": "ambulance",
+        "fire_crew": true
+      },
+      {
+        "label": "adult",
+        "conditions": [
+          "smoke_inhalation",
+          "carbon_monoxide_poisoning"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          20,
+          85
+        ],
+        "transport": "ambulance",
+        "fire_crew": true
+      },
+      {
+        "label": "child",
+        "conditions": [
+          "smoke_inhalation"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          3,
+          12
+        ],
+        "transport": "ambulance",
+        "fire_crew": true
+      },
+      {
+        "label": "neighbour",
+        "conditions": [
+          "minor_burn",
+          "smoke_inhalation"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          18,
+          70
+        ],
+        "transport": "walking"
+      }
+    ]
+  },
+  {
+    "id": "coach_crash",
+    "name": "Coach crash",
+    "big": true,
+    "locations": [
+      "the A41 bypass",
+      "a country lane near Little Marston"
+    ],
+    "type": "school trip coach on its side",
+    "hazards": "coach unstable, diesel leak",
+    "access": "farm track from the east",
+    "services": "6 ambulances, fire, police, air ambulance",
+    "weight": 0.6,
+    "months": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      9,
+      10
+    ],
+    "weather": {
+      "heavy_rain": 1.5,
+      "icy": 2
+    },
+    "casualties": [
+      {
+        "label": "child",
+        "conditions": [
+          "major_head_injury",
+          "multiple_trauma",
+          "ruptured_spleen"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          10,
+          15
+        ],
+        "transport": "air"
+      },
+      {
+        "label": "teacher",
+        "conditions": [
+          "traumatic_pneumothorax",
+          "pelvic_fracture"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          28,
+          60
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "child",
+        "conditions": [
+          "wrist_fracture",
+          "tibial_shaft_fracture",
+          "minor_head_injury",
+          "shoulder_dislocation"
+        ],
+        "triage": "amber",
+        "count": [
+          2,
+          3
+        ],
+        "age": [
+          10,
+          15
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "child",
+        "conditions": [
+          "simple_laceration",
+          "whiplash",
+          "ankle_sprain",
+          "minor_head_injury"
+        ],
+        "triage": "green",
+        "count": [
+          3,
+          5
+        ],
+        "age": [
+          10,
+          15
+        ],
+        "transport": "ambulance"
+      }
+    ]
+  },
+  {
+    "id": "wedding_food_poisoning",
+    "name": "Food poisoning at a wedding",
+    "big": true,
+    "locations": [
+      "the Grange Hotel",
+      "the village hall in Ashby",
+      "a marquee at Hollow Farm"
+    ],
+    "type": "wedding guests vomiting after the buffet",
+    "hazards": "none at the scene",
+    "access": "no restriction",
+    "services": "4 ambulances",
+    "weight": 0.6,
+    "months": [
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "casualties": [
+      {
+        "label": "guest",
+        "conditions": [
+          "gastroenteritis"
+        ],
+        "triage": "amber",
+        "count": [
+          2,
+          4
+        ],
+        "age": [
+          60,
+          90
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "guest",
+        "conditions": [
+          "gastroenteritis"
+        ],
+        "triage": "green",
+        "count": [
+          4,
+          6
+        ],
+        "age": [
+          18,
+          80
+        ],
+        "transport": "walking"
+      },
+      {
+        "label": "guest",
+        "conditions": [
+          "gastroenteritis",
+          "dehydration_gastroenteritis"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          3,
+          12
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "guest",
+        "conditions": [
+          "gastroenteritis"
+        ],
+        "triage": "green",
+        "count": [
+          2,
+          3
+        ],
+        "age": [
+          18,
+          80
+        ],
+        "transport": "ambulance"
+      }
+    ],
+    "weather": {}
+  },
+  {
+    "id": "carbon_monoxide_family",
+    "name": "Carbon monoxide poisoning",
+    "locations": [
+      "Elm Close",
+      "a flat on Victoria Road",
+      "Mill Cottages"
+    ],
+    "type": "family found unwell at home, faulty boiler",
+    "hazards": "carbon monoxide in the house, gas board on the way",
+    "access": "no restriction",
+    "services": "3 ambulances, fire",
+    "weight": 1.5,
+    "months": [
+      10,
+      11,
+      12,
+      1,
+      2,
+      3
+    ],
+    "casualties": [
+      {
+        "label": "parent",
+        "conditions": [
+          "carbon_monoxide_poisoning"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          30,
+          50
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "parent",
+        "conditions": [
+          "carbon_monoxide_poisoning"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          30,
+          50
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "child",
+        "conditions": [
+          "carbon_monoxide_poisoning"
+        ],
+        "triage": "amber",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          2,
+          15
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "grandparent",
+        "conditions": [
+          "carbon_monoxide_poisoning"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          65,
+          90
+        ],
+        "transport": "ambulance"
+      }
+    ],
+    "weather": {}
+  },
+  {
+    "id": "stadium_crush",
+    "name": "Crush at a concert",
+    "big": true,
+    "locations": [
+      "the City Stadium",
+      "the park stage at the summer festival"
+    ],
+    "type": "crowd surge at the front barrier",
+    "hazards": "crowd still leaving, barrier down",
+    "access": "through the north gate only",
+    "services": "6 ambulances, police, event medics",
+    "weight": 0.5,
+    "months": [
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "casualties": [
+      {
+        "label": "fan",
+        "conditions": [
+          "traumatic_pneumothorax",
+          "crush_injury",
+          "multiple_trauma"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          16,
+          40
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "fan",
+        "conditions": [
+          "crush_injury",
+          "wrist_fracture",
+          "ankle_fracture",
+          "tibial_shaft_fracture"
+        ],
+        "triage": "amber",
+        "count": [
+          2,
+          4
+        ],
+        "age": [
+          16,
+          45
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "fan",
+        "conditions": [
+          "ankle_sprain",
+          "simple_laceration",
+          "panic_attack",
+          "whiplash"
+        ],
+        "triage": "green",
+        "count": [
+          3,
+          6
+        ],
+        "age": [
+          16,
+          45
+        ],
+        "transport": "walking"
+      },
+      {
+        "label": "fan",
+        "conditions": [
+          "alcohol_intoxication",
+          "ankle_sprain"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          2
+        ],
+        "age": [
+          18,
+          40
+        ],
+        "transport": "ambulance"
+      }
+    ],
+    "weather": {}
+  },
+  {
+    "id": "chemical_leak",
+    "name": "Chemical leak",
+    "locations": [
+      "the industrial estate on Fenner Road",
+      "the water treatment works"
+    ],
+    "type": "chlorine leak at a works",
+    "hazards": "chlorine gas: decontaminate before arrival",
+    "access": "upwind, from the west",
+    "services": "4 ambulances, fire with hazmat, police",
+    "weight": 0.8,
+    "casualties": [
+      {
+        "label": "worker",
+        "conditions": [
+          "smoke_inhalation"
+        ],
+        "triage": "red",
+        "count": [
+          1,
+          1
+        ],
+        "age": [
+          20,
+          60
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "worker",
+        "conditions": [
+          "chemical_eye_injury",
+          "smoke_inhalation"
+        ],
+        "triage": "amber",
+        "count": [
+          2,
+          3
+        ],
+        "age": [
+          20,
+          62
+        ],
+        "transport": "ambulance"
+      },
+      {
+        "label": "worker",
+        "conditions": [
+          "chemical_eye_injury"
+        ],
+        "triage": "green",
+        "count": [
+          1,
+          3
+        ],
+        "age": [
+          20,
+          62
+        ],
+        "transport": "walking"
+      }
+    ],
+    "months": [],
+    "weather": {}
+  }
+]

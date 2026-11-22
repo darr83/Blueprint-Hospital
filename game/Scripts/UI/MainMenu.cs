@@ -60,7 +60,7 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!BlueprintHospital.Core.PerfProbe.Begin() && !BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.WeatherShots.Begin() && !BlueprintHospital.Core.FestiveShots.Begin() && !BlueprintHospital.Core.SurgeryShots.Begin() && !BlueprintHospital.Core.PaediatricsShots.Begin() && !BlueprintHospital.Core.VisitorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.CursorShots.Begin() && !BlueprintHospital.Core.ResultShots.Begin())
+        else if (!BlueprintHospital.Core.PerfProbe.Begin() && !BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.WeatherShots.Begin() && !BlueprintHospital.Core.FestiveShots.Begin() && !BlueprintHospital.Core.IncidentShots.Begin() && !BlueprintHospital.Core.SurgeryShots.Begin() && !BlueprintHospital.Core.PaediatricsShots.Begin() && !BlueprintHospital.Core.VisitorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.CursorShots.Begin() && !BlueprintHospital.Core.ResultShots.Begin())
         {
             ArtShots.Begin(this);
         }
@@ -150,6 +150,9 @@ public partial class MainMenu : Control
     public CheckBox? NewGameSeasons { get; private set; }
 
     public OptionButton? NewGameMonth { get; private set; }
+
+    /// <summary>The New Game major incidents choice (for the smoke test).</summary>
+    public OptionButton? NewGameIncidents { get; private set; }
 
     public void ShowNewGame()
     {
@@ -304,6 +307,28 @@ public partial class MainMenu : Control
         NewGameSeasons = seasons;
         NewGameMonth = month;
 
+        // Major incidents: a road collision, a house fire... phoned ahead, then several casualties at once.
+        var incidentRow = new HBoxContainer();
+        incidentRow.AddThemeConstantOverride("separation", 12);
+        var incidentLabel = new Label { Text = "Major incidents", SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        incidentLabel.AddThemeColorOverride("font_color", UiStyle.TextDark);
+        incidentRow.AddChild(incidentLabel);
+        var incidents = new OptionButton
+        {
+            FocusMode = FocusModeEnum.None,
+            ThemeTypeVariation = UiStyle.Secondary,
+            CustomMinimumSize = new Vector2(150, 34),
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            TooltipText = "A road collision, a house fire, a coach crash: ambulance control phones ahead, then several casualties come in at once.\nRare: about one a month. Realistic: one every week or two, and bigger ones.",
+        };
+        incidents.AddItem("Off");
+        incidents.AddItem("Rare (about monthly)");
+        incidents.AddItem("Realistic");
+        incidents.Selected = (int)SeasonChoice.Default.Incidents;
+        incidentRow.AddChild(incidents);
+        panel.Content.AddChild(incidentRow);
+        NewGameIncidents = incidents;
+
         var unlimited = new CheckBox
         {
             Text = "Unlimited money: keep building and hiring when the balance goes into the red",
@@ -322,7 +347,7 @@ public partial class MainMenu : Control
 
         panel.Content.AddChild(unlimited);
 
-        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies, type, chooseSite: true, seasons: new SeasonChoice(seasons.ButtonPressed, month.Selected + 1));
+        void Start() => GameManager.Instance.StartNewGame(name.Text, start, unlimited.ButtonPressed, emergencies, type, chooseSite: true, seasons: new SeasonChoice(seasons.ButtonPressed, month.Selected + 1, (MajorIncidentFrequency)incidents.Selected));
         name.TextSubmitted += _ => Start();
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };

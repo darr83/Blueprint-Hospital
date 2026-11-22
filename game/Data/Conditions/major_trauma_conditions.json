@@ -1,0 +1,1100 @@
+// Major trauma and the other casualties of major incidents (road collisions, fires, crushes, chemical leaks).
+// They come in now and then on their own too, but mostly a few at once in a major incident (see Data/Incidents).
+[
+  {
+    "id": "multiple_trauma",
+    "name": "Multiple injuries (major trauma)",
+    "department": "general_surgery",
+    "description": "Hurt in several places at once, usually in a road collision: bleeding inside, broken bones and often a head injury. Needs the trauma team, blood, a CT scan from head to pelvis and usually an operation straight away.",
+    "prevalence": 0.12,
+    "age_range": [
+      16,
+      85
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 1.0,
+    "crew_assessment": "major trauma, multiple injuries, low blood pressure",
+    "presenting_complaint": "multiple_injuries",
+    "symptoms": [
+      {
+        "symptom": "multiple_injuries",
+        "probability": 1
+      },
+      {
+        "symptom": "abdominal_pain",
+        "probability": 0.7
+      },
+      {
+        "symptom": "chest_wall_tenderness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.6
+      },
+      {
+        "symptom": "head_injury",
+        "probability": 0.4
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        124,
+        14
+      ],
+      "systolic_bp": [
+        88,
+        12
+      ],
+      "diastolic_bp": [
+        54,
+        8
+      ],
+      "respiratory_rate": [
+        26,
+        4
+      ],
+      "oxygen_saturation": [
+        94,
+        2
+      ],
+      "temperature": [
+        36.2,
+        0.4
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.65,
+      0.85
+    ],
+    "deterioration_per_hour": 0.12,
+    "deterioration_effects": {
+      "heart_rate": 22,
+      "systolic_bp": -25,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -4,
+      "temperature": -0.3
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_abdomen",
+      "ct_head",
+      "chest_xray",
+      "full_blood_count",
+      "clotting_screen",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Trauma primary survey (ABCDE)",
+        "performed_by": "doctor",
+        "minutes": 15,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "tranexamic_acid",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Blood transfusion (major haemorrhage pack)",
+        "performed_by": "nurse",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.012,
+    "disposition": "surgery",
+    "disposition_note": "Major trauma: bleeding inside. Straight to theatre for a trauma laparotomy, then intensive care.",
+    "operation": {
+      "name": "Trauma laparotomy",
+      "urgency": "immediate",
+      "tariff": 11800,
+      "minutes": 150,
+      "major": true
+    },
+    "length_of_stay_hours": [
+      168,
+      360
+    ]
+  },
+  {
+    "id": "traumatic_pneumothorax",
+    "name": "Chest injury with collapsed lung",
+    "department": "general_surgery",
+    "description": "Broken ribs have let air into the chest and one lung has collapsed. A chest drain lets the lung re-expand.",
+    "prevalence": 0.15,
+    "age_range": [
+      16,
+      90
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.95,
+    "crew_assessment": "chest injury, short of breath, query pneumothorax",
+    "presenting_complaint": "chest_injury",
+    "symptoms": [
+      {
+        "symptom": "chest_injury",
+        "probability": 1
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.95
+      },
+      {
+        "symptom": "chest_wall_tenderness",
+        "probability": 0.9
+      },
+      {
+        "symptom": "pleuritic_chest_pain",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        112,
+        14
+      ],
+      "diastolic_bp": [
+        70,
+        8
+      ],
+      "respiratory_rate": [
+        28,
+        4
+      ],
+      "oxygen_saturation": [
+        90,
+        3
+      ],
+      "temperature": [
+        36.6,
+        0.3
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.5,
+      0.75
+    ],
+    "deterioration_per_hour": 0.09,
+    "deterioration_effects": {
+      "heart_rate": 20,
+      "systolic_bp": -20,
+      "respiratory_rate": 6,
+      "oxygen_saturation": -6,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "chest_xray",
+      "venous_blood_gas",
+      "full_blood_count"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Insert a chest drain",
+        "performed_by": "doctor",
+        "minutes": 30,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.06,
+    "disposition": "admit",
+    "disposition_note": "Chest drain in and the lung back up. Admitted to the surgical ward until the drain comes out.",
+    "length_of_stay_hours": [
+      72,
+      168
+    ]
+  },
+  {
+    "id": "ruptured_spleen",
+    "name": "Ruptured spleen",
+    "department": "general_surgery",
+    "description": "A blow to the left side of the tummy has split the spleen, which bleeds inside. Pain often spreads to the left shoulder tip. Usually needs it taken out.",
+    "prevalence": 0.08,
+    "age_range": [
+      12,
+      80
+    ],
+    "female_fraction": 0.35,
+    "ambulance_probability": 0.95,
+    "crew_assessment": "blunt abdominal injury, low blood pressure",
+    "presenting_complaint": "abdominal_pain",
+    "symptoms": [
+      {
+        "symptom": "abdominal_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "shoulder_tip_pain",
+        "probability": 0.6
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.7
+      },
+      {
+        "symptom": "abdominal_distension",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        118,
+        12
+      ],
+      "systolic_bp": [
+        92,
+        12
+      ],
+      "diastolic_bp": [
+        58,
+        8
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.5,
+        0.3
+      ],
+      "pain_score": [
+        6,
+        9
+      ]
+    },
+    "initial_severity": [
+      0.55,
+      0.8
+    ],
+    "deterioration_per_hour": 0.1,
+    "deterioration_effects": {
+      "heart_rate": 22,
+      "systolic_bp": -24,
+      "respiratory_rate": 5,
+      "oxygen_saturation": -3,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_abdomen",
+      "full_blood_count",
+      "clotting_screen",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "tranexamic_acid",
+        "essential": false
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.015,
+    "disposition": "surgery",
+    "disposition_note": "CT shows a ruptured spleen still bleeding. To theatre now for a splenectomy.",
+    "operation": {
+      "name": "Splenectomy",
+      "urgency": "immediate",
+      "tariff": 8400,
+      "minutes": 120,
+      "major": true
+    },
+    "length_of_stay_hours": [
+      120,
+      240
+    ]
+  },
+  {
+    "id": "pelvic_fracture",
+    "name": "Pelvic fracture",
+    "department": "trauma_orthopaedics",
+    "description": "A broken pelvis from a high-speed crash or a crush. It can bleed heavily, so a binder goes round the hips straight away, then the bones are fixed.",
+    "prevalence": 0.08,
+    "age_range": [
+      16,
+      95
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 1.0,
+    "crew_assessment": "high-speed collision, pelvic injury, binder applied",
+    "presenting_complaint": "pelvic_pain",
+    "symptoms": [
+      {
+        "symptom": "pelvic_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "unable_to_weight_bear",
+        "probability": 1
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.5
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        12
+      ],
+      "systolic_bp": [
+        98,
+        14
+      ],
+      "diastolic_bp": [
+        60,
+        8
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        96,
+        1.5
+      ],
+      "temperature": [
+        36.4,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.5,
+      0.75
+    ],
+    "deterioration_per_hour": 0.07,
+    "deterioration_effects": {
+      "heart_rate": 18,
+      "systolic_bp": -20,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -2,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "limb_xray",
+      "ct_abdomen",
+      "full_blood_count",
+      "clotting_screen"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Pelvic binder",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "tranexamic_acid",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.008,
+    "disposition": "surgery",
+    "disposition_note": "Unstable pelvic fracture. Orthopaedics will fix it once the bleeding is under control.",
+    "needs_physio": true,
+    "operation": {
+      "name": "Pelvic fixation",
+      "urgency": "urgent",
+      "tariff": 9600,
+      "minutes": 180,
+      "major": true
+    },
+    "length_of_stay_hours": [
+      240,
+      480
+    ]
+  },
+  {
+    "id": "major_head_injury",
+    "name": "Major head injury",
+    "department": "neurology",
+    "description": "A serious blow to the head with bleeding on the brain: drowsy or unconscious. Needs a CT scan, airway protection and transfer to the regional neurosurgical centre.",
+    "prevalence": 0.08,
+    "age_range": [
+      3,
+      90
+    ],
+    "female_fraction": 0.3,
+    "ambulance_probability": 1.0,
+    "crew_assessment": "head injury, reduced consciousness",
+    "presenting_complaint": "head_injury",
+    "symptoms": [
+      {
+        "symptom": "head_injury",
+        "probability": 1
+      },
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.9
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.5
+      },
+      {
+        "symptom": "seizures",
+        "probability": 0.15
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        62,
+        10
+      ],
+      "systolic_bp": [
+        158,
+        18
+      ],
+      "diastolic_bp": [
+        92,
+        10
+      ],
+      "respiratory_rate": [
+        12,
+        3
+      ],
+      "oxygen_saturation": [
+        94,
+        2
+      ],
+      "temperature": [
+        36.5,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.6,
+      0.85
+    ],
+    "deterioration_per_hour": 0.09,
+    "deterioration_effects": {
+      "heart_rate": -10,
+      "systolic_bp": 20,
+      "respiratory_rate": -4,
+      "oxygen_saturation": -4,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "ct_head",
+      "full_blood_count",
+      "clotting_screen",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Protect the airway and the neck",
+        "performed_by": "doctor",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "transfer",
+    "disposition_note": "Bleed on the brain on CT. Transferred to the regional neurosurgical centre."
+  },
+  {
+    "id": "major_burns",
+    "name": "Major burns",
+    "department": "emergency",
+    "description": "Deep burns over a large part of the body from a fire. Needs a lot of fluid, strong pain relief and the cling film dressing, then transfer to a specialist burns unit.",
+    "prevalence": 0.08,
+    "age_range": [
+      1,
+      90
+    ],
+    "female_fraction": 0.45,
+    "ambulance_probability": 1.0,
+    "crew_assessment": "house fire, major burns",
+    "presenting_complaint": "burn",
+    "symptoms": [
+      {
+        "symptom": "burn",
+        "probability": 1
+      },
+      {
+        "symptom": "extensive_burns",
+        "probability": 1
+      },
+      {
+        "symptom": "smoke_exposure",
+        "probability": 0.6
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        122,
+        12
+      ],
+      "systolic_bp": [
+        104,
+        14
+      ],
+      "diastolic_bp": [
+        64,
+        8
+      ],
+      "respiratory_rate": [
+        24,
+        3
+      ],
+      "oxygen_saturation": [
+        95,
+        2
+      ],
+      "temperature": [
+        36.0,
+        0.4
+      ],
+      "pain_score": [
+        8,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.55,
+      0.8
+    ],
+    "deterioration_per_hour": 0.07,
+    "deterioration_effects": {
+      "heart_rate": 18,
+      "systolic_bp": -18,
+      "respiratory_rate": 4,
+      "oxygen_saturation": -3,
+      "temperature": -0.3
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "full_blood_count",
+      "urea_electrolytes",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Cool and cover the burns with cling film",
+        "performed_by": "nurse",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.01,
+    "disposition": "transfer",
+    "disposition_note": "Burns over a fifth of the body. Transferred to the regional burns unit."
+  },
+  {
+    "id": "smoke_inhalation",
+    "name": "Smoke inhalation",
+    "department": "general_medicine",
+    "description": "Breathed in smoke in a fire: coughing, hoarse and short of breath, with soot round the mouth. Needs oxygen and watching in case the airway swells.",
+    "prevalence": 0.1,
+    "age_range": [
+      1,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.85,
+    "crew_assessment": "smoke inhalation from a fire",
+    "presenting_complaint": "smoke_exposure",
+    "symptoms": [
+      {
+        "symptom": "smoke_exposure",
+        "probability": 1
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.9
+      },
+      {
+        "symptom": "breathlessness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.4
+      },
+      {
+        "symptom": "sore_throat",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        124,
+        14
+      ],
+      "diastolic_bp": [
+        76,
+        8
+      ],
+      "respiratory_rate": [
+        24,
+        4
+      ],
+      "oxygen_saturation": [
+        92,
+        3
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        2,
+        5
+      ]
+    },
+    "initial_severity": [
+      0.35,
+      0.65
+    ],
+    "deterioration_per_hour": 0.05,
+    "deterioration_effects": {
+      "heart_rate": 12,
+      "systolic_bp": -10,
+      "respiratory_rate": 5,
+      "oxygen_saturation": -5,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "venous_blood_gas",
+      "chest_xray",
+      "ecg"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "salbutamol_nebuliser",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.08,
+    "disposition": "admit",
+    "disposition_note": "Smoke inhalation. Admitted for oxygen overnight in case the airway swells.",
+    "length_of_stay_hours": [
+      18,
+      48
+    ]
+  },
+  {
+    "id": "carbon_monoxide_poisoning",
+    "name": "Carbon monoxide poisoning",
+    "department": "general_medicine",
+    "description": "Poisoned by fumes from a faulty boiler or a fire: headache, sickness and dizziness, often the whole family at once. Treated with high-flow oxygen.",
+    "prevalence": 0.06,
+    "age_range": [
+      0,
+      95
+    ],
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.8,
+    "crew_assessment": "query carbon monoxide poisoning, family unwell at home",
+    "presenting_complaint": "headache",
+    "symptoms": [
+      {
+        "symptom": "headache",
+        "probability": 1
+      },
+      {
+        "symptom": "nausea",
+        "probability": 0.7
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.8
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.4
+      },
+      {
+        "symptom": "loss_of_consciousness",
+        "probability": 0.15
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        104,
+        12
+      ],
+      "systolic_bp": [
+        122,
+        14
+      ],
+      "diastolic_bp": [
+        74,
+        8
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        98,
+        1.0
+      ],
+      "temperature": [
+        36.8,
+        0.3
+      ],
+      "pain_score": [
+        3,
+        6
+      ]
+    },
+    "initial_severity": [
+      0.3,
+      0.65
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 12,
+      "systolic_bp": -10,
+      "respiratory_rate": 3,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": true,
+    "key_investigations": [
+      "venous_blood_gas",
+      "ecg",
+      "troponin"
+    ],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "High-flow oxygen through a tight mask",
+        "performed_by": "nurse",
+        "minutes": 10,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "oxygen",
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.12,
+    "disposition": "admit",
+    "disposition_note": "High carbon monoxide level on the gas. Admitted for oxygen until it clears.",
+    "length_of_stay_hours": [
+      12,
+      36
+    ]
+  },
+  {
+    "id": "crush_injury",
+    "name": "Crush injury",
+    "department": "trauma_orthopaedics",
+    "description": "A leg or arm trapped under something heavy. Swollen and painful; muscle damage can harm the kidneys, so it needs fluids and close watching of the pressure in the limb.",
+    "prevalence": 0.1,
+    "age_range": [
+      16,
+      80
+    ],
+    "female_fraction": 0.25,
+    "ambulance_probability": 0.95,
+    "crew_assessment": "trapped, crush injury to the leg",
+    "presenting_complaint": "crushed_limb",
+    "symptoms": [
+      {
+        "symptom": "crushed_limb",
+        "probability": 1
+      },
+      {
+        "symptom": "limb_pain",
+        "probability": 1
+      },
+      {
+        "symptom": "tense_swollen_limb",
+        "probability": 0.9
+      },
+      {
+        "symptom": "numbness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        108,
+        12
+      ],
+      "systolic_bp": [
+        118,
+        14
+      ],
+      "diastolic_bp": [
+        72,
+        8
+      ],
+      "respiratory_rate": [
+        22,
+        3
+      ],
+      "oxygen_saturation": [
+        97,
+        1.0
+      ],
+      "temperature": [
+        36.5,
+        0.3
+      ],
+      "pain_score": [
+        7,
+        10
+      ]
+    },
+    "initial_severity": [
+      0.4,
+      0.65
+    ],
+    "deterioration_per_hour": 0.04,
+    "deterioration_effects": {
+      "heart_rate": 14,
+      "systolic_bp": -12,
+      "respiratory_rate": 3,
+      "oxygen_saturation": -1,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "limb_xray",
+      "urea_electrolytes",
+      "full_blood_count",
+      "venous_blood_gas"
+    ],
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "morphine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Check the pressure in the limb",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      }
+    ],
+    "recovery_per_hour": 0.03,
+    "disposition": "admit",
+    "disposition_note": "Crush injury: admitted for fluids, kidney checks and watching for compartment syndrome.",
+    "needs_physio": true,
+    "length_of_stay_hours": [
+      48,
+      144
+    ]
+  },
+  {
+    "id": "chemical_eye_injury",
+    "name": "Chemical splash to the eyes",
+    "department": "emergency",
+    "description": "A chemical splashed in the eyes: stinging, watering and red. Washing the eyes out with a lot of water straight away saves the sight.",
+    "prevalence": 0.1,
+    "age_range": [
+      16,
+      70
+    ],
+    "female_fraction": 0.3,
+    "ambulance_probability": 0.4,
+    "crew_assessment": "chemical splash to both eyes",
+    "presenting_complaint": "chemical_splash",
+    "symptoms": [
+      {
+        "symptom": "chemical_splash",
+        "probability": 1
+      },
+      {
+        "symptom": "red_eyes",
+        "probability": 1
+      },
+      {
+        "symptom": "visual_disturbance",
+        "probability": 0.5
+      },
+      {
+        "symptom": "cough",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        92,
+        10
+      ],
+      "systolic_bp": [
+        128,
+        14
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        18,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1.0
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        5,
+        8
+      ]
+    },
+    "initial_severity": [
+      0.2,
+      0.4
+    ],
+    "deterioration_per_hour": 0.02,
+    "deterioration_effects": {
+      "heart_rate": 5,
+      "systolic_bp": 0,
+      "respiratory_rate": 1,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Wash out the eyes (irrigation until the pH is normal)",
+        "performed_by": "nurse",
+        "minutes": 30,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.2,
+    "disposition": "discharge",
+    "disposition_note": "Eyes washed out and the pH is back to normal. Home with eye drops and an eye clinic check tomorrow."
+  }
+]

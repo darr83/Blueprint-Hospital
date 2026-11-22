@@ -98,7 +98,8 @@ public sealed partial class HospitalSimulation
     {
         var waiting = _patients.Values
             .Where(p => p.Stage == PatientStage.AwaitingBed && p.IsAlive)
-            .OrderBy(p => p.Triage)
+            .OrderBy(p => HasIncidentPriority(p) ? 0 : 1)
+            .ThenBy(p => p.Triage)
             .ThenBy(p => p.BedRequestedAt)
             .ToList();
 

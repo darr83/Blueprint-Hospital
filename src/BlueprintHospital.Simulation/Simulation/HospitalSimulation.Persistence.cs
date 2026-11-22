@@ -487,6 +487,16 @@ public sealed class PeopleState
     /// <summary>Cardiac arrests going on when the game was saved.</summary>
     public List<CardiacArrest>? Arrests { get; init; }
 
+    /// <summary>How often major incidents happen (left out of older saves: Rare).</summary>
+    public MajorIncidentFrequency MajorIncidents { get; init; } = MajorIncidentFrequency.Rare;
+
+    /// <summary>The major incident on (or the last one, with its debrief).</summary>
+    public MajorIncident? Incident { get; init; }
+
+    public int NextIncidentId { get; init; } = 1;
+
+    public DateTime? NoIncidentBefore { get; init; }
+
     /// <summary>The Stats screen's figures (absent in older saves).</summary>
     public StatsHistoryState? History { get; init; }
 
@@ -568,6 +578,10 @@ public sealed partial class HospitalSimulation
         History = HistoryStore.Capture(),
         ResusTrolleys = SaveTrolleys(),
         Arrests = _arrests.Where(a => a.IsActive).ToList(),
+        MajorIncidents = MajorIncidents,
+        Incident = SaveIncident().Incident,
+        NextIncidentId = SaveIncident().NextId,
+        NoIncidentBefore = SaveIncident().NoneBefore,
         Progression = CaptureProgression(),
         Surgery = CaptureSurgery(),
     };
@@ -677,6 +691,8 @@ public sealed partial class HospitalSimulation
         _unpaidWages = state.UnpaidWages;
         UnlimitedMoney = state.UnlimitedMoney;
         WardEmergencies = state.WardEmergencies;
+        MajorIncidents = state.MajorIncidents;
+        SetUpIncidents(state.SeasonSeed ?? _options.Seed);
         SetUpSeasons(state.Seasons, state.SeasonSeed ?? _options.Seed);
         _unpaidUpkeep = state.UnpaidUpkeep;
         Notifications.Restore(state.Notifications, state.NextNotificationId);
@@ -816,6 +832,7 @@ public sealed partial class HospitalSimulation
         RestoreBabies(state.Babies, state.NextBabyId, state.Maternity);
         RestoreHistory(state.History);
         RestoreTrolleys(state.ResusTrolleys, state.Arrests);
+        RestoreIncident(state.Incident, state.NextIncidentId, state.NoIncidentBefore);
     }
 
     // ------------------------------------------------------------------ patients

@@ -24,6 +24,7 @@ public sealed class GameDatabase
     public const string LevelsFolder = "Levels";
     public const string SeasonsFolder = "Seasons";
     public const string EventsFolder = "Events";
+    public const string IncidentsFolder = "Incidents";
 
     private GameDatabase()
     {
@@ -64,6 +65,9 @@ public sealed class GameDatabase
     /// <summary>The days in the year that change A&amp;E (New Year's Eve, bank holidays, big matches). Empty if the data has none.</summary>
     public IReadOnlyDictionary<string, CalendarEventDefinition> CalendarEvents { get; private init; } = new Dictionary<string, CalendarEventDefinition>();
 
+    /// <summary>The kinds of major incident (road collisions, fires...).</summary>
+    public IReadOnlyDictionary<string, IncidentDefinition> Incidents { get; private init; } = new Dictionary<string, IncidentDefinition>();
+
     /// <summary>The department every new hospital starts with.</summary>
     public DepartmentDefinition StartingDepartment => Departments.Values.Single(d => d.StartsUnlocked);
 
@@ -90,6 +94,7 @@ public sealed class GameDatabase
             Levels = RecordLoader.LoadFolder<LevelDefinition>(source, LevelsFolder, errors).Values.OrderBy(l => l.Number).ToList(),
             Seasons = RecordLoader.LoadFolder<SeasonProfile>(source, SeasonsFolder, errors),
             CalendarEvents = RecordLoader.LoadFolder<CalendarEventDefinition>(source, EventsFolder, errors),
+            Incidents = RecordLoader.LoadFolder<IncidentDefinition>(source, IncidentsFolder, errors),
         };
 
         db.CheckDatabaseRules(errors);
@@ -123,6 +128,7 @@ public sealed class GameDatabase
         CheckLevels(errors);
         CheckSeasons(errors);
         CheckCalendarEvents(errors);
+        CheckIncidents(errors);
 
         foreach (var template in RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Clinic && !Clinics.ContainsKey(t.Id)))
         {
@@ -271,6 +277,17 @@ public sealed class GameDatabase
             foreach (var id in e.Conditions.Keys.Concat(e.Police.Keys).Where(id => !Conditions.ContainsKey(id)).Distinct())
             {
                 errors.Add(new DataValidationError($"{EventsFolder}/", e.Id, "conditions", $"refers to unknown condition '{id}'."));
+            }
+        }
+    }
+
+    private void CheckIncidents(List<DataValidationError> errors)
+    {
+        foreach (var incident in Incidents.Values)
+        {
+            foreach (var id in incident.Casualties.SelectMany(c => c.Conditions).Where(id => !Conditions.ContainsKey(id)).Distinct())
+            {
+                errors.Add(new DataValidationError($"{IncidentsFolder}/", incident.Id, "casualties", $"refers to unknown condition '{id}'."));
             }
         }
     }

@@ -83,7 +83,7 @@ public class ShiftTests
     [Fact]
     public void Staff_on_a_break_take_no_work_and_come_back_afterwards()
     {
-        var h = new SimulationHarness(seed: 6, arrivals: true, start: new DateTime(2027, 1, 4, 8, 0, 0), arrivalMultiplier: 1.5);
+        var h = new SimulationHarness(seed: 7, arrivals: true, start: new DateTime(2027, 1, 4, 8, 0, 0), arrivalMultiplier: 1.5);
         var seenOnBreak = new HashSet<int>();
         h.RunUntil(() =>
         {
