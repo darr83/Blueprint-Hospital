@@ -14,8 +14,8 @@ namespace BlueprintHospital.World3D;
 /// </summary>
 public partial class Walls3D : Node3D
 {
-    public static readonly Color WallTop = new("#F4F6F8");
-    public static readonly Color WallFace = new("#DCE2E8");
+    public static readonly Color WallTop = new("#FFFFFF");
+    public static readonly Color WallFace = new("#F1F3F5");
     public static readonly Color Skirting = new("#9FB0BE");
     public static readonly Color FrameFace = new("#A9B7C3");
     public static readonly Color FrameTop = new("#C7D2DB");

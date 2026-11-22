@@ -9,7 +9,7 @@ using Godot;
 namespace BlueprintHospital.Core;
 
 /// <summary>
-/// Art review shots, run with: godot --path game -- --art-shots=DIR (needs a display, not --headless).
+/// Art review shots, run with: godot --path game -- --art-shots=DIR [--3d] (needs a display, not --headless).
 /// Starts a new game, lets patients fill the beds, then photographs the department, a bed with
 /// its monitor and a room corner from all four view angles, with the interface hidden, and quits.
 /// </summary>
@@ -31,6 +31,8 @@ public partial class ArtShots : Node
             if (arg.StartsWith("--art-shots=", StringComparison.Ordinal))
             {
                 var shots = new ArtShots { Name = "ArtShots", ProcessMode = ProcessModeEnum.Always, _directory = arg["--art-shots=".Length..] };
+                // The view is chosen on the main menu; --3d takes these shots in 3D instead of 2D.
+                GameManager.Instance.Settings.View3D = Array.IndexOf(OS.GetCmdlineUserArgs(), "--3d") >= 0;
                 GameManager.Instance.AddChild(shots);
                 Callable.From(() => GameManager.Instance.StartNewGame("Art Review General")).CallDeferred();
                 return;
