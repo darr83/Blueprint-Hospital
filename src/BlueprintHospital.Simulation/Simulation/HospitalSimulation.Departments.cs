@@ -176,7 +176,8 @@ public sealed partial class HospitalSimulation
 
     private (CareSpace Ward, WardBed Bed, int Index)? FreeWardBed(Patient patient)
     {
-        foreach (var ward in WardsFor(patient))
+        // A ward closed for norovirus takes no new admissions.
+        foreach (var ward in WardsFor(patient).Where(w => !IsWardClosed(w.Id)))
         {
             for (var i = 0; i < ward.Beds.Count; i++)
             {

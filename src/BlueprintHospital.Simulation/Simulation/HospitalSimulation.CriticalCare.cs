@@ -132,7 +132,7 @@ public sealed partial class HospitalSimulation
             }
 
             var better = here < 0 ? wards : wards.Take(here).ToList();
-            var free = better.Select(w => (Ward: w, Index: FreeBedIndex(w))).FirstOrDefault(f => f.Index >= 0);
+            var free = better.Where(w => !IsWardClosed(w.Id)).Select(w => (Ward: w, Index: FreeBedIndex(w))).FirstOrDefault(f => f.Index >= 0);
             if (free.Ward is null)
             {
                 if (patient.CareLevel >= 3 && here < 0 && Now - patient.WardMoveRequestedAt > MaxWaitForBed)

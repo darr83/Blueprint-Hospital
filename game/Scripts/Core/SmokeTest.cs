@@ -976,6 +976,19 @@ public partial class SmokeTest : Node
                     var pad = incidentSim.BuildHelipad(spot);
                     Check(pad.CanBuild && incidentSim.Helipad is not null && incidentSim.BuiltCount(Simulation.Data.BuildMenu.Helipad) == 1, $"The helipad was not built: {string.Join(" ", pad.Problems)}");
                     Check(incidentSim.RemoveHelipad().CanBuild && incidentSim.Helipad is null, "The helipad did not come out again.");
+
+                    // Norovirus on a ward: its sign goes up by the door and its name says so (cleared again at Finances, once drawn).
+                    if (incidentSim.Patients.Any(x => x.Stage == Simulation.Patients.PatientStage.OnWard))
+                    {
+                        var noro = incidentSim.RunCheat("norovirus");
+                        var signs = BlueprintHospital.Hospital.OutbreakSigns.Plan(incidentSim);
+                        Check(noro.Succeeded && signs.Count == 1, $"Norovirus did not put a sign up: {noro.Message}");
+                        GD.Print($"[smoke] {noro.Message} Sign by the door of {signs[0].Ward}.");
+                    }
+                    else
+                    {
+                        GD.Print("[smoke] No one on a ward, so no norovirus check.");
+                    }
                 }
 
                 hospital.Hud.ToggleFinances();
@@ -987,6 +1000,16 @@ public partial class SmokeTest : Node
                 break;
 
             case Stage.Finances when scene is HospitalScene hospital && _frame >= 10:
+                if (hospital.Session.Simulation.Outbreaks.Count > 0)
+                {
+                    if (BlueprintHospital.Hospital.OutbreakSigns.Plan(hospital.Session.Simulation).Any(x => IsoDraw.OnViewFloor(x.Y)))
+                    {
+                        Check((hospital.ThreeD ? hospital.View3D.Festive.OutbreakSignCount : hospital.View.Festive.OutbreakSignCount) > 0, "The norovirus sign was not drawn.");
+                    }
+
+                    hospital.Session.Simulation.RunCheat("norovirus off");
+                }
+
                 Screenshot("08_finances");
                 PressCtrlC(hospital);
                 Check(!hospital.Hud.Cheats.Visible, "Ctrl+C did not close the cheat console.");

@@ -201,6 +201,13 @@ public sealed partial class HospitalSimulation
         }
 
         _incidentCheckedTo = Now;
+        if (ScriptedIncidentDue() is { } scripted)
+        {
+            _scriptedIncidentDone = true;
+            StartIncident(scripted);
+            return;
+        }
+
         if (!IncidentsPossible || ActiveIncident is not null || Now < _noIncidentBefore || !IsEmergencyOpen || !HasResus)
         {
             return;
@@ -435,6 +442,8 @@ public sealed partial class HospitalSimulation
             Verdict = string.Join(" ", notes),
         };
 
+        Tally(StatKeys.IncidentsHandled);
+        Tally(StatKeys.IncidentSurvivors, survived);
         Notifications.Add(Now, NotificationLevel.Info, $"Major incident stood down: {survived} of {incident.Casualties.Count} survived. {verdict}");
         Events.Publish(new Announcement(AnnouncementKind.General, "Major incident stand down. Major incident stand down. Thank you, everyone.", new[] { "major_incident_stand_down" }));
 

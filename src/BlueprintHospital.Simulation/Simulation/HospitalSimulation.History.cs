@@ -51,6 +51,8 @@ public static class StatKeys
     public const string ClinicSeen = "clinics.seen";
     public const string ClinicDidNotAttend = "clinics.dna";
     public const string ToiletAccidents = "facilities.toilet_accidents";
+    public const string IncidentsHandled = "incidents.handled";
+    public const string IncidentSurvivors = "incidents.survived";
     public const string Hired = "staff.hired";
     public const string Left = "staff.left";
 

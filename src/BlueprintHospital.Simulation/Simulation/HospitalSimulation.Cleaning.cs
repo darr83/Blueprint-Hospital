@@ -42,6 +42,9 @@ public sealed class CleanerJob
     /// <summary>When they finish cleaning this spot.</summary>
     public DateTime Until { get; internal set; }
 
+    /// <summary>The ward they are deep-cleaning for norovirus (or on their way to), if any.</summary>
+    public string? DeepCleanWardId { get; internal set; }
+
     /// <summary>Which place on the round they did last, so the round moves on round the hospital.</summary>
     internal int Round { get; set; }
 }
@@ -186,9 +189,9 @@ public sealed partial class HospitalSimulation
                 }
 
                 job.Stage = CleanerStage.Cleaning;
-                job.Until = Now + (job.Spill is null ? CleanSpotTime : MopSpillTime);
+                job.Until = Now + (job.Spill is not null ? MopSpillTime : job.DeepCleanWardId is not null ? DeepCleanTime : CleanSpotTime);
                 member.Activity = StaffActivity.Working;
-                member.StatusText = job.Spill is not null ? "Mopping up a spill" : job.Mopping ? $"Mopping {PlaceName(job.Spot)}" : $"Sweeping {PlaceName(job.Spot)}";
+                member.StatusText = job.Spill is not null ? "Mopping up a spill" : job.DeepCleanWardId is not null ? $"Deep-cleaning {PlaceName(job.Spot)} for norovirus" : job.Mopping ? $"Mopping {PlaceName(job.Spot)}" : $"Sweeping {PlaceName(job.Spot)}";
                 return true;
 
             case CleanerStage.Cleaning:
@@ -201,6 +204,12 @@ public sealed partial class HospitalSimulation
                 {
                     _accidents.Remove(done);
                     job.Spill = null;
+                }
+
+                if (job.DeepCleanWardId is { } cleaned)
+                {
+                    FinishDeepClean(cleaned);
+                    job.DeepCleanWardId = null;
                 }
 
                 member.TasksCompleted++;
@@ -242,6 +251,7 @@ public sealed partial class HospitalSimulation
     private void NextCleaningSpot(StaffMember member, CleanerJob job)
     {
         job.Spill = null;
+        job.DeepCleanWardId = null;
         if (WantsBreak(member) is not null && CleaningRooms.Any())
         {
             job.Stage = CleanerStage.ReturningKit;
@@ -255,6 +265,19 @@ public sealed partial class HospitalSimulation
         if (ClosestFreeSpill(member) is { } spill)
         {
             GoToSpill(member, job, spill);
+            return;
+        }
+
+        // A ward with norovirus comes before the ordinary round.
+        if (WardNeedingDeepClean(member) is { } infected && FreeFloorIn(infected) is { } bay)
+        {
+            job.Stage = CleanerStage.Walking;
+            job.Spot = bay;
+            job.Mopping = true;
+            job.DeepCleanWardId = infected.Id;
+            member.Activity = StaffActivity.WalkingToTask;
+            member.StatusText = $"Going to deep-clean {infected.Name} (norovirus)";
+            WalkTo(member, bay);
             return;
         }
 
@@ -288,6 +311,7 @@ public sealed partial class HospitalSimulation
     private void GoToSpill(StaffMember member, CleanerJob job, FloorAccident spill)
     {
         job.Spill = spill;
+        job.DeepCleanWardId = null;
         job.Stage = CleanerStage.Walking;
         job.Spot = spill.Tile;
         job.Mopping = true;

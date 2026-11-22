@@ -40,6 +40,9 @@ public partial class WallsLayer : Node2D
     /// <summary>How many room names were drawn.</summary>
     public int LabelCount { get; private set; }
 
+    /// <summary>How many "norovirus" notes went under ward names last frame.</summary>
+    public int NoteCount { get; private set; }
+
     public static string HospitalName => GameManager.Instance?.Session?.HospitalName is { Length: > 0 } name ? name : "Hospital";
 
     private static readonly Color RoofFill = new("#CDD5DC");
@@ -55,6 +58,18 @@ public partial class WallsLayer : Node2D
             var (cx, cy) = (r.X + (r.Width / 2.0), r.Y + (r.Length / 2.0));
             p.Rect(cx - 0.42, cy - 0.42, 0.84, 0.84, RoofTrim);
             p.Rect(cx - 0.36, cy - 0.36, 0.72, 0.72, HatchFill);
+        }
+    }
+
+    private string _outbreaks = string.Empty;
+
+    /// <summary>Redraws when a ward's norovirus note changes (the walls themselves only change with the layout).</summary>
+    public override void _Process(double delta)
+    {
+        if (_world?.Simulation is { } sim && OutbreakSigns.Key(sim) is var key && key != _outbreaks)
+        {
+            _outbreaks = key;
+            QueueRedraw();
         }
     }
 
@@ -74,6 +89,7 @@ public partial class WallsLayer : Node2D
         var p = new Pen(this, Shadows);
         SignTexts.Clear();
         LabelCount = 0;
+        NoteCount = 0;
 
         // Lifts and stairwells are roofed over, hiding whoever is inside; walls, doors and names go on top.
         foreach (var space in _world.ViewSpaces.Where(RoomSigns.Roofed))
@@ -296,6 +312,17 @@ public partial class WallsLayer : Node2D
         var colour = DepartmentRenderer.WayfindingColour(space) ?? new Color("#607D8B");
         p.Pill(text, spot.X, spot.Y, size, new Color(1, 1, 1, 0.84f), new Color(colour, 0.9f), Pen.Dark(colour, 0.45f));
         LabelCount++;
+
+        // A ward with norovirus says so under its name, in yellow (red once it is closed).
+        if (space.IsWard && _world.Simulation is { } sim && OutbreakSigns.LabelNote(sim, space) is { } note)
+        {
+            var closed = sim.IsWardClosed(space.Id);
+            var (dx, dy) = (cx - spot.X, cy - spot.Y);
+            var len = Math.Max(0.001, Math.Sqrt((dx * dx) + (dy * dy)));
+            p.Pill(note, spot.X + (dx / len * 1.3), spot.Y + (dy / len * 1.3), Math.Max(9, size - 2),
+                closed ? OutbreakSigns.Red : OutbreakSigns.Yellow, Pen.Dark(closed ? OutbreakSigns.Red : OutbreakSigns.Yellow, 0.35f), closed ? Colors.White : OutbreakSigns.Ink);
+            NoteCount++;
+        }
     }
 }
 

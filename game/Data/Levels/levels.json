@@ -2,7 +2,8 @@
 // A level's goals are what the player must do on it to reach the next level. Grants are paid on
 // reaching the level. Rooms also take build bar items: extend_building, add_floor, corridor,
 // waiting_chairs, waiting_desk, waiting_doors, resus_trolleys, helipad, lift, stairs and decorate.
-// Goal stats are the Stats screen's keys, e.g. ae.departed, ae.within_4h, services.scans.
+// Goal stats are the Stats screen's keys, e.g. ae.departed, ae.within_4h, services.scans, incidents.handled.
+// scripted_incident: a major incident declared once on the level (hours after reaching it, once there is a resus bay).
 [
   {
     "id": "level_1",
@@ -56,8 +57,11 @@
     "goals": [
       { "type": "count", "text": "Care for 5 red patients", "stat": "ae.triaged.red", "target": 5 },
       { "type": "share_at_least", "text": "85% leave A&E within 4 hours", "stat": "ae.within_4h", "of": ["ae.departed"], "target": 0.85, "min_count": 30 },
-      { "type": "rooms", "text": "Build a cleaning room", "room": "cleaning_room", "target": 1 }
-    ]
+      { "type": "rooms", "text": "Build a cleaning room", "room": "cleaning_room", "target": 1 },
+      { "type": "count", "text": "Get through your first major incident", "stat": "incidents.handled", "target": 1 }
+    ],
+    "scripted_incident": "road_collision",
+    "scripted_incident_after_hours": 12
   },
   {
     "id": "level_4",
@@ -70,7 +74,7 @@
     "rooms": ["acute_medical_unit", "medical_ward", "ambulatory_care_unit", "pharmacy", "cafeteria"],
     "staff": ["pharmacist"],
     "grades": ["Band 8 nurse"],
-    "features": ["ward_emergencies"],
+    "features": ["ward_emergencies", "outbreaks"],
     "goals": [
       { "type": "departments_open", "text": "Open Acute Medicine", "departments": ["general_medicine"], "target": 1 },
       { "type": "count", "text": "Admit 15 patients from A&E", "stat": "ae.admitted", "target": 15 },
