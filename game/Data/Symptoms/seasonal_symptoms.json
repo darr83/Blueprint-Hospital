@@ -47,5 +47,54 @@
     "patient_description": "Someone punched me in the face and my nose won't stop bleeding.",
     "body_system": "musculoskeletal",
     "is_red_flag": false
+  },
+  {
+    "id": "multiple_injuries",
+    "name": "Multiple injuries",
+    "patient_description": "The car hit us head-on. Everything hurts and I feel faint.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": true
+  },
+  {
+    "id": "smoke_exposure",
+    "name": "Breathed in smoke",
+    "patient_description": "There was a fire and the smoke was everywhere. I can't stop coughing.",
+    "body_system": "respiratory",
+    "is_red_flag": true
+  },
+  {
+    "id": "crushed_limb",
+    "name": "Crushed limb",
+    "patient_description": "My leg was trapped under it for ages. It's swollen and I can barely feel my foot.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
+  },
+  {
+    "id": "chemical_splash",
+    "name": "Chemical splash to the eyes",
+    "patient_description": "Something splashed in my eyes at work and they're burning.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "chest_injury",
+    "name": "Chest injury",
+    "patient_description": "My chest hit the steering wheel. It hurts to breathe in.",
+    "body_system": "respiratory",
+    "is_red_flag": true
+  },
+  {
+    "id": "extensive_burns",
+    "name": "Large, deep burns",
+    "patient_description": "The burns go all down my arms and back. The skin looks white and leathery.",
+    "body_system": "skin",
+    "is_red_flag": true
+  },
+  {
+    "id": "tense_swollen_limb",
+    "name": "Tense, swollen limb",
+    "patient_description": "My leg is swelling up tight and the pain is getting worse, not better.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": true
   }
 ]

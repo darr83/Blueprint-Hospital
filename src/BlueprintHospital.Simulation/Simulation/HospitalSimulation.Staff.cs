@@ -194,6 +194,11 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
+            if (UpdateTraumaResponder(member))
+            {
+                continue;
+            }
+
             if (UpdateAssisting(member))
             {
                 continue;

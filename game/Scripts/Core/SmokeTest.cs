@@ -222,6 +222,7 @@ public partial class SmokeTest : Node
                     var menu = (UI.MainMenu)scene;
                     Check(menu.NewGameSeasons?.ButtonPressed == true, "Seasons should be on by default on the New Game screen.");
                     Check(menu.NewGameMonth?.Selected == 3, "A new game should start in April by default.");
+                    Check(menu.NewGameIncidents?.Selected == 1, "Major incidents should be Rare by default on the New Game screen.");
                 }
 
                 manager.StartNewGame("Smoke Test Empty", Simulation.Simulation.StartingHospital.EmptyBuilding);
@@ -941,6 +942,21 @@ public partial class SmokeTest : Node
                     Check(hospital.Weather is not null, "The weather overlay is missing.");
                     Check(hospital.Session.Simulation.RunCheat("weather off").Succeeded, "weather off failed.");
                     BlueprintHospital.Hospital.WeatherLook.Update(hospital.Session.Simulation);
+                }
+
+                // A major incident: the standby card opens with the casualties and the get-ready actions, then stands down.
+                {
+                    var incidentSim = hospital.Session.Simulation;
+                    var declared = incidentSim.RunCheat("incident road_collision");
+                    Check(declared.Succeeded && incidentSim.ActiveIncident is { Casualties.Count: 5 }, $"incident road_collision: {declared.Message}");
+                    hospital.Hud.Incident.Open();
+                    Check(hospital.Hud.Incident.Visible && hospital.Hud.Incident.Expanded && hospital.Hud.Incident.Showing is not null, "The major incident card did not open.");
+                    Check(incidentSim.IncidentActionsNow().Count == 5, "The major incident should offer five get-ready actions.");
+                    Screenshot("08b_major_incident");
+                    Check(incidentSim.RunCheat("incident end").Succeeded && incidentSim.Incident?.Debrief is not null, "The major incident did not stand down with a debrief.");
+                    hospital.Hud.Incident.Close();
+                    hospital.Hud.Incident.Refresh();
+                    Check(!hospital.Hud.Incident.Visible, "The major incident banner should go once the debrief is closed.");
                 }
 
                 hospital.Hud.ToggleFinances();

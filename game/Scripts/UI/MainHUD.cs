@@ -141,6 +141,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The crash call banner and crash team panel, under the top bar while a cardiac arrest is going on.</summary>
     public CrashPanel Crash { get; } = new() { Name = "CrashPanel" };
 
+    /// <summary>The major incident banner and card (standby, get ready, casualties, debrief).</summary>
+    public MajorIncidentPanel Incident { get; } = new() { Name = "MajorIncidentPanel" };
+
     /// <summary>The cheat command line, opened with Ctrl+C.</summary>
     public CheatConsole Cheats { get; } = new() { Name = "CheatConsole", Visible = false };
 
@@ -423,6 +426,14 @@ public partial class MainHUD : CanvasLayer
         Crash.OffsetTop = TopBarHeight + Gap;
         root.AddChild(Crash);
 
+        // The major incident banner hangs there too; a crash call drops below it.
+        Incident.Initialise(sim, session.Events);
+        Incident.AnchorLeft = Incident.AnchorRight = 0.5f;
+        Incident.OffsetLeft = -470;
+        Incident.OffsetRight = 470;
+        Incident.OffsetTop = TopBarHeight + Gap;
+        root.AddChild(Incident);
+
         // The cheat console sits on top of everything, centred under the top bar.
         Cheats.Initialise(sim);
         Cheats.AnchorLeft = Cheats.AnchorRight = 0.5f;
@@ -446,6 +457,7 @@ public partial class MainHUD : CanvasLayer
         RefreshClock();
         RefreshNav();
         RefreshTag();
+        Crash.OffsetTop = TopBarHeight + Gap + (Incident.Visible ? Incident.Size.Y + 6 : 0);
 
         // In Build mode everything docked to the bottom of the screen moves up above the build bar.
         var reserve = Build.Visible ? BuildBar.Reserve : 0;

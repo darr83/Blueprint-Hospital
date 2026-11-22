@@ -52,6 +52,9 @@ public sealed class SimulationOptions
     /// tests leave it off unless they ask, so their patients don't depend on the date.
     /// </summary>
     public bool Seasons { get; init; }
+
+    /// <summary>How often major incidents happen (tests leave them off unless they ask).</summary>
+    public MajorIncidentFrequency MajorIncidents { get; init; } = MajorIncidentFrequency.Off;
 }
 
 /// <summary>The choice of how to start a new game.</summary>
@@ -133,6 +136,8 @@ public sealed partial class HospitalSimulation
 
         UnlimitedMoney = _options.UnlimitedMoney;
         WardEmergencies = _options.WardEmergencies;
+        MajorIncidents = _options.MajorIncidents;
+        SetUpIncidents(_options.Seed);
         Type = _options.Type;
         UnlockStartingDepartments();
         StartProgression(_options.Type);
@@ -297,6 +302,7 @@ public sealed partial class HospitalSimulation
         Stats.Update(this);
         UpdatePressure();
         UpdateEvents();
+        UpdateIncidents(dt);
         UpdateHistory();
         UpdateProgression();
     }

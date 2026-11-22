@@ -124,6 +124,16 @@
  "assess_hyperemesis_gravidarum": "Assessment: vomiting in pregnancy, dehydrated.",
  "assess_pelvic_inflammatory_disease": "Assessment: lower abdominal pain.",
  "assess_bartholins_abscess": "Assessment: painful vulval swelling.",
+ "assess_multiple_trauma": "Assessment: major trauma, multiple injuries, low blood pressure.",
+ "assess_traumatic_pneumothorax": "Assessment: chest injury, short of breath, query pneumothorax.",
+ "assess_ruptured_spleen": "Assessment: blunt abdominal injury, low blood pressure.",
+ "assess_pelvic_fracture": "Assessment: high-speed collision, pelvic injury, binder applied.",
+ "assess_major_head_injury": "Assessment: head injury, reduced consciousness.",
+ "assess_major_burns": "Assessment: house fire, major burns.",
+ "assess_smoke_inhalation": "Assessment: smoke inhalation from a fire.",
+ "assess_carbon_monoxide_poisoning": "Assessment: query carbon monoxide poisoning, family unwell at home.",
+ "assess_crush_injury": "Assessment: trapped, crush injury to the leg.",
+ "assess_chemical_eye_injury": "Assessment: chemical splash to both eyes.",
  "assess_established_labour": "Assessment: woman in established labour.",
  "assess_preterm_labour": "Assessment: woman in preterm labour.",
  "assess_breech_presentation": "Assessment: woman in labour, breech baby.",
@@ -214,5 +224,7 @@
  "gen_no_smoking": "This is a no smoking site, including the car park and entrances.",
  "gen_car_park": "Would the owner of the blue estate car parked in the ambulance bay please move it immediately.",
  "gen_lost_child": "Would the parent of a little boy called Oliver please come to the A and E reception desk.",
- "gen_hand_hygiene": "Please remember to clean your hands when entering and leaving clinical areas."
+ "gen_hand_hygiene": "Please remember to clean your hands when entering and leaving clinical areas.",
+ "major_incident_standby": "Major incident standby. Major incident standby. All staff to their areas.",
+ "major_incident_stand_down": "Major incident stand down. Major incident stand down. Thank you, everyone."
 }

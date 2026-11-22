@@ -1,4 +1,5 @@
 using BlueprintHospital.Simulation.Core;
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
@@ -111,7 +112,7 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            if (space.Kind == CareSpaceKind.Resus && patient.Condition.Department == "trauma" && patient.ArrivalMethod == ArrivalMethod.Ambulance
+            if (space.Kind == CareSpaceKind.Resus && IsMajorTrauma(patient.Condition) && patient.ArrivalMethod == ArrivalMethod.Ambulance
                 && _traumaCalled.Add(patient.Id))
             {
                 var place = PlaceName(space);
@@ -119,6 +120,11 @@ public sealed partial class HospitalSimulation
             }
         }
     }
+
+    /// <summary>Injuries that bring the trauma team: a serious injury that could be fatal.</summary>
+    private static bool IsMajorTrauma(ConditionDefinition condition) =>
+        condition.CanBeFatal && condition.Department is "trauma_orthopaedics" or "general_surgery" or "neurology" or "emergency"
+        && condition.Id is "multiple_trauma" or "traumatic_pneumothorax" or "ruptured_spleen" or "pelvic_fracture" or "major_head_injury" or "major_burns";
 
     /// <summary>Flavour announcements at set times of day.</summary>
     private void UpdateGeneralAnnouncements()

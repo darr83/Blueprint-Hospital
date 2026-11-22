@@ -23,6 +23,7 @@ public sealed partial class HospitalSimulation
         "emergency [type] start a ward emergency for a patient in bed (types: fall, sepsis, heart_attack, stroke...)",
         "level <number>   jump to a Career level (e.g. level 4)",
         "complication <type>  the next operation has a complication (bleeding, infection, critical_care, none)",
+        "incident <kind>  a major incident now (incident list for the kinds, incident end to stand down)",
         "weather <kind>   today's weather (clear, sunny, cloudy, rain, heavy_rain, fog, storm, snow, ice, heatwave, or off for the forecast)",
         "help             list the commands",
     };
@@ -73,6 +74,9 @@ public sealed partial class HospitalSimulation
 
             case "weather":
                 return WeatherCheat(words.Length == 2 ? words[1].ToLowerInvariant() : string.Empty);
+
+            case "incident":
+                return new CheatResult(true, IncidentCheat(words.Length == 2 ? words[1].ToLowerInvariant() : string.Empty));
 
             case "complication":
                 if (words.Length != 2 || words[1].ToLowerInvariant() is not ("bleeding" or "infection" or "critical_care" or "none"))

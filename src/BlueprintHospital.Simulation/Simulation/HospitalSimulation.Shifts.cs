@@ -176,7 +176,7 @@ public sealed partial class HospitalSimulation
     /// </summary>
     private bool UpdateDuty(StaffMember member)
     {
-        var theirShift = member.Shift == CurrentShift;
+        var theirShift = member.Shift == CurrentShift || IsCalledIn(member);
         switch (member.Activity)
         {
             case StaffActivity.OffDuty:

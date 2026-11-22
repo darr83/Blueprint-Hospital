@@ -25,7 +25,7 @@ public sealed class GameSession
         }
 
         // Each clock tick advances the hospital by one game second.
-        Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount, Start = start, UnlimitedMoney = unlimitedMoney, WardEmergencies = wardEmergencies, Type = type, Seasons = seasonChoice.Seasons });
+        Simulation = new HospitalSimulation(database, Clock, Events, Site, new SimulationOptions { Seed = Environment.TickCount, Start = start, UnlimitedMoney = unlimitedMoney, WardEmergencies = wardEmergencies, Type = type, Seasons = seasonChoice.Seasons, MajorIncidents = seasonChoice.Incidents });
         if (save?.Layout is { } layout)
         {
             Simulation.RestoreLayout(layout);
@@ -73,7 +73,7 @@ public sealed class GameSession
 }
 
 /// <summary>The New Game choices about the year: whether seasons change who comes in, and the month the game starts.</summary>
-public sealed record SeasonChoice(bool Seasons, int StartMonth)
+public sealed record SeasonChoice(bool Seasons, int StartMonth, MajorIncidentFrequency Incidents = MajorIncidentFrequency.Rare)
 {
     /// <summary>Seasons on, starting in April, so winter is something to build up to.</summary>
     public static readonly SeasonChoice Default = new(true, 4);

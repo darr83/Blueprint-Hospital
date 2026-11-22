@@ -49,6 +49,8 @@ GENERAL = {
     "gen_car_park": "Would the owner of the blue estate car parked in the ambulance bay please move it immediately.",
     "gen_lost_child": "Would the parent of a little boy called Oliver please come to the A and E reception desk.",
     "gen_hand_hygiene": "Please remember to clean your hands when entering and leaving clinical areas.",
+    "major_incident_standby": "Major incident standby. Major incident standby. All staff to their areas.",
+    "major_incident_stand_down": "Major incident stand down. Major incident stand down. Thank you, everyone.",
 }
 
 
@@ -82,7 +84,8 @@ def build_lines():
     lines["amb_due_10"] = "Ambulance due in ten minutes."
     for path in sorted(glob.glob(os.path.join(CONDITIONS, "*.json"))):
         with open(path) as f:
-            data = json.load(f)
+            # The data files may start with // comments.
+            data = json.loads("\n".join(line for line in f if not line.lstrip().startswith("//")))
         for c in data if isinstance(data, list) else next(iter(data.values())):
             lines[f"assess_{c['id']}"] = f"Assessment: {c['crew_assessment']}."
     lines.update(GENERAL)
