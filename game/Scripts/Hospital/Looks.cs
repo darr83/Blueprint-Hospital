@@ -456,9 +456,14 @@ public static class Looks
     /// <summary>A mum or dad staying with their child: everyday clothes (a coat when they first come in), and their child's skin tone.</summary>
     public static PersonLook Parent(Parent parent, Patient? child)
     {
-        if (parent.Police)
+        switch (parent.Escort)
         {
-            return PoliceOfficer(parent);
+            case EscortKind.Police:
+                return PoliceOfficer(parent);
+            case EscortKind.FireCrew:
+                return Firefighter(parent);
+            case EscortKind.AirCrew:
+                return AirCrew(parent);
         }
 
         var seed = parent.Id + 200_003;
@@ -480,6 +485,40 @@ public static class Looks
             Build = 1f + (Roll(seed, 4, 4) * 0.05f),
         };
         return WithFace(look, seed, female, officer.Age, who.SkinIndex, neat: true);
+    }
+
+    /// <summary>
+    /// A firefighter: dark navy fire tunic and leggings with the bright yellow and silver bands, a radio, black
+    /// boots, and a yellow helmet with its visor up.
+    /// </summary>
+    public static PersonLook Firefighter(Parent crew)
+    {
+        var seed = crew.Id + 400_013;
+        var female = crew.Sex == Sex.Female;
+        var who = Person(seed, female, crew.Age);
+        var style = female ? Pick(seed, 10, HairStyle.Bun, HairStyle.Ponytail, HairStyle.Bun) : Pick(seed, 10, HairStyle.Short, HairStyle.Crop, HairStyle.Bald);
+        var look = new PersonLook(new Color("#1E2633"), new Color("#1A212C"), who.Skin, who.Hair)
+        {
+            Kind = TopKind.Tunic, Trim = new Color("#E8E23A"), Epaulettes = new Color("#C7CCD1"), Radio = true, LongSleeves = true,
+            ShoeColour = new Color("#0D0F12"), Style = style, FireHelmet = true, Build = 1.04f + (Roll(seed, 4, 4) * 0.05f),
+        };
+        return WithFace(look, seed, female, crew.Age, who.SkinIndex, neat: true);
+    }
+
+    /// <summary>The air ambulance paramedic: a red flight suit with reflective trim, a radio on the chest and black boots.</summary>
+    public static PersonLook AirCrew(Parent crew)
+    {
+        var seed = crew.Id + 400_017;
+        var female = crew.Sex == Sex.Female;
+        var who = Person(seed, female, crew.Age);
+        var style = StaffHair(seed, female, crew.Age);
+        var hair = style is HairStyle.Hijab or HairStyle.Turban ? ScarfColours[Roll(seed, 12, ScarfColours.Length)] : who.Hair;
+        var look = new PersonLook(new Color("#B3202A"), new Color("#A51D27"), who.Skin, hair)
+        {
+            Kind = TopKind.Tunic, Trim = new Color("#D9DEE2"), Epaulettes = new Color("#1D2228"), Radio = true, LongSleeves = true,
+            ShoeColour = new Color("#121416"), Style = style, Build = 0.97f + (Roll(seed, 4, 5) * 0.05f),
+        };
+        return WithFace(look, seed, female, crew.Age, who.SkinIndex, neat: true);
     }
 
     /// <summary>

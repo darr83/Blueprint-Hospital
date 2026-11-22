@@ -1,7 +1,7 @@
 // Career levels. Each level adds rooms, staff, departments and features to the ones before it.
 // A level's goals are what the player must do on it to reach the next level. Grants are paid on
 // reaching the level. Rooms also take build bar items: extend_building, add_floor, corridor,
-// waiting_chairs, waiting_desk, waiting_doors, resus_trolleys, lift, stairs and decorate.
+// waiting_chairs, waiting_desk, waiting_doors, resus_trolleys, helipad, lift, stairs and decorate.
 // Goal stats are the Stats screen's keys, e.g. ae.departed, ae.within_4h, services.scans.
 [
   {
@@ -49,7 +49,7 @@
     "grant": 150000,
     "arrival_rate": 0.9,
     "departments": [],
-    "rooms": ["resus_bay", "resus_trolleys", "cleaning_room"],
+    "rooms": ["resus_bay", "resus_trolleys", "cleaning_room", "helipad"],
     "staff": ["cleaner"],
     "grades": ["Registrar"],
     "features": ["red_patients", "arrests", "spills"],

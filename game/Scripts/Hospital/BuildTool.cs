@@ -27,6 +27,9 @@ public enum BuildMode
 
     /// <summary>Resus trolleys: click one to pick it up and click again to put it down; click empty floor to buy one. X sells a bought one.</summary>
     Trolley,
+
+    /// <summary>The helipad: a 12 m square that follows the cursor over open ground; click to build it, or click the one there is to take it out.</summary>
+    Helipad,
 }
 
 /// <summary>
@@ -294,6 +297,21 @@ public partial class BuildTool : Node2D
     private static GridCoord Inside(GridRect r, GridCoord tile) =>
         new(Math.Clamp(tile.X, r.X, r.Right - 1), Math.Clamp(tile.Y, r.Y, r.Bottom - 1));
 
+    /// <summary>Starts placing the helipad (or taking out the one there is).</summary>
+    public void StartHelipad()
+    {
+        Mode = BuildMode.Helipad;
+        Template = null;
+        MovingId = null;
+        Restart();
+    }
+
+    /// <summary>True when the cursor is over the helipad that is already built, so a click takes it out.</summary>
+    public bool OverHelipad => Mode == BuildMode.Helipad && _sim.Helipad is { } pad && pad.Contains(_hover);
+
+    /// <summary>The top-left corner of the helipad as it would go now, centred on the cursor.</summary>
+    private GridCoord HelipadCorner => new(_hover.X - (HospitalSimulation.HelipadSize / 2), _hover.Y - (HospitalSimulation.HelipadSize / 2));
+
     public void StartExtension()
     {
         Mode = BuildMode.Extend;
@@ -367,7 +385,7 @@ public partial class BuildTool : Node2D
 
                 return true;
 
-            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door:
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door or BuildMode.Helipad:
                 Refresh(force: true);
                 Place();
                 return true;
@@ -486,6 +504,14 @@ public partial class BuildTool : Node2D
 
             case BuildMode.Desk or BuildMode.Door:
                 return;
+            case BuildMode.Helipad when OverHelipad:
+                result = _sim.RemoveHelipad();
+                what = "Took out the helipad";
+                break;
+            case BuildMode.Helipad:
+                result = _sim.BuildHelipad(HelipadCorner);
+                what = "Built the helipad";
+                break;
             case BuildMode.Room:
             case BuildMode.Corridor:
                 result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null), withStaff: Mode == BuildMode.Room && (BlueprintHospital.Core.GameManager.Instance?.Settings.AutoStaffNewRooms ?? false));
@@ -536,9 +562,9 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        _rect = DragRect();
+        _rect = Mode == BuildMode.Helipad ? (OverHelipad ? _sim.Helipad!.Value : HospitalSimulation.HelipadAt(HelipadCorner)) : DragRect();
 
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -555,6 +581,8 @@ public partial class BuildTool : Node2D
         Check = Mode switch
         {
             BuildMode.Chair => CheckChairs(),
+            BuildMode.Helipad when OverHelipad => _sim.CheckRemoveHelipad(),
+            BuildMode.Helipad => _sim.CheckHelipad(HelipadCorner),
             BuildMode.Trolley when CarriedTrolley is null && HoveredTrolley is not null => new BuildCheck(0, Array.Empty<string>()),
             BuildMode.Trolley => _sim.CheckResusTrolley(_hover, CarriedTrolley),
             BuildMode.Desk when TargetRoom is null => new BuildCheck(0, new[] { "Click inside a waiting room to place its reception desk." }),
@@ -626,6 +654,12 @@ public partial class BuildTool : Node2D
             return;
         }
 
+        if (Mode == BuildMode.Helipad)
+        {
+            DrawHelipadPreview();
+            return;
+        }
+
         if (_dragStart is null)
         {
             // Before the drag starts, just mark the tile under the cursor.
@@ -680,6 +714,27 @@ public partial class BuildTool : Node2D
             }
         }
 
+        CostTag(P(r.Right, r.Y));
+    }
+
+    /// <summary>The 12 m pad under the cursor, green or red, with its touchdown circle and the cost (or the refund, over the one there is).</summary>
+    private void DrawHelipadPreview()
+    {
+        var colour = Check!.CanBuild ? Good : Bad;
+        var r = _rect;
+        var quad = new[] { P(r.X, r.Y), P(r.Right, r.Y), P(r.Right, r.Bottom), P(r.X, r.Bottom) };
+        DrawColoredPolygon(quad, new Color(colour, 0.28f));
+        DrawPolyline(quad.Append(quad[0]).ToArray(), colour, 3f, true);
+        var cx = r.X + (r.Width / 2.0);
+        var cy = r.Y + (r.Length / 2.0);
+        var radius = (r.Width / 2.0) - 3.2;
+        var ring = Enumerable.Range(0, 49).Select(i => P(cx + (Math.Cos(i / 48.0 * Math.Tau) * radius), cy + (Math.Sin(i / 48.0 * Math.Tau) * radius))).ToArray();
+        DrawPolyline(ring, new Color(1, 1, 1, 0.85f), 2.5f, true);
+        var hw = radius * 0.42;
+        var hh = radius * 0.62;
+        DrawLine(P(cx - hw, cy - hh), P(cx - hw, cy + hh), Colors.White, 4f, true);
+        DrawLine(P(cx + hw, cy - hh), P(cx + hw, cy + hh), Colors.White, 4f, true);
+        DrawLine(P(cx - hw, cy), P(cx + hw, cy), Colors.White, 4f, true);
         CostTag(P(r.Right, r.Y));
     }
 

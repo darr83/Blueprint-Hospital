@@ -92,6 +92,11 @@ public partial class Agents3D : Node3D
             present.Add(c);
         }
 
+        foreach (var heli in sim.Helicopters)
+        {
+            present.Add(heli);
+        }
+
         foreach (var gone in _views.Keys.Where(a => !present.Contains(a)).ToList())
         {
             _views[gone].Node.QueueFree();
@@ -148,6 +153,7 @@ public partial class Agents3D : Node3D
         private Alert3D? _alert;
         private Ambulance3D? _ambulance;
         private Car3D? _car;
+        private Helicopter3D? _helicopter;
 
         private Person3D[]? _crew;
 
@@ -212,6 +218,14 @@ public partial class Agents3D : Node3D
                 _ambulance ??= Ambulance3D.Make(Node);
                 _ambulance.Sync(world, sim, vehicle);
                 SyncCrew(world, sim, vehicle);
+                return;
+            }
+
+            if (_agent is HelicopterVehicle heli)
+            {
+                Node.Visible = IsoDraw.ViewFloor == 0;
+                _helicopter ??= Helicopter3D.Make(Node);
+                _helicopter.Sync(world, heli);
                 return;
             }
 

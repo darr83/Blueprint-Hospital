@@ -442,6 +442,15 @@ public sealed class Patient : Agent
     /// <summary>Brought in by the police, and a police officer stays with them while they are in A&amp;E.</summary>
     public bool PoliceEscort { get; set; }
 
+    /// <summary>Came in with a firefighter (a major incident casualty brought out by the fire service), who stays until the handover.</summary>
+    public bool FireCrewEscort { get; set; }
+
+    /// <summary>
+    /// Brought by the air ambulance: its paramedic stays with them until the handover. With a helipad they
+    /// land at the hospital and wheel them in; without one they land nearby and come with a road ambulance.
+    /// </summary>
+    public bool AirAmbulance { get; set; }
+
     /// <summary>Weeks pregnant when she arrived (maternity patients only).</summary>
     public int GestationWeeks { get; set; }
 

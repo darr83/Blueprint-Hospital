@@ -35,7 +35,10 @@ public sealed class BuildMenu
     /// <summary>Placing or moving resus trolleys.</summary>
     public const string ResusTrolleys = "resus_trolleys";
 
-    public static readonly IReadOnlySet<string> SpecialItems = new HashSet<string> { ExtendBuilding, AddFloor, WaitingChairs, WaitingDesk, WaitingDoors, ResusTrolleys };
+    /// <summary>Places the helipad on open ground outside, or sells it.</summary>
+    public const string Helipad = "helipad";
+
+    public static readonly IReadOnlySet<string> SpecialItems = new HashSet<string> { Helipad, ExtendBuilding, AddFloor, WaitingChairs, WaitingDesk, WaitingDoors, ResusTrolleys };
 
     private static readonly JsonSerializerOptions Options = new()
     {

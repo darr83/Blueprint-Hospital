@@ -514,6 +514,17 @@ public partial class Person3D : Node3D
             b.Ball(head + new Vector3(0, r * 0.38f, -r * 0.05f) + back * 0, new Vector3(r * 2.2f, r * 1.6f, r * 2.2f), c);
         }
 
+        if (look.FireHelmet)
+        {
+            // A firefighter's helmet: a yellow dome with a raised crest, a deep back brim and the visor pushed up.
+            var yellow = new Color("#F2C230");
+            b.Ball(head + new Vector3(0, r * 0.45f, -r * 0.05f), new Vector3(r * 2.45f, r * 1.85f, r * 2.5f), yellow);
+            b.Box(head + new Vector3(0, r * 1.25f, -r * 0.05f), new Vector3(r * 0.32f, r * 0.28f, r * 2.1f), Basis.Identity, yellow.Darkened(0.1f));
+            b.Cylinder(head + new Vector3(0, r * 0.12f, -r * 0.35f), r * 1.32f, r * 0.14f, r * 1.42f, yellow.Darkened(0.08f));
+            b.Box(head + new Vector3(0, r * 1.05f, r * 0.9f), new Vector3(r * 1.7f, r * 0.12f, r * 0.55f), Basis.FromEuler(new Vector3(-0.45f, 0, 0)), new Color(0.75f, 0.85f, 0.9f, 1f));
+            b.Box(head + new Vector3(0, r * 0.7f, r * 1.12f), new Vector3(r * 0.9f, r * 0.22f, r * 0.08f), Basis.Identity, new Color("#C7CCD1"));
+        }
+
         if (look.PoliceHat)
         {
             // A peaked cap: chequered band, flat black top and a shiny peak over the eyes.

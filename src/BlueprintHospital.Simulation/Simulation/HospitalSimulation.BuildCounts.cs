@@ -15,6 +15,8 @@ public sealed partial class HospitalSimulation
     {
         switch (item)
         {
+            case BuildMenu.Helipad:
+                return Helipad is null ? 0 : 1;
             case BuildMenu.ExtendBuilding:
                 return MainBuilding.Extensions.Count;
             case BuildMenu.AddFloor:

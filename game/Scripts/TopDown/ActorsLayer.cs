@@ -90,6 +90,35 @@ public partial class ActorsLayer : Node2D
         CotBabies(p);
         ResusTrolleys(p);
         People(p);
+        Helicopters(p);
+    }
+
+    /// <summary>How far round each helicopter's rotor has turned, by id (it speeds up and slows down smoothly).</summary>
+    private readonly Dictionary<int, double> _rotorAngles = new();
+
+    /// <summary>The air ambulance, over everything else on the ground floor.</summary>
+    private void Helicopters(Pen p)
+    {
+        if (IsoDraw.ViewFloor != 0)
+        {
+            return;
+        }
+
+        foreach (var heli in _sim.Helicopters)
+        {
+            var (x, y) = _world.Interpolated(heli);
+            var (dx, dy) = heli.Facing;
+            var a = Turned(heli, Math.Abs(dx) + Math.Abs(dy) < 1e-6 ? Math.PI / 2 : Pen.Facing(dx, dy), 1.2, always: true);
+            var angle = _rotorAngles.GetValueOrDefault(heli.Id) + (_delta * heli.Rotor * 26);
+            _rotorAngles[heli.Id] = angle % (Math.PI * 2);
+            VehicleArt.Helicopter(p, x, y, Math.Sin(a), -Math.Cos(a), heli.Altitude, angle, heli.Rotor);
+            VehiclesDrawn++;
+        }
+
+        foreach (var gone in _rotorAngles.Keys.Where(id => _sim.Helicopters.All(h => h.Id != id)).ToList())
+        {
+            _rotorAngles.Remove(gone);
+        }
     }
 
     // ------------------------------------------------------------------ vehicles

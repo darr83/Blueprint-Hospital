@@ -21,6 +21,7 @@ public partial class SiteRenderer : Node2D
         [TileKind.Parking] = new Color("#6D7176"),
         [TileKind.TaxiRank] = new Color("#5E6267"),
         [TileKind.BuildingFloor] = new Color("#E7E3DA"),
+        [TileKind.Helipad] = new Color("#AEB2B5"),
     };
 
     private SiteMap _site = null!;

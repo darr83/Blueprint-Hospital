@@ -414,7 +414,7 @@ public partial class WorldLayer : Node2D
 
     /// <summary>Patients still on an incoming ambulance are not on the map yet.</summary>
     public bool IsOnMap(Patient patient) =>
-        patient.Stage != PatientStage.Gone
+        patient.Stage != PatientStage.Gone && !_sim.InHelicopter(patient)
         && !_sim.Ambulances.Any(a => a.PatientId == patient.Id && a.Purpose == AmbulancePurpose.Arrival && a.State is AmbulanceState.Driving or AmbulanceState.WaitingForBay);
 
     private void SyncAgents()

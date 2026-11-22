@@ -27,13 +27,16 @@ public sealed partial class HospitalSimulation
 
     private static readonly string[] DadNames = { "James", "Daniel", "Chris", "Mark", "Tom", "Ryan", "Lee", "Imran", "Ben", "Craig", "Gareth", "Adam", "Mohammed", "Paul", "Jason", "Stuart" };
 
-    /// <summary>Parents in the hospital with their children.</summary>
-    public IEnumerable<Parent> Parents => _parents.Values;
+    /// <summary>Firefighters and air ambulance crew walking back out after handing their patient over.</summary>
+    private readonly List<Parent> _leavingCrew = new();
+
+    /// <summary>Parents in the hospital with their children (and police, fire and air ambulance crew with their patients).</summary>
+    public IEnumerable<Parent> Parents => _parents.Values.Concat(_leavingCrew);
 
     /// <summary>The mum or dad with a child, if they are here.</summary>
     public Parent? ParentOf(Patient child) => _parents.GetValueOrDefault(child.Id);
 
-    public Parent? FindParent(int id) => _parents.Values.FirstOrDefault(p => p.Id == id);
+    public Parent? FindParent(int id) => Parents.FirstOrDefault(p => p.Id == id);
 
     /// <summary>A patient who comes with a parent: any child, apart from a girl in labour.</summary>
     public static bool HasParentWith(Patient patient) => patient.Age < AdultAge && !patient.Maternity;
@@ -42,6 +45,16 @@ public sealed partial class HospitalSimulation
     public static bool HasPoliceWith(Patient patient) =>
         patient.PoliceEscort && !HasParentWith(patient) && patient.Stage is not (PatientStage.OnWard or PatientStage.Gone) && patient.LeftEmergencyAt is null;
 
+    /// <summary>
+    /// A firefighter or the air ambulance paramedic is with them: they came in with a major incident casualty
+    /// and stay until they have handed over to a nurse (a child's mum or dad, or the police, take their place).
+    /// </summary>
+    public static bool HasCrewWith(Patient patient) =>
+        (patient.FireCrewEscort || patient.AirAmbulance) && !patient.PoliceEscort && !HasParentWith(patient)
+        && patient.Stage == PatientStage.InAmbulanceQueue && patient.TriagedAt is null && patient.IsAlive;
+
+    private static readonly string[] CrewFirstNames = { "Sam", "Jo", "Alex", "Chris", "Lee", "Danny", "Becky", "Kieran", "Nadia", "Owen", "Tasha", "Wes" };
+
     private static readonly string[] PoliceSurnames = { "Taylor", "Walsh", "Okafor", "Hughes", "Patel", "Murray", "Bennett", "Kaur", "Fletcher", "Doyle", "Ahmed", "Price" };
 
     /// <summary>Whether a parent is asleep on the fold-out bed at this time of day.</summary>
@@ -49,19 +62,47 @@ public sealed partial class HospitalSimulation
 
     private void UpdateParents(double dt)
     {
-        foreach (var id in _parents.Keys.Where(id => !_patients.TryGetValue(id, out var c) || !ChildIsOnSite(c) || (_parents[id].Police && !HasPoliceWith(c))).ToList())
+        foreach (var id in _parents.Keys.Where(id => !_patients.TryGetValue(id, out var c) || !ChildIsOnSite(c) || (_parents[id].Police && !HasPoliceWith(c)) || (_parents[id].Crew && !HasCrewWith(c))).ToList())
         {
-            if (_parents[id].Police && _patients.TryGetValue(id, out var left) && left.Stage != PatientStage.Gone)
+            var escort = _parents[id];
+            if ((escort.Police || escort.Crew) && _patients.TryGetValue(id, out var left) && left.Stage != PatientStage.Gone)
             {
-                left.Log(Now, $"{_parents[id].FullName} handed over and left.");
+                left.Log(Now, $"{escort.FullName} handed over and left.");
             }
 
             _parents.Remove(id);
+            if (escort.Crew)
+            {
+                // Firefighters and the air crew walk back out: the air crew to the helicopter, the fire crew off down the road to their engine.
+                escort.Leaving = true;
+                escort.Activity = ParentActivity.WithChild;
+                var way = CrewWayOut(escort);
+                var path = PathFor(escort, way);
+                if (path.Count > 0)
+                {
+                    escort.FollowPath(path);
+                    _leavingCrew.Add(escort);
+                }
+                else
+                {
+                    CrewBackAboard(escort);
+                }
+            }
+        }
+
+        foreach (var crew in _leavingCrew.ToList())
+        {
+            crew.Move(dt);
+            if (!crew.IsMoving)
+            {
+                _leavingCrew.Remove(crew);
+                CrewBackAboard(crew);
+            }
         }
 
         foreach (var child in _patients.Values)
         {
-            if (!(HasParentWith(child) || HasPoliceWith(child)) || !ChildIsOnSite(child))
+            if (!(HasParentWith(child) || HasPoliceWith(child) || HasCrewWith(child)) || !ChildIsOnSite(child))
             {
                 continue;
             }
@@ -81,13 +122,14 @@ public sealed partial class HospitalSimulation
     private bool ChildIsOnSite(Patient child) =>
         child.Stage != PatientStage.Gone && child.IsAlive
         && !_ambulances.Any(a => a.PatientId == child.Id && a.Purpose == AmbulancePurpose.Arrival && a.State is AmbulanceState.Driving or AmbulanceState.WaitingForBay)
-        && !_cars.Any(c => ReferenceEquals(c.Passenger, child));
+        && !_cars.Any(c => ReferenceEquals(c.Passenger, child))
+        && !InHelicopter(child);
 
     private Parent NewParent(Patient child)
     {
         if (!HasParentWith(child))
         {
-            return NewPoliceOfficer(child);
+            return HasCrewWith(child) ? NewCrewMember(child) : NewPoliceOfficer(child);
         }
 
         // Mostly mums; the name and age come from the child, so the same parent comes back after a load.
@@ -123,7 +165,7 @@ public sealed partial class HospitalSimulation
             Surname = PoliceSurnames[roll % PoliceSurnames.Length],
             Sex = roll % 3 == 0 ? Sex.Female : Sex.Male,
             Age = 24 + (roll / 7 % 24),
-            Police = true,
+            Escort = EscortKind.Police,
         };
         officer.PlaceAt(ParentSpotBeside(patient.Tile));
         if (!patient.Timeline.Any(e => e.Text.StartsWith("Brought in by the police", StringComparison.Ordinal)))
@@ -132,6 +174,46 @@ public sealed partial class HospitalSimulation
         }
 
         return officer;
+    }
+
+    /// <summary>A firefighter (for a fire crew casualty) or the air ambulance paramedic who came in with them.</summary>
+    private Parent NewCrewMember(Patient patient)
+    {
+        var roll = (patient.Id * 4271) + patient.Surname.Length;
+        var air = patient.AirAmbulance;
+        var crew = new Parent
+        {
+            Id = Parent.IdOffset + patient.Id,
+            ChildId = patient.Id,
+            FirstName = CrewFirstNames[roll % CrewFirstNames.Length],
+            Surname = PoliceSurnames[(roll / 3) % PoliceSurnames.Length],
+            Sex = roll % 3 == 0 ? Sex.Female : Sex.Male,
+            Age = 26 + (roll / 7 % 22),
+            Escort = air ? EscortKind.AirCrew : EscortKind.FireCrew,
+        };
+        crew.PlaceAt(ParentSpotBeside(patient.Tile));
+        var line = air ? "Came in with the air ambulance crew" : "Brought out by the fire service";
+        if (!patient.Timeline.Any(e => e.Text.StartsWith(line, StringComparison.Ordinal)))
+        {
+            patient.Log(Now, $"{line}: {(air ? "paramedic" : "firefighter")} {crew.FullName} is staying with them until the handover.");
+        }
+
+        return crew;
+    }
+
+    /// <summary>Where a firefighter or air crew member heads once they have handed over.</summary>
+    private GridCoord CrewWayOut(Parent crew) =>
+        crew.Escort == EscortKind.AirCrew && HelicopterFor(crew.ChildId) is { State: HelicopterState.Landed } && Helipad is { } pad
+            ? HelipadDoorTile(pad)
+            : AmbulanceLane.Exit;
+
+    /// <summary>A crew member has walked back out: the air crew are back on board their helicopter.</summary>
+    private void CrewBackAboard(Parent crew)
+    {
+        if (crew.Escort == EscortKind.AirCrew && HelicopterFor(crew.ChildId) is { } helicopter)
+        {
+            helicopter.CrewAboard = true;
+        }
     }
 
     /// <summary>Keeps a parent with their child, or on the fold-out bed beside their ward bed.</summary>

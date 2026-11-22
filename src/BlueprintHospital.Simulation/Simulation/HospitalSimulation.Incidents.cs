@@ -42,6 +42,9 @@ public sealed class IncidentCasualty
 
     public DateTime ArriveAt { get; set; }
 
+    /// <summary>An air casualty with no helipad to land on: the helicopter set down nearby and they are coming the rest of the way by road.</summary>
+    public bool ByRoad { get; set; }
+
     /// <summary>Set once they are here.</summary>
     public int? PatientId { get; set; }
 }
@@ -335,14 +338,31 @@ public sealed partial class HospitalSimulation
 
     private void BringInCasualty(MajorIncident incident, IncidentCasualty casualty)
     {
+        if (casualty.Transport == CasualtyTransport.Air && Helipad is null && !casualty.ByRoad)
+        {
+            // Nowhere to land at the hospital: it puts down in a field nearby and a road ambulance does the rest.
+            casualty.ByRoad = true;
+            casualty.ArriveAt = Now + NoHelipadDelay;
+            Notifications.Add(Now, NotificationLevel.Warning, $"The air ambulance has no helipad here: it has landed nearby and casualty {casualty.Number} is coming by road, about {NoHelipadDelay.TotalMinutes:0} minutes. Build a helipad (A&E in the build bar) so it can land at the hospital.");
+            return;
+        }
+
         var method = casualty.Transport == CasualtyTransport.Walking ? ArrivalMethod.WalkIn : ArrivalMethod.Ambulance;
         var conditionId = Database.Conditions.ContainsKey(casualty.ConditionId) ? casualty.ConditionId : null;
         var patient = _generator.Generate(Now, method, conditionId, casualty.Age);
         casualty.PatientId = patient.Id;
+        patient.FireCrewEscort = casualty.FireCrew;
         patient.Log(Now, $"Casualty {casualty.Number} of the {LowerFirst(incident.Name)} at {incident.Location} ({ColourWord(casualty.Triage)} at the scene).", important: true);
         if (casualty.Transport == CasualtyTransport.Air)
         {
-            patient.Log(Now, "Brought in by the air ambulance crew.");
+            if (Helipad is not null)
+            {
+                ArriveByAir(patient);
+                return;
+            }
+
+            patient.AirAmbulance = true;
+            patient.Log(Now, "The air ambulance landed nearby (the hospital has no helipad); a road ambulance brought them the rest of the way.");
         }
 
         if (method == ArrivalMethod.WalkIn && TryArriveByCar(patient))

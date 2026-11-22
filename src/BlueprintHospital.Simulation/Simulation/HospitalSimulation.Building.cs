@@ -59,6 +59,9 @@ public sealed class LayoutState
 
     /// <summary>Waiting chairs in waiting rooms and corridors, with the way they face and their colour.</summary>
     public IReadOnlyList<PlacedChair> Chairs { get; init; } = Array.Empty<PlacedChair>();
+
+    /// <summary>The helipad, if one was built.</summary>
+    public AreaState? Helipad { get; init; }
 }
 
 /// <summary>Building: placing, moving and demolishing rooms and corridors, extending the building, and paying for it.</summary>
@@ -596,6 +599,7 @@ public sealed partial class HospitalSimulation
                 TileKind.Parking => "car park",
                 TileKind.Road => "road",
                 TileKind.TaxiRank => "taxi rank",
+                TileKind.Helipad => "helipad",
                 _ => "existing building",
             };
             problems.Add($"Can't build over the {what}.");
@@ -850,6 +854,7 @@ public sealed partial class HospitalSimulation
             return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide, door?.Offset, door?.Width);
         }).ToList(),
         Chairs = _chairs.ToList(),
+        Helipad = Helipad is { } pad ? new AreaState(pad.X, pad.Y, pad.Width, pad.Length) : null,
     };
 
     /// <summary>Replaces the starter layout with a saved one. Call before the game starts running.</summary>
@@ -862,6 +867,11 @@ public sealed partial class HospitalSimulation
         }
 
         Site.SetFloorCount(state.Floors);
+        if (state.Helipad is { } h)
+        {
+            Helipad = new GridRect(h.X, h.Y, h.Width, h.Length);
+            Site.Fill(Helipad.Value, TileKind.Helipad);
+        }
 
         _spaces.Clear();
         _fittings.Clear();
