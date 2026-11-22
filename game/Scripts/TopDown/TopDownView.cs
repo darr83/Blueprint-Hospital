@@ -30,6 +30,7 @@ public partial class TopDownView : Node2D
     private BandsLayer _bands = null!;
     private RoomsLayer _rooms = null!;
     private ActorsLayer _actors = null!;
+    private FestiveLayer _festive = null!;
     private DoorsLayer _doors = null!;
     private WallsLayer _walls = null!;
     private (int Version, int Rotation, int Floor, bool Shadows, bool Detailed, bool Grid)? _built;
@@ -46,6 +47,9 @@ public partial class TopDownView : Node2D
     public RoomsLayer Rooms => _rooms;
 
     public ActorsLayer Actors => _actors;
+
+    /// <summary>The seasonal decorations (Christmas tree, pumpkins, bunting).</summary>
+    public FestiveLayer Festive => _festive;
 
     public WallsLayer Walls => _walls;
 
@@ -96,6 +100,10 @@ public partial class TopDownView : Node2D
         _rooms = new RoomsLayer { Name = "Rooms" };
         AddChild(_rooms);
         _rooms.Initialise(simulation, world);
+
+        _festive = new FestiveLayer { Name = "Festive" };
+        AddChild(_festive);
+        _festive.Initialise(simulation, world);
 
         _actors = new ActorsLayer { Name = "Actors" };
         AddChild(_actors);
@@ -162,7 +170,7 @@ public partial class TopDownView : Node2D
 
         _ground.Transform = Pen.GridFrame(IsoDraw.ToScreenGround);
         var floor = Pen.GridFrame(IsoDraw.ToScreen);
-        foreach (var layer in new Node2D[] { _bands, _rooms, _actors, _doors, _walls })
+        foreach (var layer in new Node2D[] { _bands, _rooms, _festive, _actors, _doors, _walls })
         {
             layer.Transform = floor;
         }
@@ -186,6 +194,8 @@ public partial class TopDownView : Node2D
         _rooms.Detailed = detailed;
         _rooms.ShowGrid = grid;
         _rooms.Plan = plan;
+        _festive.Shadows = shadows;
+        _festive.QueueRedraw();
         _rooms.Rebuild();
         _actors.Shadows = shadows;
         _doors.Plan = plan;

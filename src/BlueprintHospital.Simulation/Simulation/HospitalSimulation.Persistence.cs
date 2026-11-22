@@ -198,6 +198,8 @@ public sealed class PatientState
 
     public bool Maternity { get; init; }
 
+    public bool PoliceEscort { get; init; }
+
     public int GestationWeeks { get; init; }
 
     public bool Delivered { get; init; }
@@ -840,7 +842,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, Maternity = p.Maternity, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
+        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -930,6 +932,7 @@ public sealed partial class HospitalSimulation
         p.Happiness = s.Happiness ?? UsualHappiness;
         p.VisitsReceived = s.VisitsReceived;
         p.Maternity = s.Maternity;
+        p.PoliceEscort = s.PoliceEscort;
         p.GestationWeeks = s.GestationWeeks;
         p.Delivered = s.Delivered;
         p.RestoreTimeline(s.Timeline);

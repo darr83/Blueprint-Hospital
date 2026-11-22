@@ -1,0 +1,197 @@
+using System;
+using System.Linq;
+using BlueprintHospital.Hospital;
+using BlueprintHospital.Simulation.Simulation;
+using BlueprintHospital.Simulation.World;
+using Godot;
+
+namespace BlueprintHospital.World3D;
+
+/// <summary>
+/// The seasonal decorations in 3D (see <see cref="SeasonalDecor"/>): a Christmas tree in a pot with
+/// baubles and a star, tinsel and bunting looped along the walls, carved pumpkins, a basket of Easter
+/// eggs. Built as one mesh, again only when the decorations, the layout, the floor or the cutaway change.
+/// </summary>
+public partial class Festive3D : Node3D
+{
+    private HospitalSimulation _sim = null!;
+    private WorldLayer _world = null!;
+    private (string Kind, int Version, int Floor, bool Cutaway)? _built;
+
+    /// <summary>How many trees, pumpkins and baskets were built last time, and strings of bunting (for checks).</summary>
+    public int PieceCount { get; private set; }
+
+    public int RunCount { get; private set; }
+
+    public void Initialise(HospitalSimulation simulation, WorldLayer world)
+    {
+        _sim = simulation;
+        _world = world;
+    }
+
+    private static float Tiles(double metres) => (float)(metres / Units.MetresPerTile);
+
+    /// <summary>Rebuilds if anything that changes the decorations has changed.</summary>
+    public void Sync(bool cutaway)
+    {
+        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, cutaway);
+        if (key == _built)
+        {
+            return;
+        }
+
+        _built = key;
+        foreach (var child in GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var (pieces, runs) = SeasonalDecor.Plan(_sim, key.Item1);
+        var b = new MeshBatch();
+
+        // Bunting hangs a little under the top of the walls (or of the cut-down walls).
+        var height = cutaway ? Kit3D.H(12) * 0.8f : Walls3D.FullHeight * 0.84f;
+        RunCount = 0;
+        foreach (var run in runs.Where(r => IsoDraw.OnViewFloor(r.Y1)))
+        {
+            Run(b, run, height);
+            RunCount++;
+        }
+
+        PieceCount = 0;
+        foreach (var piece in pieces.Where(p => IsoDraw.OnViewFloor(p.Y)))
+        {
+            var at = Kit3D.At(piece.X, piece.Y);
+            switch (piece.Kind)
+            {
+                case "tree":
+                    Tree(b, at);
+                    break;
+                case "pumpkin":
+                    Pumpkin(b, at, piece.Seed);
+                    break;
+                default:
+                    Eggs(b, at);
+                    break;
+            }
+
+            PieceCount++;
+        }
+
+        b.AddTo(this);
+    }
+
+    private static void Run(MeshBatch b, DecorRun run, float height)
+    {
+        var from = Kit3D.At(run.X1, run.Y1, height);
+        var to = Kit3D.At(run.X2, run.Y2, height);
+        var length = (to - from).Length();
+        var along = (to - from) / length;
+
+        // Into the room: the run has the room on its left.
+        var inward = new Vector3((float)-(run.Y2 - run.Y1), 0, (float)(run.X2 - run.X1)).Normalized();
+        var loops = Math.Max(1, (int)Math.Round(length / Tiles(1.6)));
+        var sag = Kit3D.M(0.18);
+
+        Vector3 Point(float t)
+        {
+            // Swags between hooks on the wall.
+            var local = (t * loops) % 1f;
+            var dip = sag * 4 * local * (1 - local);
+            return from + (along * (length * t)) - (Vector3.Up * dip) + (inward * Tiles(0.03));
+        }
+
+        var steps = loops * 8;
+        for (var i = 0; i < steps; i++)
+        {
+            var a = Point(i / (float)steps);
+            var c = Point((i + 1) / (float)steps);
+            var colour = run.Colours[(i / 2) % run.Colours.Count];
+            if (run.Tinsel)
+            {
+                b.Rod(a, c, Tiles(0.05), colour, small: true);
+            }
+            else
+            {
+                b.Rod(a, c, Tiles(0.01), new Color("#F4F1EA"), small: true);
+                if (i % 2 == 0)
+                {
+                    // A little triangular flag hanging from the cord.
+                    var mid = (a + c) / 2;
+                    b.Tri(a, c, mid - (Vector3.Up * Kit3D.M(0.22)) + (inward * Tiles(0.01)), colour);
+                }
+            }
+        }
+    }
+
+    private static void Tree(MeshBatch b, Vector3 at)
+    {
+        var pot = new Color("#B23A3A");
+        b.Cylinder(at + (Vector3.Up * Kit3D.M(0.15)), Tiles(0.2), Kit3D.M(0.3), Tiles(0.2), pot);
+        b.Cylinder(at + (Vector3.Up * Kit3D.M(0.32)), Tiles(0.22), Kit3D.M(0.04), Tiles(0.22), pot.Darkened(0.15f));
+        b.Cylinder(at + (Vector3.Up * Kit3D.M(0.4)), Tiles(0.05), Kit3D.M(0.2), Tiles(0.05), new Color("#6B4A2E"));
+        var greens = new[] { new Color("#1E5E33"), new Color("#256C3B"), new Color("#2E7D45") };
+        var tiers = new[] { (Base: 0.45, Height: 0.75, Radius: 0.5), (Base: 0.85, Height: 0.65, Radius: 0.4), (Base: 1.2, Height: 0.6, Radius: 0.28) };
+        for (var i = 0; i < tiers.Length; i++)
+        {
+            var (bottom, h, r) = tiers[i];
+            b.Cylinder(at + (Vector3.Up * Kit3D.M(bottom + (h / 2))), Tiles(r), Kit3D.M(h), Tiles(r), greens[i], cone: true);
+        }
+
+        var baubles = new[] { new Color("#C62828"), new Color("#F2C230"), new Color("#1E63B5"), new Color("#D9DEE3") };
+        for (var i = 0; i < 14; i++)
+        {
+            // Spread round the cone, a few on each tier.
+            var t = (i % 7) / 7.0;
+            var height = 0.55 + (t * 1.1);
+            var radius = 0.46 * (1 - ((height - 0.45) / 1.45)) + 0.03;
+            var angle = (i * 2.4) + (t * 1.3);
+            var p = at + new Vector3(Mathf.Cos((float)angle) * Tiles(radius), Kit3D.M(height), Mathf.Sin((float)angle) * Tiles(radius));
+            b.Ball(p, Vector3.One * Tiles(0.07), baubles[i % baubles.Length], small: true);
+        }
+
+        // The star on top.
+        var star = at + (Vector3.Up * Kit3D.M(1.86));
+        b.Box(star, new Vector3(Tiles(0.14), Kit3D.M(0.14), Tiles(0.03)), Basis.FromEuler(new Vector3(0, 0, Mathf.Pi / 4)), new Color("#F5C518"));
+        b.Box(star, new Vector3(Tiles(0.03), Kit3D.M(0.14), Tiles(0.14)), Basis.FromEuler(new Vector3(Mathf.Pi / 4, 0, 0)), new Color("#F5C518"));
+    }
+
+    private static void Pumpkin(MeshBatch b, Vector3 at, int seed)
+    {
+        var size = 0.32 + ((seed % 3) * 0.05);
+        var orange = new Color("#F57C00");
+        var middle = at + (Vector3.Up * Kit3D.M(size * 0.38));
+        b.Ball(middle, new Vector3(Tiles(size), Kit3D.M(size * 0.75), Tiles(size)), orange);
+        for (var i = 0; i < 4; i++)
+        {
+            // Ribs: slightly darker lobes round the middle.
+            var a = i * Mathf.Pi / 4;
+            b.Ball(middle, new Vector3(Tiles(size * 1.04), Kit3D.M(size * 0.7), Tiles(size * 0.55)), Basis.FromEuler(new Vector3(0, a, 0)), orange.Darkened(0.08f));
+        }
+
+        b.Cylinder(middle + (Vector3.Up * Kit3D.M(size * 0.42)), Tiles(0.025), Kit3D.M(0.08), Tiles(0.025), new Color("#5D7A2E"));
+
+        // A carved face towards the room: two eyes and a grin.
+        var face = middle + new Vector3(0, 0, Tiles(size * 0.5));
+        var dark = new Color("#3B1F05");
+        b.Box(face + new Vector3(-Tiles(size * 0.18), Kit3D.M(size * 0.12), 0), new Vector3(Tiles(size * 0.14), Kit3D.M(size * 0.12), Tiles(0.02)), dark);
+        b.Box(face + new Vector3(Tiles(size * 0.18), Kit3D.M(size * 0.12), 0), new Vector3(Tiles(size * 0.14), Kit3D.M(size * 0.12), Tiles(0.02)), dark);
+        b.Box(face + new Vector3(0, -Kit3D.M(size * 0.12), 0), new Vector3(Tiles(size * 0.45), Kit3D.M(size * 0.08), Tiles(0.02)), dark);
+    }
+
+    private static void Eggs(MeshBatch b, Vector3 at)
+    {
+        var wicker = new Color("#B58450");
+        b.Cylinder(at + (Vector3.Up * Kit3D.M(0.08)), Tiles(0.22), Kit3D.M(0.16), Tiles(0.22), wicker);
+        b.Ring(at + (Vector3.Up * Kit3D.M(0.16)), Tiles(0.22), wicker.Darkened(0.15f), flatten: 0.6f);
+        b.Ring(at + (Vector3.Up * Kit3D.M(0.2)), Tiles(0.18), wicker.Darkened(0.1f), Basis.FromEuler(new Vector3(Mathf.Pi / 2, 0, 0)));
+        b.Cylinder(at + (Vector3.Up * Kit3D.M(0.165)), Tiles(0.19), Kit3D.M(0.01), Tiles(0.19), new Color("#C7E3A0"));
+        var colours = SeasonalDecor.EasterColours;
+        for (var i = 0; i < 5; i++)
+        {
+            var a = i * Mathf.Tau / 5;
+            var p = at + new Vector3(Mathf.Cos(a) * Tiles(0.1), Kit3D.M(0.2), Mathf.Sin(a) * Tiles(0.1));
+            b.Ball(p, new Vector3(Tiles(0.07), Kit3D.M(0.09), Tiles(0.07)), colours[i], small: true);
+        }
+    }
+}

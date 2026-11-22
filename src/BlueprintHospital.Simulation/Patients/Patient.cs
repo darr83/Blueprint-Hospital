@@ -439,6 +439,9 @@ public sealed class Patient : Agent
     /// <summary>Came straight to the maternity unit (in labour or with a pregnancy emergency) rather than through A&amp;E.</summary>
     public bool Maternity { get; set; }
 
+    /// <summary>Brought in by the police, and a police officer stays with them while they are in A&amp;E.</summary>
+    public bool PoliceEscort { get; set; }
+
     /// <summary>Weeks pregnant when she arrived (maternity patients only).</summary>
     public int GestationWeeks { get; set; }
 

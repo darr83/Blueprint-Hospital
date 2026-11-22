@@ -1,0 +1,194 @@
+[
+  {
+    "id": "alcohol_intoxication",
+    "name": "Drunk and unsafe",
+    "department": "emergency",
+    "description": "Too much to drink: unsteady, being sick and too drunk to look after themselves. Kept on their side, watched until they have sobered up, and sent home with someone to keep an eye on them. Commoner on Friday and Saturday nights, after big matches and on New Year's Eve.",
+    "prevalence": 1.2,
+    "age_range": [
+      16,
+      70
+    ],
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.4,
+    "crew_assessment": "intoxicated, vomiting, maintaining own airway",
+    "presenting_complaint": "smells_of_alcohol",
+    "symptoms": [
+      {
+        "symptom": "smells_of_alcohol",
+        "probability": 1.0
+      },
+      {
+        "symptom": "slurred_speech",
+        "probability": 0.8
+      },
+      {
+        "symptom": "vomiting",
+        "probability": 0.6
+      },
+      {
+        "symptom": "confusion",
+        "probability": 0.3
+      },
+      {
+        "symptom": "dizziness",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        98,
+        12
+      ],
+      "systolic_bp": [
+        116,
+        12
+      ],
+      "diastolic_bp": [
+        70,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        97,
+        1
+      ],
+      "temperature": [
+        36.3,
+        0.4
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "initial_severity": [
+      0.1,
+      0.25
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Recovery position and regular checks until sober",
+        "performed_by": "nurse",
+        "minutes": 15,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "ondansetron",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.3,
+    "disposition": "discharge",
+    "disposition_note": "Sobered up and walking safely. Home with a friend to keep an eye on them.",
+    "observe_hours": [
+      2,
+      4
+    ]
+  },
+  {
+    "id": "nasal_fracture",
+    "name": "Broken nose",
+    "department": "emergency",
+    "description": "A punch or a fall breaks the nose: it bleeds, swells and may be bent. No X-ray is needed. The bleeding is stopped, and if the nose is bent the ENT clinic straightens it in a week, once the swelling is down.",
+    "prevalence": 0.8,
+    "age_range": [
+      14,
+      65
+    ],
+    "female_fraction": 0.25,
+    "ambulance_probability": 0.15,
+    "crew_assessment": "assaulted, facial injury, nosebleed",
+    "presenting_complaint": "punched_in_face",
+    "symptoms": [
+      {
+        "symptom": "punched_in_face",
+        "probability": 1.0
+      },
+      {
+        "symptom": "nosebleed",
+        "probability": 0.8
+      },
+      {
+        "symptom": "headache",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        90,
+        10
+      ],
+      "systolic_bp": [
+        130,
+        12
+      ],
+      "diastolic_bp": [
+        80,
+        8
+      ],
+      "respiratory_rate": [
+        16,
+        2
+      ],
+      "oxygen_saturation": [
+        98,
+        1
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        4,
+        7
+      ]
+    },
+    "initial_severity": [
+      0.06,
+      0.15
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Stop the nosebleed and check for a septal haematoma",
+        "performed_by": "doctor",
+        "minutes": 10,
+        "essential": true
+      },
+      {
+        "type": "medication",
+        "medication": "paracetamol",
+        "essential": false
+      }
+    ],
+    "recovery_per_hour": 0.5,
+    "disposition": "discharge",
+    "disposition_note": "Bleeding stopped, no septal haematoma. ENT clinic in a week to straighten the nose once the swelling is down."
+  }
+]

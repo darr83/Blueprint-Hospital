@@ -43,6 +43,7 @@ public partial class View3D : Node3D
     private Agents3D _agents = null!;
     private Beds3D _beds = null!;
     private Furniture3D _furniture = null!;
+    private Festive3D _festive = null!;
     private Decor3D _decor = null!;
     private Life3D _life = null!;
 
@@ -139,6 +140,10 @@ public partial class View3D : Node3D
         _root.AddChild(_walls);
         _walls.Initialise(this);
 
+        _festive = new Festive3D { Name = "Festive" };
+        _root.AddChild(_festive);
+        _festive.Initialise(_sim, _world);
+
         _furniture = new Furniture3D { Name = "Furniture" };
         _root.AddChild(_furniture);
         _furniture.Initialise(this);
@@ -173,6 +178,9 @@ public partial class View3D : Node3D
     public Furniture3D Furniture => _furniture;
 
     public Decor3D Decor => _decor;
+
+    /// <summary>The seasonal decorations (Christmas tree, pumpkins, bunting).</summary>
+    public Festive3D Festive => _festive;
 
     public Life3D Life => _life;
 
@@ -302,6 +310,7 @@ public partial class View3D : Node3D
 
         Daylight();
 
+        _festive.Sync(_walls.Cutaway);
         _walls.Animate(delta);
         _beds.Sync(delta);
         _furniture.Sync();

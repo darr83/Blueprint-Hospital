@@ -456,9 +456,30 @@ public static class Looks
     /// <summary>A mum or dad staying with their child: everyday clothes (a coat when they first come in), and their child's skin tone.</summary>
     public static PersonLook Parent(Parent parent, Patient? child)
     {
+        if (parent.Police)
+        {
+            return PoliceOfficer(parent);
+        }
+
         var seed = parent.Id + 200_003;
         var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && parent.Activity != ParentActivity.InParentsRoom && CoatOn(seed, Roll(seed, 54, 3) == 0), bump: false);
         return child is null ? look : look with { Skin = Patient(child).Skin };
+    }
+
+    /// <summary>A police officer: black uniform under a fluorescent yellow vest with silver bands, a radio and a peaked cap.</summary>
+    public static PersonLook PoliceOfficer(Parent officer)
+    {
+        var seed = officer.Id + 400_009;
+        var female = officer.Sex == Sex.Female;
+        var who = Person(seed, female, officer.Age);
+        var style = female ? Pick(seed, 10, HairStyle.Bun, HairStyle.Ponytail, HairStyle.Bun) : Pick(seed, 10, HairStyle.Short, HairStyle.Crop, HairStyle.Short);
+        var look = new PersonLook(new Color("#D4E02A"), new Color("#15181C"), who.Skin, who.Hair)
+        {
+            Kind = TopKind.Polo, HiVis = true, Radio = true, PoliceHat = true, Epaulettes = new Color("#15181C"),
+            LongSleeves = WeatherLook.Climate != Climate.Hot, ShoeColour = new Color("#0F1113"), Style = style,
+            Build = 1f + (Roll(seed, 4, 4) * 0.05f),
+        };
+        return WithFace(look, seed, female, officer.Age, who.SkinIndex, neat: true);
     }
 
     /// <summary>

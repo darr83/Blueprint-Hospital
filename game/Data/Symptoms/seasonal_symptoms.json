@@ -33,5 +33,19 @@
     "patient_description": "My neck hurts since the car crash.",
     "body_system": "musculoskeletal",
     "is_red_flag": false
+  },
+  {
+    "id": "smells_of_alcohol",
+    "name": "Smells of alcohol",
+    "patient_description": "I've only had a few. Maybe more than a few.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "punched_in_face",
+    "name": "Punched in the face",
+    "patient_description": "Someone punched me in the face and my nose won't stop bleeding.",
+    "body_system": "musculoskeletal",
+    "is_red_flag": false
   }
 ]

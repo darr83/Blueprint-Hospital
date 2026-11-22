@@ -296,6 +296,7 @@ public sealed partial class HospitalSimulation
         RemoveDepartedPatients();
         Stats.Update(this);
         UpdatePressure();
+        UpdateEvents();
         UpdateHistory();
         UpdateProgression();
     }
@@ -314,11 +315,12 @@ public sealed partial class HospitalSimulation
         for (var i = 0; i < count; i++)
         {
             var patient = _generator.Generate(Now, IsFeatureOn(LevelFeatures.Ambulances) ? null : ArrivalMethod.WalkIn);
+            MaybePoliceEscort(patient);
             if (NeedsPreAlert(patient))
             {
                 PreAlert(patient);
             }
-            else if (patient.ArrivalMethod != ArrivalMethod.WalkIn || !TryArriveByCar(patient))
+            else if (patient.ArrivalMethod != ArrivalMethod.WalkIn || patient.PoliceEscort || !TryArriveByCar(patient))
             {
                 AdmitNewPatient(patient);
             }

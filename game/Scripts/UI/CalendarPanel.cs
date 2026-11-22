@@ -17,6 +17,7 @@ public partial class CalendarPanel : PanelContainer
     private readonly RichTextLabel _now = Text();
     private readonly RichTextLabel _week = Text();
     private readonly RichTextLabel _commoner = Text();
+    private readonly RichTextLabel _events = Text();
     private readonly YearChart _year = new() { CustomMinimumSize = new Vector2(0, 150) };
     private HospitalSimulation _sim = null!;
     private double _refresh;
@@ -49,6 +50,8 @@ public partial class CalendarPanel : PanelContainer
         body.AddChild(_now);
         body.AddChild(Heading("The week ahead"));
         body.AddChild(_week);
+        body.AddChild(Heading("Coming up"));
+        body.AddChild(_events);
         body.AddChild(Heading("The year at a glance"));
         var key = UiStyle.Caption("Top: how many come to A&E. Bottom: how many of them need a bed. Summer is busiest at the door; winter fills the beds.", 12);
         key.AutowrapMode = TextServer.AutowrapMode.WordSmart;
@@ -137,6 +140,8 @@ public partial class CalendarPanel : PanelContainer
 
         _week.Text = week.Append("[/table]").ToString();
 
+        _events.Text = EventsText(now);
+
         var commoner = _sim.SeasonsActive
             ? _sim.Database.Conditions.Values
                 .Where(c => !c.IsMaternity && !c.IsPlanned)
@@ -151,6 +156,35 @@ public partial class CalendarPanel : PanelContainer
             : string.Join("\n", commoner.Select(x => $"{x.Name}  [color=#5B6B79]×{x.Weight:0.0}[/color]"));
         _year.QueueRedraw();
     }
+
+    /// <summary>The next couple of months' events, with what each brings, and who is off sick or on leave this shift.</summary>
+    private string EventsText(DateTime now)
+    {
+        if (!_sim.CalendarEventsActive)
+        {
+            return "[color=#5B6B79]Bank holidays, New Year's Eve, big matches and the like come with seasons.[/color]";
+        }
+
+        var sb = new StringBuilder();
+        var on = _sim.EventsNow.Where(d => d.Event.Show).Select(d => d.Event.Id).ToHashSet();
+        foreach (var day in _sim.CalendarEvents!.Upcoming(now, 60).Where(d => d.Event.Show).Take(6))
+        {
+            var e = day.Event;
+            var when = on.Contains(e.Id) ? "[color=#C0392B][b]On now[/b][/color]" : day.Day.Date == now.Date ? "[b]Today[/b]" : $"[b]{day.Day:ddd d MMM}[/b]";
+            var hours = e.FromHour > 0 || e.ToHour < 24 ? $" · {Hour(e.FromHour)} to {Hour(e.ToHour)}" : e.Days > 1 ? $" · {e.Days} days" : string.Empty;
+            sb.Append($"{when}  {e.Name}[color=#5B6B79]{hours}[/color]\n[color=#5B6B79]{e.Description}[/color]\n");
+        }
+
+        var away = _sim.Staff.Where(s => s.Shift == _sim.CurrentShift).Select(s => _sim.AbsenceOf(s, _sim.CurrentShiftStart)).ToList();
+        var sick = away.Count(a => a == StaffAbsence.Sick);
+        var leave = away.Count(a => a == StaffAbsence.Leave);
+        sb.Append(sick + leave == 0
+            ? "[color=#5B6B79]Everyone on this shift is in.[/color]"
+            : $"This shift: [color={ClinicalText.AmberTextHex}][b]{sick} off sick, {leave} on leave[/b][/color] [color=#5B6B79](Staff rota, T)[/color]");
+        return sb.ToString();
+    }
+
+    private static string Hour(double hour) => $"{(int)hour % 24:00}:{(int)Math.Round((hour % 1) * 60):00}";
 
     public static string PressureHex(int level) => level switch
     {

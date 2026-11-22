@@ -38,19 +38,30 @@ public sealed partial class HospitalSimulation
     /// <summary>A patient who comes with a parent: any child, apart from a girl in labour.</summary>
     public static bool HasParentWith(Patient patient) => patient.Age < AdultAge && !patient.Maternity;
 
+    /// <summary>A police officer is with them: brought in by the police and still in A&amp;E (they go once the patient goes up to a ward or home).</summary>
+    public static bool HasPoliceWith(Patient patient) =>
+        patient.PoliceEscort && !HasParentWith(patient) && patient.Stage is not (PatientStage.OnWard or PatientStage.Gone) && patient.LeftEmergencyAt is null;
+
+    private static readonly string[] PoliceSurnames = { "Taylor", "Walsh", "Okafor", "Hughes", "Patel", "Murray", "Bennett", "Kaur", "Fletcher", "Doyle", "Ahmed", "Price" };
+
     /// <summary>Whether a parent is asleep on the fold-out bed at this time of day.</summary>
     public bool IsParentBedtime => Now.Hour >= ParentBedtimeHour || Now.Hour < ParentWakeHour;
 
     private void UpdateParents(double dt)
     {
-        foreach (var id in _parents.Keys.Where(id => !_patients.TryGetValue(id, out var c) || !ChildIsOnSite(c)).ToList())
+        foreach (var id in _parents.Keys.Where(id => !_patients.TryGetValue(id, out var c) || !ChildIsOnSite(c) || (_parents[id].Police && !HasPoliceWith(c))).ToList())
         {
+            if (_parents[id].Police && _patients.TryGetValue(id, out var left) && left.Stage != PatientStage.Gone)
+            {
+                left.Log(Now, $"{_parents[id].FullName} handed over and left.");
+            }
+
             _parents.Remove(id);
         }
 
         foreach (var child in _patients.Values)
         {
-            if (!HasParentWith(child) || !ChildIsOnSite(child))
+            if (!(HasParentWith(child) || HasPoliceWith(child)) || !ChildIsOnSite(child))
             {
                 continue;
             }
@@ -74,6 +85,11 @@ public sealed partial class HospitalSimulation
 
     private Parent NewParent(Patient child)
     {
+        if (!HasParentWith(child))
+        {
+            return NewPoliceOfficer(child);
+        }
+
         // Mostly mums; the name and age come from the child, so the same parent comes back after a load.
         var roll = (child.Id * 7919) + child.Surname.Length;
         var mum = roll % 10 < 7;
@@ -94,6 +110,28 @@ public sealed partial class HospitalSimulation
         }
 
         return parent;
+    }
+
+    private Parent NewPoliceOfficer(Patient patient)
+    {
+        var roll = (patient.Id * 6151) + patient.Surname.Length;
+        var officer = new Parent
+        {
+            Id = Parent.IdOffset + patient.Id,
+            ChildId = patient.Id,
+            FirstName = "PC",
+            Surname = PoliceSurnames[roll % PoliceSurnames.Length],
+            Sex = roll % 3 == 0 ? Sex.Female : Sex.Male,
+            Age = 24 + (roll / 7 % 24),
+            Police = true,
+        };
+        officer.PlaceAt(ParentSpotBeside(patient.Tile));
+        if (!patient.Timeline.Any(e => e.Text.StartsWith("Brought in by the police", StringComparison.Ordinal)))
+        {
+            patient.Log(Now, $"Brought in by the police: {officer.FullName} is staying with them.");
+        }
+
+        return officer;
     }
 
     /// <summary>Keeps a parent with their child, or on the fold-out bed beside their ward bed.</summary>
@@ -135,7 +173,7 @@ public sealed partial class HospitalSimulation
         if (child.CareSpaceId is { } spaceId && FindSpace(spaceId) is { } room && !child.IsMoving && room.Rect.Contains(child.Tile)
             && (room.IsServiceRoom || room.Kind is CareSpaceKind.AnaestheticRoom or CareSpaceKind.TheatreRecovery))
         {
-            if (parent.Activity == ParentActivity.InParentsRoom || (parent.Activity != ParentActivity.WaitingOutside && ParentsRoomSeat(parent) is { } sofa && GoToParentsRoom(parent, sofa)))
+            if (parent.Activity == ParentActivity.InParentsRoom || (parent.Activity != ParentActivity.WaitingOutside && !parent.Police && ParentsRoomSeat(parent) is { } sofa && GoToParentsRoom(parent, sofa)))
             {
                 return;
             }

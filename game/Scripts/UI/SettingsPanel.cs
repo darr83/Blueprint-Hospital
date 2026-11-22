@@ -19,6 +19,7 @@ public partial class SettingsPanel : ModalPanel
         var edge = new CheckBox { Text = "Scroll the camera at screen edges", ButtonPressed = settings.EdgeScrolling };
         var grid = new CheckBox { Text = "Show building grid when a game starts", ButtonPressed = settings.ShowGridByDefault };
         AutoStaff = new CheckBox { Text = "New rooms come with their minimum staff", ButtonPressed = settings.AutoStaffNewRooms };
+        Decorations = new CheckBox { Text = "Seasonal decorations (Christmas, Halloween, Easter)", ButtonPressed = settings.SeasonalDecorations };
 
         // Two columns, so the whole panel (and its Save button) fits a 900-pixel-high screen.
         var columns = new HBoxContainer();
@@ -48,6 +49,7 @@ public partial class SettingsPanel : ModalPanel
         var autoStaffNote = UiStyle.Body("Each room you build hires the staff it needs to open, on the lowest grade and paid as normal. Off: rooms come empty and you hire everyone (H).", muted: true);
         autoStaffNote.CustomMinimumSize = new Vector2(400, 0);
         right.AddChild(autoStaffNote);
+        right.AddChild(Decorations);
 
         var audio = BlueprintHospital.Audio.AudioSettings.Current;
         right.AddChild(UiStyle.Body("Sound", muted: true));
@@ -72,6 +74,7 @@ public partial class SettingsPanel : ModalPanel
             settings.EdgeScrolling = edge.ButtonPressed;
             settings.ShowGridByDefault = grid.ButtonPressed;
             settings.AutoStaffNewRooms = AutoStaff.ButtonPressed;
+            settings.SeasonalDecorations = Decorations.ButtonPressed;
             GameManager.Instance.SaveSettings();
             audio.Master = (float)master.Value;
             audio.Ambience = (float)ambience.Value;
@@ -88,6 +91,9 @@ public partial class SettingsPanel : ModalPanel
 
     /// <summary>The "New rooms come with their minimum staff" tick box.</summary>
     public CheckBox AutoStaff { get; }
+
+    /// <summary>The "Seasonal decorations" tick box.</summary>
+    public CheckBox Decorations { get; }
 
     public Button SaveButton { get; private set; } = null!;
 

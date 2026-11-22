@@ -182,6 +182,18 @@ public sealed partial class HospitalSimulation
             case StaffActivity.OffDuty:
                 if (!theirShift)
                 {
+                    if (member.StatusText.StartsWith("Off sick", StringComparison.Ordinal) || member.StatusText.StartsWith("On annual leave", StringComparison.Ordinal))
+                    {
+                        member.StatusText = OffDutyText(member);
+                    }
+
+                    return true;
+                }
+
+                if (AbsenceOf(member, CurrentShiftStart) is var absence and not StaffAbsence.None)
+                {
+                    // Off sick or on leave: stays at home this shift.
+                    member.StatusText = AbsenceText(absence);
                     return true;
                 }
 
