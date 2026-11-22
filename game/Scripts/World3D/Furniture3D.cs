@@ -152,6 +152,22 @@ public partial class Furniture3D : Node3D
             }
         }
 
+        // Extra kit lining the walls of clinical rooms (looks only; see RoomFill).
+        foreach (var space in world.ViewSpaces)
+        {
+            foreach (var piece in RoomFill.For(space, sim))
+            {
+                var def = sim.Database.Furniture[piece.Id];
+                var (fw, fd) = Place(solid, glass, piece.X + (piece.W / 2.0), piece.Y + (piece.L / 2.0), piece.Front, piece.W * 0.92, piece.L * 0.92);
+                if (!Furnish3D.Build(solid, glass, piece.Id, fw, fd, Kit3D.M(def.HeightM), new Color(def.Colour), piece.Seed))
+                {
+                    Furnish3D.Plain(solid, fw, fd, Kit3D.M(def.HeightM), new Color(def.Colour));
+                }
+
+                _count++;
+            }
+        }
+
         solid.Frame = glass.Frame = Transform3D.Identity;
         solid.AddTo(this);
         if (glass.AddTo(this, alpha: true, shadow: false) is { } g)

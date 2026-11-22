@@ -404,6 +404,14 @@ public partial class RoomsLayer : Node2D
 
             FurnitureKit.Draw(p, def.Id, x, y, w, l, front, colour, seed);
         }
+
+        // Extra kit lining the walls of clinical rooms (looks only; see RoomFill).
+        foreach (var piece in RoomFill.For(space, _sim))
+        {
+            var def = _sim.Database.Furniture[piece.Id];
+            FurnitureKit.Draw(p, piece.Id, piece.X + 0.04, piece.Y + 0.04, piece.W - 0.08, piece.L - 0.08, piece.Front, new Color(def.Colour), piece.Seed);
+            FurnitureCount++;
+        }
     }
 }
 

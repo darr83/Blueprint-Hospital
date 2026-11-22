@@ -119,6 +119,7 @@ public partial class WallsLayer : Node2D
         }
 
         Windows(p);
+        Fronts(p);
         foreach (var door in Plan.Doors)
         {
             Jambs(p, door);
@@ -134,6 +135,45 @@ public partial class WallsLayer : Node2D
             foreach (var space in _world.ViewSpaces.Where(RoomSigns.Named))
             {
                 Label(p, space);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Room fronts on the wall tops: the department's colour either side of each door, and glass along
+    /// the rest of the front (the same fronts the 3D view builds, from <see cref="RoomFronts"/>).
+    /// </summary>
+    private void Fronts(Pen p)
+    {
+        const double t = WallPlan.InnerThickness;
+        var fronts = RoomFronts.Of(_sim, _world.ViewSpaces);
+        foreach (var ((x, y, horizontal), panel) in fronts.Panels)
+        {
+            if (horizontal)
+            {
+                p.Rect(x, y - (t / 2), 1, t, panel.Colour);
+            }
+            else
+            {
+                p.Rect(x - (t / 2), y, t, 1, panel.Colour);
+            }
+        }
+
+        foreach (var (x, y, horizontal) in fronts.Glass.Keys)
+        {
+            if (horizontal)
+            {
+                p.Rect(x, y - 0.1, 1, 0.2, Glass);
+                p.Line(x, y - 0.1, x + 1, y - 0.1, WallEdge, 0.025);
+                p.Line(x, y + 0.1, x + 1, y + 0.1, WallEdge, 0.025);
+                p.Line(x + 0.5, y - 0.1, x + 0.5, y + 0.1, WallEdge, 0.025);
+            }
+            else
+            {
+                p.Rect(x - 0.1, y, 0.2, 1, Glass);
+                p.Line(x - 0.1, y, x - 0.1, y + 1, WallEdge, 0.025);
+                p.Line(x + 0.1, y, x + 0.1, y + 1, WallEdge, 0.025);
+                p.Line(x - 0.1, y + 0.5, x + 0.1, y + 0.5, WallEdge, 0.025);
             }
         }
     }
