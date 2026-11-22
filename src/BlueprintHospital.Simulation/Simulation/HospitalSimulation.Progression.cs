@@ -39,6 +39,12 @@ public sealed class ProgressionState
     public int ProfitableDays { get; init; }
 
     public DateTime ProgressDay { get; init; }
+
+    /// <summary>When the level was reached (absent in older saves: when the game was loaded).</summary>
+    public DateTime? LevelReachedAt { get; init; }
+
+    /// <summary>The level's scripted major incident has happened.</summary>
+    public bool ScriptedIncidentDone { get; init; }
 }
 
 /// <summary>
@@ -53,6 +59,8 @@ public sealed partial class HospitalSimulation
     private int _profitableDaysThisLevel;
     private DateTime _progressDay;
     private DateTime _nextProgressCheck;
+    private DateTime _levelReachedAt;
+    private bool _scriptedIncidentDone;
 
     /// <summary>Sandbox or Career.</summary>
     public GameType Type { get; private set; }
@@ -207,6 +215,15 @@ public sealed partial class HospitalSimulation
         };
     }
 
+    /// <summary>This level's scripted major incident, once it is due: hours into the level, with A&amp;E open and a resus bay to take them.</summary>
+    private string? ScriptedIncidentDue() =>
+        CurrentLevel is { ScriptedIncident: { } id } level && !_scriptedIncidentDone && NextLevel is not null
+        && MajorIncidents != MajorIncidentFrequency.Off && Database.Incidents.ContainsKey(id)
+        && Now - _levelReachedAt >= TimeSpan.FromHours(level.ScriptedIncidentAfterHours)
+        && ActiveIncident is null && IsEmergencyOpen && HasResus
+            ? id
+            : null;
+
     private int FirstLevel(Func<LevelDefinition, bool> unlocks) =>
         Database.Levels.FirstOrDefault(unlocks)?.Number ?? 0;
 
@@ -254,6 +271,8 @@ public sealed partial class HospitalSimulation
 
         _profitableDaysThisLevel = 0;
         _progressDay = Now.Date;
+        _levelReachedAt = Now;
+        _scriptedIncidentDone = false;
 
         // Departments with no opening cost open as soon as their level is reached (or skipped past, with the cheat).
         foreach (var d in Database.Levels.Take(number).SelectMany(l => l.Departments).Where(d => Database.Departments.TryGetValue(d, out var def) && def.OpeningCost == 0))
@@ -316,6 +335,9 @@ public sealed partial class HospitalSimulation
 
         switch (goal.Type)
         {
+            case LevelGoalType.Count when goal.Stat == StatKeys.IncidentsHandled && MajorIncidents == MajorIncidentFrequency.Off:
+                return new GoalProgress(goal, goal.Target, 1, true, "Major incidents are switched off in this game");
+
             case LevelGoalType.Count:
             {
                 var n = SinceLevelStart(goal.Stat!);
@@ -400,6 +422,8 @@ public sealed partial class HospitalSimulation
         Baselines = new Dictionary<string, double>(_levelBaselines),
         ProfitableDays = _profitableDaysThisLevel,
         ProgressDay = _progressDay,
+        LevelReachedAt = _levelReachedAt,
+        ScriptedIncidentDone = _scriptedIncidentDone,
     };
 
     /// <summary>Puts back Career progress; a save without any is a Sandbox game.</summary>
@@ -418,6 +442,8 @@ public sealed partial class HospitalSimulation
 
         _profitableDaysThisLevel = state?.ProfitableDays ?? 0;
         _progressDay = state?.ProgressDay ?? Now.Date;
+        _levelReachedAt = state?.LevelReachedAt ?? Now;
+        _scriptedIncidentDone = state?.ScriptedIncidentDone ?? false;
         _nextProgressCheck = default;
     }
 }

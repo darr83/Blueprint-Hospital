@@ -16,7 +16,10 @@ public partial class Festive3D : Node3D
 {
     private HospitalSimulation _sim = null!;
     private WorldLayer _world = null!;
-    private (string Kind, int Version, int Floor, bool Cutaway)? _built;
+    private (string Kind, int Version, int Floor, bool Cutaway, string Outbreaks)? _built;
+
+    /// <summary>How many norovirus signs were built last time (for checks).</summary>
+    public int OutbreakSignCount { get; private set; }
 
     /// <summary>How many trees, pumpkins and baskets were built last time, and strings of bunting (for checks).</summary>
     public int PieceCount { get; private set; }
@@ -34,7 +37,7 @@ public partial class Festive3D : Node3D
     /// <summary>Rebuilds if anything that changes the decorations has changed.</summary>
     public void Sync(bool cutaway)
     {
-        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, cutaway);
+        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, cutaway, OutbreakSigns.Key(_sim));
         if (key == _built)
         {
             return;
@@ -78,7 +81,75 @@ public partial class Festive3D : Node3D
             PieceCount++;
         }
 
+        OutbreakSignCount = 0;
+        foreach (var sign in OutbreakSigns.Plan(_sim).Where(s => IsoDraw.OnViewFloor(s.Y)))
+        {
+            OutbreakSign(b, sign);
+            OutbreakSignCount++;
+        }
+
         b.AddTo(this);
+    }
+
+    /// <summary>
+    /// A yellow A-frame floor sign outside a ward with norovirus, about 0.9 m tall, its two leaves leaning
+    /// together. The front leaf faces the corridor and carries the words (red-banded once the ward is closed).
+    /// </summary>
+    private void OutbreakSign(MeshBatch b, OutbreakSign sign)
+    {
+        var at = Kit3D.At(sign.X, sign.Y);
+        var outward = new Vector3((float)sign.Facing.X, 0, (float)sign.Facing.Y);
+        var yaw = Mathf.Atan2(outward.X, outward.Z);
+        const float Lean = 0.2f;
+        var height = Kit3D.M(0.9);
+        var width = Tiles(0.6);
+        var depth = Tiles(0.02);
+        var spread = Tiles(0.9 * Math.Sin(Lean) / 2);
+        var yellow = OutbreakSigns.Yellow.Lightened(0.15f);
+        foreach (var face in new[] { 1f, -1f })
+        {
+            // Each leaf leans in towards the other, meeting at the top.
+            var basis = Basis.FromEuler(new Vector3(-face * Lean, yaw, 0));
+            var centre = at + (outward * (face * spread * 0.5f)) + (Vector3.Up * (height / 2));
+            b.Box(centre, new Vector3(width, height, depth), basis, face > 0 ? yellow : yellow.Darkened(0.15f));
+        }
+
+        // The hinge along the top.
+        b.Box(at + (Vector3.Up * height), new Vector3(width, Kit3D.M(0.03), Tiles(0.04)), Basis.FromEuler(new Vector3(0, yaw, 0)), yellow.Darkened(0.35f));
+
+        // The words on the front leaf, leaning with it.
+        var front = Basis.FromEuler(new Vector3(-Lean, yaw, 0));
+        var normal = front * Vector3.Back;
+        var middle = at + (outward * (spread * 0.5f)) + (Vector3.Up * (height * 0.55f)) + (normal * (depth / 2 + 0.01f));
+        if (sign.Closed)
+        {
+            b.Box(middle + (front * new Vector3(0, Kit3D.M(0.2), 0)), new Vector3(width * 0.9f, Kit3D.M(0.12), 0.004f), front, OutbreakSigns.Red);
+        }
+
+        var heading = new Label3D
+        {
+            Text = OutbreakSigns.Heading(sign),
+            FontSize = 34,
+            PixelSize = 0.0042f,
+            Modulate = sign.Closed ? Colors.White : OutbreakSigns.Ink,
+            OutlineSize = 0,
+            Position = middle + (front * new Vector3(0, Kit3D.M(0.2), 0)) + (normal * 0.008f),
+            Basis = front,
+            DoubleSided = false,
+        };
+        var body = new Label3D
+        {
+            Text = OutbreakSigns.Body(sign),
+            FontSize = 22,
+            PixelSize = 0.0042f,
+            Modulate = OutbreakSigns.Ink,
+            OutlineSize = 0,
+            Position = middle - (front * new Vector3(0, Kit3D.M(0.12), 0)) + (normal * 0.008f),
+            Basis = front,
+            DoubleSided = false,
+        };
+        AddChild(heading);
+        AddChild(body);
     }
 
     private static void Run(MeshBatch b, DecorRun run, float height)

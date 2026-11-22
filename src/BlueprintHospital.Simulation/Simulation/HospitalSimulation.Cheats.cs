@@ -25,6 +25,7 @@ public sealed partial class HospitalSimulation
         "complication <type>  the next operation has a complication (bleeding, infection, critical_care, none)",
         "incident <kind>  a major incident now (incident list for the kinds, incident end to stand down)",
         "weather <kind>   today's weather (clear, sunny, cloudy, rain, heavy_rain, fog, storm, snow, ice, heatwave, or off for the forecast)",
+        "norovirus [ward] norovirus on a ward (norovirus close closes the busiest ward now, norovirus off clears it)",
         "help             list the commands",
     };
 
@@ -77,6 +78,9 @@ public sealed partial class HospitalSimulation
 
             case "incident":
                 return new CheatResult(true, IncidentCheat(words.Length == 2 ? words[1].ToLowerInvariant() : string.Empty));
+
+            case "norovirus":
+                return NorovirusCheat(words.Length >= 2 ? string.Join(' ', words.Skip(1)) : string.Empty);
 
             case "complication":
                 if (words.Length != 2 || words[1].ToLowerInvariant() is not ("bleeding" or "infection" or "critical_care" or "none"))

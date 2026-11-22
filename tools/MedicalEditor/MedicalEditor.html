@@ -156,6 +156,9 @@ const KINDS = {
   symptoms:       { folder: "Symptoms",       label: "Symptoms",   one: "symptom" },
   investigations: { folder: "Investigations", label: "Tests",      one: "test" },
   medications:    { folder: "Medications",    label: "Medicines",  one: "medicine" },
+  seasons:        { folder: "Seasons",        label: "Seasons",    one: "season profile" },
+  events:         { folder: "Events",         label: "Events",     one: "event" },
+  incidents:      { folder: "Incidents",      label: "Incidents",  one: "major incident" },
 };
 const READ_ONLY = { departments: "Departments" };
 
@@ -211,10 +214,17 @@ function dirtyFiles() {
 // ---------------------------------------------------------------------------------------------
 
 function parseFile(text, name) {
-  const records = JSON.parse(text);
+  // Some files start with // comment lines explaining the fields: keep them and write them back.
+  const lines = text.split(/\r?\n/);
+  let first = 0;
+  while (first < lines.length && (/^\s*\/\//.test(lines[first]) || !lines[first].trim())) first++;
+  const header = lines.slice(0, first).join("\n");
+  const body = lines.slice(first).filter(l => !/^\s*\/\//.test(l)).join("\n");
+  const records = JSON.parse(body);
   if (!Array.isArray(records)) throw new Error(name + " does not hold a list of records.");
-  const m = text.match(/^\[\r?\n([ \t]+)\S/);
+  const m = body.match(/^\[\r?\n([ \t]+)\S/);
   return {
+    header,
     records,
     indent: m ? (m[1].includes("\t") ? "\t" : m[1].length) : 2,
     trailingNewline: /\n$/.test(text),
@@ -223,6 +233,7 @@ function parseFile(text, name) {
 }
 function serialise(file) {
   let text = JSON.stringify(file.records, null, file.indent);
+  if (file.header) text = file.header + "\n" + text;
   if (file.trailingNewline) text += "\n";
   if (file.crlf) text = text.replace(/\n/g, "\r\n");
   return text;
@@ -422,7 +433,8 @@ function validate() {
       else {
         text(K, c, "operation name", op.name);
         range(K, c, "operation minutes", op.minutes ?? 0, 10, 600);
-        if (op.room && !["theatre", "cath_lab", "delivery_room"].includes(op.room)) err(K, c, "operation room", "must be theatre, cath lab or delivery room.");
+        if (op.room && !["theatre", "cath_lab", "delivery_room", "endoscopy"].includes(op.room)) err(K, c, "operation room", "must be theatre, cath lab, delivery room or endoscopy.");
+        if (op.room === "endoscopy" && !c.planned) err(K, c, "operation room", "endoscopy is only for planned procedures.");
         if (op.room === "delivery_room" && !c.maternity) err(K, c, "operation room", "only maternity illnesses can use the delivery room.");
         if (op.major && op.day_case) err(K, c, "operation", "can't be both major and a day case.");
         if (op.urgency && !["immediate", "urgent", "soon"].includes(op.urgency)) err(K, c, "operation urgency", "must be immediate, urgent or soon.");
@@ -516,6 +528,7 @@ function validate() {
     ids(K, m, "allergy groups", m.allergy_groups);
     range(K, m, "cost per dose", m.cost_per_dose ?? 0, 0, 100000);
   }
+  validateCalendar(err, range, text, id, ids);
   ui.issues = out;
 }
 
@@ -551,6 +564,9 @@ function groupKey(kind, r) {
   if (kind === "conditions") return nameOf("departments", r.department) || "No department";
   if (kind === "symptoms") return cap(r.body_system || "other");
   if (kind === "investigations") return cap(r.category || "other");
+  if (kind === "seasons") return "Year profiles";
+  if (kind === "events") return r.random_in ? "Once a year at random" : (r.weekdays || []).length ? "Weekly" : "Dates in the year";
+  if (kind === "incidents") return r.big ? "Big incidents" : "Major incidents";
   return r.drug_class || "Other";
 }
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
@@ -596,7 +612,7 @@ function renderContent() {
   if (!store.mode) { c.replaceChildren(welcome()); return; }
   const r = ui.selected;
   if (!r) { c.replaceChildren(overview()); return; }
-  const form = { conditions: conditionForm, symptoms: symptomForm, investigations: investigationForm, medications: medicationForm }[ui.kind](r);
+  const form = { conditions: conditionForm, symptoms: symptomForm, investigations: investigationForm, medications: medicationForm, seasons: seasonForm, events: eventForm, incidents: incidentForm }[ui.kind](r);
   const f = fileOf.get(r);
   c.replaceChildren(
     h("div", { class: "title-row" },
@@ -612,12 +628,12 @@ function renderContent() {
 function welcome() {
   const supported = !!window.showDirectoryPicker;
   return h("div", { class: "welcome" },
-    h("h2", {}, "Edit illnesses, symptoms, tests and medicines"),
+    h("h2", {}, "Edit illnesses, symptoms, tests, medicines, seasons, events and major incidents"),
     h("p", {}, "This page edits the game's medical data files directly. Nothing is copied anywhere else: the JSON files in ", h("code", {}, "game\\Data"), " stay the game's database."),
     h("ol", {},
       h("li", {}, "Press ", h("b", {}, "Open game data"), " and pick your ", h("b", {}, "Blueprint Hospital"), " folder (or its ", h("code", {}, "game\\Data"), " folder)."),
       h("li", {}, "Allow the browser to edit files in that folder when it asks."),
-      h("li", {}, "Pick an illness, symptom, test or medicine on the left and change anything."),
+      h("li", {}, "Pick an illness, symptom, test or medicine on the left and change anything. Seasons, Events and Incidents set how the time of year, days like Christmas and major incidents change who comes in."),
       h("li", {}, "Press ", h("b", {}, "Save changes"), ". Restart the game, or press Play in Godot, to see them.")),
     h("p", { class: "muted" }, "Problems the game would reject (missing fields, numbers out of range, links to things that don't exist) are flagged as you type, with the same rules the game uses."),
     supported ? null : h("p", { class: "issues" }, "This browser can't save into folders, so changed files will download instead and you'll copy them into game\\Data yourself. Chrome or Edge can save in place."));
@@ -644,7 +660,7 @@ function textIn(rec, obj, key, label, opts = {}) {
   return field(label, el, opts);
 }
 function numIn(rec, obj, key, label, opts = {}) {
-  const el = numBox(rec, () => obj[key], (v) => { obj[key] = v; }, opts);
+  const el = numBox(rec, () => obj[key] ?? opts.def, (v) => { obj[key] = v; }, opts);
   return field(label, el, opts);
 }
 function numBox(rec, get, set, opts = {}) {
@@ -820,7 +836,7 @@ function conditionForm(c) {
     opCard = card("Operation", null, h("div", { class: "grid" },
       textIn(c, o, "name", "Operation name"),
       numIn(c, o, "minutes", "Minutes in the room", { int: true, min: 10, max: 600 }),
-      selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]].concat(c.maternity ? [["delivery_room", "Delivery room (a midwife-led birth)"]] : []), { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
+      selectIn(c, o, "room", "Where", [["theatre", "Operating theatre"], ["cath_lab", "Cath lab"]].concat(c.planned || o.room === "endoscopy" ? [["endoscopy", "Endoscopy room (planned lists)"]] : []).concat(c.maternity ? [["delivery_room", "Delivery room (a midwife-led birth)"]] : []), { emptyLabel: "Operating theatre (default)", emptyIsNone: true }),
       checkIn(c, o, "major", "Major (recovers on HDU first)"),
       checkIn(c, o, "day_case", "Day case (home the same day)"),
       selectIn(c, o, "urgency", "How urgent", [["immediate", "Immediate (within 1 hour)"], ["urgent", "Urgent (within 6 hours)"], ["soon", "Soon (within 24 hours)"]], { emptyLabel: "Urgent (default)", emptyIsNone: true }),
@@ -891,7 +907,8 @@ function conditionForm(c) {
         h("button", { class: "small", onclick: () => { c.treatment.push({ type: "procedure", name: "", performed_by: "nurse", minutes: 10, essential: false }); touch(c); renderContent(); } }, "+ Add procedure"))),
     card("Outcome", null, h("div", { class: "grid" }, outcome)),
     opCard,
-    matCard);
+    matCard,
+    usedBy("Seasons, events and major incidents that name it", references("conditions", c.id)));
 }
 
 let titleTimer;
@@ -1092,6 +1109,318 @@ function medicationForm(m) {
     usedBy("Used to treat", users.map(c => ["conditions", c])));
 }
 
+// --- seasons, events and major incidents -------------------------------------------------------
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SEASONS = [["winter", "Winter"], ["spring", "Spring"], ["summer", "Summer"], ["autumn", "Autumn"]];
+const SKIES = [["clear", "Clear"], ["cloudy", "Cloudy"], ["rain", "Rain"], ["heavy_rain", "Heavy rain"], ["fog", "Fog"], ["thunderstorm", "Thunder"]];
+const WEATHER_KEYS = [["icy", "Icy"], ["snow", "Snow"], ["cold", "Cold"], ["hot", "Hot"], ["heatwave", "Heatwave"], ["rain", "Rain"], ["heavy_rain", "Heavy rain"], ["fog", "Fog"], ["thunderstorm", "Thunderstorm"]];
+const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const DECORATIONS = [["", "None"], ["christmas", "Christmas"], ["halloween", "Halloween"], ["easter", "Easter"]];
+const DAY_RE = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
+const dateRuleOk = (v) => DAY_RE.test(v) || /^easter([+-]\d{1,2})?$/.test(v) || /^(first|second|third|fourth|last)-(mon|tue|wed|thu|fri|sat|sun)-(0[1-9]|1[0-2])$/.test(v);
+
+// Illness ids named in a season profile, an event or an incident (for checks, renames and "used by").
+function conditionsNamedBy(kind, r) {
+  if (kind === "seasons") return [...Object.keys(r.condition_months || {}), ...(r.waves || []).flatMap(w => Object.keys(w.conditions || {})), ...Object.values(r.weather_effects || {}).flatMap(e => Object.keys(e.conditions || {}))];
+  if (kind === "events") return [...Object.keys(r.conditions || {}), ...Object.keys(r.police || {})];
+  if (kind === "incidents") return (r.casualties || []).flatMap(c => c.conditions || []);
+  return [];
+}
+function renameKey(obj, old, id) {
+  if (!obj || !(old in obj)) return false;
+  const entries = Object.entries(obj).map(([k, v]) => [k === old ? id : k, v]);
+  for (const k of Object.keys(obj)) delete obj[k];
+  for (const [k, v] of entries) obj[k] = v;
+  return true;
+}
+function renameConditionIn(kind, r, old, id) {
+  let hit = false;
+  if (kind === "seasons") {
+    hit = renameKey(r.condition_months, old, id) || hit;
+    for (const w of r.waves || []) hit = renameKey(w.conditions, old, id) || hit;
+    for (const e of Object.values(r.weather_effects || {})) hit = renameKey(e.conditions, old, id) || hit;
+  } else if (kind === "events") {
+    hit = renameKey(r.conditions, old, id) || hit;
+    hit = renameKey(r.police, old, id) || hit;
+  } else if (kind === "incidents") {
+    for (const c of r.casualties || []) { const i = (c.conditions || []).indexOf(old); if (i >= 0) { c.conditions[i] = id; hit = true; } }
+  }
+  return hit;
+}
+
+function validateCalendar(err, range, text, id, ids) {
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+  const known = (K, r, field, c) => { if (!byId("conditions", c)) err(K, r, field, `refers to unknown illness '${c}'.`); };
+  const weights = (K, r, field, map, hi) => { for (const [c, v] of Object.entries(map || {})) { known(K, r, field, c); range(K, r, `${field} for ${nameOf("conditions", c)}`, v, 0, hi); } };
+
+  for (const p of records("seasons")) {
+    const K = "seasons";
+    id(K, p, "id", p.id);
+    const months = p.months || [];
+    if (months.length !== 12) err(K, p, "months", `must have 12 months, January first (has ${months.length}).`);
+    months.forEach((m, i) => {
+      range(K, p, `${MONTHS[i]} volume`, m.volume ?? 1, 0.2, 3);
+      const t = m.temperature || [5, 12];
+      if (t.length !== 2 || !isNum(t[0]) || !isNum(t[1]) || t[0] > t[1]) err(K, p, `${MONTHS[i]} temperature`, "must be average low then average high, in °C.");
+      for (const [sky, w] of Object.entries(m.sky || {})) {
+        if (!SKIES.some(([k]) => k === sky)) err(K, p, `${MONTHS[i]} sky`, `'${sky}' is not a sky (clear, cloudy, rain, heavy_rain, fog, thunderstorm).`);
+        range(K, p, `${MONTHS[i]} sky ${sky}`, w, 0, 100);
+      }
+    });
+    for (const [c, values] of Object.entries(p.condition_months || {})) {
+      known(K, p, "illnesses by month", c);
+      if (!Array.isArray(values) || values.length !== 12) err(K, p, `${nameOf("conditions", c)} by month`, "needs 12 values, January first.");
+      else values.forEach((v, i) => range(K, p, `${nameOf("conditions", c)} in ${MONTHS[i]}`, v, 0, 50));
+    }
+    (p.waves || []).forEach((w, i) => {
+      const label = `wave ${w.name || i + 1}`;
+      id(K, p, label + " id", w.id); text(K, p, label + " name", w.name);
+      if (!DAY_RE.test(w.earliest_start || "11-01")) err(K, p, label + " earliest start", "must be a month and day like \"11-01\".");
+      if (!DAY_RE.test(w.latest_start || "12-20")) err(K, p, label + " latest start", "must be a month and day like \"12-20\".");
+      range(K, p, label + " rise days", w.rise_days ?? 30, 1, 200);
+      range(K, p, label + " fall days", w.fall_days ?? 60, 1, 300);
+      const s = w.strength || [0.5, 1.5];
+      if (s.length !== 2 || s[0] < 0 || s[0] > s[1]) err(K, p, label + " strength", "must be lowest then highest.");
+      range(K, p, label + " extra people", w.extra_volume ?? 0, 0, 2);
+      weights(K, p, label, w.conditions, 50);
+    });
+    for (const [key, e] of Object.entries(p.weather_effects || {})) {
+      if (!WEATHER_KEYS.some(([k]) => k === key)) err(K, p, "weather effects", `'${key}' is not a kind of weather.`);
+      range(K, p, `${key} volume`, e.volume ?? 1, 0.2, 3);
+      weights(K, p, `${key} weather`, e.conditions, 50);
+    }
+  }
+
+  for (const e of records("events")) {
+    const K = "events";
+    id(K, e, "id", e.id); text(K, e, "name", e.name);
+    const ways = (e.date ? 1 : 0) + ((e.weekdays || []).length ? 1 : 0) + ((e.random_in || []).length ? 1 : 0);
+    if (ways !== 1) err(K, e, "when", "needs exactly one of a date, weekdays or a random day in a window.");
+    if (e.date && !dateRuleOk(e.date)) err(K, e, "date", `'${e.date}' is not a date like "12-25", "easter-2" or "last-mon-05".`);
+    for (const d of e.weekdays || []) if (!WEEKDAYS.includes(d)) err(K, e, "weekdays", `'${d}' is not a weekday.`);
+    for (const m of e.months || []) range(K, e, "months", m, 1, 12);
+    if ((e.random_in || []).length && (e.random_in.length !== 2 || !e.random_in.every(v => DAY_RE.test(v)))) err(K, e, "random window", "must be two dates like 06-15 and 08-20.");
+    range(K, e, "chance", e.chance ?? 1, 0, 1);
+    range(K, e, "days", e.days ?? 1, 1, 60);
+    range(K, e, "from hour", e.from_hour ?? 0, 0, 24);
+    range(K, e, "to hour", e.to_hour ?? 24, e.from_hour ?? 0, 48);
+    range(K, e, "volume", e.volume ?? 1, 0.3, 3);
+    range(K, e, "staff on leave", e.leave ?? 0, 0, 0.5);
+    weights(K, e, "illnesses", e.conditions, 50);
+    weights(K, e, "police", e.police, 1);
+    if (!DECORATIONS.some(([k]) => k === (e.decorations ?? ""))) err(K, e, "decorations", "must be christmas, halloween, easter or none.");
+  }
+
+  for (const x of records("incidents")) {
+    const K = "incidents";
+    id(K, x, "id", x.id); text(K, x, "name", x.name); text(K, x, "what happened", x.type);
+    if (!(x.locations || []).filter(v => v && v.trim()).length) err(K, x, "places", "must list at least one place.");
+    if (!(x.casualties || []).length) err(K, x, "casualties", "must list at least one casualty.");
+    range(K, x, "how often", x.weight ?? 1, 0.0001, 1000);
+    for (const m of x.months || []) range(K, x, "months", m, 1, 12);
+    for (const [k, v] of Object.entries(x.weather || {})) {
+      if (!WEATHER_KEYS.some(([w]) => w === k)) err(K, x, "weather", `'${k}' is not a kind of weather.`);
+      range(K, x, `${k} weather`, v, 0, 50);
+    }
+    (x.casualties || []).forEach((c, i) => {
+      const label = `casualty ${i + 1}${c.label ? ` (${c.label})` : ""}`;
+      text(K, x, label + " label", c.label);
+      if (!(c.conditions || []).length) err(K, x, label, "must list at least one illness or injury.");
+      ids(K, x, label + " illnesses", c.conditions);
+      (c.conditions || []).forEach(v => known(K, x, label, v));
+      if (!["red", "amber", "green"].includes(c.triage ?? "amber")) err(K, x, label + " triage", "must be red, amber or green.");
+      const n = c.count || [1, 1];
+      if (n.length !== 2 || n[0] < 1 || n[1] < n[0] || n[1] > 20) err(K, x, label + " how many", "must be fewest then most, between 1 and 20.");
+      const a = c.age || [18, 80];
+      if (a.length !== 2 || a[0] < 0 || a[1] > 100 || a[1] < a[0]) err(K, x, label + " ages", "must be youngest then oldest, between 0 and 100.");
+      if (!["ambulance", "air", "walking"].includes(c.transport ?? "ambulance")) err(K, x, label + " arrives", "must be ambulance, air or walking.");
+    });
+  }
+}
+
+// How much commoner each illness is: illness picker, number, remove; and an adder.
+function weightMap(rec, obj, key, opts = {}) {
+  obj[key] ||= {};
+  const map = obj[key];
+  const known = listOf("conditions");
+  const rows = Object.entries(map).map(([c, v]) => h("tr", {},
+    h("td", {}, h("a", { style: "cursor:pointer", class: byId("conditions", c) ? "" : "bad", onclick: () => byId("conditions", c) && select("conditions", byId("conditions", c)) }, nameOf("conditions", c))),
+    h("td", {}, opts.pct ? pctBox(rec, () => map[c], (x) => { map[c] = x; }) : numBox(rec, () => v, (x) => { map[c] = x; }, { min: 0, max: opts.max ?? 50, step: 0.1 })),
+    h("td", {}, h("button", { class: "icon", title: "Remove", onclick: () => { delete map[c]; touch(rec); renderContent(); } }, "×"))));
+  const adder = h("select", { onchange: (e) => { if (!e.target.value) return; map[e.target.value] = opts.pct ? 0.1 : 1.5; touch(rec); renderContent(); } },
+    h("option", { value: "" }, opts.addLabel || "+ Add illness…"), known.filter(([v]) => !(v in map)).map(([v, l]) => h("option", { value: v }, l)));
+  return h("div", {},
+    rows.length ? h("table", { class: "rows" }, h("tr", {}, h("th", {}, "Illness or injury"), h("th", {}, opts.valueLabel || "Times as common"), h("th", {})), rows) : h("div", { class: "muted" }, opts.empty || "None."),
+    h("div", { style: "margin-top:6px" }, adder));
+}
+// A map of weather kind to a number.
+function weatherMap(rec, obj, key, valueLabel) {
+  obj[key] ||= {};
+  const map = obj[key];
+  const rows = Object.entries(map).map(([k, v]) => h("tr", {},
+    h("td", {}, (WEATHER_KEYS.find(([w]) => w === k) || [k, k])[1]),
+    h("td", {}, numBox(rec, () => v, (x) => { map[k] = x; }, { min: 0, max: 50, step: 0.1 })),
+    h("td", {}, h("button", { class: "icon", title: "Remove", onclick: () => { delete map[k]; touch(rec); renderContent(); } }, "×"))));
+  const adder = h("select", { onchange: (e) => { if (!e.target.value) return; map[e.target.value] = 1.5; touch(rec); renderContent(); } },
+    h("option", { value: "" }, "+ Add weather…"), WEATHER_KEYS.filter(([w]) => !(w in map)).map(([w, l]) => h("option", { value: w }, l)));
+  return h("div", {}, rows.length ? h("table", { class: "rows" }, h("tr", {}, h("th", {}, "Weather"), h("th", {}, valueLabel), h("th", {})), rows) : h("div", { class: "muted" }, "Any weather."), h("div", { style: "margin-top:6px" }, adder));
+}
+// Tick boxes for months (1 to 12); none ticked means all year.
+function monthTicks(rec, obj, key) {
+  const on = new Set(obj[key] || []);
+  return h("div", { class: "chips" }, MONTHS.map((m, i) => h("label", { style: "display:inline-flex;gap:3px;align-items:center;font-size:13px" },
+    h("input", { type: "checkbox", checked: on.has(i + 1), onchange: (e) => {
+      const s = new Set(obj[key] || []); if (e.target.checked) s.add(i + 1); else s.delete(i + 1);
+      if (s.size) obj[key] = [...s].sort((a, b) => a - b); else delete obj[key];
+      touch(rec);
+    } }), m)));
+}
+
+function seasonForm(p) {
+  p.months ||= [];
+  while (p.months.length < 12) p.months.push({ season: "winter", volume: 1, temperature: [5, 12], sky: { clear: 1, cloudy: 1, rain: 1 } });
+  p.condition_months ||= {};
+  p.waves ||= [];
+  p.weather_effects ||= {};
+  const monthRows = p.months.map((m, i) => {
+    m.temperature ||= [5, 12];
+    m.sky ||= {};
+    return h("tr", {},
+      h("td", {}, h("b", {}, MONTHS[i])),
+      h("td", {}, selectBox(p, () => m.season, (v) => { m.season = v; }, SEASONS)),
+      h("td", {}, numBox(p, () => m.volume ?? 1, (v) => { m.volume = v; }, { min: 0.2, max: 3, step: 0.01 })),
+      h("td", {}, h("div", { class: "pair" }, numBox(p, () => m.temperature[0], (v) => { m.temperature[0] = v; }), h("span", {}, "to"), numBox(p, () => m.temperature[1], (v) => { m.temperature[1] = v; }), h("span", {}, "°C"))),
+      SKIES.map(([k]) => h("td", {}, numBox(p, () => m.sky[k] ?? 0, (v) => { if (v) m.sky[k] = v; else delete m.sky[k]; }, { min: 0, max: 100, step: 0.5 }))));
+  });
+  const illnessRows = Object.entries(p.condition_months).map(([c, values]) => h("tr", {},
+    h("td", {}, h("a", { style: "cursor:pointer", onclick: () => byId("conditions", c) && select("conditions", byId("conditions", c)) }, nameOf("conditions", c))),
+    values.map((v, i) => h("td", {}, numBox(p, () => values[i], (x) => { values[i] = x; }, { min: 0, max: 50, step: 0.05 }))),
+    h("td", {}, h("button", { class: "icon", title: "Remove", onclick: () => { delete p.condition_months[c]; touch(p); renderContent(); } }, "×"))));
+  const waves = p.waves.map((w, i) => {
+    w.strength ||= [0.5, 1.5];
+    return h("div", { class: "sub-card" },
+      h("div", { class: "head" }, h("b", {}, w.name || w.id || `Wave ${i + 1}`),
+        h("button", { class: "small danger", onclick: () => { p.waves.splice(i, 1); touch(p); renderContent(); } }, "Remove wave")),
+      h("div", { class: "grid" },
+        textIn(p, w, "name", "Name"),
+        textIn(p, w, "id", "Id", { help: "Used by the game (norovirus outbreaks on the wards follow the wave called norovirus)." }),
+        textIn(p, w, "earliest_start", "Starts no earlier than", { placeholder: "11-01", help: "Month-day. It starts on a random day between these each year." }),
+        textIn(p, w, "latest_start", "and no later than", { placeholder: "12-20" }),
+        numIn(p, w, "rise_days", "Days to reach its peak", { int: true, min: 1, max: 200, def: 30 }),
+        numIn(p, w, "fall_days", "Days to die away", { int: true, min: 1, max: 300, def: 60 }),
+        pairIn(p, w, "strength", "How bad a year can be", ["from", "to"], { min: 0, max: 5, step: 0.1, help: "1 is a typical year." }),
+        numIn(p, w, "extra_volume", "Extra people at the peak", { min: 0, max: 2, step: 0.01, def: 0, help: "0.05 = 5% more people come in." })),
+      h("div", { class: "lbl", style: "margin:10px 0 6px" }, "How much commoner at the peak of a typical year"),
+      weightMap(p, w, "conditions"));
+  });
+  const effects = Object.entries(p.weather_effects).map(([k, e]) => h("div", { class: "sub-card" },
+    h("div", { class: "head" }, h("b", {}, (WEATHER_KEYS.find(([w]) => w === k) || [k, k])[1]),
+      h("button", { class: "small danger", onclick: () => { delete p.weather_effects[k]; touch(p); renderContent(); } }, "Remove")),
+    h("div", { class: "grid" }, numIn(p, e, "volume", "People coming in", { min: 0.2, max: 3, step: 0.01, def: 1, help: "1 = as usual; snow keeps people at home (0.85)." })),
+    h("div", { class: "lbl", style: "margin:10px 0 6px" }, "Illnesses and injuries"),
+    weightMap(p, e, "conditions")));
+  const missing = WEATHER_KEYS.filter(([k]) => !(k in p.weather_effects));
+  return h("div", {},
+    card("Year", null, h("div", { class: "grid" }, idField("seasons", p), textIn(p, p, "description", "Description", { multiline: true, wide: true }))),
+    card("Months", "Volume is how busy A&E is compared with an average month. Sky numbers are how often each sky comes (rain falls as snow when it is cold enough).",
+      h("div", { style: "overflow-x:auto" }, h("table", { class: "rows" },
+        h("tr", {}, h("th", {}, ""), h("th", {}, "Season"), h("th", {}, "Volume"), h("th", {}, "Low to high"), SKIES.map(([, l]) => h("th", {}, l))), monthRows))),
+    card("Illnesses by month", "How much commoner each illness is in each month (1 = as usual). Illnesses not listed are the same all year.",
+      h("div", { style: "overflow-x:auto" }, h("table", { class: "rows" }, h("tr", {}, h("th", {}, "Illness"), MONTHS.map(m => h("th", {}, m)), h("th", {})), illnessRows)),
+      h("div", { style: "margin-top:6px" }, h("select", { onchange: (e) => { if (!e.target.value) return; p.condition_months[e.target.value] = Array(12).fill(1); touch(p); renderContent(); } },
+        h("option", { value: "" }, "+ Add illness…"), listOf("conditions").filter(([v]) => !(v in p.condition_months)).map(([v, l]) => h("option", { value: v }, l))))),
+    card("Waves", "Outbreaks such as flu, RSV and norovirus that rise and fall at a different time each year.", waves,
+      h("button", { class: "small", onclick: () => { p.waves.push({ id: uniqueWave(p), name: "New wave", earliest_start: "11-01", latest_start: "12-20", rise_days: 30, fall_days: 60, strength: [0.5, 1.5], extra_volume: 0.02, conditions: {} }); touch(p); renderContent(); } }, "+ Add wave")),
+    card("Weather", "What each kind of weather does to who comes in.", effects,
+      missing.length ? h("select", { onchange: (e) => { if (!e.target.value) return; p.weather_effects[e.target.value] = { volume: 1, conditions: {} }; touch(p); renderContent(); } },
+        h("option", { value: "" }, "+ Add weather…"), missing.map(([k, l]) => h("option", { value: k }, l))) : null));
+}
+function uniqueWave(p) { let n = 1; while ((p.waves || []).some(w => w.id === `wave_${n}`)) n++; return `wave_${n}`; }
+
+function eventForm(e) {
+  const mode = e.random_in ? "random" : (e.weekdays || []).length ? "weekly" : "date";
+  const setMode = (m) => {
+    delete e.date; delete e.weekdays; delete e.random_in;
+    if (m === "date") e.date = "12-25"; else if (m === "weekly") e.weekdays = ["sat"]; else e.random_in = ["06-15", "08-20"];
+  };
+  let when;
+  if (mode === "date") {
+    when = [textIn(e, e, "date", "Date", { help: "\"12-25\", days from Easter Sunday (\"easter-2\" is Good Friday) or a weekday in a month (\"last-mon-05\")." }),
+      numIn(e, e, "days", "Lasts (days)", { int: true, min: 1, max: 60, def: 1 })];
+  } else if (mode === "weekly") {
+    when = [field("Weekdays", h("div", { class: "chips" }, WEEKDAYS.map(d => h("label", { style: "display:inline-flex;gap:3px;align-items:center;font-size:13px" },
+        h("input", { type: "checkbox", checked: e.weekdays.includes(d), onchange: (ev) => { const s = new Set(e.weekdays); if (ev.target.checked) s.add(d); else s.delete(d); e.weekdays = WEEKDAYS.filter(x => s.has(x)); touch(e); } }), cap(d))))),
+      field("Only in these months (none = all year)", monthTicks(e, e, "months"), { wide: true }),
+      pctIn(e, { get chance() { return e.chance ?? 1; }, set chance(v) { e.chance = v; } }, "chance", "Chance on each of those days", { help: "e.g. a big match on 30% of Saturdays." })];
+  } else {
+    e.random_in ||= ["06-15", "08-20"];
+    when = [field("Once a year, on a random day between", h("div", { class: "pair" },
+        h("input", { type: "text", value: e.random_in[0], oninput: (ev) => { e.random_in[0] = ev.target.value; touch(e); } }), h("span", {}, "and"),
+        h("input", { type: "text", value: e.random_in[1], oninput: (ev) => { e.random_in[1] = ev.target.value; touch(e); } }))),
+      numIn(e, e, "days", "Lasts (days)", { int: true, min: 1, max: 60, def: 1 })];
+  }
+  return h("div", {},
+    card("Event", null, h("div", { class: "grid" },
+      textIn(e, e, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("events", e),
+      textIn(e, e, "description", "Description", { multiline: true, wide: true, help: "Shown on the Calendar." }),
+      textIn(e, e, "notice", "Notification when it starts", { wide: true, removeWhenEmpty: true }),
+      checkIn(e, { get show() { return e.show !== false; }, set show(v) { if (v) delete e.show; else e.show = false; } }, "show", "Show on the Calendar"),
+      selectIn(e, e, "decorations", "Decorations", DECORATIONS, { emptyIsNone: false }))),
+    card("When", null,
+      h("div", { class: "grid" }, field("How it falls", selectBox(e, () => mode, (v) => setMode(v), [["date", "On a date each year"], ["weekly", "On weekdays"], ["random", "Once a year at random"]], { rerender: true })),
+        when,
+        numIn(e, e, "from_hour", "From (hour)", { min: 0, max: 24, step: 0.5, def: 0 }),
+        numIn(e, e, "to_hour", "Until (hour)", { min: 0, max: 48, step: 0.5, def: 24, help: "Past 24 runs on into the next morning (28 = 4 am)." }))),
+    card("Effect on A&E", null,
+      h("div", { class: "grid" },
+        numIn(e, e, "volume", "People coming in", { min: 0.3, max: 3, step: 0.01, def: 1, help: "1 = as usual; 1.3 = 30% more." }),
+        numIn(e, e, "leave", "Share of staff on annual leave", { min: 0, max: 0.5, step: 0.01, def: 0, help: "e.g. 0.15 over Christmas." })),
+      h("div", { class: "lbl", style: "margin:12px 0 6px" }, "Illnesses and injuries"),
+      weightMap(e, e, "conditions"),
+      h("div", { class: "lbl", style: "margin:12px 0 6px" }, "Chance they come in with the police"),
+      weightMap(e, e, "police", { pct: true, valueLabel: "With the police", addLabel: "+ Add illness or injury…" })));
+}
+
+function incidentForm(x) {
+  x.locations ||= [];
+  x.casualties ||= [];
+  const total = x.casualties.reduce((n, c) => [n[0] + (c.count?.[0] ?? 1), n[1] + (c.count?.[1] ?? 1)], [0, 0]);
+  const casualties = x.casualties.map((c, i) => {
+    c.count ||= [1, 1]; c.age ||= [18, 80]; c.conditions ||= [];
+    return h("div", { class: "sub-card" },
+      h("div", { class: "head" }, h("b", {}, `${i + 1}. ${c.label || "casualty"}`),
+        h("button", { class: "icon", title: "Move up", disabled: i === 0, onclick: () => { x.casualties.splice(i - 1, 0, ...x.casualties.splice(i, 1)); touch(x); renderContent(); } }, "↑"),
+        h("button", { class: "small danger", onclick: () => { x.casualties.splice(i, 1); touch(x); renderContent(); } }, "Remove")),
+      h("div", { class: "grid" },
+        textIn(x, c, "label", "Who", { placeholder: "e.g. driver" }),
+        selectIn(x, c, "triage", "Triage", [["red", "Red"], ["amber", "Amber"], ["green", "Green"]]),
+        selectIn(x, c, "transport", "Arrives", [["ambulance", "By ambulance"], ["air", "By air ambulance"], ["walking", "Walking wounded"]]),
+        pairIn(x, c, "count", "How many", ["from", "to"], { int: true, min: 1, max: 20 }),
+        pairIn(x, c, "age", "Ages", ["from", "to"], { int: true, min: 0, max: 100, unit: "years" }),
+        checkIn(x, c, "fire_crew", "Brought out by the fire service (a firefighter comes in with them)")),
+      h("div", { class: "lbl", style: "margin:10px 0 6px" }, "Illness or injury (one is picked for each)"),
+      idChips(x, c, "conditions", "conditions"));
+  });
+  return h("div", {},
+    card("Major incident", null, h("div", { class: "grid" },
+      textIn(x, x, "name", "Name", { onchange: () => scheduleTitle() }),
+      idField("incidents", x),
+      numIn(x, x, "weight", "How often", { min: 0.0001, max: 1000, def: 1, help: "Relative to the other incidents (bigger = more often)." }),
+      checkIn(x, x, "big", "Big incident (only on Realistic, and from Critical Care in a career)"),
+      textIn(x, x, "type", "What happened", { wide: true, help: "The T of METHANE on the standby card." }),
+      textIn(x, x, "hazards", "Hazards"),
+      textIn(x, x, "access", "Access"),
+      textIn(x, x, "services", "Services there", { wide: true }),
+      field("Only in these months (none = all year)", monthTicks(x, x, "months"), { wide: true }))),
+    card("Places", "Where it happened: one is picked each time.", stringList(x, x.locations, { addLabel: "+ Add place" })),
+    card("Weather", "How much likelier it is in each kind of weather.", weatherMap(x, x, "weather", "Times as likely")),
+    card("Casualties", `${total[0] === total[1] ? total[0] : `${total[0]} to ${total[1]}`} casualties. They arrive a few minutes apart, the sickest first; the walking wounded come in by themselves later.`,
+      casualties,
+      h("button", { class: "small", onclick: () => { x.casualties.push({ label: "casualty", conditions: [], triage: "amber", count: [1, 1], age: [18, 80], transport: "ambulance" }); touch(x); renderContent(); } }, "+ Add casualty")));
+}
+
 // ---------------------------------------------------------------------------------------------
 // New, duplicate, delete, rename
 // ---------------------------------------------------------------------------------------------
@@ -1106,6 +1435,9 @@ function blank(kind) {
     can_be_fatal: false, key_investigations: [], treatment: [], recovery_per_hour: 0.3, disposition: "discharge", disposition_note: "",
   };
   if (kind === "symptoms") return { id: "", name: "", patient_description: "", body_system: "general", is_red_flag: false };
+  if (kind === "seasons") return { id: "", description: "", months: [], condition_months: {}, waves: [], weather_effects: {} };
+  if (kind === "events") return { id: "", name: "", description: "", date: "01-01", from_hour: 0, to_hour: 24, volume: 1, conditions: {} };
+  if (kind === "incidents") return { id: "", name: "", locations: [""], type: "", hazards: "", access: "", services: "", weight: 1, casualties: [{ label: "casualty", conditions: [], triage: "amber", count: [1, 1], age: [18, 80], transport: "ambulance" }] };
   if (kind === "investigations") return { id: "", name: "", category: "blood", performed_by: "nurse", procedure_minutes: 5, turnaround_minutes: 60, cost: 20, applies_to_sex: "any", normal: { summaries: [""] }, false_positive_rate: 0, abnormal: [] };
   return { id: "", name: "", drug_class: "", route: "oral", typical_dose: "", indications: "", contraindications: "", allergy_groups: [], common_side_effects: [], cost_per_dose: 1 };
 }
@@ -1168,12 +1500,13 @@ function references(kind, id) {
     for (const c of records("conditions")) if ((c.key_investigations || []).includes(id)) out.push(["conditions", c]);
     for (const s of records("symptoms")) if ((s.triage_investigations || []).includes(id)) out.push(["symptoms", s]);
   }
+  if (kind === "conditions") for (const k of ["seasons", "events", "incidents"]) for (const r of records(k)) if (conditionsNamedBy(k, r).includes(id)) out.push([k, r]);
   return out;
 }
 
 async function remove(kind, rec) {
   const refs = references(kind, rec.id);
-  const extra = kind === "conditions" ? " Test results for it are removed too." : refs.length ? ` It is still used by ${refs.map(([, r]) => r.name).join(", ")}: those will show problems until you change them.` : "";
+  const extra = kind === "conditions" ? " Test results for it are removed too." + (refs.length ? ` ${refs.map(([, r]) => r.name || r.id).join(", ")} still name${refs.length === 1 ? "s" : ""} it: those will show problems until you change them.` : "") : refs.length ? ` It is still used by ${refs.map(([, r]) => r.name).join(", ")}: those will show problems until you change them.` : "";
   if (!(await confirmDlg(`Delete ${rec.name || rec.id}?`, `This removes it from ${fileOf.get(rec).name} when you save.${extra}`, "Delete"))) return;
   const f = fileOf.get(rec);
   f.records.splice(f.records.indexOf(rec), 1); f.dirty = true;
@@ -1190,6 +1523,7 @@ function renameId(kind, rec, id) {
   rec.id = id; touch(rec);
   const fix = (r) => touch(r);
   if (kind === "conditions") for (const t of records("investigations")) for (const a of t.abnormal || []) if (a.condition === old) { a.condition = id; fix(t); }
+  if (kind === "conditions") for (const k of ["seasons", "events", "incidents"]) for (const r of records(k)) if (renameConditionIn(k, r, old, id)) fix(r);
   if (kind === "symptoms") for (const c of records("conditions")) {
     if (c.presenting_complaint === old) { c.presenting_complaint = id; fix(c); }
     for (const s of c.symptoms || []) if (s.symptom === old) { s.symptom = id; fix(c); }

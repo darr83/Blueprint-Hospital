@@ -400,6 +400,15 @@ public partial class RoomPanel : PanelContainer
             var closed = _sim.UnitOf(room) == Simulation.Data.Models.WardUnit.IntensiveCare && !_sim.IsIntensiveCareOpen(room)
                 ? "[color=#C4373D]Closed: post an anaesthetist here to open it[/color]\n"
                 : string.Empty;
+            if (_sim.OutbreakOn(room.Id) is { } outbreak)
+            {
+                var cases = $"{outbreak.CaseIds.Count} case{(outbreak.CaseIds.Count == 1 ? string.Empty : "s")}";
+                var cleaned = outbreak.Cleaned ? "deep-cleaned" : $"needs a deep clean by {outbreak.SpreadsAt:HH:mm} or it spreads";
+                closed += outbreak.IsClosedAt(_sim.Now)
+                    ? $"[color=#C4373D]Closed to admissions until {outbreak.ClosedUntil:ddd HH:mm}: norovirus ({cases}, {cleaned})[/color]\n"
+                    : $"[color=#B7791F]Norovirus: {cases}, {cleaned}. {HospitalSimulation.OutbreakCasesToClose} cases close the ward.[/color]\n";
+            }
+
             return $"{closed}{used} of {room.Beds.Count} beds\n[color=#5B6B79]Days[/color]  {Team(Simulation.Staff.StaffShift.Day)}\n[color=#5B6B79]Nights[/color]  {Team(Simulation.Staff.StaffShift.Night)}";
         }
 

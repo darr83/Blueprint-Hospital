@@ -44,6 +44,15 @@ public sealed class LevelDefinition : IDataRecord
     /// <summary>Parts of the game switched on from this level: see <see cref="LevelFeatures"/>.</summary>
     public IReadOnlyList<string> Features { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// A major incident (an id from Data/Incidents) declared once on this level, as part of its goals,
+    /// <see cref="ScriptedIncidentAfterHours"/> after the level is reached and once there is a resus bay.
+    /// </summary>
+    public string? ScriptedIncident { get; init; }
+
+    /// <summary>Game hours on the level before the scripted incident.</summary>
+    public double ScriptedIncidentAfterHours { get; init; } = 12;
+
     /// <summary>What to do on this level to reach the next one. Empty on the last level.</summary>
     public IReadOnlyList<LevelGoal> Goals { get; init; } = Array.Empty<LevelGoal>();
 
@@ -57,6 +66,7 @@ public sealed class LevelDefinition : IDataRecord
         context.RequireIds("departments", Departments);
         context.RequireIds("rooms", Rooms);
         context.RequireIds("features", Features);
+        context.RequireRange("scripted_incident_after_hours", ScriptedIncidentAfterHours, 0, 24 * 30);
         foreach (var feature in Features.Where(f => !LevelFeatures.All.Contains(f)))
         {
             context.Error("features", $"'{feature}' is not a feature. Use one of: {string.Join(", ", LevelFeatures.All)}.");
@@ -181,8 +191,11 @@ public static class LevelFeatures
     /// <summary>The time of year changes who comes in (when the game has seasons switched on).</summary>
     public const string Seasons = "seasons";
 
+    /// <summary>Norovirus outbreaks on the wards in winter, which can close a ward (when the game has seasons switched on).</summary>
+    public const string Outbreaks = "outbreaks";
+
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        Ambulances, AmberPatients, Children, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity, Seasons,
+        Ambulances, AmberPatients, Children, RedPatients, Arrests, Spills, WardEmergencies, Clinics, PlannedLists, Maternity, Seasons, Outbreaks,
     };
 }

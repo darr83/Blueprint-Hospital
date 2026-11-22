@@ -296,6 +296,8 @@ public sealed partial class HospitalSimulation
         Add(Stats.AmbulancesWaiting >= 3 ? 2 : Stats.AmbulancesWaiting >= 1 ? 1 : 0, $"{Stats.AmbulancesWaiting} ambulance{(Stats.AmbulancesWaiting == 1 ? "" : "s")} waiting to hand over");
         Add(Stats.InCorridor >= 4 ? 3 : Stats.InCorridor >= 1 ? 2 : 0, $"{Stats.InCorridor} patient{(Stats.InCorridor == 1 ? "" : "s")} in the corridor");
         Add(Stats.AwaitingBed >= 4 ? 2 : Stats.AwaitingBed >= 2 ? 1 : 0, $"{Stats.AwaitingBed} waiting in A&E for a ward bed");
+        var closed = _outbreaks.Where(o => o.IsClosedAt(Now)).Select(o => FindSpace(o.WardId)?.Name).Where(n => n is not null).ToList();
+        Add(closed.Count, $"{string.Join(" and ", closed)} closed (norovirus)");
         var longest = Stats.LongestWaitMinutes.Values.DefaultIfEmpty(0).Max();
         Add(longest >= 12 * 60 ? 2 : longest >= 4 * 60 ? 1 : 0, $"Longest wait {longest / 60:0.#} hours");
 

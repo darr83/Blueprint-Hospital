@@ -15,7 +15,10 @@ public partial class FestiveLayer : Node2D
 {
     private HospitalSimulation _sim = null!;
     private WorldLayer _world = null!;
-    private (string Kind, int Version, int Floor, int Rotation)? _drawn;
+    private (string Kind, int Version, int Floor, int Rotation, string Outbreaks)? _drawn;
+
+    /// <summary>How many norovirus signs were drawn last time (for checks).</summary>
+    public int OutbreakSignCount { get; private set; }
 
     public bool Shadows { get; set; } = true;
 
@@ -34,7 +37,7 @@ public partial class FestiveLayer : Node2D
 
     public override void _Process(double delta)
     {
-        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, IsoDraw.Rotation);
+        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, IsoDraw.Rotation, OutbreakSigns.Key(_sim));
         if (key != _drawn)
         {
             _drawn = key;
@@ -77,6 +80,41 @@ public partial class FestiveLayer : Node2D
 
             PieceCount++;
         }
+
+        OutbreakSignCount = 0;
+        foreach (var sign in OutbreakSigns.Plan(_sim).Where(s => IsoDraw.OnViewFloor(s.Y)))
+        {
+            OutbreakSign(p, sign);
+            OutbreakSignCount++;
+        }
+    }
+
+    /// <summary>A yellow A-frame floor sign from above: its two leaves meeting at the top, with a warning mark and the words on the face.</summary>
+    private static void OutbreakSign(Pen p, OutbreakSign sign)
+    {
+        // About 0.6 m wide and 0.4 m deep where it stands (a tile is half a metre).
+        var (fx, fy) = sign.Facing;
+        var (ax, ay) = (Math.Abs(fy), Math.Abs(fx));
+        const double W = 0.62;
+        const double D = 0.42;
+        (double, double) At(double along, double outward) => (sign.X + (ax * along) + (fx * outward), sign.Y + (ay * along) + (fy * outward));
+        p.Shadow(c => p.Poly(c, null, 0, At(-W, -D), At(W, -D), At(W, D), At(-W, D)), 0.08, 0.1, 1f);
+        var yellow = OutbreakSigns.Yellow;
+        p.Poly(Pen.Dark(yellow, 0.12f), Pen.Dark(yellow, 0.45f), 0.03, At(-W, -D), At(W, -D), At(W, 0), At(-W, 0));
+        p.Poly(yellow, Pen.Dark(yellow, 0.45f), 0.03, At(-W, 0), At(W, 0), At(W, D), At(-W, D));
+        var (rx, ry) = At(-W, 0);
+        var (sx, sy) = At(W, 0);
+        p.Line(rx, ry, sx, sy, Pen.Dark(yellow, 0.5f), 0.04);
+
+        // A red band across the face when the ward is closed, and a warning triangle.
+        if (sign.Closed)
+        {
+            p.Poly(OutbreakSigns.Red, null, 0, At(-W + 0.06, D * 0.55), At(W - 0.06, D * 0.55), At(W - 0.06, D * 0.85), At(-W + 0.06, D * 0.85));
+        }
+
+        p.Poly(OutbreakSigns.Ink, null, 0, At(-0.14, D * 0.12), At(0.14, D * 0.12), At(0, D * 0.42));
+        var (tx, ty) = At(0, D * 0.25);
+        p.Circle(tx, ty, 0.035, yellow);
     }
 
     private static void Run(Pen p, DecorRun run)

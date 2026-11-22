@@ -451,6 +451,9 @@ public sealed class Patient : Agent
     /// </summary>
     public bool AirAmbulance { get; set; }
 
+    /// <summary>Has norovirus, caught on (or brought onto) a ward: barrier nursed in their bed, and staying a day longer.</summary>
+    public bool Norovirus { get; set; }
+
     /// <summary>Weeks pregnant when she arrived (maternity patients only).</summary>
     public int GestationWeeks { get; set; }
 

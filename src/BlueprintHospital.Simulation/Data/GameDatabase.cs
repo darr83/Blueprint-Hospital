@@ -317,6 +317,11 @@ public sealed class GameDatabase
                 Unknown("rooms", "room", r);
             }
 
+            if (level.ScriptedIncident is { } incident && Incidents.Count > 0 && !Incidents.ContainsKey(incident))
+            {
+                Unknown("scripted_incident", "major incident", incident);
+            }
+
             foreach (var goal in level.Goals)
             {
                 if (goal.Room is { } room && !RoomTemplates.ContainsKey(room))
