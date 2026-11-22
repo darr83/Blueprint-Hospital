@@ -16,6 +16,7 @@ public partial class SettingsPanel : ModalPanel
         var vsync = new CheckBox { Text = "VSync", ButtonPressed = settings.VSync };
         var lighting = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Enhanced lighting (turn off on slower computers)" : "Shadows and evening light (turn off on slower computers)", ButtonPressed = settings.EnhancedLighting };
         var surfaces = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Surface textures on walls, floors and furniture" : "Fine detail on the grounds and floors", ButtonPressed = settings.SurfaceTextures };
+        var outlines = new CheckBox { Text = "Outlines round walls, furniture and people", ButtonPressed = settings.Outlines };
         var edge = new CheckBox { Text = "Scroll the camera at screen edges", ButtonPressed = settings.EdgeScrolling };
         var grid = new CheckBox { Text = "Show building grid when a game starts", ButtonPressed = settings.ShowGridByDefault };
         AutoStaff = new CheckBox { Text = "New rooms come with their minimum staff", ButtonPressed = settings.AutoStaffNewRooms };
@@ -37,6 +38,10 @@ public partial class SettingsPanel : ModalPanel
         left.AddChild(vsync);
         left.AddChild(lighting);
         left.AddChild(surfaces);
+        if (BlueprintHospital.Core.GameView.ThreeD)
+        {
+            left.AddChild(outlines);
+        }
         var uiScale = AddSlider(left, "Interface size", 0.75, 1.5, 0.05, settings.UiScale, v => $"{v * 100:0}%");
 
         left.AddChild(UiStyle.Body("Camera", muted: true));
@@ -69,6 +74,7 @@ public partial class SettingsPanel : ModalPanel
             settings.VSync = vsync.ButtonPressed;
             settings.EnhancedLighting = lighting.ButtonPressed;
             settings.SurfaceTextures = surfaces.ButtonPressed;
+            settings.Outlines = outlines.ButtonPressed;
             settings.UiScale = (float)uiScale.Value;
             settings.CameraPanSpeed = (float)pan.Value;
             settings.EdgeScrolling = edge.ButtonPressed;

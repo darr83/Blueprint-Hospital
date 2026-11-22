@@ -24,6 +24,8 @@ public partial class View3D : Node3D
     private HospitalSimulation _sim = null!;
     private WorldLayer _world = null!;
     private Camera3D _camera = null!;
+
+    private MeshInstance3D _outline = null!;
     private DirectionalLight3D _sun = null!;
     private DirectionalLight3D _fill = null!;
     private bool? _enhanced;
@@ -81,6 +83,8 @@ public partial class View3D : Node3D
             KeepAspect = Camera3D.KeepAspectEnum.Height,
         };
         AddChild(_camera);
+        _outline = Outline3D.Make();
+        _camera.AddChild(_outline);
 
         // Light from the upper left of the screen, as the 2D art was shaded: the left faces lit, the right in shade.
         _sun = new DirectionalLight3D
@@ -229,6 +233,9 @@ public partial class View3D : Node3D
             return;
         }
 
+        // Outlines suit the overhead view; first person and the plan view go without.
+        _outline.Visible = (GameManager.Instance?.Settings.Outlines ?? true) && _eye is null && !IsoDraw.Plan;
+
         if (_rotation != IsoDraw.Rotation || _floor != IsoDraw.ViewFloor || _plan != IsoDraw.Plan)
         {
             _rotation = IsoDraw.Rotation;
@@ -336,15 +343,16 @@ public partial class View3D : Node3D
 
         _enhanced = on;
         var env = _environment.Environment;
-        env.SsaoRadius = on ? 1.0f : 0.8f;
-        env.SsaoIntensity = on ? 2.6f : 1.4f;
+        // Bright, even light: soft contact shadows rather than deep ones, so rooms read clean and white.
+        env.SsaoRadius = on ? 0.7f : 0.6f;
+        env.SsaoIntensity = on ? 1.3f : 1.0f;
         env.SsaoPower = on ? 1.6f : 1.5f;
         env.SsaoDetail = on ? 1.0f : 0.5f;
         env.AdjustmentEnabled = on;
-        env.AdjustmentSaturation = 1.12f;
-        env.AdjustmentContrast = 1.1f;
-        env.AdjustmentBrightness = 0.97f;
-        _sun.ShadowBlur = on ? 0.6f : 1.0f;
+        env.AdjustmentSaturation = 1.08f;
+        env.AdjustmentContrast = 1.04f;
+        env.AdjustmentBrightness = 1.07f;
+        _sun.ShadowBlur = on ? 0.4f : 1.0f;
         Reflections();
         if (DisplayServer.GetName() == "headless")
         {
@@ -392,7 +400,7 @@ public partial class View3D : Node3D
         _fill.LightEnergy = _enhanced == true ? Mathf.Lerp(0.05f, 0.12f, day) : 0f;
         var env = _environment.Environment;
         env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day).Lerp(OvercastAmbient, cloud * 0.5f);
-        env.AmbientLightEnergy = Mathf.Lerp(0.38f, 0.5f, day) + (cloud * 0.06f * day);
+        env.AmbientLightEnergy = (Mathf.Lerp(0.38f, 0.5f, day) + (cloud * 0.06f * day)) * 1.35f;
         env.BackgroundColor = NightGround.Lerp(WeatherLook.Snow > 0 ? DayGround.Lerp(SnowGround, WeatherLook.Snow) : DayGround, day);
     }
 

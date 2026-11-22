@@ -39,6 +39,9 @@ public sealed class GameSettings
     /// <summary>Walls, floors and furniture drawn with surface detail (paint, vinyl, wood grain, fabric...).</summary>
     public bool SurfaceTextures { get; set; } = true;
 
+    /// <summary>Thin dark outlines round everything in the 3D view, for a crisp, clean look.</summary>
+    public bool Outlines { get; set; } = true;
+
     /// <summary>
     /// How the hospital is drawn: false for the 2D view from directly above, true for the 3D view.
     /// Chosen on the main menu; a game keeps the view it was started or loaded with.
@@ -58,6 +61,7 @@ public sealed class GameSettings
         settings.VSync = (bool)config.GetValue("display", "vsync", settings.VSync);
         settings.EnhancedLighting = (bool)config.GetValue("display", "enhanced_lighting", settings.EnhancedLighting);
         settings.SurfaceTextures = (bool)config.GetValue("display", "surface_textures", settings.SurfaceTextures);
+        settings.Outlines = (bool)config.GetValue("display", "outlines", settings.Outlines);
         settings.View3D = (bool)config.GetValue("display", "view_3d", settings.View3D);
         settings.UiScale = Mathf.Clamp((float)config.GetValue("display", "ui_scale", settings.UiScale), 0.75f, 1.5f);
         settings.CameraPanSpeed = Mathf.Clamp((float)config.GetValue("camera", "pan_speed", settings.CameraPanSpeed), 0.25f, 3f);
@@ -75,6 +79,7 @@ public sealed class GameSettings
         config.SetValue("display", "vsync", VSync);
         config.SetValue("display", "enhanced_lighting", EnhancedLighting);
         config.SetValue("display", "surface_textures", SurfaceTextures);
+        config.SetValue("display", "outlines", Outlines);
         config.SetValue("display", "view_3d", View3D);
         config.SetValue("display", "ui_scale", UiScale);
         config.SetValue("camera", "pan_speed", CameraPanSpeed);

@@ -61,7 +61,15 @@ public partial class DepartmentRenderer : Node2D
     /// A room's usual floor colour: by its kind, except the children's rooms, which have their own
     /// brighter colours (sunny yellow wards, mint cubicles, sky blue waiting, lavender intensive care).
     /// </summary>
-    public static Color FloorColourOf(CareSpace space)
+    public static Color FloorColourOf(CareSpace space) => KindColour(space).Lerp(CleanWhite, CleanMix);
+
+    /// <summary>The clean white the floors are laid in: each room's own colour shows only as a faint tint.</summary>
+    private static readonly Color CleanWhite = new("#F6F8F9");
+
+    /// <summary>How far each room's floor colour is taken towards <see cref="CleanWhite"/>.</summary>
+    private const float CleanMix = 0.68f;
+
+    private static Color KindColour(CareSpace space)
     {
         if (space.DepartmentId == HospitalSimulation.PaediatricsDepartmentId)
         {
@@ -202,19 +210,30 @@ public partial class DepartmentRenderer : Node2D
 
     private static ImageTexture? _chequer;
 
-    /// <summary>Two by two texels, one per tile: white where (x + y) is odd, 2.5% darker where it is even. It repeats across a room's floor and takes the room's colour.</summary>
+    /// <summary>
+    /// Two by two tiles, 16 texels each: white tiles, every other one 1.5% darker, with a thin grey grout
+    /// line round each. It repeats across a room's floor and takes the room's colour.
+    /// </summary>
     private static ImageTexture Chequer
     {
         get
         {
             if (_chequer is null)
             {
-                var image = Image.CreateEmpty(2, 2, false, Image.Format.Rgba8);
-                var dark = Colors.White.Darkened(0.025f);
-                image.SetPixel(0, 0, dark);
-                image.SetPixel(1, 1, dark);
-                image.SetPixel(1, 0, Colors.White);
-                image.SetPixel(0, 1, Colors.White);
+                const int tile = 16;
+                var image = Image.CreateEmpty(tile * 2, tile * 2, false, Image.Format.Rgba8);
+                var dark = Colors.White.Darkened(0.015f);
+                var grout = Colors.White.Darkened(0.08f);
+                for (var x = 0; x < tile * 2; x++)
+                {
+                    for (var y = 0; y < tile * 2; y++)
+                    {
+                        var edge = x % tile == 0 || y % tile == 0;
+                        image.SetPixel(x, y, edge ? grout : ((x / tile) + (y / tile)) % 2 == 0 ? dark : Colors.White);
+                    }
+                }
+
+                image.GenerateMipmaps();
                 _chequer = ImageTexture.CreateFromImage(image);
             }
 

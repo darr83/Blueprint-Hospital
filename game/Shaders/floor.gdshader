@@ -28,8 +28,14 @@ void fragment() {
 	float wear = texture(detail, vec3(wpos.xz * 0.06, 5.0)).r;
 	float soft = (id == 2 || id == 10) ? 1.0 : (0.95 + 0.1 * wear);
 	ALBEDO = c.rgb * (0.75 + 0.5 * d.r) * soft;
+	if (id == 5) {
+		// Standard floors: clean glossy tiles, half a metre square, with a crisp grout line round each.
+		vec2 g = abs(fract(wpos.xz + 0.5) - 0.5);
+		float grout = 1.0 - smoothstep(0.012, 0.03, min(g.x, g.y));
+		ALBEDO = c.rgb * (0.97 + 0.06 * d.r) * (1.0 - 0.12 * grout);
+	}
 	ALPHA = c.a;
-	ROUGHNESS = d.g;
+	ROUGHNESS = id == 5 ? min(d.g, 0.32) : d.g;
 	SPECULAR = id == 10 ? 0.3 : 0.55;
 	NORMAL_MAP = texture(normals, vec3(q, float(id))).rgb;
 	NORMAL_MAP_DEPTH = 0.6;
