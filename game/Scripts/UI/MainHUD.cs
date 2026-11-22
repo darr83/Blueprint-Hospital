@@ -998,13 +998,19 @@ public partial class MainHUD : CanvasLayer
         var tip = "The season. Click for the Calendar (K)";
         if (sim.SeasonsActive)
         {
+            if (sim.Weather is { } weather)
+            {
+                text += $" · {weather.Brief()}";
+            }
+
             var flu = sim.Seasons!.Stage("flu", now);
             if (flu != WaveStage.None)
             {
                 text += $" · Flu {flu.ToString().ToLowerInvariant()}";
             }
 
-            tip = "The season and what's going round. Click for the week ahead and the year (K)";
+            tip = (sim.Weather is { } today ? $"Today: {today.Describe()}, low {today.Low:0}°C\n" : string.Empty)
+                  + "The season, the weather and what's going round. Click for the week ahead and the year (K)";
         }
 
         SeasonPill.Text = text;

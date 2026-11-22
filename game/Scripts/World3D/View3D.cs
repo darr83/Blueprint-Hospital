@@ -37,6 +37,7 @@ public partial class View3D : Node3D
 
     private Outside3D _outside = null!;
     private Ground3D _ground = null!;
+    private int _groundWeather = -1;
     private FloorPainter _floors = null!;
     private Walls3D _walls = null!;
     private Agents3D _agents = null!;
@@ -255,6 +256,7 @@ public partial class View3D : Node3D
             if (siteChanged)
             {
                 _ground.Rebuild();
+                _groundWeather = WeatherLook.GroundVersion;
             }
 
             if (structureChanged)
@@ -289,6 +291,13 @@ public partial class View3D : Node3D
             _decorVersion = _world.DecorVersion;
             _floors.Repaint();
             _decor.Rebuild(_walls.Cutaway);
+        }
+
+        if (_groundWeather != WeatherLook.GroundVersion)
+        {
+            // Snow, frost, parched grass or wet roads: only the ground's colours change.
+            _groundWeather = WeatherLook.GroundVersion;
+            _ground.Rebuild();
         }
 
         Daylight();
@@ -347,6 +356,10 @@ public partial class View3D : Node3D
     private static readonly Color NightAmbient = new("#B8C4E0");
     private static readonly Color DayGround = new(0.16f, 0.19f, 0.17f);
     private static readonly Color NightGround = new(0.06f, 0.08f, 0.12f);
+    private static readonly Color SnowGround = new(0.55f, 0.58f, 0.62f);
+    private static readonly Color OvercastSun = new("#D9DEE4");
+    private static readonly Color HeatSun = new("#FFD9A0");
+    private static readonly Color OvercastAmbient = new("#D2D8DE");
 
     /// <summary>
     /// Follows the hospital clock: warm low sun morning and evening, a cool moonlit night. Inside stays
@@ -354,22 +367,24 @@ public partial class View3D : Node3D
     /// </summary>
     private void Daylight()
     {
-        var hour = _sim.Now.TimeOfDay.TotalHours;
-
-        // 0 at night, 1 in the day, easing across dawn (6 to 8) and dusk (19 to 21).
-        var day = (float)Math.Clamp(Math.Min((hour - 6) / 2, (21 - hour) / 2), 0, 1);
-        day = day * day * (3 - (2 * day));
+        // 0 at night, 1 in the day, easing across sunrise and sunset (later in winter, earlier in summer).
+        var day = WeatherLook.Daylight(_sim.Now);
         Night = 1 - day;
         var low = 1 - Math.Abs((day * 2) - 1);
         var sun = NightSun.Lerp(DaySun, day).Lerp(DawnSun, low * 0.6f);
+
+        // A grey sky dims and cools the sun; a heatwave warms it; fog greys everything.
+        var cloud = Math.Max(WeatherLook.Cloud, WeatherLook.Fog * 0.8f);
+        sun = sun.Lerp(OvercastSun, cloud * 0.7f).Lerp(HeatSun, WeatherLook.Heat * 0.35f * day);
         _sun.LightColor = sun;
-        _sun.LightEnergy = Mathf.Lerp(0.24f, 0.72f, day);
+        _sun.LightEnergy = Mathf.Lerp(0.24f, 0.72f, day) * (1f - (cloud * 0.45f));
+        _sun.ShadowOpacity = 1f - (cloud * 0.55f);
         ApplyLighting();
         _fill.LightEnergy = _enhanced == true ? Mathf.Lerp(0.05f, 0.12f, day) : 0f;
         var env = _environment.Environment;
-        env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day);
-        env.AmbientLightEnergy = Mathf.Lerp(0.38f, 0.5f, day);
-        env.BackgroundColor = NightGround.Lerp(DayGround, day);
+        env.AmbientLightColor = NightAmbient.Lerp(DayAmbient, day).Lerp(OvercastAmbient, cloud * 0.5f);
+        env.AmbientLightEnergy = Mathf.Lerp(0.38f, 0.5f, day) + (cloud * 0.06f * day);
+        env.BackgroundColor = NightGround.Lerp(WeatherLook.Snow > 0 ? DayGround.Lerp(SnowGround, WeatherLook.Snow) : DayGround, day);
     }
 
     /// <summary>The view's quarter turn about the middle of the site, as a 3D transform of grid space.</summary>

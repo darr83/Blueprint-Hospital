@@ -248,6 +248,7 @@ public sealed class GameDatabase
         {
             var named = profile.ConditionMonths.Keys
                 .Concat(profile.Waves.SelectMany(w => w.Conditions.Keys))
+                .Concat(profile.WeatherEffects.Values.SelectMany(e => e.Conditions.Keys))
                 .Where(id => !Conditions.ContainsKey(id))
                 .Distinct();
             foreach (var id in named)

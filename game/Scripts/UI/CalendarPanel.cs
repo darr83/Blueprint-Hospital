@@ -117,13 +117,19 @@ public partial class CalendarPanel : PanelContainer
             : "[color=#5B6B79]" + string.Join(" · ", pressure.Reasons) + "[/color]");
         _now.Text = sb.ToString();
 
-        var week = new StringBuilder("[table=4]");
+        var weather = _sim.WeatherActive;
+        var week = new StringBuilder(weather ? "[table=5]" : "[table=4]");
         foreach (var day in _sim.WeekOutlook())
         {
             var change = (day.Busyness - 1) * 100;
             var hex = change >= 12 ? ClinicalText.RedHex : change >= 4 ? ClinicalText.AmberTextHex : change <= -4 ? ClinicalText.GreenHex : "#17232E";
             var bar = new string('▮', Math.Clamp((int)Math.Round(day.Busyness * 8), 1, 14));
             week.Append($"[cell][b]{(day.Date == now.Date ? "Today" : day.Date.ToString("ddd d"))}[/b]   [/cell]");
+            if (weather)
+            {
+                week.Append($"[cell]{day.Weather?.Brief() ?? string.Empty}   [/cell]");
+            }
+
             week.Append($"[cell][color={hex}]{bar}[/color]  [/cell]");
             week.Append($"[cell][color={hex}]{(Math.Abs(change) < 2 ? "normal" : (change > 0 ? "+" : string.Empty) + change.ToString("0") + "%")}[/color]   [/cell]");
             week.Append($"[cell][color=#5B6B79]{day.BedShare * 100:0}% need a bed{(day.Notes.Count > 0 ? " · " + string.Join(", ", day.Notes) : string.Empty)}[/color][/cell]");

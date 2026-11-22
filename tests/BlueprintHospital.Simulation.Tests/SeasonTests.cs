@@ -130,4 +130,73 @@ public class SeasonTests
         Assert.Equal(1, h.Sim.Pressure.Level);
         Assert.Equal("Steady", h.Sim.Pressure.Name);
     }
+
+    [Fact]
+    public void British_weather_snow_some_winters_heatwaves_some_summers_and_rain_all_year()
+    {
+        var h = new SimulationHarness(seed: 11, seasons: true);
+        var days = Enumerable.Range(0, 365 * 6).Select(d => h.Sim.WeatherOn(new DateTime(2027, 1, 1).AddDays(d))!).ToList();
+        Assert.Contains(days, d => d.Sky == Sky.Snow);
+        Assert.Contains(days, d => d.Icy);
+        Assert.Contains(days, d => d.Heatwave);
+        Assert.DoesNotContain(days, d => d.Sky == Sky.Snow && d.Date.Month is >= 5 and <= 9);
+        Assert.DoesNotContain(days, d => d.Heatwave && d.Date.Month is <= 3 or >= 11);
+        var wet = days.Count(d => d.Wet || d.Sky == Sky.Snow) / (double)days.Count;
+        Assert.InRange(wet, 0.25, 0.5);
+        var julyHighs = days.Where(d => d.Date.Month == 7).Average(d => d.High);
+        var januaryHighs = days.Where(d => d.Date.Month == 1).Average(d => d.High);
+        Assert.InRange(julyHighs, 19, 25);
+        Assert.InRange(januaryHighs, 4, 10);
+    }
+
+    [Fact]
+    public void Ice_brings_in_broken_hips_and_a_heatwave_brings_heatstroke()
+    {
+        var h = new SimulationHarness(seed: 11, seasons: true);
+        var all = Enumerable.Range(0, 365 * 6).Select(d => h.Sim.WeatherOn(new DateTime(2027, 1, 1, 12, 0, 0).AddDays(d))!).ToList();
+        var icy = all.First(d => d.Icy).Date.AddHours(12);
+        var heat = all.First(d => d.Heatwave).Date.AddHours(12);
+        var hip = h.Database.Conditions["fractured_neck_of_femur"];
+        var heatstroke = h.Database.Conditions["heatstroke"];
+        Assert.True(h.Sim.SeasonalWeight(hip, icy) > 1.8 * h.Sim.Seasons!.ConditionWeight(hip.Id, icy));
+        Assert.True(h.Sim.SeasonalWeight(heatstroke, heat) > 3 * h.Sim.Seasons.ConditionWeight(heatstroke.Id, heat));
+    }
+
+    [Fact]
+    public void The_same_game_has_the_same_weather()
+    {
+        var a = new SimulationHarness(seed: 5, seasons: true).Sim;
+        var b = new SimulationHarness(seed: 5, seasons: true).Sim;
+        var c = new SimulationHarness(seed: 6, seasons: true).Sim;
+        var dates = Enumerable.Range(0, 60).Select(d => new DateTime(2027, 6, 1).AddDays(d)).ToList();
+        Assert.Equal(dates.Select(d => a.WeatherOn(d)), dates.Select(d => b.WeatherOn(d)));
+        Assert.NotEqual(dates.Select(d => a.WeatherOn(d)!.Sky), dates.Select(d => c.WeatherOn(d)!.Sky));
+    }
+
+    [Fact]
+    public void Short_days_in_winter_and_long_light_evenings_in_summer()
+    {
+        var (winterRise, winterSet) = WeatherCalendar.Daylight(new DateTime(2027, 12, 21));
+        var (summerRise, summerSet) = WeatherCalendar.Daylight(new DateTime(2027, 6, 21));
+        Assert.InRange(winterRise, 7.7, 8.3);
+        Assert.InRange(winterSet, 15.7, 16.3);
+        Assert.InRange(summerRise, 4.5, 5.2);
+        Assert.InRange(summerSet, 21.0, 21.7);
+    }
+
+    [Fact]
+    public void The_weather_cheat_sets_today_and_off_goes_back_to_the_forecast()
+    {
+        var h = new SimulationHarness(seed: 3, seasons: true);
+        var forecast = h.Sim.Weather!;
+        var snow = h.Sim.RunCheat("weather snow");
+        Assert.True(snow.Succeeded, snow.Message);
+        Assert.Equal(Sky.Snow, h.Sim.Weather!.Sky);
+        Assert.True(h.Sim.Weather.SnowLying);
+        Assert.Equal("Snow 1°C", h.Sim.Weather.Brief());
+        Assert.False(h.Sim.RunCheat("weather sideways").Succeeded);
+        Assert.True(h.Sim.RunCheat("weather off").Succeeded);
+        Assert.Equal(forecast, h.Sim.Weather);
+        Assert.False(new SimulationHarness(seed: 3).Sim.RunCheat("weather rain").Succeeded);
+    }
 }

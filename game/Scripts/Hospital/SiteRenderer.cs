@@ -102,11 +102,16 @@ public partial class SiteRenderer : Node2D
 
     public static readonly Color UpperFloorSlab = new("#D6D3CC");
 
-    /// <summary>The colour the ground is painted at a tile, with a little variation so large areas don't look flat.</summary>
+    /// <summary>The colour the ground is painted at a tile (as today's weather leaves it), with a little variation so large areas don't look flat.</summary>
     public static Color TileColour(SiteMap site, GridCoord tile)
     {
         var kind = site[tile];
-        var colour = GroundColours[kind];
+        var colour = kind switch
+        {
+            TileKind.Grass => WeatherLook.Grass(GroundColours[kind]),
+            TileKind.BuildingFloor => GroundColours[kind],
+            _ => WeatherLook.Hard(GroundColours[kind], road: kind != TileKind.Paving),
+        };
         var noise = Hash(tile) * 0.06f - 0.03f;
         return kind switch
         {

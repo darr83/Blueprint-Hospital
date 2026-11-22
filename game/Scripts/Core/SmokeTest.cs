@@ -931,6 +931,18 @@ public partial class SmokeTest : Node
 
             case Stage.Calendar when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("08a_calendar");
+                if (hospital.Session.Simulation.SeasonsActive)
+                {
+                    // The weather cheat makes it snow: the flakes fall and the grounds go white, then back to the forecast.
+                    var snowed = hospital.Session.Simulation.RunCheat("weather snow");
+                    Check(snowed.Succeeded, $"weather snow: {snowed.Message}");
+                    BlueprintHospital.Hospital.WeatherLook.Update(hospital.Session.Simulation);
+                    Check(BlueprintHospital.Hospital.WeatherLook.Snow > 0.5f && BlueprintHospital.Hospital.WeatherLook.Snowfall > 0, "Snow did not show after the weather cheat.");
+                    Check(hospital.Weather is not null, "The weather overlay is missing.");
+                    Check(hospital.Session.Simulation.RunCheat("weather off").Succeeded, "weather off failed.");
+                    BlueprintHospital.Hospital.WeatherLook.Update(hospital.Session.Simulation);
+                }
+
                 hospital.Hud.ToggleFinances();
                 Check(!hospital.Hud.Calendar.Visible, "Opening Finances should close the Calendar.");
                 Check(hospital.Hud.Finances.Visible, "Finances did not open.");
