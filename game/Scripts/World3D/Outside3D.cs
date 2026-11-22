@@ -99,6 +99,11 @@ public partial class Outside3D : Node3D
             Canopy(solid, glass, site, entrance);
         }
 
+        if (_sim.Helipad is { } pad)
+        {
+            Helipad(solid, flat, pad);
+        }
+
         Planting(solid, site);
         solid.AddTo(this);
         flat.AddTo(this, shadow: false);
@@ -669,6 +674,57 @@ public partial class Outside3D : Node3D
     }
 
     // ------------------------------------------------------------------ taxi rank
+
+    /// <summary>
+    /// The helipad: a raised concrete slab edged in white, the yellow touchdown circle with a white H, and
+    /// green landing lights round the edge, plus a windsock on a pole at one corner.
+    /// </summary>
+    private static void Helipad(MeshBatch m, MeshBatch flat, GridRect pad)
+    {
+        var concrete = WeatherLook.Hard(new Color("#B8BCBF"), road: false);
+        var white = new Color("#F4F4EE");
+        var cx = pad.X + (pad.Width / 2.0);
+        var cy = pad.Y + (pad.Length / 2.0);
+        const float top = 0.05f;
+        m.Box(Kit3D.At(cx, cy, top / 2), new Vector3(pad.Width, top, pad.Length), concrete);
+        for (var i = 4; i < pad.Width; i += 4)
+        {
+            flat.Floor(pad.X + i - 0.03, pad.Y + 0.3, 0.06, pad.Length - 0.6, top + 0.004f, concrete.Darkened(0.07f));
+            flat.Floor(pad.X + 0.3, pad.Y + i - 0.03, pad.Width - 0.6, 0.06, top + 0.004f, concrete.Darkened(0.07f));
+        }
+
+        const double e = 0.28;
+        flat.Floor(pad.X + 0.7, pad.Y + 0.7, pad.Width - 1.4, e, top + 0.006f, white);
+        flat.Floor(pad.X + 0.7, pad.Bottom - 0.7 - e, pad.Width - 1.4, e, top + 0.006f, white);
+        flat.Floor(pad.X + 0.7, pad.Y + 0.7, e, pad.Length - 1.4, top + 0.006f, white);
+        flat.Floor(pad.Right - 0.7 - e, pad.Y + 0.7, e, pad.Length - 1.4, top + 0.006f, white);
+
+        // The touchdown circle: a yellow disc with the concrete showing through the middle.
+        var r = (Math.Min(pad.Width, pad.Length) / 2.0) - 3.2;
+        m.Cylinder(Kit3D.At(cx, cy, top + 0.004f), (float)r + 0.3f, 0.006f, (float)r + 0.3f, Yellow);
+        m.Cylinder(Kit3D.At(cx, cy, top + 0.008f), (float)r - 0.3f, 0.006f, (float)r - 0.3f, concrete);
+
+        var hw = r * 0.42;
+        var hh = r * 0.62;
+        flat.Floor(cx - hw, cy - hh, hw * 0.42, hh * 2, top + 0.014f, white);
+        flat.Floor(cx + hw - (hw * 0.42), cy - hh, hw * 0.42, hh * 2, top + 0.014f, white);
+        flat.Floor(cx - hw, cy - (hh * 0.16), hw * 2, hh * 0.32, top + 0.014f, white);
+
+        for (var i = 2; i < pad.Width - 1; i += 4)
+        {
+            foreach (var (lx, ly) in new (double, double)[] { (pad.X + i, pad.Y + 0.35), (pad.X + i, pad.Bottom - 0.35), (pad.X + 0.35, pad.Y + i), (pad.Right - 0.35, pad.Y + i) })
+            {
+                m.Cylinder(Kit3D.At(lx, ly, top + 0.04f), 0.13f, 0.08f, 0.13f, new Color("#3FCF6A"));
+            }
+        }
+
+        // A windsock just off the corner.
+        var (wx, wy) = (pad.Right + 1.5, pad.Y - 1.5);
+        m.Cylinder(Kit3D.At(wx, wy, 2.4f), 0.09f, 4.8f, 0.09f, new Color("#D9DDE0"));
+        var sock = Basis.FromEuler(new Vector3(0, 0, Mathf.Pi / 2 - 0.25f));
+        m.Cylinder(Kit3D.At(wx + 0.9, wy, 4.55f), 0.34f, 1.8f, 0.34f, new Color("#F08A24"), sock, cone: true);
+        m.Cylinder(Kit3D.At(wx + 0.45, wy, 4.67f), 0.36f, 0.4f, 0.36f, white, sock);
+    }
 
     private void TaxiRank(MeshBatch m, MeshBatch flat, MeshBatch glass, SiteMap site, SiteLayout layout)
     {

@@ -650,6 +650,9 @@ public partial class BuildBar : Control
             case BuildMenu.ExtendBuilding:
                 _tool.StartExtension();
                 break;
+            case BuildMenu.Helipad:
+                _tool.StartHelipad();
+                break;
             case BuildMenu.WaitingChairs:
                 _tool.StartChairs();
                 break;
@@ -828,6 +831,7 @@ public partial class BuildBar : Control
     private string ItemName(string item) => item switch
     {
         BuildMenu.ExtendBuilding => "Extend building",
+        BuildMenu.Helipad => "Helipad",
         BuildMenu.AddFloor => "Add a floor",
         BuildMenu.WaitingChairs => "Waiting chairs",
         BuildMenu.ResusTrolleys => "Resus trolleys",
@@ -871,6 +875,14 @@ public partial class BuildBar : Control
                 lines.Add("Place chairs in a waiting room or anywhere along a corridor. Patients waiting for triage sit in the waiting room; everyone else sits on the free chair nearest where they are going, or stands if there isn't one. Drag for a row, Z turns them, and pick a colour below.");
                 lines.Add($"{muted}Cost[/color]  £{_sim.ChairCost:N0} each; turning or recolouring a placed chair is free");
                 lines.Add($"{muted}Placed[/color]  {_sim.Chairs.Count} ({inRooms} in waiting rooms, {_sim.Chairs.Count - inRooms} in corridors)");
+                break;
+            }
+
+            case BuildMenu.Helipad:
+            {
+                lines.Add($"A 12 m landing pad for the air ambulance, on open ground outside with {Units.TilesToMetres(HospitalSimulation.HelipadClearance):0} m clear all round. The helicopter lands on it and its paramedic wheels the patient round to the ambulance entrance. Without one it lands nearby and the patient comes by road, about {HospitalSimulation.NoHelipadDelay.TotalMinutes:0} minutes later.");
+                lines.Add($"{muted}Cost[/color]  £{HospitalSimulation.HelipadCost:N0}; click it again to take it out for half back");
+                lines.Add(_sim.Helipad is null ? $"{muted}Built[/color]  not yet" : $"{muted}Built[/color]  yes{(_sim.Helicopters.Count > 0 ? ", the air ambulance is here" : string.Empty)}");
                 break;
             }
 

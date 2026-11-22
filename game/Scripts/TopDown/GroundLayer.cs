@@ -141,6 +141,11 @@ public partial class GroundLayer : Node2D
         }
 
         AmbulanceBays(p);
+        if (_sim.Helipad is { } pad)
+        {
+            HelipadArt(p, pad);
+            Lettering.Add("H");
+        }
 
         // The building's floor slab.
         foreach (var area in site.Buildings.SelectMany(b => b.Areas))
@@ -316,6 +321,40 @@ public partial class GroundLayer : Node2D
                 p.Circle(cx - 0.1, cy - 0.75, 0.26, Colors.White);
                 p.Path(Colors.White, 0.2, (cx - 0.1, cy - 0.4), (cx - 0.1, cy + 0.25), (cx + 0.55, cy + 0.25), (cx + 0.8, cy + 0.85));
                 p.Arc(cx - 0.05, cy + 0.4, 0.62, 0.6, 3.6, Colors.White, 0.16);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The helipad from above: a pale concrete square edged in white, the yellow touchdown circle with a
+    /// white H inside it, and green landing lights round the edge.
+    /// </summary>
+    public static void HelipadArt(Pen p, GridRect pad)
+    {
+        var cx = pad.X + (pad.Width / 2.0);
+        var cy = pad.Y + (pad.Length / 2.0);
+        var concrete = WeatherLook.Hard(C("#BFC3C6"), road: false);
+        p.Shadow(c => p.Rect(pad.X, pad.Y, pad.Width, pad.Length, c), 0.12, 0.16, 0.6f);
+        p.Round(pad.X, pad.Y, pad.Width, pad.Length, 0.4, concrete, Pen.Dark(concrete, 0.2f), 0.12);
+        for (var i = 4; i < pad.Width; i += 4)
+        {
+            p.Line(pad.X + i, pad.Y + 0.3, pad.X + i, pad.Bottom - 0.3, Pen.Dark(concrete, 0.07f), 0.05);
+            p.Line(pad.X + 0.3, pad.Y + i, pad.Right - 0.3, pad.Y + i, Pen.Dark(concrete, 0.07f), 0.05);
+        }
+
+        p.Round(pad.X + 0.7, pad.Y + 0.7, pad.Width - 1.4, pad.Length - 1.4, 0.2, null, Marking, 0.28);
+        var r = (Math.Min(pad.Width, pad.Length) / 2.0) - 3.2;
+        p.Circle(cx, cy, r, null, Yellow, 0.55);
+        var hw = r * 0.42;
+        var hh = r * 0.62;
+        p.Rect(cx - hw, cy - hh, hw * 0.42, hh * 2, Marking);
+        p.Rect(cx + hw - (hw * 0.42), cy - hh, hw * 0.42, hh * 2, Marking);
+        p.Rect(cx - hw, cy - (hh * 0.16), hw * 2, hh * 0.32, Marking);
+        for (var i = 2; i < pad.Width - 1; i += 4)
+        {
+            foreach (var (lx, ly) in new (double, double)[] { (pad.X + i, pad.Y + 0.35), (pad.X + i, pad.Bottom - 0.35), (pad.X + 0.35, pad.Y + i), (pad.Right - 0.35, pad.Y + i) })
+            {
+                p.Circle(lx, ly, 0.22, C("#3FCF6A"), C("#1E7A3A"), 0.04);
             }
         }
     }

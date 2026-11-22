@@ -10,6 +10,9 @@ public enum TileKind : byte
     Parking,
     BuildingFloor,
     TaxiRank,
+
+    /// <summary>The air ambulance's landing pad, built by the player on open ground.</summary>
+    Helipad,
 }
 
 /// <summary>An entrance in a building's outer wall. <see cref="Tile"/> is the floor tile just inside.</summary>

@@ -118,4 +118,74 @@ public static class VehicleArt
         p.Round((w / 2) - 1.25, (-l / 2) + 0.05, 0.8, 0.24, 0.1, C("#FFF6C9"));
         p.Pop();
     }
+
+    /// <summary>
+    /// The air ambulance from above, nose along (<paramref name="hx"/>, <paramref name="hy"/>): a red pod with a
+    /// yellow band, a long tail boom with its shrouded tail rotor, skids, and the four main rotor blades turned to
+    /// <paramref name="rotorAngle"/> (a blurred disc once they are spinning fast). Its shadow falls further off
+    /// and it is drawn a little bigger the higher it is (<paramref name="altitude"/>, metres).
+    /// </summary>
+    public static void Helicopter(Pen p, double x, double y, double hx, double hy, double altitude, double rotorAngle, double rotorSpeed)
+    {
+        var red = C("#C8202B");
+        var yellow = C("#F2D21B");
+        var lift = Math.Clamp(altitude / HelicopterCruiseMetres, 0, 1);
+        var facing = Pen.Facing(hx, hy);
+
+        // The shadow on the ground, falling away as it climbs.
+        var shadow = new Color(0, 0, 0, (float)(0.28 - (lift * 0.14)));
+        p.Push(x + (altitude * 0.12), y + (altitude * 0.16), facing);
+        p.Round(-1.6, -4.3, 3.2, 8.6, 1.4, shadow);
+        p.Round(-0.45, 3, 0.9, 8.5, 0.4, shadow);
+        if (rotorSpeed > 0.05)
+        {
+            p.Circle(0, -0.5, 10, new Color(0, 0, 0, (float)(0.08 * rotorSpeed)));
+        }
+
+        p.Pop();
+
+        p.Push(x, y, facing, 1 + (lift * 0.25));
+
+        // Skids.
+        foreach (var sx in new[] { -1.9, 1.9 })
+        {
+            p.Round(sx - 0.18, -3.4, 0.36, 6.8, 0.18, C("#3A3F45"));
+            p.Line(sx, -1.8, sx * 0.55, -1.8, C("#3A3F45"), 0.22);
+            p.Line(sx, 1.6, sx * 0.55, 1.6, C("#3A3F45"), 0.22);
+        }
+
+        // Tail boom, fin and the shrouded tail rotor.
+        p.Poly(red, Pen.Outline(red), 0.04, (-0.6, 2.6), (0.6, 2.6), (0.32, 10.6), (-0.32, 10.6));
+        p.Round(-1.7, 8.0, 3.4, 0.7, 0.3, red, Pen.Outline(red), 0.04);
+        p.Round(-0.35, 9.9, 0.7, 2.2, 0.3, Pen.Dark(red, 0.15f), Pen.Outline(red), 0.04);
+        p.Rect(-0.12, 3.5, 0.24, 4.2, yellow);
+
+        // The pod: red with a yellow band, dark glazing at the nose, the engine cowl on top.
+        p.Shadow(c => p.Round(-1.6, -4.3, 3.2, 8.6, 1.4, c), 0.08, 0.1, 1.2f);
+        p.Round(-1.6, -4.3, 3.2, 8.6, 1.4, red, Pen.Outline(red), 0.05);
+        p.Rect(-1.55, -0.2, 3.1, 0.9, yellow);
+        p.Round(-1.3, -4.15, 2.6, 2.4, 1.1, C("#22303C"), C("#111A22"), 0.04);
+        p.Round(-0.95, -3.85, 0.8, 1.2, 0.4, Pen.A("#9FD0E8", 0.35f));
+        p.Round(-0.8, 0.9, 1.6, 2.6, 0.5, Pen.Dark(red, 0.12f), Pen.Outline(red), 0.04);
+        p.Text("AIR AMBULANCE", 0, 2.4, 9, C("#FFFFFF"), rot: Math.PI / 2);
+
+        // Main rotor: four blades on the hub, a pale blur when spinning fast.
+        if (rotorSpeed > 0.6)
+        {
+            p.Circle(0, -0.5, 10, new Color(0.15f, 0.17f, 0.2f, (float)(0.16 * rotorSpeed)), new Color(0.15f, 0.17f, 0.2f, 0.25f), 0.05);
+        }
+
+        var blade = new Color(0.16f, 0.18f, 0.21f, rotorSpeed > 0.6 ? 0.45f : 1f);
+        for (var i = 0; i < 4; i++)
+        {
+            var a = rotorAngle + (i * Math.PI / 2);
+            p.Line(Math.Sin(a) * 0.6, -0.5 - (Math.Cos(a) * 0.6), Math.Sin(a) * 10, -0.5 - (Math.Cos(a) * 10), blade, 0.55);
+        }
+
+        p.Circle(0, -0.5, 0.65, C("#5A6068"), C("#2A2E33"), 0.04);
+        p.Pop();
+    }
+
+    /// <summary>Cruising height the helicopter's look scales with (matches the simulation).</summary>
+    private const double HelicopterCruiseMetres = 40;
 }

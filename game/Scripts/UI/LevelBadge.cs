@@ -282,6 +282,7 @@ public sealed partial class LevelBadge : Button
     {
         BuildMenu.AddFloor => "Upper floors",
         BuildMenu.ResusTrolleys => "Resus trolleys",
+        BuildMenu.Helipad => "Helipad",
         BuildMenu.ExtendBuilding => "Extend the building",
         BuildMenu.WaitingChairs => "Chairs",
         BuildMenu.WaitingDesk => "Reception desk",

@@ -174,6 +174,9 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
     /// <summary>A police officer's black peaked cap with the black-and-white chequered band.</summary>
     public bool PoliceHat { get; init; }
 
+    /// <summary>A firefighter's yellow helmet, the clear visor pushed up over the brim.</summary>
+    public bool FireHelmet { get; init; }
+
     public bool Radio { get; init; }
 
     /// <summary>The hair style actually drawn.</summary>

@@ -294,7 +294,15 @@ public static class PeopleArt
         p.Circle(0, 0, r, skin, Pen.Outline(skin), 0.03);
 
         // Hair on top: everything but the face at the front.
-        if (look.PoliceHat)
+        if (look.FireHelmet)
+        {
+            // A firefighter's yellow helmet from above: the dome, its crest front to back, and the visor up at the front.
+            var yellow = new Color("#F2C230");
+            p.Circle(0, r * 0.05, r * 1.18, Grey(yellow, grey), Pen.Outline(Grey(yellow, grey)), 0.03);
+            p.Line(0, -r * 0.9, 0, r * 1.0, Grey(yellow.Darkened(0.15f), grey), r * 0.22);
+            p.Ellipse(0, -r * 0.92, r * 0.72, r * 0.22, Grey(new Color(0.75f, 0.85f, 0.9f, 1f), grey));
+        }
+        else if (look.PoliceHat)
         {
             // A peaked cap from above: the black crown in a chequered ring, the peak to the front.
             p.Circle(0, r * 0.05, r * 1.12, Grey(new Color("#E9ECEF"), grey));
