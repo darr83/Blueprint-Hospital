@@ -959,7 +959,21 @@ public partial class SmokeTest : Node
                     Check(!hospital.Hud.Incident.Visible, "The major incident banner should go once the debrief is closed.");
 
                     // The helipad goes on open grass behind the building, and comes out again for half back.
-                    var pad = incidentSim.BuildHelipad(new Simulation.World.GridCoord(50, 1));
+                    // Earlier steps add wings round the building, so find the first open spot rather than a fixed one.
+                    var spot = new Simulation.World.GridCoord(50, 1);
+                    for (var py = 0; py < incidentSim.Site.Length && !incidentSim.CheckHelipad(spot).CanBuild; py += 4)
+                    {
+                        for (var px = 0; px < incidentSim.Site.Width; px += 4)
+                        {
+                            if (incidentSim.CheckHelipad(new Simulation.World.GridCoord(px, py)).CanBuild)
+                            {
+                                spot = new Simulation.World.GridCoord(px, py);
+                                break;
+                            }
+                        }
+                    }
+
+                    var pad = incidentSim.BuildHelipad(spot);
                     Check(pad.CanBuild && incidentSim.Helipad is not null && incidentSim.BuiltCount(Simulation.Data.BuildMenu.Helipad) == 1, $"The helipad was not built: {string.Join(" ", pad.Problems)}");
                     Check(incidentSim.RemoveHelipad().CanBuild && incidentSim.Helipad is null, "The helipad did not come out again.");
                 }
