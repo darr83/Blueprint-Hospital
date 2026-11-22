@@ -28,6 +28,12 @@ public partial class HospitalAudio
 
     private bool IsRainyDay()
     {
+        // With seasons the rain on the windows is the real weather; without, three days in ten.
+        if (BlueprintHospital.Hospital.WeatherLook.Today is not null)
+        {
+            return BlueprintHospital.Hospital.WeatherLook.Rain > 0.1f;
+        }
+
         var date = _session.Clock.Now.Date;
         return ((date.DayOfYear * 7919) + date.Year) % 10 < 3;
     }

@@ -20,6 +20,8 @@ namespace BlueprintHospital.TopDown;
 public partial class TopDownView : Node2D
 {
     private static readonly Color NightTint = new("#5F6FA3");
+    private static readonly Color Overcast = new("#A9B1BA");
+    private static readonly Color HeatTint = new("#FFE2B0");
 
     private HospitalSimulation _sim = null!;
     private WorldLayer _world = null!;
@@ -34,6 +36,7 @@ public partial class TopDownView : Node2D
     private int _decorBuilt = -1;
     private (int Rotation, int Floor, bool Shadows, bool Detailed, string Site)? _groundBuilt;
     private bool _showGrid;
+    private int _groundWeather = -1;
 
     /// <summary>Where the scene puts what lies on the floor under the furniture: the outline of the selected room.</summary>
     public Node2D FloorSlot { get; private set; } = null!;
@@ -118,11 +121,12 @@ public partial class TopDownView : Node2D
 
         Refresh();
 
-        // Evening falls over the grounds; inside, the lights stay on.
-        var hour = _world.Clock.Now.TimeOfDay.TotalHours;
-        var day = Mathf.SmoothStep(6f, 8f, (float)hour) * (1f - Mathf.SmoothStep(19f, 21f, (float)hour));
+        // Evening falls over the grounds (earlier in winter, later in summer); inside, the lights stay on.
+        // A grey sky dims them a little by day and a heatwave warms them.
+        var day = WeatherLook.Daylight(_world.Clock.Now);
         Night = Shadows ? 1f - day : 0f;
-        _ground.Modulate = Colors.White.Lerp(NightTint, Night * 0.5f);
+        var cloud = System.Math.Max(WeatherLook.Cloud, WeatherLook.Fog * 0.8f);
+        _ground.Modulate = Colors.White.Lerp(NightTint, Night * 0.5f).Lerp(Overcast, cloud * 0.25f * day).Lerp(HeatTint, WeatherLook.Heat * 0.12f * day);
     }
 
     /// <summary>
@@ -133,6 +137,13 @@ public partial class TopDownView : Node2D
     {
         var settings = GameManager.Instance?.Settings;
         var key = (_world.StaticVersion, IsoDraw.Rotation, IsoDraw.ViewFloor, settings?.EnhancedLighting ?? true, settings?.SurfaceTextures ?? true, _showGrid);
+        if (_groundBuilt is not null && _groundWeather != WeatherLook.GroundVersion)
+        {
+            // Snow, frost, parched grass or wet roads: only the grounds are drawn again.
+            _groundWeather = WeatherLook.GroundVersion;
+            _ground.QueueRedraw();
+        }
+
         if (key == _built)
         {
             if (_decorBuilt != _world.DecorVersion)
@@ -162,6 +173,7 @@ public partial class TopDownView : Node2D
         if (groundKey != _groundBuilt)
         {
             _groundBuilt = groundKey;
+            _groundWeather = WeatherLook.GroundVersion;
             _ground.Shadows = shadows;
             _ground.Detailed = detailed;
             _ground.QueueRedraw();

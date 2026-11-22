@@ -18,17 +18,18 @@ public partial class GroundLayer : Node2D
 {
     private static Color C(string hex) => new(hex);
 
-    public static readonly Color Grass = C("#86BC6B");
-    private static readonly Color GrassDark = C("#7AB260");
-    private static readonly Color GrassLight = C("#93C678");
-    private static readonly Color Paving = C("#D8D3C6");
-    private static readonly Color PavingJoint = C("#C4BEAF");
-    private static readonly Color Asphalt = C("#555C64");
-    private static readonly Color ParkingTar = C("#626971");
+    // The grass and hard ground as today's weather leaves them (snow, frost, a parched summer, wet roads).
+    public static Color Grass => WeatherLook.Grass(C("#86BC6B"));
+    private static Color GrassDark => WeatherLook.Grass(C("#7AB260"));
+    private static Color GrassLight => WeatherLook.Grass(C("#93C678"));
+    private static Color Paving => WeatherLook.Hard(C("#D8D3C6"), road: false);
+    private static Color PavingJoint => WeatherLook.Hard(C("#C4BEAF"), road: false);
+    private static Color Asphalt => WeatherLook.Hard(C("#555C64"), road: true);
+    private static Color ParkingTar => WeatherLook.Hard(C("#626971"), road: true);
     private static readonly Color Kerb = C("#C9CED3");
     private static readonly Color Marking = C("#F4F4EE");
     private static readonly Color Yellow = C("#F5C518");
-    private static readonly Color BayTar = C("#7A4A45");
+    private static Color BayTar => WeatherLook.Hard(C("#7A4A45"), road: true);
     private static readonly Color Slab = C("#EDE9DF");
 
     private HospitalSimulation _sim = null!;

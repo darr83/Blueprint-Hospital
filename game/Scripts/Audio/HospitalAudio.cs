@@ -142,7 +142,7 @@ public partial class HospitalAudio : Node2D
         WantFlat(nightLoop ? "amb_hospital_night" : "amb_hospital_day", nightLoop ? inside / 0.55 * 0.8 : inside, AudioSettings.AmbienceBus);
         if (IsRainyDay())
         {
-            WantFlat("amb_rain", 0.35, AudioSettings.AmbienceBus);
+            WantFlat("amb_rain", 0.35 * (BlueprintHospital.Hospital.WeatherLook.Today is null ? 1 : 0.5 + (0.6 * BlueprintHospital.Hospital.WeatherLook.Rain)), AudioSettings.AmbienceBus);
         }
 
         // Outside: the car park, mainly when you're zoomed right out.

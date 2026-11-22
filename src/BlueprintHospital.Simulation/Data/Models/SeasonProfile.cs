@@ -32,6 +32,12 @@ public sealed class SeasonProfile : IDataRecord
     /// <summary>Outbreaks that come once a year, at a different time and strength each year.</summary>
     public IReadOnlyList<SeasonWave> Waves { get; init; } = Array.Empty<SeasonWave>();
 
+    /// <summary>
+    /// What each kind of weather does to A&amp;E, keyed by <see cref="WeatherEffectKeys"/> (icy, snow, cold,
+    /// hot, heatwave, rain, heavy_rain, fog, thunderstorm).
+    /// </summary>
+    public IReadOnlyDictionary<string, WeatherEffect> WeatherEffects { get; init; } = new Dictionary<string, WeatherEffect>();
+
     public void Validate(ValidationContext context)
     {
         context.RequireId("id", Id);
@@ -62,6 +68,39 @@ public sealed class SeasonProfile : IDataRecord
         {
             Waves[i].Validate(context, $"waves[{i}]");
         }
+
+        for (var i = 0; i < Months.Count; i++)
+        {
+            var m = Months[i];
+            if (m.Temperature.Length != 2 || m.Temperature[0] > m.Temperature[1])
+            {
+                context.Error($"months[{i}].temperature", "must be [average low, average high] in °C.");
+            }
+
+            foreach (var (sky, weight) in m.Sky)
+            {
+                if (!SeasonMonth.TryParseSky(sky, out _))
+                {
+                    context.Error($"months[{i}].sky.{sky}", "is not a sky (clear, cloudy, rain, heavy_rain, fog, thunderstorm).");
+                }
+
+                context.RequireRange($"months[{i}].sky.{sky}", weight, 0, 100);
+            }
+        }
+
+        foreach (var (key, effect) in WeatherEffects)
+        {
+            if (!WeatherEffectKeys.All.Contains(key))
+            {
+                context.Error($"weather_effects.{key}", $"is not a kind of weather ({string.Join(", ", WeatherEffectKeys.All)}).");
+            }
+
+            context.RequireRange($"weather_effects.{key}.volume", effect.Volume, 0.2, 3);
+            foreach (var (condition, value) in effect.Conditions)
+            {
+                context.RequireRange($"weather_effects.{key}.conditions.{condition}", value, 0, 50);
+            }
+        }
     }
 }
 
@@ -72,6 +111,56 @@ public sealed class SeasonMonth
 
     /// <summary>How many people come to A&amp;E compared with an average month (1).</summary>
     public double Volume { get; init; } = 1;
+
+    /// <summary>The month's average night-time low and daytime high, in °C.</summary>
+    public double[] Temperature { get; init; } = { 5, 12 };
+
+    /// <summary>How often each kind of sky comes, by weight (clear, cloudy, rain, heavy_rain, fog, thunderstorm).</summary>
+    public IReadOnlyDictionary<string, double> Sky { get; init; } = new Dictionary<string, double> { ["clear"] = 1, ["cloudy"] = 1, ["rain"] = 1 };
+
+    /// <summary>Reads a sky's name as written in the data ("heavy_rain").</summary>
+    public static bool TryParseSky(string name, out Sky sky) => Enum.TryParse(name.Replace("_", string.Empty, StringComparison.Ordinal), ignoreCase: true, out sky) && sky != Models.Sky.Snow;
+}
+
+/// <summary>The sky on one day. Rain falls as snow when it is cold enough.</summary>
+public enum Sky
+{
+    Clear,
+    Cloudy,
+    Rain,
+    HeavyRain,
+    Fog,
+    Thunderstorm,
+    Snow,
+}
+
+/// <summary>What one kind of weather does to A&amp;E.</summary>
+public sealed class WeatherEffect
+{
+    /// <summary>How many come in compared with usual (snow keeps people at home: 0.85).</summary>
+    public double Volume { get; init; } = 1;
+
+    /// <summary>How much commoner each illness or injury is (ice: hip fractures 2).</summary>
+    public IReadOnlyDictionary<string, double> Conditions { get; init; } = new Dictionary<string, double>();
+}
+
+/// <summary>The kinds of weather that have effects.</summary>
+public static class WeatherEffectKeys
+{
+    public const string Icy = "icy";
+    public const string Snow = "snow";
+    public const string Cold = "cold";
+    public const string Hot = "hot";
+    public const string Heatwave = "heatwave";
+    public const string Rain = "rain";
+    public const string HeavyRain = "heavy_rain";
+    public const string Fog = "fog";
+    public const string Thunderstorm = "thunderstorm";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
+    {
+        Icy, Snow, Cold, Hot, Heatwave, Rain, HeavyRain, Fog, Thunderstorm,
+    };
 }
 
 /// <summary>

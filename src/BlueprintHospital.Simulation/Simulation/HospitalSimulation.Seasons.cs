@@ -8,7 +8,11 @@ namespace BlueprintHospital.Simulation.Simulation;
 public sealed record MonthOutlook(int Month, Season Season, double Volume, double BedShare);
 
 /// <summary>One day on the Calendar's week ahead.</summary>
-public sealed record DayOutlook(DateTime Date, Season Season, double Busyness, double BedShare, IReadOnlyList<string> Notes);
+public sealed record DayOutlook(DateTime Date, Season Season, double Busyness, double BedShare, IReadOnlyList<string> Notes)
+{
+    /// <summary>The day's weather, if the game has seasons.</summary>
+    public DayWeather? Weather { get; init; }
+}
 
 /// <summary>The hospital pressure badge, based on the NHS's OPEL levels (1 steady to 4 critical).</summary>
 public sealed record PressureReading(int Level, IReadOnlyList<string> Reasons)
@@ -33,6 +37,7 @@ public sealed partial class HospitalSimulation
     private static readonly TimeSpan PressureInterval = TimeSpan.FromMinutes(15);
 
     private SeasonCalendar? _seasonCalendar;
+    private WeatherCalendar? _weather;
     private DateTime _nextPressureReading;
 
     /// <summary>Whether this game has seasons switched on (the New Game setting).</summary>
@@ -55,14 +60,92 @@ public sealed partial class HospitalSimulation
         SeasonSeed = seed;
         var profile = Database.Seasons.Values.OrderBy(p => p.Id, StringComparer.Ordinal).FirstOrDefault();
         _seasonCalendar = enabled && profile is not null ? new SeasonCalendar(profile, seed) : null;
+        _weather = _seasonCalendar is null ? null : new WeatherCalendar(_seasonCalendar.Profile, seed);
     }
 
     /// <summary>How much commoner an illness is today than its usual prevalence.</summary>
-    public double SeasonalWeight(ConditionDefinition condition, DateTime date) =>
-        SeasonsActive ? _seasonCalendar!.ConditionWeight(condition.Id, date) : 1;
+    public double SeasonalWeight(ConditionDefinition condition, DateTime date)
+    {
+        if (!SeasonsActive)
+        {
+            return 1;
+        }
+
+        var weight = _seasonCalendar!.ConditionWeight(condition.Id, date);
+        foreach (var effect in WeatherEffectsOn(date))
+        {
+            weight *= effect.Conditions.GetValueOrDefault(condition.Id, 1);
+        }
+
+        return weight;
+    }
+
+    /// <summary>The weather on a day, if this game has seasons (and so weather).</summary>
+    public DayWeather? WeatherOn(DateTime date) =>
+        _weatherOverride is { } forced && forced.Date == date.Date ? forced : _weather?.On(date);
+
+    /// <summary>Today's weather as set by the "weather" cheat, until the day is over.</summary>
+    private DayWeather? _weatherOverride;
+
+    /// <summary>The "weather" cheat: sets today's weather (for trying the look and the effects), or "off" to go back to the forecast.</summary>
+    private CheatResult WeatherCheat(string kind)
+    {
+        if (_weather is null)
+        {
+            return new CheatResult(false, "This game has no seasons, so no weather.");
+        }
+
+        var today = _weather.On(Now);
+        DayWeather? forced = kind switch
+        {
+            "clear" => today with { Sky = Sky.Clear, High = 14, Low = 6, Icy = false, SnowLying = false, Heatwave = false },
+            "sunny" => today with { Sky = Sky.Clear, High = 24, Low = 13, Icy = false, SnowLying = false, Heatwave = false },
+            "cloudy" => today with { Sky = Sky.Cloudy, High = 12, Low = 6, Icy = false, SnowLying = false, Heatwave = false },
+            "rain" => today with { Sky = Sky.Rain, High = 11, Low = 6, Icy = false, SnowLying = false, Heatwave = false },
+            "heavy_rain" or "heavy" => today with { Sky = Sky.HeavyRain, High = 10, Low = 6, Icy = false, SnowLying = false, Heatwave = false },
+            "fog" => today with { Sky = Sky.Fog, High = 7, Low = 2, Icy = false, SnowLying = false, Heatwave = false },
+            "storm" or "thunderstorm" => today with { Sky = Sky.Thunderstorm, High = 24, Low = 15, Icy = false, SnowLying = false, Heatwave = false },
+            "snow" => today with { Sky = Sky.Snow, High = 1, Low = -3, Icy = false, SnowLying = true, Heatwave = false },
+            "ice" or "icy" => today with { Sky = Sky.Clear, High = 2, Low = -4, Icy = true, SnowLying = false, Heatwave = false },
+            "heatwave" or "heat" => today with { Sky = Sky.Clear, High = 31, Low = 18, Icy = false, SnowLying = false, Heatwave = true },
+            "off" => null,
+            _ => today,
+        };
+        if (kind is not "off" && ReferenceEquals(forced, today))
+        {
+            return new CheatResult(false, "Usage: weather <clear, sunny, cloudy, rain, heavy_rain, fog, storm, snow, ice, heatwave or off>");
+        }
+
+        _weatherOverride = forced;
+        return new CheatResult(true, forced is null ? $"Back to the forecast: {today.Describe()}." : $"Today is now: {forced.Describe()}.");
+    }
+
+    /// <summary>Today's weather, if this game has seasons.</summary>
+    public DayWeather? Weather => WeatherOn(Now);
+
+    /// <summary>Whether the weather is changing who comes in (it comes with seasons).</summary>
+    public bool WeatherActive => SeasonsActive && _weather is not null;
+
+    private IEnumerable<WeatherEffect> WeatherEffectsOn(DateTime date)
+    {
+        if (_weather is null)
+        {
+            yield break;
+        }
+
+        var effects = _seasonCalendar!.Profile.WeatherEffects;
+        foreach (var key in _weather.On(date).EffectKeys())
+        {
+            if (effects.TryGetValue(key, out var effect))
+            {
+                yield return effect;
+            }
+        }
+    }
 
     /// <summary>How many people come to A&amp;E today compared with an average day (1 without seasons).</summary>
-    public double SeasonalVolume(DateTime date) => SeasonsActive ? _seasonCalendar!.Volume(date) : 1;
+    public double SeasonalVolume(DateTime date) =>
+        SeasonsActive ? WeatherEffectsOn(date).Aggregate(_seasonCalendar!.Volume(date), (v, e) => v * e.Volume) : 1;
 
     /// <summary>The share of A&amp;E patients who need a bed (admitted or operated on) on this day, from the season's mix of illnesses.</summary>
     public double ExpectedBedShare(DateTime date)
@@ -99,6 +182,11 @@ public sealed partial class HospitalSimulation
             var date = Now.Date.AddDays(i).AddHours(12);
             var weekday = _arrivalProfile?.WeekdayMultipliers.GetValueOrDefault(date.DayOfWeek.ToString().ToLowerInvariant(), 1) ?? 1;
             var notes = new List<string>();
+            if (SeasonsActive && WeatherOn(date) is { } weather)
+            {
+                notes.AddRange(WeatherNotes(weather));
+            }
+
             if (SeasonsActive)
             {
                 foreach (var wave in _seasonCalendar!.Profile.Waves)
@@ -111,10 +199,47 @@ public sealed partial class HospitalSimulation
                 }
             }
 
-            list.Add(new DayOutlook(date.Date, SeasonCalendar.SeasonOf(date), SeasonalVolume(date) * weekday / weekdayAverage, ExpectedBedShare(date), notes));
+            list.Add(new DayOutlook(date.Date, SeasonCalendar.SeasonOf(date), SeasonalVolume(date) * weekday / weekdayAverage, ExpectedBedShare(date), notes) { Weather = WeatherOn(date) });
         }
 
         return list;
+    }
+
+    /// <summary>What a day's weather will do to A&amp;E, in a few words.</summary>
+    public static IEnumerable<string> WeatherNotes(DayWeather weather)
+    {
+        if (weather.Icy)
+        {
+            yield return "ice: falls and fractures";
+        }
+        else if (weather.SnowLying || weather.Sky == Sky.Snow)
+        {
+            yield return "snow: fewer walk in, more falls";
+        }
+
+        if (weather.Heatwave)
+        {
+            yield return "heatwave: heat illness";
+        }
+        else if (weather.High >= 24)
+        {
+            yield return "hot: sunburn and heat";
+        }
+
+        if (weather.High <= 3 && !weather.Icy)
+        {
+            yield return "cold: hypothermia";
+        }
+
+        if (weather.Sky is Sky.HeavyRain or Sky.Fog)
+        {
+            yield return "road crashes up";
+        }
+
+        if (weather.Sky == Sky.Thunderstorm)
+        {
+            yield return "thunderstorm asthma";
+        }
     }
 
     /// <summary>

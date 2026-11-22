@@ -362,6 +362,17 @@ public static class Looks
             kind = TopKind.Jumper;
         }
 
+        // Dressed for the weather: jumpers in the cold, T-shirts and polo shirts in the heat.
+        var climate = WeatherLook.Climate;
+        if (climate == Climate.Cold && kind is TopKind.Tee or TopKind.Polo && Roll(seed, 57, 3) != 0)
+        {
+            kind = teen ? TopKind.Hoodie : TopKind.Jumper;
+        }
+        else if (climate == Climate.Hot && kind is TopKind.Jumper or TopKind.Hoodie or TopKind.Cardigan && Roll(seed, 57, 4) != 0)
+        {
+            kind = old && Roll(seed, 58, 2) == 0 ? TopKind.Shirt : !female && Roll(seed, 58, 2) == 0 ? TopKind.Polo : TopKind.Tee;
+        }
+
         if (kind is TopKind.Shirt)
         {
             top = ShirtColours[Roll(seed, 41, ShirtColours.Length)];
@@ -369,7 +380,7 @@ public static class Looks
 
         var legs = kind == TopKind.Dress ? LegKind.Skirt
             : female && style != HairStyle.Hijab && Roll(seed, 42, 4) == 0 ? LegKind.Skirt
-            : (child || (!female && age < 40)) && Roll(seed, 43, 4) == 0 ? LegKind.Shorts
+            : climate != Climate.Cold && (child || (!female && age < (climate == Climate.Hot ? 65 : 40))) && Roll(seed, 43, climate == Climate.Hot ? 2 : climate == Climate.Warm ? 3 : 4) == 0 ? LegKind.Shorts
             : !old && Roll(seed, 44, 2) == 0 ? LegKind.Jeans : LegKind.Trousers;
         var trousers = legs == LegKind.Jeans ? JeansColours[Roll(seed, 45, JeansColours.Length)]
             : toddler ? Pick(seed, 45, new Color("#4D7FB8"), new Color("#B5525C"), new Color("#4D6B3C"))
@@ -391,7 +402,7 @@ public static class Looks
             Legs = legs,
             Tights = legs == LegKind.Skirt && (old || Roll(seed, 49, 2) == 0) ? (child ? new Color("#F2F4F7") : old ? who.Skin.Darkened(0.18f) : new Color("#3B3B3B")) : null,
             ShoeColour = child ? BrightColours[Roll(seed, 50, BrightColours.Length)] : ShoeColours[Roll(seed, 50, old ? 2 : ShoeColours.Length)],
-            LongSleeves = style == HairStyle.Hijab || (kind is TopKind.Shirt && Roll(seed, 51, 2) == 0),
+            LongSleeves = style == HairStyle.Hijab || (kind is TopKind.Shirt && climate != Climate.Hot && Roll(seed, 51, 2) == 0) || (climate == Climate.Cold && kind is not TopKind.Dress),
             Style = style,
             Bobble = bright,
             Scale = toddler ? 0.5f : child ? Mathf.Lerp(0.6f, 0.78f, (age - 5) / 6f) : teen ? Mathf.Lerp(0.84f, 0.97f, (age - 12) / 5f) : old ? 0.95f : female ? 0.97f : 1f,
@@ -399,7 +410,7 @@ public static class Looks
             Build = build,
             Belly = !female && age >= 40 && build >= 1.15f,
             Stoop = age >= 72,
-            Jacket = coat && !bump && !child && kind is not (TopKind.Hoodie or TopKind.Cardigan or TopKind.Dress) ? CoatColours[Roll(seed, 52, CoatColours.Length)] : null,
+            Jacket = coat && climate != Climate.Hot && !bump && !child && kind is not (TopKind.Hoodie or TopKind.Cardigan or TopKind.Dress) ? CoatColours[Roll(seed, 52, CoatColours.Length)] : null,
             Stick = age >= 78 && age < 86,
             Frame = age >= 86,
             Bump = bump,
@@ -412,12 +423,26 @@ public static class Looks
     /// <summary>A member of the public of a given age and sex, for the art review sheets.</summary>
     public static PersonLook Preview(int seed, Sex sex, int age, bool coat = false) => Civilian(seed, sex, age, coat, bump: false);
 
-    public static PersonLook Patient(Patient patient) => Civilian(
-        patient.Id,
-        patient.Sex,
-        patient.Age,
-        coat: Roll(patient.Id, 54, 3) == 0,
-        bump: patient.Maternity && !patient.Delivered);
+    public static PersonLook Patient(Patient patient)
+    {
+        var look = Civilian(
+            patient.Id,
+            patient.Sex,
+            patient.Age,
+            coat: CoatOn(patient.Id, Roll(patient.Id, 54, 3) == 0),
+            bump: patient.Maternity && !patient.Delivered);
+
+        // Sunburn shows: pink-red skin.
+        return patient.Condition.Id == "sunburn" ? look with { Skin = look.Skin.Lerp(new Color("#E0604A"), 0.38f) } : look;
+    }
+
+    /// <summary>Whether someone who would usually be in a coat (or not) has one on, given the weather: most people do in the cold.</summary>
+    private static bool CoatOn(int seed, bool usual) => WeatherLook.Climate switch
+    {
+        Climate.Cold => usual || Roll(seed, 56, 3) != 0,
+        Climate.Hot or Climate.Warm => usual && Roll(seed, 56, 3) == 0,
+        _ => usual,
+    };
 
     /// <summary>A clinic patient in their own clothes, usually with a coat on (they have come from home).</summary>
     public static PersonLook Outpatient(Outpatient outpatient, Appointment? appointment)
@@ -425,14 +450,14 @@ public static class Looks
         var seed = outpatient.AppointmentId + 100_003;
         var sex = appointment?.Sex ?? Sex.Male;
         var bump = sex == Sex.Female && outpatient.ClinicId.StartsWith("antenatal", StringComparison.Ordinal) && Roll(seed, 55, 3) != 0;
-        return Civilian(seed, sex, appointment?.Age ?? 40, coat: Roll(seed, 54, 3) != 0, bump);
+        return Civilian(seed, sex, appointment?.Age ?? 40, coat: CoatOn(seed, Roll(seed, 54, 3) != 0), bump);
     }
 
     /// <summary>A mum or dad staying with their child: everyday clothes (a coat when they first come in), and their child's skin tone.</summary>
     public static PersonLook Parent(Parent parent, Patient? child)
     {
         var seed = parent.Id + 200_003;
-        var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && parent.Activity != ParentActivity.InParentsRoom && Roll(seed, 54, 3) == 0, bump: false);
+        var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && parent.Activity != ParentActivity.InParentsRoom && CoatOn(seed, Roll(seed, 54, 3) == 0), bump: false);
         return child is null ? look : look with { Skin = Patient(child).Skin };
     }
 
@@ -444,7 +469,7 @@ public static class Looks
     {
         var seed = visitor.Id + 300_007;
         var settled = visitor.Activity is VisitorActivity.Visiting or VisitorActivity.Away;
-        var look = Civilian(seed, visitor.Sex, visitor.Age, coat: !settled && Roll(seed, 54, 3) != 0, bump: false) with
+        var look = Civilian(seed, visitor.Sex, visitor.Age, coat: !settled && CoatOn(seed, Roll(seed, 54, 3) != 0), bump: false) with
         {
             Flowers = visitor.Flowers && !settled,
             Teddy = false,

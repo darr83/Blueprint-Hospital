@@ -46,6 +46,7 @@ public partial class HospitalScene : Node2D
     private BlueprintHospital.TopDown.TopDownView? _view;
     private BlueprintHospital.World3D.View3D? _view3D;
     private DoctorMode _doctor = null!;
+    private WeatherOverlay _weather = null!;
     private BlueprintHospital.UI.DoctorHud _doctorHud = null!;
 
     /// <summary>Play (people and beds) or Build (rooms and items).</summary>
@@ -62,6 +63,9 @@ public partial class HospitalScene : Node2D
 
     /// <summary>Be A Doctor: playing one of the doctors, from above with the arrow keys in 2D or through their eyes in 3D.</summary>
     public DoctorMode Doctor => _doctor;
+
+    /// <summary>The rain, snow and fog drawn over the screen.</summary>
+    public WeatherOverlay Weather => _weather;
 
     public BlueprintHospital.UI.DoctorHud DoctorHud => _doctorHud;
 
@@ -172,6 +176,17 @@ public partial class HospitalScene : Node2D
             // Outline of the selected room, on the floor under everything standing on it.
             _view.FloorSlot.AddChild(_highlight);
         }
+
+        // Rain, snow and fog over the hospital, under the HUD.
+        WeatherLook.Reset();
+        WeatherLook.Update(_session.Simulation);
+        _weather = new WeatherOverlay
+        {
+            Name = "WeatherOverlay",
+            Paused = () => _session.Clock.IsPaused,
+            Night = () => _view3D?.Night ?? _view?.Night ?? 0f,
+        };
+        AddChild(_weather);
 
         _itemHighlight = new SelectionHighlight { Name = "ItemHighlight" };
         AddChild(_itemHighlight);
@@ -379,6 +394,8 @@ public partial class HospitalScene : Node2D
     public override void _Process(double delta)
     {
         _session.Clock.Advance(delta);
+        WeatherLook.Update(_session.Simulation);
+        _weather.Visible = _view3D?.FirstPerson is null;
         _highlight.Room = _hud.RoomInfo.Visible && _hud.RoomInfo.RoomId is { } roomId ? _session.Simulation.FindSpace(roomId)?.Rect
             : _hud.Decorate.Visible && _hud.Decorate.RoomId is { } decorId ? _session.Simulation.FindSpace(decorId)?.Rect
             : null;
