@@ -234,7 +234,7 @@ public partial class View3D : Node3D
         }
 
         // Outlines suit the overhead view; first person and the plan view go without.
-        _outline.Visible = (GameManager.Instance?.Settings.Outlines ?? true) && _eye is null && !IsoDraw.Plan;
+        _outline.Visible = (GameManager.Instance?.Settings.Outlines ?? false) && _eye is null && !IsoDraw.Plan;
 
         if (_rotation != IsoDraw.Rotation || _floor != IsoDraw.ViewFloor || _plan != IsoDraw.Plan)
         {
