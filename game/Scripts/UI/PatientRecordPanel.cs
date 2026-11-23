@@ -178,8 +178,11 @@ public partial class PatientRecordPanel : PanelContainer
 
     private Control BuildChips()
     {
-        var chips = new HBoxContainer();
-        chips.AddThemeConstantOverride("separation", 6);
+        // Tags wrap onto a second line rather than widening the panel off the screen
+        // (long room names such as "High dependency unit 1", or "54 h 33 m in hospital").
+        var chips = new HFlowContainer();
+        chips.AddThemeConstantOverride("h_separation", 6);
+        chips.AddThemeConstantOverride("v_separation", 5);
         _triageChip = HudWidgets.Chip();
         _placeChip = HudWidgets.Chip();
         _arrivalChip = HudWidgets.Chip();

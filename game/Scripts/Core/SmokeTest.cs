@@ -357,6 +357,7 @@ public partial class SmokeTest : Node
                 var tab = (PatientRecordPanel.Tab)_recordTab;
                 Check(hospital.Hud.Record.CurrentTab == tab && hospital.Hud.Record.CardCount > 0, $"The patient record's {tab} tab is empty.");
                 Screenshot($"04_patient_record_{_recordTab}_{tab.ToString().ToLowerInvariant()}");
+                CheckRecordFits(hospital);
                 if (++_recordTab <= (int)PatientRecordPanel.Tab.History)
                 {
                     hospital.Hud.Record.ShowTab((PatientRecordPanel.Tab)_recordTab);
@@ -879,6 +880,7 @@ public partial class SmokeTest : Node
 
             case Stage.MaternityRecord when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("09m_mother_and_baby_record");
+                CheckRecordFits(hospital);
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -2276,6 +2278,15 @@ public partial class SmokeTest : Node
         hospital.Camera.SnapTo(IsoDraw.ToScreen(room.Rect.X + 9, room.Rect.Y + 6), 1.1f);
         hospital.SelectPatient(patient);
         GD.Print($"[smoke] Built {room.Name}; {patient.FullName} is on the X-ray table at {clock.Now:HH:mm}.");
+    }
+
+    /// <summary>The patient record must stay inside the window however long its tags are.</summary>
+    private void CheckRecordFits(HospitalScene hospital)
+    {
+        var record = hospital.Hud.Record;
+        var right = record.GetGlobalRect().End.X;
+        var width = GetViewport().GetVisibleRect().Size.X;
+        Check(right <= width + 1, $"The patient record runs off the right of the screen ({right:0} > {width:0}).");
     }
 
     private static void OpenARecord(HospitalScene hospital)
