@@ -182,6 +182,13 @@ public partial class SmokeTest : Node
                 Check(box.Position.Y >= 0 && box.End.Y <= screen.Y, $"The minimum staff setting is off the screen ({box}, screen {screen}).");
                 var save = _settings.SaveButton.GetGlobalRect();
                 Check(save.Position.Y >= 0 && save.End.Y <= screen.Y && save.End.X <= screen.X, $"The Settings Save button is off the screen ({save}, screen {screen}).");
+                // Window mode and resolution (720p up to 1440p) are on offer, on screen, and a picked size saves and reads back.
+                Check(_settings.WindowMode.ItemCount == 2 && _settings.WindowMode.Selected == (manager.Settings.Fullscreen ? 1 : 0), "The Window choice does not show Windowed / Fullscreen as saved.");
+                Check(System.Array.IndexOf(GameSettings.Resolutions, new Vector2I(1280, 720)) >= 0 && System.Array.IndexOf(GameSettings.Resolutions, new Vector2I(2560, 1440)) >= 0, "The resolution list should run from 1280 x 720 to 2560 x 1440.");
+                Check(_settings.Resolution.ItemCount == GameSettings.Resolutions.Length && _settings.Resolution.Selected >= 0, "The resolution list is empty or has nothing picked.");
+                Check(GameSettings.ParseResolution("2560x1440") == new Vector2I(2560, 1440) && GameSettings.ParseResolution("123x45") is null, "Saved resolutions do not read back.");
+                var resolutionBox = _settings.Resolution.GetGlobalRect();
+                Check(resolutionBox.Position.Y >= 0 && resolutionBox.End.Y <= screen.Y && resolutionBox.End.X <= screen.X, $"The resolution list is off the screen ({resolutionBox}, screen {screen}).");
                 Screenshot("01a_settings");
                 _settings.Close();
                 _settings = null;
@@ -357,6 +364,7 @@ public partial class SmokeTest : Node
                 var tab = (PatientRecordPanel.Tab)_recordTab;
                 Check(hospital.Hud.Record.CurrentTab == tab && hospital.Hud.Record.CardCount > 0, $"The patient record's {tab} tab is empty.");
                 Screenshot($"04_patient_record_{_recordTab}_{tab.ToString().ToLowerInvariant()}");
+                CheckRecordFits(hospital);
                 if (++_recordTab <= (int)PatientRecordPanel.Tab.History)
                 {
                     hospital.Hud.Record.ShowTab((PatientRecordPanel.Tab)_recordTab);
@@ -879,6 +887,7 @@ public partial class SmokeTest : Node
 
             case Stage.MaternityRecord when scene is HospitalScene hospital && _frame >= 10:
                 Screenshot("09m_mother_and_baby_record");
+                CheckRecordFits(hospital);
                 hospital.SetMode(GameMode.Play);
                 hospital.Hud.Record.Visible = false;
                 hospital.ClearSelectionForTest();
@@ -2276,6 +2285,23 @@ public partial class SmokeTest : Node
         hospital.Camera.SnapTo(IsoDraw.ToScreen(room.Rect.X + 9, room.Rect.Y + 6), 1.1f);
         hospital.SelectPatient(patient);
         GD.Print($"[smoke] Built {room.Name}; {patient.FullName} is on the X-ray table at {clock.Now:HH:mm}.");
+    }
+
+    /// <summary>The patient record must stay inside the window however long its tags are.</summary>
+    private void CheckRecordFits(HospitalScene hospital)
+    {
+        var record = hospital.Hud.Record;
+        var right = record.GetGlobalRect().End.X;
+        var width = GetViewport().GetVisibleRect().Size.X;
+        if (right > width + 1)
+        {
+            // Name the parts asking for more room than the panel has, to find what widened it.
+            var wide = record.FindChildren("*", "Control", true, false).OfType<Control>()
+                .Where(c => c.IsVisibleInTree() && c.GetCombinedMinimumSize().X > record.Size.X - 40)
+                .Select(c => $"{c.GetType().Name} {c.GetCombinedMinimumSize().X:0}")
+                .Take(8);
+            Check(false, $"The patient record ({record.CurrentTab} tab) runs off the right of the screen ({right:0} > {width:0}): {string.Join(", ", wide)}.");
+        }
     }
 
     private static void OpenARecord(HospitalScene hospital)

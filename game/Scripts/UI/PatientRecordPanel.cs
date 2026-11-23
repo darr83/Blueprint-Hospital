@@ -39,7 +39,7 @@ public partial class PatientRecordPanel : PanelContainer
     /// <summary>Background for a vital sign by its NEWS2 part score (0-3).</summary>
     private static readonly Color[] ScoreFill = { new("#F2F5F8"), new("#FFF3CC"), new("#FFE0BD"), new("#FBD0D0") };
 
-    private readonly ScrollContainer _scroll = new() { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+    private readonly ScrollContainer _scroll = new() { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.ShowNever };
     private readonly VBoxContainer _page = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly Label _title = new();
     private readonly Label _subtitle = UiStyle.Caption(string.Empty, 13);
@@ -171,10 +171,11 @@ public partial class PatientRecordPanel : PanelContainer
 
     private Control BuildChips()
     {
-        // Chips wrap onto a second line rather than widening the panel past the screen edge.
+        // Tags wrap onto a second line rather than widening the panel off the screen
+        // (long room names such as "High dependency unit 1", or "54 h 33 m in hospital").
         var chips = new HFlowContainer();
         chips.AddThemeConstantOverride("h_separation", 6);
-        chips.AddThemeConstantOverride("v_separation", 6);
+        chips.AddThemeConstantOverride("v_separation", 5);
         _triageChip = HudWidgets.Chip();
         _placeChip = HudWidgets.Chip();
         _arrivalChip = HudWidgets.Chip();
@@ -532,7 +533,14 @@ public partial class PatientRecordPanel : PanelContainer
                 : " · steady";
         }
 
-        var alert = o.Consciousness != Consciousness.Alert ? $" · {ClinicalText.Escape(ClinicalText.SpacedWords(o.Consciousness.ToString()))}" : string.Empty;
+        var alert = o.Consciousness switch
+        {
+            Consciousness.Alert => string.Empty,
+            Consciousness.NewConfusion => " · new confusion",
+            Consciousness.Voice => " · responds to voice",
+            Consciousness.Pain => " · responds to pain",
+            _ => " · unresponsive",
+        };
         _newsText.Text = $"[color={ink}]NEWS2  [b]{n.Total}[/b]  {risk}{alert}{trend}[/color]";
         _newsTime.Text = p.ObservationHistory[^1].Time.ToString("HH:mm");
         _newsTime.AddThemeColorOverride("font_color", dark ? UiStyle.TextDark : Colors.White);
