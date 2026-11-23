@@ -67,6 +67,12 @@ public partial class ArtShots : Node
                     GameManager.Instance.Settings.SurfaceTextures = false;
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-outlines") >= 0)
+                {
+                    // For shots with the outline pass on (not saved).
+                    GameManager.Instance.Settings.Outlines = true;
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-cutaway") >= 0)
                 {
                     h.ToggleWalls();
