@@ -28,7 +28,9 @@ public static class UiStyle
 
     // One type scale for every screen. Use these instead of loose numbers.
     public const int SizeDisplay = 26;  // modal and menu titles
+    public const int SizeFigure = 22;   // the big number on a stat tile
     public const int SizeTitle = 20;    // side panel titles
+    public const int SizeCardTitle = 16; // the name on a card inside a panel
     public const int SizeHeading = 15;  // section headings inside a panel
     public const int SizeBody = 14;
     public const int SizeSmall = 13;
@@ -76,6 +78,9 @@ public static class UiStyle
 
     /// <summary>Theme type variation for white buttons with a grey border.</summary>
     public const string Secondary = "SecondaryButton";
+
+    /// <summary>Theme type variation for tabs: white in a grey track, the open one solid blue.</summary>
+    public const string Tab = "TabButton";
 
     /// <summary>Theme type variation for the left-hand navigation buttons.</summary>
     public const string Nav = "NavButton";
@@ -148,6 +153,34 @@ public static class UiStyle
         theme.SetColor("font_pressed_color", Secondary, Blue);
         theme.SetColor("font_hover_pressed_color", Secondary, Blue);
         theme.SetColor("font_disabled_color", Secondary, new Color("#9AA6B1"));
+
+        theme.SetTypeVariation(Tab, "Button");
+        StyleBoxFlat TabBox(Color colour, Color border)
+        {
+            var box = Box(colour, RadiusControl, border);
+            box.ContentMarginLeft = box.ContentMarginRight = 14;
+            box.ContentMarginTop = box.ContentMarginBottom = 6;
+            return box;
+        }
+
+        var tabOn = TabBox(Blue, Blue);
+        tabOn.ShadowColor = new Color(0.12f, 0.37f, 0.75f, 0.3f);
+        tabOn.ShadowSize = 4;
+        tabOn.ShadowOffset = new Vector2(0, 2);
+        theme.SetStylebox("normal", Tab, TabBox(Surface, Border));
+        theme.SetStylebox("hover", Tab, TabBox(new Color("#F5F8FB"), FieldBorder));
+        theme.SetStylebox("pressed", Tab, tabOn);
+        theme.SetStylebox("hover_pressed", Tab, tabOn);
+        theme.SetStylebox("focus", Tab, new StyleBoxEmpty());
+        theme.SetStylebox("disabled", Tab, TabBox(Ground, Border));
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_focus_color" })
+        {
+            theme.SetColor(state, Tab, TextDark);
+        }
+
+        theme.SetColor("font_pressed_color", Tab, Colors.White);
+        theme.SetColor("font_hover_pressed_color", Tab, Colors.White);
+        theme.SetFontSize("font_size", Tab, SizeSmall);
 
         theme.SetTypeVariation(Nav, "Button");
         var navNormal = Box(new Color(0, 0, 0, 0), 10);
@@ -313,6 +346,30 @@ public static class UiStyle
         return new PanelHeaderParts(row, titleLabel, subtitleLabel, actions, close);
     }
 
+    /// <summary>The grey track that holds a row of tabs, as on the patient record.</summary>
+    public static PanelContainer TabTrack(Control row)
+    {
+        var track = new PanelContainer { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        track.AddThemeStyleboxOverride("panel", Box(new Color("#E9EEF2"), RadiusControl + 3, null, 3));
+        if (row is BoxContainer box)
+        {
+            box.AddThemeConstantOverride("separation", 3);
+        }
+
+        track.AddChild(row);
+        return track;
+    }
+
+    /// <summary>Makes a toggle button a tab.</summary>
+    public static Button AsTab(Button button)
+    {
+        button.ThemeTypeVariation = Tab;
+        button.ToggleMode = true;
+        button.FocusMode = Control.FocusModeEnum.None;
+        button.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        return button;
+    }
+
     /// <summary>A heading for a group of rows inside a panel, e.g. "Display" or "Waiting for".</summary>
     public static Label SectionHeading(string text)
     {
@@ -333,6 +390,58 @@ public static class UiStyle
         }
 
         return control;
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex FactLine = new(@"^\[color=#5B6B79\]([^\[\]]{1,40})\[/color\]  (.*)$");
+
+    /// <summary>
+    /// Lines written as "[color=#5B6B79]Label[/color]  value" become a two-column table, so every value
+    /// lines up under the last instead of running on straight after its label.
+    /// </summary>
+    public static string Facts(string text)
+    {
+        if (text.Contains("[table", System.StringComparison.Ordinal))
+        {
+            return text;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        var inTable = false;
+        var lines = text.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var match = FactLine.Match(lines[i]);
+            if (match.Success)
+            {
+                if (!inTable)
+                {
+                    sb.Append("[table=2]");
+                    inTable = true;
+                }
+
+                sb.Append($"[cell padding=0,2,14,2][color=#5B6B79]{match.Groups[1].Value}[/color][/cell][cell expand=1 padding=0,2,0,2]{match.Groups[2].Value}[/cell]");
+                continue;
+            }
+
+            if (inTable)
+            {
+                sb.Append("[/table]\n");
+                inTable = false;
+            }
+
+            sb.Append(lines[i]);
+            if (i < lines.Length - 1)
+            {
+                sb.Append('\n');
+            }
+        }
+
+        if (inTable)
+        {
+            sb.Append("[/table]");
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>A white card inside a panel, with a thin border.</summary>

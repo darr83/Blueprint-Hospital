@@ -144,6 +144,12 @@ public partial class ItemPanel : PanelContainer
 
     private void Refresh()
     {
+        RefreshText();
+        _info.Text = UiStyle.Facts(_info.Text);
+    }
+
+    private void RefreshText()
+    {
         _refresh = 0.5;
         if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !(room.Furniture.Contains(Item) || IsCorridorChair))
         {

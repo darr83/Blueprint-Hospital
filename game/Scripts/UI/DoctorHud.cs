@@ -128,7 +128,7 @@ public partial class DoctorHud : CanvasLayer
         who.AddThemeConstantOverride("separation", -2);
         var nameRow = new HBoxContainer();
         nameRow.AddThemeConstantOverride("separation", 10);
-        _name.AddThemeFontSizeOverride("font_size", 19);
+        UiStyle.Strong(_name, UiStyle.SizeCardTitle + 2);
         nameRow.AddChild(_name);
         var pill = HudWidgets.Chip();
         HudWidgets.SetChip(pill, "You are this doctor", UiStyle.BlueTint);
@@ -726,23 +726,19 @@ public partial class DoctorHud : CanvasLayer
         return button;
     }
 
-    private static HBoxContainer TabRow((string Text, bool On)[] tabs, Action<int> onPressed)
+    private static Control TabRow((string Text, bool On)[] tabs, Action<int> onPressed)
     {
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 4);
         for (var i = 0; i < tabs.Length; i++)
         {
             var index = i;
-            var tab = UiStyle.SecondaryButton(tabs[i].Text, () => onPressed(index));
-            tab.ToggleMode = true;
+            var tab = UiStyle.AsTab(UiStyle.SecondaryButton(tabs[i].Text, () => onPressed(index)));
             tab.SetPressedNoSignal(tabs[i].On);
-            tab.FocusMode = Control.FocusModeEnum.None;
-            tab.CustomMinimumSize = new Vector2(0, 36);
-            tab.AddThemeFontSizeOverride("font_size", 14);
+            tab.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             row.AddChild(tab);
         }
 
-        return row;
+        return UiStyle.TabTrack(row);
     }
 
     // ---------------------------------------------------------------- the patient card

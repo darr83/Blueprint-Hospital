@@ -178,14 +178,12 @@ public partial class StatsPanel : PanelContainer
             (StatsPeriod.Last28Days, "28 days"), (StatsPeriod.AllTime, "All time"),
         })
         {
-            var button = UiStyle.SecondaryButton(text, () => ShowPeriod(period));
-            button.ToggleMode = true;
-            button.FocusMode = FocusModeEnum.None;
+            var button = UiStyle.AsTab(UiStyle.SecondaryButton(text, () => ShowPeriod(period)));
             _periodButtons[period] = button;
             periods.AddChild(button);
         }
 
-        header.AddChild(periods);
+        header.AddChild(UiStyle.TabTrack(periods));
         var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
@@ -198,7 +196,7 @@ public partial class StatsPanel : PanelContainer
         column.AddThemeConstantOverride("separation", 0);
         column.AddChild(UiStyle.Caption(caption, 12));
         var value = new Label { MouseFilter = MouseFilterEnum.Ignore };
-        value.AddThemeFontSizeOverride("font_size", 24);
+        UiStyle.Strong(value, UiStyle.SizeFigure);
         column.AddChild(value);
         var note = UiStyle.Caption(string.Empty, 11);
         column.AddChild(note);
@@ -553,7 +551,7 @@ public partial class StatsBarChart : Control
         }
 
         float Y(double v) => plot.End.Y - (float)((v - min) / (max - min)) * plot.Size.Y;
-        var hair = new Color("#E6ECF1");
+        var hair = UiStyle.Hairline;
         var drawn = new List<float>();
         void AxisLabel(double v)
         {

@@ -153,7 +153,7 @@ public sealed partial class LevelBadge : Button
             Text = next is null ? $"Level {_sim.Level}: {_sim.CurrentLevel?.Name}" : $"Goals for level {next.Number}",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
-        title.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.Strong(title, UiStyle.SizeCardTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
         var close = UiStyle.CloseButton(() => Card.Visible = false);

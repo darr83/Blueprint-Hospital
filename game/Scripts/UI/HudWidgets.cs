@@ -57,12 +57,12 @@ public static class HudWidgets
     public static (PanelContainer Tile, Label Value) StatTile(string caption)
     {
         var tile = new PanelContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
-        tile.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 10, new Color("#E6ECF1"), 10));
+        tile.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 10, UiStyle.Hairline, 10));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 0);
         tile.AddChild(column);
         var value = new Label { TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
-        value.AddThemeFontSizeOverride("font_size", 19);
+        UiStyle.Strong(value, UiStyle.SizeFigure - 2);
         column.AddChild(value);
         var label = UiStyle.Caption(caption, 12);
         column.AddChild(label);
@@ -103,7 +103,7 @@ public static class HudWidgets
         row.AddChild(value);
         root.AddChild(row);
         var bar = new ProgressBar { MinValue = 0, MaxValue = 1, Step = 0.01, ShowPercentage = false, CustomMinimumSize = new Vector2(0, 8) };
-        bar.AddThemeStyleboxOverride("background", UiStyle.Box(new Color("#E6ECF1"), 4));
+        bar.AddThemeStyleboxOverride("background", UiStyle.Box(UiStyle.Hairline, 4));
         root.AddChild(bar);
         return (root, value, bar);
     }
@@ -125,5 +125,5 @@ public static class HudWidgets
     }
 
     /// <summary>A thin divider line.</summary>
-    public static Control Divider() => new ColorRect { Color = new Color("#E6ECF1"), CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
+    public static Control Divider() => new ColorRect { Color = UiStyle.Hairline, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
 }

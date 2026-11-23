@@ -118,7 +118,7 @@ public partial class PictureView : Control
                 DrawRect(new Rect2(x - 6, pos.Y - 2, w + 12, size2 + 8), colour, false, 2);
             }
 
-            DrawString(font, new Vector2(x, pos.Y + size2), l.Text, HorizontalAlignment.Left, -1, size2, l.Boxed || _picture.Title.StartsWith("Urine", StringComparison.Ordinal) ? (l.Boxed ? colour : new Color("#5B6B79")) : colour);
+            DrawString(font, new Vector2(x, pos.Y + size2), l.Text, HorizontalAlignment.Left, -1, size2, l.Boxed || _picture.Title.StartsWith("Urine", StringComparison.Ordinal) ? (l.Boxed ? colour : UiStyle.TextMuted) : colour);
         }
 
         if (ShowMarkers)
@@ -344,7 +344,7 @@ public partial class RangeBar : Control
         var max = hi + (span * 0.7);
         float X(double a) => 6 + (float)((Math.Clamp(a, min, max) - min) / (max - min) * (Size.X - 12));
         var mid = Size.Y / 2;
-        DrawRect(new Rect2(6, mid - 2, Size.X - 12, 4), _dark ? new Color("#2B3946") : new Color("#E6ECF1"));
+        DrawRect(new Rect2(6, mid - 2, Size.X - 12, 4), _dark ? new Color("#2B3946") : UiStyle.Hairline);
         DrawRect(new Rect2(X(lo), mid - 4, X(hi) - X(lo), 8), _dark ? new Color("#3E5A47") : new Color("#CDE8D8"));
         var colour = _flag == "H" ? UiStyle.Red : _flag == "L" ? UiStyle.Blue : UiStyle.Green;
         if (v > max)

@@ -118,8 +118,7 @@ public partial class SurgeryPanel : PanelContainer
         tabs.AddThemeConstantOverride("separation", 6);
         foreach (var (button, tab) in new[] { (_boardTab, 0), (_listTab, 1), (_sessionsTab, 2) })
         {
-            button.ToggleMode = true;
-            button.FocusMode = FocusModeEnum.None;
+            UiStyle.AsTab(button);
             button.Pressed += () => ShowPage(tab);
             tabs.AddChild(button);
         }
@@ -127,7 +126,7 @@ public partial class SurgeryPanel : PanelContainer
         _boardTab.TooltipText = "What each theatre is doing, its team and who is next";
         _listTab.TooltipText = "Everyone waiting for an operation, most urgent first";
         _sessionsTab.TooltipText = "The week's morning and afternoon sessions: give each to a department's planned list, or keep it for emergencies";
-        header.AddChild(tabs);
+        header.AddChild(UiStyle.TabTrack(tabs));
         var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
@@ -140,7 +139,7 @@ public partial class SurgeryPanel : PanelContainer
         column.AddThemeConstantOverride("separation", 0);
         column.AddChild(UiStyle.Caption(caption, 12));
         var value = new Label { MouseFilter = MouseFilterEnum.Ignore };
-        value.AddThemeFontSizeOverride("font_size", 24);
+        UiStyle.Strong(value, UiStyle.SizeFigure);
         column.AddChild(value);
         var note = UiStyle.Caption(string.Empty, 11);
         column.AddChild(note);
@@ -280,7 +279,7 @@ public partial class SurgeryPanel : PanelContainer
 
         var top = new HBoxContainer();
         var name = new Label { Text = entry.Theatre.Name, SizeFlagsHorizontal = SizeFlags.ExpandFill, TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
-        name.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.Strong(name, UiStyle.SizeCardTitle);
         top.AddChild(name);
         var chip = HudWidgets.Chip();
         HudWidgets.SetChip(chip, StateName(entry.State), StateColour(entry.State));
@@ -788,7 +787,7 @@ public partial class TheatreTimeline : Control
         {
             var t = start.AddHours(hour);
             var x = X(t);
-            DrawLine(new Vector2(x, 0), new Vector2(x, _theatres.Count * RowHeight), new Color("#E6ECF1"), 1);
+            DrawLine(new Vector2(x, 0), new Vector2(x, _theatres.Count * RowHeight), UiStyle.Hairline, 1);
             DrawString(font, new Vector2(x - 16, (_theatres.Count * RowHeight) + 16), t.ToString("HH:mm"), HorizontalAlignment.Left, -1, 11, UiStyle.TextMuted);
         }
 

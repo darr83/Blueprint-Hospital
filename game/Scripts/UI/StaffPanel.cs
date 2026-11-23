@@ -289,7 +289,7 @@ public partial class StaffPanel : PanelContainer
         foreach (var (label, who, wait) in waiting)
         {
             var row = new PanelContainer();
-            row.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color("#F7F9FB"), 10, null, 10));
+            row.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Subtle, 10, null, 10));
             var line = new HBoxContainer();
             line.AddThemeConstantOverride("separation", 8);
             var text = new Label { Text = string.IsNullOrEmpty(who) ? label : $"{label} · {who}", AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill };

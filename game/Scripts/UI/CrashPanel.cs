@@ -65,7 +65,7 @@ public partial class CrashPanel : VBoxContainer
 
         _status.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(_status);
-        _title.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.Strong(_title, UiStyle.SizeCardTitle);
         _title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         body.AddChild(_title);
         _subtitle.AddThemeFontSizeOverride("font_size", 13);
@@ -109,7 +109,7 @@ public partial class CrashPanel : VBoxContainer
     {
         var box = new VBoxContainer();
         box.AddChild(UiStyle.Caption(caption, 12));
-        value.AddThemeFontSizeOverride("font_size", 26);
+        UiStyle.Strong(value, UiStyle.SizeFigure);
         value.AddThemeColorOverride("font_color", UiStyle.TextDark);
         box.AddChild(value);
         return box;
@@ -155,7 +155,7 @@ public partial class CrashPanel : VBoxContainer
         var colour = arrest.Outcome switch
         {
             ArrestOutcome.Rosc => UiStyle.Green,
-            ArrestOutcome.Died => new Color("#5B6B79"),
+            ArrestOutcome.Died => UiStyle.TextMuted,
             _ => UiStyle.Red,
         };
         foreach (var state in new[] { "normal", "hover", "pressed" })

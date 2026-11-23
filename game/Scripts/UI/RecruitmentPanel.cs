@@ -129,7 +129,7 @@ public partial class RecruitmentPanel : PanelContainer
     private Control CandidateCard(JobCandidate candidate, IReadOnlyList<StaffingNeed> needs)
     {
         var card = new PanelContainer();
-        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, new Color("#E6ECF1"), 12));
+        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, UiStyle.Hairline, 12));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 8);
         card.AddChild(column);
@@ -220,7 +220,7 @@ public partial class RecruitmentPanel : PanelContainer
     public static Color RoleColour(StaffRole role) => role switch
     {
         StaffRole.Doctor => new Color("#1F8A8A"),
-        StaffRole.Nurse => new Color("#1F5FBF"),
+        StaffRole.Nurse => UiStyle.Blue,
         StaffRole.Radiographer => new Color("#8E2448"),
         StaffRole.Surgeon => new Color("#00897B"),
         StaffRole.Pharmacist => new Color("#43A047"),

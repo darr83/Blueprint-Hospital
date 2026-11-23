@@ -331,7 +331,7 @@ public partial class BuildBar : Control
         dot.AddThemeStyleboxOverride("panel", UiStyle.Box(colour, 3));
         header.AddChild(dot);
         var name = new Label { Text = icon.Name };
-        name.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.Strong(name, UiStyle.SizeCardTitle);
         name.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(name);
         var decorating = icon.Id == BuildMenu.Decorate;
@@ -788,7 +788,7 @@ public partial class BuildBar : Control
 
     private void ShowHover(string item, Control anchor)
     {
-        _hoverText.Text = HoverText(item);
+        _hoverText.Text = UiStyle.Facts(HoverText(item));
         _hover.Size = Vector2.Zero;
         _hover.Visible = true;
         _hoverAnchor = anchor;

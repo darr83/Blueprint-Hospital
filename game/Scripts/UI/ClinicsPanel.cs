@@ -56,8 +56,7 @@ public partial class ClinicsPanel : PanelContainer
         foreach (var (button, offset) in new[] { (_today, 0), (_tomorrow, 1) })
         {
             button.ButtonGroup = group;
-            button.ThemeTypeVariation = UiStyle.Secondary;
-            button.CustomMinimumSize = new Vector2(0, 34);
+            UiStyle.AsTab(button);
             button.Pressed += () =>
             {
                 _dayOffset = offset;
@@ -67,7 +66,7 @@ public partial class ClinicsPanel : PanelContainer
         }
 
         _today.ButtonPressed = true;
-        column.AddChild(days);
+        column.AddChild(UiStyle.TabTrack(days));
 
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         _text.AddThemeColorOverride("default_color", UiStyle.TextDark);

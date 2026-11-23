@@ -237,8 +237,8 @@ public partial class PatientRecordPanel : PanelContainer
                     _ => "Background and everything that has happened",
                 },
             };
-            var normal = UiStyle.Box(Colors.White, 9, new Color("#D9E1E8"));
-            var hover = UiStyle.Box(new Color("#F5F8FB"), 9, new Color("#B9C4CE"));
+            var normal = UiStyle.Box(Colors.White, 9, UiStyle.Border);
+            var hover = UiStyle.Box(new Color("#F5F8FB"), 9, UiStyle.FieldBorder);
             var on = UiStyle.Box(UiStyle.Blue, 9, UiStyle.Blue);
             on.ShadowColor = new Color(0.12f, 0.37f, 0.75f, 0.3f);
             on.ShadowSize = 4;
