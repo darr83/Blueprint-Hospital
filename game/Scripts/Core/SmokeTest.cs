@@ -28,6 +28,7 @@ public partial class SmokeTest : Node
     private CameraState? _overview;
     private AmbulanceVehicle? _ambulance;
     private string? _screenshotDirectory;
+    private int _recordTab;
 
     private UI.SettingsPanel? _settings;
     private int _savedRooms;
@@ -62,6 +63,7 @@ public partial class SmokeTest : Node
         WaitingRoom,
         WaitingRoomTurned,
         PatientRecord,
+        RecordTabs,
         StaffPanel,
         BuildPreview,
         RoomPanel,
@@ -343,6 +345,27 @@ public partial class SmokeTest : Node
             case Stage.PatientRecord when scene is HospitalScene hospital && _frame >= 10:
                 Check(hospital.Session.Clock.TickCount > 0, "Simulation clock did not advance.");
                 Screenshot("04_patient_record");
+                Check(hospital.Hud.Record.Journey.Steps.Count > 0, "The patient's journey was not drawn.");
+                Check(hospital.Hud.Record.CardCount > 0, "The patient record's Overview tab is empty.");
+                _recordTab = 1;
+                hospital.Hud.Record.ShowTab((PatientRecordPanel.Tab)_recordTab);
+                _frame = 0;
+                _stage = Stage.RecordTabs;
+                break;
+
+            case Stage.RecordTabs when scene is HospitalScene hospital && _frame >= 6:
+                var tab = (PatientRecordPanel.Tab)_recordTab;
+                Check(hospital.Hud.Record.CurrentTab == tab && hospital.Hud.Record.CardCount > 0, $"The patient record's {tab} tab is empty.");
+                Screenshot($"04_patient_record_{_recordTab}_{tab.ToString().ToLowerInvariant()}");
+                if (++_recordTab <= (int)PatientRecordPanel.Tab.History)
+                {
+                    hospital.Hud.Record.ShowTab((PatientRecordPanel.Tab)_recordTab);
+                    _frame = 0;
+                    break;
+                }
+
+                hospital.Hud.Record.ShowTab(PatientRecordPanel.Tab.Overview);
+                GD.Print("[smoke] Every tab of the patient record shows.");
                 var member = hospital.Session.Simulation.Staff.OrderBy(m => m.CurrentTaskId is null ? 1 : 0).First();
                 hospital.SelectStaff(member, centre: true);
                 Check(hospital.Hud.StaffInfo.Visible && !hospital.Hud.Record.Visible, "Clicking a member of staff did not open their panel.");
