@@ -7,7 +7,50 @@ public sealed class GameSettings
 {
     private const string FilePath = "user://settings.cfg";
 
+    /// <summary>Fullscreen uses the screen's own resolution; windowed uses <see cref="Resolution"/>.</summary>
     public bool Fullscreen { get; set; }
+
+    /// <summary>
+    /// The window size in windowed mode, one of <see cref="Resolutions"/>. Null until the player picks one,
+    /// so the window keeps the size it opened at.
+    /// </summary>
+    public Vector2I? Resolution { get; set; }
+
+    /// <summary>The window sizes on offer, from 720p up to 1440p (2K), in 16:9 and 16:10.</summary>
+    public static readonly Vector2I[] Resolutions =
+    {
+        new(1280, 720), new(1280, 800), new(1366, 768), new(1440, 900), new(1600, 900),
+        new(1680, 1050), new(1920, 1080), new(1920, 1200), new(2560, 1440),
+    };
+
+    /// <summary>"1920 × 1080 (1080p)" style name for a resolution.</summary>
+    public static string ResolutionName(Vector2I size)
+    {
+        var tag = size switch
+        {
+            { X: 1280, Y: 720 } => " (720p)",
+            { X: 1920, Y: 1080 } => " (1080p)",
+            { X: 2560, Y: 1440 } => " (1440p, 2K)",
+            _ => "",
+        };
+        return $"{size.X} × {size.Y}{tag}";
+    }
+
+    /// <summary>Reads "1920x1080"; null for anything that is not one of <see cref="Resolutions"/>.</summary>
+    public static Vector2I? ParseResolution(string text)
+    {
+        var parts = text.Split('x');
+        if (parts.Length == 2 && int.TryParse(parts[0], out var w) && int.TryParse(parts[1], out var h))
+        {
+            var size = new Vector2I(w, h);
+            if (System.Array.IndexOf(Resolutions, size) >= 0)
+            {
+                return size;
+            }
+        }
+
+        return null;
+    }
 
     public bool VSync { get; set; } = true;
 
@@ -58,6 +101,7 @@ public sealed class GameSettings
         }
 
         settings.Fullscreen = (bool)config.GetValue("display", "fullscreen", settings.Fullscreen);
+        settings.Resolution = ParseResolution((string)config.GetValue("display", "resolution", ""));
         settings.VSync = (bool)config.GetValue("display", "vsync", settings.VSync);
         settings.EnhancedLighting = (bool)config.GetValue("display", "enhanced_lighting", settings.EnhancedLighting);
         settings.SurfaceTextures = (bool)config.GetValue("display", "surface_textures", settings.SurfaceTextures);
@@ -76,6 +120,7 @@ public sealed class GameSettings
     {
         var config = new ConfigFile();
         config.SetValue("display", "fullscreen", Fullscreen);
+        config.SetValue("display", "resolution", Resolution is { } size ? $"{size.X}x{size.Y}" : "");
         config.SetValue("display", "vsync", VSync);
         config.SetValue("display", "enhanced_lighting", EnhancedLighting);
         config.SetValue("display", "surface_textures", SurfaceTextures);
@@ -95,10 +140,55 @@ public sealed class GameSettings
     {
         if (DisplayServer.GetName() != "headless")
         {
-            DisplayServer.WindowSetMode(Fullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
+            if (Fullscreen)
+            {
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+            }
+            else
+            {
+                if (DisplayServer.WindowGetMode() != DisplayServer.WindowMode.Windowed)
+                {
+                    DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+                }
+
+                if (Resolution is { } size)
+                {
+                    // Deferred, so a window just leaving fullscreen has settled before it is resized.
+                    Callable.From(() => SetWindowSize(size)).CallDeferred();
+                }
+            }
+
             DisplayServer.WindowSetVsyncMode(VSync ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
         }
 
         tree.Root.ContentScaleFactor = UiScale;
+    }
+
+    /// <summary>The space a window can use on the screen it is on (the screen less the taskbar).</summary>
+    public static Vector2I UsableScreenSize()
+    {
+        return DisplayServer.GetName() == "headless"
+            ? new Vector2I(int.MaxValue, int.MaxValue)
+            : DisplayServer.ScreenGetUsableRect(DisplayServer.WindowGetCurrentScreen()).Size;
+    }
+
+    /// <summary>True when a window of this size fits on the screen without spilling off it.</summary>
+    public static bool FitsScreen(Vector2I size)
+    {
+        var screen = UsableScreenSize();
+        return size.X <= screen.X && size.Y <= screen.Y;
+    }
+
+    /// <summary>
+    /// Resizes the window and centres it on its screen. The whole interface is laid out for 1600 × 900
+    /// and scaled to the window (project stretch mode), so every panel keeps the same layout at any size.
+    /// </summary>
+    private static void SetWindowSize(Vector2I size)
+    {
+        var screenIndex = DisplayServer.WindowGetCurrentScreen();
+        var usable = DisplayServer.ScreenGetUsableRect(screenIndex);
+        size = new Vector2I(Mathf.Min(size.X, usable.Size.X), Mathf.Min(size.Y, usable.Size.Y));
+        DisplayServer.WindowSetSize(size);
+        DisplayServer.WindowSetPosition(usable.Position + (usable.Size - size) / 2);
     }
 }

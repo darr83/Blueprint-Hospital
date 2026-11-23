@@ -12,7 +12,6 @@ public partial class SettingsPanel : ModalPanel
 
         Content.AddChild(UiStyle.Heading("Settings"));
 
-        var fullscreen = new CheckBox { Text = "Fullscreen", ButtonPressed = settings.Fullscreen };
         var vsync = new CheckBox { Text = "VSync", ButtonPressed = settings.VSync };
         var lighting = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Enhanced lighting (turn off on slower computers)" : "Shadows and evening light (turn off on slower computers)", ButtonPressed = settings.EnhancedLighting };
         var surfaces = new CheckBox { Text = BlueprintHospital.Core.GameView.ThreeD ? "Surface textures on walls, floors and furniture" : "Fine detail on the grounds and floors", ButtonPressed = settings.SurfaceTextures };
@@ -34,7 +33,47 @@ public partial class SettingsPanel : ModalPanel
         Content.AddChild(columns);
 
         left.AddChild(UiStyle.Body("Display", muted: true));
-        left.AddChild(fullscreen);
+        WindowMode = new OptionButton { CustomMinimumSize = new Vector2(240, 0) };
+        WindowMode.AddItem("Windowed");
+        WindowMode.AddItem("Fullscreen");
+        WindowMode.Selected = settings.Fullscreen ? 1 : 0;
+        AddRow(left, "Window", WindowMode);
+
+        Resolution = new OptionButton { CustomMinimumSize = new Vector2(240, 0) };
+        var current = settings.Resolution ?? CurrentWindowSize();
+        for (var i = 0; i < GameSettings.Resolutions.Length; i++)
+        {
+            var size = GameSettings.Resolutions[i];
+            var fits = GameSettings.FitsScreen(size);
+            Resolution.AddItem(GameSettings.ResolutionName(size) + (fits ? "" : "  (bigger than your screen)"), i);
+            Resolution.SetItemDisabled(i, !fits);
+            if (size == current)
+            {
+                Resolution.Selected = i;
+            }
+        }
+
+        if (Resolution.Selected < 0)
+        {
+            Resolution.Selected = System.Array.IndexOf(GameSettings.Resolutions, new Vector2I(1600, 900));
+        }
+
+        var pickedAtOpen = Resolution.Selected;
+        AddRow(left, "Resolution", Resolution);
+        var fullscreenNote = UiStyle.Body("", muted: true);
+        fullscreenNote.CustomMinimumSize = new Vector2(440, 0);
+        left.AddChild(fullscreenNote);
+        void ShowMode(long mode)
+        {
+            var full = mode == 1;
+            Resolution.Disabled = full;
+            fullscreenNote.Text = full
+                ? "Fullscreen uses your screen's own resolution. Pick Windowed to choose a size."
+                : "The interface scales to fit, so every panel looks the same at any size.";
+        }
+
+        ShowMode(WindowMode.Selected);
+        WindowMode.ItemSelected += ShowMode;
         left.AddChild(vsync);
         left.AddChild(lighting);
         left.AddChild(surfaces);
@@ -70,7 +109,13 @@ public partial class SettingsPanel : ModalPanel
         buttons.AddChild(UiStyle.SecondaryButton("Cancel", Close, 120));
         buttons.AddChild(SaveButton = UiStyle.Button("Save", () =>
         {
-            settings.Fullscreen = fullscreen.ButtonPressed;
+            settings.Fullscreen = WindowMode.Selected == 1;
+            // Leave a window the player sized by hand alone unless they pick a size here.
+            if (!settings.Fullscreen && (settings.Resolution is not null || Resolution.Selected != pickedAtOpen))
+            {
+                settings.Resolution = GameSettings.Resolutions[Resolution.GetItemId(Resolution.Selected)];
+            }
+
             settings.VSync = vsync.ButtonPressed;
             settings.EnhancedLighting = lighting.ButtonPressed;
             settings.SurfaceTextures = surfaces.ButtonPressed;
@@ -102,6 +147,26 @@ public partial class SettingsPanel : ModalPanel
     public CheckBox Decorations { get; }
 
     public Button SaveButton { get; private set; } = null!;
+
+    /// <summary>Windowed or Fullscreen.</summary>
+    public OptionButton WindowMode { get; }
+
+    /// <summary>The window size list, 1280 × 720 up to 2560 × 1440.</summary>
+    public OptionButton Resolution { get; }
+
+    private static Vector2I CurrentWindowSize()
+    {
+        return DisplayServer.GetName() == "headless" ? new Vector2I(1600, 900) : DisplayServer.WindowGetSize();
+    }
+
+    private static void AddRow(Container column, string label, Control control)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 10);
+        row.AddChild(new Label { Text = label, CustomMinimumSize = new Vector2(140, 0) });
+        row.AddChild(control);
+        column.AddChild(row);
+    }
 
     private static string Percent(double v) => $"{v * 100:0}%";
 
