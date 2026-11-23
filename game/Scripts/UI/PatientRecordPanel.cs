@@ -39,14 +39,14 @@ public partial class PatientRecordPanel : PanelContainer
     /// <summary>Background for a vital sign by its NEWS2 part score (0-3).</summary>
     private static readonly Color[] ScoreFill = { new("#F2F5F8"), new("#FFF3CC"), new("#FFE0BD"), new("#FBD0D0") };
 
-    private readonly ScrollContainer _scroll = new() { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+    private readonly ScrollContainer _scroll = new() { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.ShowNever };
     private readonly VBoxContainer _page = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly Label _title = new();
     private readonly Label _subtitle = UiStyle.Caption(string.Empty, 13);
     private readonly JourneyBar _journey = new();
     private readonly List<(PanelContainer Tile, Label Value, Label Caption)> _vitals = new();
     private readonly PanelContainer _newsBar = new() { MouseFilter = MouseFilterEnum.Ignore };
-    private readonly RichTextLabel _newsText = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.Off, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
+    private readonly RichTextLabel _newsText = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
     private readonly Label _newsTime = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly List<(Button Button, PanelIcon Icon, Label Text, PanelContainer Badge, Label BadgeText)> _tabs = new();
     private HospitalSimulation _sim = null!;
@@ -540,7 +540,14 @@ public partial class PatientRecordPanel : PanelContainer
                 : " · steady";
         }
 
-        var alert = o.Consciousness != Consciousness.Alert ? $" · {ClinicalText.Escape(o.Consciousness.ToString())}" : string.Empty;
+        var alert = o.Consciousness switch
+        {
+            Consciousness.Alert => string.Empty,
+            Consciousness.NewConfusion => " · new confusion",
+            Consciousness.Voice => " · responds to voice",
+            Consciousness.Pain => " · responds to pain",
+            _ => " · unresponsive",
+        };
         _newsText.Text = $"[color={ink}]NEWS2  [b]{n.Total}[/b]  {risk}{alert}{trend}[/color]";
         _newsTime.Text = p.ObservationHistory[^1].Time.ToString("HH:mm");
         _newsTime.AddThemeColorOverride("font_color", dark ? UiStyle.TextDark : Colors.White);

@@ -2286,7 +2286,15 @@ public partial class SmokeTest : Node
         var record = hospital.Hud.Record;
         var right = record.GetGlobalRect().End.X;
         var width = GetViewport().GetVisibleRect().Size.X;
-        Check(right <= width + 1, $"The patient record runs off the right of the screen ({right:0} > {width:0}).");
+        if (right > width + 1)
+        {
+            // Name the parts asking for more room than the panel has, to find what widened it.
+            var wide = record.FindChildren("*", "Control", true, false).OfType<Control>()
+                .Where(c => c.IsVisibleInTree() && c.GetCombinedMinimumSize().X > record.Size.X - 40)
+                .Select(c => $"{c.GetType().Name} {c.GetCombinedMinimumSize().X:0}")
+                .Take(8);
+            Check(false, $"The patient record ({record.CurrentTab} tab) runs off the right of the screen ({right:0} > {width:0}): {string.Join(", ", wide)}.");
+        }
     }
 
     private static void OpenARecord(HospitalScene hospital)
