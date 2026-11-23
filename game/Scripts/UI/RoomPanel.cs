@@ -62,8 +62,7 @@ public partial class RoomPanel : PanelContainer
             _name.ReleaseFocus();
         };
         header.AddChild(_name);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40) };
-        close.Pressed += Close;
+        var close = UiStyle.CloseButton(Close);
         header.AddChild(close);
         column.AddChild(header);
 

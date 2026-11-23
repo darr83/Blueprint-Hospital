@@ -83,7 +83,7 @@ public partial class BuildBar : Control
         _bar.OffsetLeft = _bar.OffsetRight = MainHUD.NavWidth / 2;
         _bar.OffsetTop = _bar.OffsetBottom = -Edge;
         _bar.MouseFilter = MouseFilterEnum.Stop;
-        var barBox = UiStyle.Card(0, 16);
+        var barBox = UiStyle.Card(0);
         barBox.ContentMarginLeft = barBox.ContentMarginRight = 10;
         barBox.ContentMarginTop = 8;
         barBox.ContentMarginBottom = 4;
@@ -130,7 +130,7 @@ public partial class BuildBar : Control
         }
 
         // The pop-up row of rooms, placed above the open icon each frame.
-        var popupBox = UiStyle.Card(14, 16);
+        var popupBox = UiStyle.Card(14);
         popupBox.ContentMarginTop = popupBox.ContentMarginBottom = 12;
         popupBox.ShadowSize = 16;
         _popup.AddThemeStyleboxOverride("panel", popupBox);
@@ -140,7 +140,7 @@ public partial class BuildBar : Control
         AddChild(_popup);
 
         // The hover card with everything about one room.
-        var hoverBox = UiStyle.Card(14, 12);
+        var hoverBox = UiStyle.Card(14);
         hoverBox.ContentMarginTop = hoverBox.ContentMarginBottom = 12;
         hoverBox.ShadowSize = 18;
         hoverBox.ShadowColor = new Color(0.09f, 0.14f, 0.18f, 0.25f);

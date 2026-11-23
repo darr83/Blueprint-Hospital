@@ -46,7 +46,7 @@ public partial class PatientRecordPanel : PanelContainer
     private readonly JourneyBar _journey = new();
     private readonly List<(PanelContainer Tile, Label Value, Label Caption)> _vitals = new();
     private readonly PanelContainer _newsBar = new() { MouseFilter = MouseFilterEnum.Ignore };
-    private readonly RichTextLabel _newsText = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.Off, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
+    private readonly RichTextLabel _newsText = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
     private readonly Label _newsTime = new() { VerticalAlignment = VerticalAlignment.Center };
     private readonly List<(Button Button, PanelIcon Icon, Label Text, PanelContainer Badge, Label BadgeText)> _tabs = new();
     private HospitalSimulation _sim = null!;
@@ -88,7 +88,7 @@ public partial class PatientRecordPanel : PanelContainer
         Theme = UiStyle.Theme;
         CustomMinimumSize = new Vector2(400, 0);
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(18));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 10);
@@ -146,7 +146,7 @@ public partial class PatientRecordPanel : PanelContainer
 
         var who = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
         who.AddThemeConstantOverride("separation", 0);
-        _title.AddThemeFontSizeOverride("font_size", 20);
+        UiStyle.Strong(_title, UiStyle.SizeTitle);
         _title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         _subtitle.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         who.AddChild(_title);
@@ -161,25 +161,20 @@ public partial class PatientRecordPanel : PanelContainer
                 Refresh();
             }
         });
-        rename.Text = string.Empty;
-        rename.CustomMinimumSize = new Vector2(40, 40);
-        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        centre.AddChild(new PanelIcon(PanelIcon.Kind.Pencil, 18) { Colour = UiStyle.TextDark });
-        rename.AddChild(centre);
-        centre.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        rename.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         header.AddChild(rename);
 
-        var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => CloseRequested?.Invoke());
         header.AddChild(close);
         return header;
     }
 
     private Control BuildChips()
     {
-        var chips = new HBoxContainer();
-        chips.AddThemeConstantOverride("separation", 6);
+        // Chips wrap onto a second line rather than widening the panel past the screen edge.
+        var chips = new HFlowContainer();
+        chips.AddThemeConstantOverride("h_separation", 6);
+        chips.AddThemeConstantOverride("v_separation", 6);
         _triageChip = HudWidgets.Chip();
         _placeChip = HudWidgets.Chip();
         _arrivalChip = HudWidgets.Chip();
@@ -537,7 +532,7 @@ public partial class PatientRecordPanel : PanelContainer
                 : " · steady";
         }
 
-        var alert = o.Consciousness != Consciousness.Alert ? $" · {ClinicalText.Escape(o.Consciousness.ToString())}" : string.Empty;
+        var alert = o.Consciousness != Consciousness.Alert ? $" · {ClinicalText.Escape(ClinicalText.SpacedWords(o.Consciousness.ToString()))}" : string.Empty;
         _newsText.Text = $"[color={ink}]NEWS2  [b]{n.Total}[/b]  {risk}{alert}{trend}[/color]";
         _newsTime.Text = p.ObservationHistory[^1].Time.ToString("HH:mm");
         _newsTime.AddThemeColorOverride("font_color", dark ? UiStyle.TextDark : Colors.White);

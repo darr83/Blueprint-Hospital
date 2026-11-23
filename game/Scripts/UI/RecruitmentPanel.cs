@@ -26,7 +26,7 @@ public partial class RecruitmentPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 12);
@@ -36,14 +36,12 @@ public partial class RecruitmentPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Recruitment" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         titles.AddChild(title);
         titles.AddChild(UiStyle.Caption($"New candidates arrive every {HospitalSimulation.CandidatesEveryHours} hours", 13));
         header.AddChild(titles);
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         column.AddChild(header);
         column.AddChild(HudWidgets.Divider());

@@ -62,15 +62,14 @@ public partial class DecoratePanel : PanelContainer
         header.AddChild(dot);
         var names = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         names.AddThemeConstantOverride("separation", 0);
-        _title.AddThemeFontSizeOverride("font_size", 18);
+        UiStyle.Strong(_title, UiStyle.SizeTitle);
         _title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         _subtitle.AddThemeFontSizeOverride("font_size", 13);
         _subtitle.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         names.AddChild(_title);
         names.AddChild(_subtitle);
         header.AddChild(names);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(36, 36), TooltipText = "Close (Esc)" };
-        close.Pressed += Close;
+        var close = UiStyle.CloseButton(Close);
         header.AddChild(close);
         column.AddChild(header);
 

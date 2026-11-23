@@ -228,7 +228,7 @@ public partial class ResultViewer : Control
 
     private void BuildSheet(ResultDocument doc)
     {
-        _panel.AddThemeStyleboxOverride("panel", UiStyle.Card(0, 14));
+        _panel.AddThemeStyleboxOverride("panel", UiStyle.Card(0));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 0);
         _panel.AddChild(column);

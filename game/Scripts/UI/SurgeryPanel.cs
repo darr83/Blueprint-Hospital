@@ -43,7 +43,7 @@ public partial class SurgeryPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 14);
@@ -109,7 +109,7 @@ public partial class SurgeryPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Surgery" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         titles.AddChild(title);
         titles.AddChild(_caption);
         header.AddChild(titles);
@@ -128,9 +128,7 @@ public partial class SurgeryPanel : PanelContainer
         _listTab.TooltipText = "Everyone waiting for an operation, most urgent first";
         _sessionsTab.TooltipText = "The week's morning and afternoon sessions: give each to a department's planned list, or keep it for emergencies";
         header.AddChild(tabs);
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
     }

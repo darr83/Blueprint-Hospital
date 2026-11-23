@@ -77,7 +77,7 @@ public partial class NotificationFeed : PanelContainer
         _count.Text = "▾";
         row.AddChild(_count);
 
-        Dropdown.AddThemeStyleboxOverride("panel", UiStyle.Card(12, 12));
+        Dropdown.AddThemeStyleboxOverride("panel", UiStyle.Card(12));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 6);
         Dropdown.AddChild(column);

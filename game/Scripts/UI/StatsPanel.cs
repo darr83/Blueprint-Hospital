@@ -37,7 +37,7 @@ public partial class StatsPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 14);
@@ -165,7 +165,7 @@ public partial class StatsPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Hospital stats" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         titles.AddChild(title);
         titles.AddChild(_caption);
         header.AddChild(titles);
@@ -186,9 +186,7 @@ public partial class StatsPanel : PanelContainer
         }
 
         header.AddChild(periods);
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
     }

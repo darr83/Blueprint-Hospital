@@ -2503,6 +2503,33 @@ public partial class SmokeTest : Node
         var path = $"{_screenshotDirectory}/{name}.png";
         image.SavePng(path);
         GD.Print($"[smoke] Screenshot saved to {path}");
+        ReportOffscreenPanels(name);
+    }
+
+    /// <summary>Logs any visible interface panel that runs past the edge of the screen.</summary>
+    private void ReportOffscreenPanels(string shot)
+    {
+        var screen = GetViewport().GetVisibleRect().Grow(1);
+        var stack = new System.Collections.Generic.Stack<Node>();
+        stack.Push(GetTree().Root);
+        while (stack.Count > 0)
+        {
+            var node = stack.Pop();
+            if (node is CanvasItem { Visible: false })
+            {
+                continue;
+            }
+
+            if (node is PanelContainer panel && panel.Theme == BlueprintHospital.UI.UiStyle.Theme && panel.IsVisibleInTree() && !screen.Encloses(panel.GetGlobalRect()))
+            {
+                GD.Print($"[smoke] UI off screen in {shot}: {panel.GetType().Name} {panel.Name} {panel.GetGlobalRect()}");
+            }
+
+            foreach (var child in node.GetChildren())
+            {
+                stack.Push(child);
+            }
+        }
     }
 
     private static void Check(bool condition, string message)

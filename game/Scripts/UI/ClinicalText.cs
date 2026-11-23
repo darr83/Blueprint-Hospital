@@ -83,4 +83,22 @@ public static class ClinicalText
 
     /// <summary>Escapes text for a RichTextLabel with BBCode enabled.</summary>
     public static string Escape(string text) => text.Replace("[", "[lb]");
+
+    /// <summary>Turns an enum name such as "NewConfusion" into "new confusion".</summary>
+    public static string SpacedWords(string name)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < name.Length; i++)
+        {
+            var c = name[i];
+            if (i > 0 && char.IsUpper(c))
+            {
+                sb.Append(' ');
+            }
+
+            sb.Append(i == 0 ? c : char.ToLowerInvariant(c));
+        }
+
+        return sb.ToString();
+    }
 }

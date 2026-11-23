@@ -362,7 +362,7 @@ public partial class CapacityBar : Control
 public static class HudStyle
 {
     /// <summary>The card every in-game panel sits on (kept under its old name).</summary>
-    public static StyleBoxFlat DarkPanel() => UiStyle.Card(16);
+    public static StyleBoxFlat DarkPanel() => UiStyle.Card();
 
     public static StyleBoxFlat RowBox(Color colour) => new()
     {

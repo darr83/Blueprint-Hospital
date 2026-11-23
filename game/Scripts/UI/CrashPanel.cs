@@ -57,7 +57,7 @@ public partial class CrashPanel : VBoxContainer
         _banner.Pressed += () => Expanded = !Expanded;
         AddChild(_banner);
 
-        _card.AddThemeStyleboxOverride("panel", UiStyle.Card(16, 12));
+        _card.AddThemeStyleboxOverride("panel", UiStyle.Card());
         AddChild(_card);
         var body = new VBoxContainer();
         body.AddThemeConstantOverride("separation", 6);

@@ -66,7 +66,7 @@ public partial class MajorIncidentPanel : VBoxContainer
         _banner.Pressed += () => Expanded = !Expanded;
         AddChild(_banner);
 
-        _card.AddThemeStyleboxOverride("panel", UiStyle.Card(0, 14));
+        _card.AddThemeStyleboxOverride("panel", UiStyle.Card(0));
         AddChild(_card);
         var columns = new HBoxContainer();
         columns.AddThemeConstantOverride("separation", 0);

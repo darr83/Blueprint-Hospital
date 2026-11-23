@@ -50,7 +50,7 @@ public partial class StaffPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 16);
@@ -62,7 +62,7 @@ public partial class StaffPanel : PanelContainer
         header.AddChild(_avatar.Badge);
         var who = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
         who.AddThemeConstantOverride("separation", 0);
-        _name.AddThemeFontSizeOverride("font_size", 20);
+        UiStyle.Strong(_name, UiStyle.SizeTitle);
         _name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         // Long grades and room names trim rather than widening the panel past the screen edge.
         _role.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
@@ -77,9 +77,7 @@ public partial class StaffPanel : PanelContainer
                 Refresh();
             }
         }));
-        var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => CloseRequested?.Invoke());
         header.AddChild(close);
         column.AddChild(header);
         column.AddChild(HudWidgets.Divider());
