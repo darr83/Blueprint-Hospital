@@ -37,7 +37,7 @@ public partial class StatsPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 14);
@@ -165,7 +165,7 @@ public partial class StatsPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Hospital stats" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         titles.AddChild(title);
         titles.AddChild(_caption);
         header.AddChild(titles);
@@ -178,17 +178,13 @@ public partial class StatsPanel : PanelContainer
             (StatsPeriod.Last28Days, "28 days"), (StatsPeriod.AllTime, "All time"),
         })
         {
-            var button = UiStyle.SecondaryButton(text, () => ShowPeriod(period));
-            button.ToggleMode = true;
-            button.FocusMode = FocusModeEnum.None;
+            var button = UiStyle.AsTab(UiStyle.SecondaryButton(text, () => ShowPeriod(period)));
             _periodButtons[period] = button;
             periods.AddChild(button);
         }
 
-        header.AddChild(periods);
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        header.AddChild(UiStyle.TabTrack(periods));
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
     }
@@ -200,7 +196,7 @@ public partial class StatsPanel : PanelContainer
         column.AddThemeConstantOverride("separation", 0);
         column.AddChild(UiStyle.Caption(caption, 12));
         var value = new Label { MouseFilter = MouseFilterEnum.Ignore };
-        value.AddThemeFontSizeOverride("font_size", 24);
+        UiStyle.Strong(value, UiStyle.SizeFigure);
         column.AddChild(value);
         var note = UiStyle.Caption(string.Empty, 11);
         column.AddChild(note);
@@ -555,7 +551,7 @@ public partial class StatsBarChart : Control
         }
 
         float Y(double v) => plot.End.Y - (float)((v - min) / (max - min)) * plot.Size.Y;
-        var hair = new Color("#E6ECF1");
+        var hair = UiStyle.Hairline;
         var drawn = new List<float>();
         void AxisLabel(double v)
         {

@@ -52,6 +52,7 @@ public partial class RoomPanel : PanelContainer
 
         var header = new HBoxContainer();
         _name.TooltipText = "Type a new name and press Enter";
+        UiStyle.Strong(_name, 18);
         _name.TextSubmitted += text =>
         {
             if (_roomId is not null)
@@ -62,12 +63,11 @@ public partial class RoomPanel : PanelContainer
             _name.ReleaseFocus();
         };
         header.AddChild(_name);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40) };
-        close.Pressed += Close;
+        var close = UiStyle.CloseButton(Close);
         header.AddChild(close);
         column.AddChild(header);
 
-        _info.AddThemeColorOverride("default_color", new Color("#17232E"));
+        _info.AddThemeColorOverride("default_color", UiStyle.TextDark);
         column.AddChild(_info);
         _access.AddThemeConstantOverride("separation", 2);
         column.AddChild(_access);
@@ -77,7 +77,7 @@ public partial class RoomPanel : PanelContainer
         // Door: one button per wall. Moving the door turns the room's layout with it.
         _doorRow.AddThemeConstantOverride("separation", 4);
         var doorLabel = new Label { Text = "Door", CustomMinimumSize = new Vector2(44, 0), VerticalAlignment = VerticalAlignment.Center };
-        doorLabel.AddThemeColorOverride("font_color", new Color("#5B6B79"));
+        doorLabel.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         _doorRow.AddChild(doorLabel);
         foreach (var side in new[] { WallSide.West, WallSide.North, WallSide.East, WallSide.South })
         {
@@ -150,7 +150,7 @@ public partial class RoomPanel : PanelContainer
         var text = template is null ? string.Empty : BuildBar.Describe(template, room, _sim);
         text = text.Replace($"[color=#5B6B79]Cost[/color]  £{room.BuildCost:N0}", $"[color=#5B6B79]Value[/color]  £{room.BuildCost:N0}");
         var header = $"[color=#5B6B79]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
-        _info.Text = $"{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}";
+        _info.Text = UiStyle.Facts($"{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}");
 
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";

@@ -128,7 +128,7 @@ public partial class DoctorHud : CanvasLayer
         who.AddThemeConstantOverride("separation", -2);
         var nameRow = new HBoxContainer();
         nameRow.AddThemeConstantOverride("separation", 10);
-        _name.AddThemeFontSizeOverride("font_size", 19);
+        UiStyle.Strong(_name, UiStyle.SizeCardTitle + 2);
         nameRow.AddChild(_name);
         var pill = HudWidgets.Chip();
         HudWidgets.SetChip(pill, "You are this doctor", UiStyle.BlueTint);
@@ -172,7 +172,7 @@ public partial class DoctorHud : CanvasLayer
     private void BuildPanel()
     {
         var panel = new PanelContainer { Name = "Panel", MouseFilter = Control.MouseFilterEnum.Stop };
-        panel.AddThemeStyleboxOverride("panel", UiStyle.Card(18));
+        panel.AddThemeStyleboxOverride("panel", UiStyle.Card());
         panel.AnchorLeft = panel.AnchorRight = 1;
         panel.AnchorBottom = 1;
         panel.OffsetLeft = -PanelWidth - Gap;
@@ -251,7 +251,7 @@ public partial class DoctorHud : CanvasLayer
     private static PanelContainer Card(int margin)
     {
         var card = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        card.AddThemeStyleboxOverride("panel", UiStyle.Card(margin, 12));
+        card.AddThemeStyleboxOverride("panel", UiStyle.Card(margin));
         return card;
     }
 
@@ -546,7 +546,7 @@ public partial class DoctorHud : CanvasLayer
         {
             Clear(_header);
             var top = new HBoxContainer();
-            var title = UiStyle.Heading("Be A Doctor", 22);
+            var title = UiStyle.Heading("Be A Doctor", UiStyle.SizeTitle);
             title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             top.AddChild(title);
             var count = tasks.Count + decisions.Count;
@@ -726,23 +726,19 @@ public partial class DoctorHud : CanvasLayer
         return button;
     }
 
-    private static HBoxContainer TabRow((string Text, bool On)[] tabs, Action<int> onPressed)
+    private static Control TabRow((string Text, bool On)[] tabs, Action<int> onPressed)
     {
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 4);
         for (var i = 0; i < tabs.Length; i++)
         {
             var index = i;
-            var tab = UiStyle.SecondaryButton(tabs[i].Text, () => onPressed(index));
-            tab.ToggleMode = true;
+            var tab = UiStyle.AsTab(UiStyle.SecondaryButton(tabs[i].Text, () => onPressed(index)));
             tab.SetPressedNoSignal(tabs[i].On);
-            tab.FocusMode = Control.FocusModeEnum.None;
-            tab.CustomMinimumSize = new Vector2(0, 36);
-            tab.AddThemeFontSizeOverride("font_size", 14);
+            tab.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             row.AddChild(tab);
         }
 
-        return row;
+        return UiStyle.TabTrack(row);
     }
 
     // ---------------------------------------------------------------- the patient card
@@ -761,7 +757,7 @@ public partial class DoctorHud : CanvasLayer
             top.AddChild(blob);
             var who = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
             who.AddThemeConstantOverride("separation", -2);
-            var name = UiStyle.Heading($"{patient.FullName}, {patient.Age}", 21);
+            var name = UiStyle.Heading($"{patient.FullName}, {patient.Age}", UiStyle.SizeTitle);
             name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
             who.AddChild(name);
             var arrived = patient.ArrivalMethod == ArrivalMethod.Ambulance ? "by ambulance" : "on foot";

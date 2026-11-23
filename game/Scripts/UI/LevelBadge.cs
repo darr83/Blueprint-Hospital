@@ -53,7 +53,7 @@ public sealed partial class LevelBadge : Button
 
         Card.Theme = UiStyle.Theme;
         Card.MouseFilter = MouseFilterEnum.Stop;
-        var box = UiStyle.Card(16, 14);
+        var box = UiStyle.Card(16);
         box.ShadowSize = 16;
         box.ShadowColor = new Color(0.09f, 0.14f, 0.18f, 0.22f);
         Card.AddThemeStyleboxOverride("panel", box);
@@ -153,11 +153,10 @@ public sealed partial class LevelBadge : Button
             Text = next is null ? $"Level {_sim.Level}: {_sim.CurrentLevel?.Name}" : $"Goals for level {next.Number}",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
-        title.AddThemeFontSizeOverride("font_size", 17);
+        UiStyle.Strong(title, UiStyle.SizeCardTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(28, 28) };
-        close.Pressed += () => Card.Visible = false;
+        var close = UiStyle.CloseButton(() => Card.Visible = false);
         header.AddChild(close);
         _cardBody.AddChild(header);
 

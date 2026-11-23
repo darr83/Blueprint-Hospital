@@ -33,19 +33,17 @@ public partial class DoctorChooserPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 14);
         AddChild(column);
 
         var header = new HBoxContainer();
-        var title = UiStyle.Heading("Be a doctor", 22);
+        var title = UiStyle.Heading("Be a doctor", UiStyle.SizeTitle);
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         header.AddChild(title);
-        var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => CloseRequested?.Invoke());
         header.AddChild(close);
         column.AddChild(header);
 

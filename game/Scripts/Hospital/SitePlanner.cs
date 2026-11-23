@@ -73,7 +73,7 @@ public partial class SitePlanner : Node2D
         layer.AddChild(root);
 
         var panel = new PanelContainer();
-        panel.AddThemeStyleboxOverride("panel", UiStyle.Card(14, 12));
+        panel.AddThemeStyleboxOverride("panel", UiStyle.Card(14));
         panel.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
         panel.GrowHorizontal = Control.GrowDirection.Both;
         panel.Position = new Vector2(0, 12);

@@ -26,7 +26,7 @@ public partial class RecruitmentPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 12);
@@ -36,14 +36,12 @@ public partial class RecruitmentPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Recruitment" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         titles.AddChild(title);
         titles.AddChild(UiStyle.Caption($"New candidates arrive every {HospitalSimulation.CandidatesEveryHours} hours", 13));
         header.AddChild(titles);
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         column.AddChild(header);
         column.AddChild(HudWidgets.Divider());
@@ -131,7 +129,7 @@ public partial class RecruitmentPanel : PanelContainer
     private Control CandidateCard(JobCandidate candidate, IReadOnlyList<StaffingNeed> needs)
     {
         var card = new PanelContainer();
-        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, new Color("#E6ECF1"), 12));
+        card.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Surface, 12, UiStyle.Hairline, 12));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 8);
         card.AddChild(column);
@@ -222,7 +220,7 @@ public partial class RecruitmentPanel : PanelContainer
     public static Color RoleColour(StaffRole role) => role switch
     {
         StaffRole.Doctor => new Color("#1F8A8A"),
-        StaffRole.Nurse => new Color("#1F5FBF"),
+        StaffRole.Nurse => UiStyle.Blue,
         StaffRole.Radiographer => new Color("#8E2448"),
         StaffRole.Surgeon => new Color("#00897B"),
         StaffRole.Pharmacist => new Color("#43A047"),

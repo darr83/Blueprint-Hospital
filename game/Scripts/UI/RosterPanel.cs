@@ -42,13 +42,14 @@ public partial class RosterPanel : PanelContainer
         tabs.AddThemeConstantOverride("separation", 4);
         foreach (var tab in new[] { _patientsTab, _staffTab })
         {
-            tab.CustomMinimumSize = new Vector2(100, 32);
+            UiStyle.AsTab(tab);
+            tab.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             tabs.AddChild(tab);
         }
 
         _patientsTab.Pressed += () => ShowTab(false);
         _staffTab.Pressed += () => ShowTab(true);
-        column.AddChild(tabs);
+        column.AddChild(UiStyle.TabTrack(tabs));
 
         var scroll = new ScrollContainer
         {
@@ -133,7 +134,7 @@ public partial class RosterPanel : PanelContainer
                 var colour = member.Role switch
                 {
                     StaffRole.Doctor => new Color("#1F8A8A"),
-                    StaffRole.Nurse => new Color("#1F5FBF"),
+                    StaffRole.Nurse => UiStyle.Blue,
                     StaffRole.Radiographer => new Color("#8E2448"),
                     StaffRole.Surgeon => new Color("#00897B"),
                     StaffRole.Pharmacist => new Color("#43A047"),
@@ -188,7 +189,7 @@ public partial class RosterPanel : PanelContainer
     private void AddNote(string text)
     {
         var label = new Label { Text = text };
-        label.AddThemeColorOverride("font_color", new Color("#5B6B79"));
+        label.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         _list.AddChild(label);
     }
 }

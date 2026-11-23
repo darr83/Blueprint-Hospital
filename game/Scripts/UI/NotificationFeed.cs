@@ -77,7 +77,7 @@ public partial class NotificationFeed : PanelContainer
         _count.Text = "▾";
         row.AddChild(_count);
 
-        Dropdown.AddThemeStyleboxOverride("panel", UiStyle.Card(12, 12));
+        Dropdown.AddThemeStyleboxOverride("panel", UiStyle.Card(12));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 6);
         Dropdown.AddChild(column);
@@ -190,7 +190,7 @@ public partial class NotificationFeed : PanelContainer
             label.AddThemeColorOverride("font_color", UiStyle.TextDark);
             label.AddThemeFontSizeOverride("font_size", 14);
             var box = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-            box.AddThemeStyleboxOverride("panel", HudStyle.RowBox(new Color("#F7F9FB")));
+            box.AddThemeStyleboxOverride("panel", HudStyle.RowBox(UiStyle.Subtle));
             box.AddChild(label);
             row.AddChild(box);
         }

@@ -362,7 +362,7 @@ public partial class CapacityBar : Control
 public static class HudStyle
 {
     /// <summary>The card every in-game panel sits on (kept under its old name).</summary>
-    public static StyleBoxFlat DarkPanel() => UiStyle.Card(16);
+    public static StyleBoxFlat DarkPanel() => UiStyle.Card();
 
     public static StyleBoxFlat RowBox(Color colour) => new()
     {
@@ -383,7 +383,7 @@ public static class HudStyle
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             MouseDefaultCursorShape = Control.CursorShape.PointingHand,
         };
-        button.AddThemeStyleboxOverride("normal", RowBox(new Color("#F7F9FB")));
+        button.AddThemeStyleboxOverride("normal", RowBox(UiStyle.Subtle));
         button.AddThemeStyleboxOverride("hover", RowBox(UiStyle.BlueTint));
         button.AddThemeStyleboxOverride("pressed", RowBox(new Color("#D6E2F3")));
         foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_focus_color" })

@@ -66,7 +66,7 @@ public partial class MajorIncidentPanel : VBoxContainer
         _banner.Pressed += () => Expanded = !Expanded;
         AddChild(_banner);
 
-        _card.AddThemeStyleboxOverride("panel", UiStyle.Card(0, 14));
+        _card.AddThemeStyleboxOverride("panel", UiStyle.Card(0));
         AddChild(_card);
         var columns = new HBoxContainer();
         columns.AddThemeConstantOverride("separation", 0);
@@ -86,7 +86,7 @@ public partial class MajorIncidentPanel : VBoxContainer
         _status.AddThemeFontSizeOverride("font_size", 12);
         _status.AddThemeColorOverride("font_color", new Color(1, 1, 1, 0.85f));
         headerText.AddChild(_status);
-        _title.AddThemeFontSizeOverride("font_size", 19);
+        UiStyle.Strong(_title, UiStyle.SizeTitle);
         _title.AddThemeColorOverride("font_color", Colors.White);
         headerText.AddChild(_title);
         _clock.AddThemeFontSizeOverride("font_size", 30);
@@ -448,7 +448,7 @@ public partial class MajorIncidentPanel : VBoxContainer
         c.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         list.AddChild(c);
         var v = new Label { Text = value };
-        v.AddThemeFontSizeOverride("font_size", 24);
+        UiStyle.Strong(v, UiStyle.SizeFigure);
         v.AddThemeColorOverride("font_color", colour ?? UiStyle.TextDark);
         list.AddChild(v);
         return box;

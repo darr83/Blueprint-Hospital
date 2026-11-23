@@ -95,7 +95,7 @@ public partial class StaffRotaPanel : PanelContainer
         _sim = simulation;
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(20));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 14);
@@ -107,7 +107,7 @@ public partial class StaffRotaPanel : PanelContainer
         foreach (var caption in new[] { "On shift now", "Working", "On a break", "Off duty", "Gaps in cover" })
         {
             var tile = HudWidgets.StatTile(caption);
-            tile.Value.AddThemeFontSizeOverride("font_size", 22);
+            UiStyle.Strong(tile.Value, UiStyle.SizeFigure);
             _stats.Add(tile);
             stats.AddChild(tile.Tile);
         }
@@ -223,7 +223,7 @@ public partial class StaffRotaPanel : PanelContainer
         var titles = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         titles.AddThemeConstantOverride("separation", 0);
         var title = new Label { Text = "Staff rota" };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         titles.AddChild(title);
         _caption.Text = "Day shift 08:00 to 20:00 · Night shift 20:00 to 08:00 · Breaks are taken in the staff room";
         titles.AddChild(_caption);
@@ -234,9 +234,7 @@ public partial class StaffRotaPanel : PanelContainer
         _shiftPillBox.AddChild(_shiftPill);
         header.AddChild(_shiftPillBox);
 
-        var close = UiStyle.SecondaryButton("✕", () => Visible = false);
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         return header;
     }
@@ -245,6 +243,7 @@ public partial class StaffRotaPanel : PanelContainer
     {
         var bar = new HBoxContainer();
         bar.AddThemeConstantOverride("separation", 6);
+        var tabRow = new HBoxContainer();
         foreach (var (tab, text) in new[] { (Tab.Rota, "Rota"), (Tab.Breaks, "Breaks this shift"), (Tab.Everyone, "Everyone") })
         {
             var button = UiStyle.SecondaryButton(text, () =>
@@ -252,12 +251,12 @@ public partial class StaffRotaPanel : PanelContainer
                 _tab = tab;
                 Rebuild();
             });
-            button.ToggleMode = true;
-            button.FocusMode = FocusModeEnum.None;
+            UiStyle.AsTab(button);
             _tabs[tab] = button;
-            bar.AddChild(button);
+            tabRow.AddChild(button);
         }
 
+        bar.AddChild(UiStyle.TabTrack(tabRow));
         bar.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         foreach (var (key, text) in new[] { ("all", "Everyone"), ("nurse", "Nurses"), ("doctor", "Doctors"), ("porter", "Porters"), ("other", "Others") })
         {
@@ -963,7 +962,7 @@ public partial class StaffRotaPanel : PanelContainer
         var pill = new StaffPill { StaffId = member.Id, TooltipText = $"{member.Name}, {member.Grade}\n{member.StatusText}" };
         pill.Clicked += () => Select(_sim.FindStaff(member.Id));
         var selected = member.Id == _selectedId;
-        var box = UiStyle.Box(member.IsInBuilding ? UiStyle.Surface : new Color("#F7F9FB"), 15, selected ? UiStyle.Blue : UiStyle.Border, 0);
+        var box = UiStyle.Box(member.IsInBuilding ? UiStyle.Surface : UiStyle.Subtle, 15, selected ? UiStyle.Blue : UiStyle.Border, 0);
         box.ContentMarginLeft = 3;
         box.ContentMarginRight = 10;
         box.ContentMarginTop = box.ContentMarginBottom = 3;
@@ -1634,7 +1633,7 @@ public partial class BreakTrack : Control
         for (var m = 120; m < span; m += 120)
         {
             var x = (float)(m / span * Size.X);
-            DrawLine(new Vector2(x, 0), new Vector2(x, Size.Y), new Color("#E6ECF1"));
+            DrawLine(new Vector2(x, 0), new Vector2(x, Size.Y), UiStyle.Hairline);
         }
 
         var amber = new Color(ClinicalText.AmberHex);

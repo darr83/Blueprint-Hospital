@@ -4,7 +4,7 @@ using Godot;
 namespace BlueprintHospital.UI;
 
 /// <summary>
-/// Lets the player rename a person from their panel: a "Rename" button swaps the name for a text
+/// Lets the player rename a person from their panel: a pencil button swaps the name for a text
 /// box; Enter (or clicking away) saves it and Esc cancels.
 /// </summary>
 public static class NameEditing
@@ -20,17 +20,14 @@ public static class NameEditing
         parent.AddChild(edit);
         parent.MoveChild(edit, label.GetIndex() + 1);
 
-        var button = UiStyle.SecondaryButton("Rename", () => { });
-        button.FocusMode = Control.FocusModeEnum.None;
-        button.TooltipText = "Change their name";
-        button.CustomMinimumSize = new Vector2(0, 40);
-        button.AddThemeFontSizeOverride("font_size", 13);
-        foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
-        {
-            var box = (StyleBoxFlat)UiStyle.Theme.GetStylebox(state, UiStyle.Secondary).Duplicate();
-            box.ContentMarginLeft = box.ContentMarginRight = 8;
-            button.AddThemeStyleboxOverride(state, box);
-        }
+        // A small square pencil button, the same size and style as the close button beside it.
+        var button = UiStyle.CloseButton(() => { });
+        button.Text = string.Empty;
+        button.TooltipText = "Rename";
+        var centre = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        centre.AddChild(new PanelIcon(PanelIcon.Kind.Pencil, 16) { Colour = UiStyle.TextMuted });
+        button.AddChild(centre);
+        centre.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
         void Close(bool save)
         {

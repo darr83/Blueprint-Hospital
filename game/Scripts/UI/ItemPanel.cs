@@ -56,11 +56,10 @@ public partial class ItemPanel : PanelContainer
         AddChild(column);
 
         var header = new HBoxContainer();
-        _title.AddThemeFontSizeOverride("font_size", 18);
+        UiStyle.Strong(_title, UiStyle.SizeTitle);
         _title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(_title);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40), TooltipText = "Close (Esc)" };
-        close.Pressed += Close;
+        var close = UiStyle.CloseButton(Close);
         header.AddChild(close);
         column.AddChild(header);
 
@@ -144,6 +143,12 @@ public partial class ItemPanel : PanelContainer
     }
 
     private void Refresh()
+    {
+        RefreshText();
+        _info.Text = UiStyle.Facts(_info.Text);
+    }
+
+    private void RefreshText()
     {
         _refresh = 0.5;
         if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !(room.Furniture.Contains(Item) || IsCorridorChair))

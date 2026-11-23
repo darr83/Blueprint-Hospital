@@ -38,7 +38,7 @@ public partial class CheatConsole : PanelContainer
         Theme = UiStyle.Theme;
         MouseFilter = MouseFilterEnum.Stop;
         ProcessMode = ProcessModeEnum.Always;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(16));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 8);
@@ -46,7 +46,7 @@ public partial class CheatConsole : PanelContainer
 
         var header = new HBoxContainer();
         var title = new Label { Text = "Cheat console", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        title.AddThemeFontSizeOverride("font_size", 18);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
         var hint = new Label { Text = "Ctrl+C or Esc to close", VerticalAlignment = VerticalAlignment.Center };

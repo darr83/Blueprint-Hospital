@@ -228,7 +228,7 @@ public partial class ResultViewer : Control
 
     private void BuildSheet(ResultDocument doc)
     {
-        _panel.AddThemeStyleboxOverride("panel", UiStyle.Card(0, 14));
+        _panel.AddThemeStyleboxOverride("panel", UiStyle.Card(0));
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 0);
         _panel.AddChild(column);
@@ -649,7 +649,7 @@ public partial class ResultViewer : Control
         {
             var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
             var paper = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-            paper.AddThemeStyleboxOverride("panel", UiStyle.Box(new Color("#F7F9FB"), 6, null, 10));
+            paper.AddThemeStyleboxOverride("panel", UiStyle.Box(UiStyle.Subtle, 6, null, 10));
             _trace = new TraceView { ShowMarkers = Markers, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
             _trace.SetTrace(id, doc.Seed);
             paper.AddChild(_trace);

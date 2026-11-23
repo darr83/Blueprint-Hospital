@@ -88,7 +88,7 @@ public partial class PatientRecordPanel : PanelContainer
         Theme = UiStyle.Theme;
         CustomMinimumSize = new Vector2(400, 0);
         MouseFilter = MouseFilterEnum.Stop;
-        AddThemeStyleboxOverride("panel", UiStyle.Card(18));
+        AddThemeStyleboxOverride("panel", UiStyle.Card());
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 10);
@@ -146,7 +146,7 @@ public partial class PatientRecordPanel : PanelContainer
 
         var who = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
         who.AddThemeConstantOverride("separation", 0);
-        _title.AddThemeFontSizeOverride("font_size", 20);
+        UiStyle.Strong(_title, UiStyle.SizeTitle);
         _title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         _subtitle.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         who.AddChild(_title);
@@ -161,17 +161,10 @@ public partial class PatientRecordPanel : PanelContainer
                 Refresh();
             }
         });
-        rename.Text = string.Empty;
-        rename.CustomMinimumSize = new Vector2(40, 40);
-        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        centre.AddChild(new PanelIcon(PanelIcon.Kind.Pencil, 18) { Colour = UiStyle.TextDark });
-        rename.AddChild(centre);
-        centre.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        rename.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         header.AddChild(rename);
 
-        var close = UiStyle.SecondaryButton("✕", () => CloseRequested?.Invoke());
-        close.TooltipText = "Close (Esc)";
-        close.CustomMinimumSize = new Vector2(40, 40);
+        var close = UiStyle.CloseButton(() => CloseRequested?.Invoke());
         header.AddChild(close);
         return header;
     }
@@ -245,8 +238,8 @@ public partial class PatientRecordPanel : PanelContainer
                     _ => "Background and everything that has happened",
                 },
             };
-            var normal = UiStyle.Box(Colors.White, 9, new Color("#D9E1E8"));
-            var hover = UiStyle.Box(new Color("#F5F8FB"), 9, new Color("#B9C4CE"));
+            var normal = UiStyle.Box(Colors.White, 9, UiStyle.Border);
+            var hover = UiStyle.Box(new Color("#F5F8FB"), 9, UiStyle.FieldBorder);
             var on = UiStyle.Box(UiStyle.Blue, 9, UiStyle.Blue);
             on.ShadowColor = new Color(0.12f, 0.37f, 0.75f, 0.3f);
             on.ShadowSize = 4;

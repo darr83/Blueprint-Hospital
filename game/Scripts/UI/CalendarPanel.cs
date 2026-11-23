@@ -36,11 +36,10 @@ public partial class CalendarPanel : PanelContainer
 
         var header = new HBoxContainer();
         var title = new Label { Text = "Calendar", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40) };
-        close.Pressed += () => Visible = false;
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         column.AddChild(header);
 

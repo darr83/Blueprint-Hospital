@@ -43,11 +43,10 @@ public partial class ClinicsPanel : PanelContainer
 
         var header = new HBoxContainer();
         var title = new Label { Text = "Clinics", SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        title.AddThemeFontSizeOverride("font_size", 22);
+        UiStyle.Strong(title, UiStyle.SizeTitle);
         title.AddThemeColorOverride("font_color", UiStyle.TextDark);
         header.AddChild(title);
-        var close = new Button { Text = "✕", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(40, 40), TooltipText = "Close (Esc)" };
-        close.Pressed += () => Visible = false;
+        var close = UiStyle.CloseButton(() => Visible = false);
         header.AddChild(close);
         column.AddChild(header);
 
@@ -57,8 +56,7 @@ public partial class ClinicsPanel : PanelContainer
         foreach (var (button, offset) in new[] { (_today, 0), (_tomorrow, 1) })
         {
             button.ButtonGroup = group;
-            button.ThemeTypeVariation = UiStyle.Secondary;
-            button.CustomMinimumSize = new Vector2(0, 34);
+            UiStyle.AsTab(button);
             button.Pressed += () =>
             {
                 _dayOffset = offset;
@@ -68,7 +66,7 @@ public partial class ClinicsPanel : PanelContainer
         }
 
         _today.ButtonPressed = true;
-        column.AddChild(days);
+        column.AddChild(UiStyle.TabTrack(days));
 
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         _text.AddThemeColorOverride("default_color", UiStyle.TextDark);
