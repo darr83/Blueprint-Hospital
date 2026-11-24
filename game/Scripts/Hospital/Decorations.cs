@@ -43,7 +43,10 @@ public static class Decorations
     public sealed record WallPiece(GridRect Rect, WallSide Side, double T0, double T1, string Kind, Action<CanvasItem, float, float> DrawFlat);
 
     /// <summary>A prop standing on the floor at (X, Y), its front facing (Dx, Dy) into the room.</summary>
-    public sealed record FloorPiece(string Kind, double X, double Y, float Scale, int Dx, int Dy);
+    public sealed record FloorPiece(string Kind, double X, double Y, float Scale, int Dx, int Dy, string? Tint = null);
+
+    /// <summary>The size placed decorations are drawn at: they are modelled full size, and the props are drawn at 0.85 of their scale.</summary>
+    public const float PlacedScale = 1f / 0.85f;
 
     /// <summary>A small thing on a desk or counter top at (X, Y), <see cref="TopPx"/> 2D pixels up.</summary>
     public sealed record TopPiece(string Kind, double X, double Y, float TopPx, bool AlongX);
@@ -227,6 +230,8 @@ public static class Decorations
         {
             PlaceCorridorBits(sim, props);
         }
+
+        PlacePlayerDecorations(sim);
         return props;
     }
 
@@ -281,6 +286,8 @@ public static class Decorations
         {
             blocked.Add(chair.Tile);
         }
+
+        blocked.UnionWith(sim.PlacedDecorations.Where(d => d.Item is { OnWall: false }).SelectMany(sim.FootprintOf));
 
         return blocked;
     }
@@ -552,11 +559,44 @@ public static class Decorations
         }
     }
 
+    /// <summary>
+    /// The decorations the player placed on the floor in view: floor items as props (rugs first, so they lie
+    /// under everything), wall items as pictures on the wall behind them.
+    /// </summary>
+    private static void PlacePlayerDecorations(HospitalSimulation sim)
+    {
+        foreach (var placed in sim.PlacedDecorations.Where(d => d.Item is not null && IsoDraw.OnViewFloor(d.Tile.Y)).OrderBy(d => d.Item!.Flat ? 0 : 1))
+        {
+            var item = placed.Item!;
+            var (dx, dy) = DecorItems.Front(placed.Facing);
+            if (item.OnWall)
+            {
+                if (!Enum.TryParse<Wall>(item.Kind, out var kind))
+                {
+                    continue;
+                }
+
+                // The wall is behind the item's tiles: a one-tile-deep strip along them, its wall on that side.
+                var tiles = sim.FootprintOf(placed).ToList();
+                var rect = new GridRect(tiles.Min(t => t.X), tiles.Min(t => t.Y), tiles.Max(t => t.X) - tiles.Min(t => t.X) + 1, tiles.Max(t => t.Y) - tiles.Min(t => t.Y) + 1);
+                var side = WaitingRoomLayout.Opposite(placed.Facing);
+                var span = side is WallSide.North or WallSide.South ? rect.Width : rect.Length;
+                var margin = span == 1 ? 0.0 : 0.2;
+                AddWallPiece(rect, side, margin, span - margin, kind);
+                continue;
+            }
+
+            var (x, y) = DecorItems.Centre(item, placed.Tile, placed.Facing);
+            FloorPieces.Add(new FloorPiece(item.Kind, x, y, PlacedScale, dx, dy, DecorItems.TintOf(item, placed.Colour)));
+        }
+    }
+
     /// <summary>Fire extinguishers on the building's walls and plants in its open spaces, outside the rooms.</summary>
     private static void PlaceCorridorBits(HospitalSimulation sim, List<(Vector2, Action<CanvasItem>)> props)
     {
         var rooms = sim.Spaces.Where(s => s.HasWalls && IsoDraw.OnViewFloor(s.Rect.Y)).Select(s => s.Rect).ToList();
         var chairs = sim.Chairs.Select(c => c.Tile).ToHashSet();
+        chairs.UnionWith(sim.PlacedDecorations.SelectMany(sim.FootprintOf));
         foreach (var building in sim.Site.Buildings)
         {
             var count = 0;

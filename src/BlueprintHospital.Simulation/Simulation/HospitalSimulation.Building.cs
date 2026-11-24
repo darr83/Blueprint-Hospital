@@ -65,6 +65,9 @@ public sealed class LayoutState
 
     /// <summary>The helipad, if one was built.</summary>
     public AreaState? Helipad { get; init; }
+
+    /// <summary>Decorations placed on corridors, in open areas and in waiting rooms.</summary>
+    public IReadOnlyList<PlacedDecoration> Decorations { get; init; } = Array.Empty<PlacedDecoration>();
 }
 
 /// <summary>Building: placing, moving and demolishing rooms and corridors, extending the building, and paying for it.</summary>
@@ -990,6 +993,7 @@ public sealed partial class HospitalSimulation
     private void AfterLayoutChange()
     {
         MarkRoomsInUse(announce: true);
+        PruneDecorations();
         Nav = BuildNav();
         SyncRoomStaff();
         PruneChairs();
@@ -1050,6 +1054,7 @@ public sealed partial class HospitalSimulation
             return new RoomState(s.Id, s.Name, s.TemplateId, s.Rect.X, s.Rect.Y, w, d, s.DoorSide, door?.Offset, door?.Width);
         }).ToList(),
         Chairs = _chairs.ToList(),
+        Decorations = _decorations.ToList(),
         Helipad = Helipad is { } pad ? new AreaState(pad.X, pad.Y, pad.Width, pad.Length) : null,
     };
 
@@ -1093,6 +1098,7 @@ public sealed partial class HospitalSimulation
             _spaces[r.Id] = Furnish(plan, r.Id, r.Name);
         }
 
+        RestoreDecorations(state.Decorations ?? Array.Empty<PlacedDecoration>());
         Nav = BuildNav();
         _chairs.AddRange(state.Chairs.Concat(upgraded).GroupBy(c => c.Tile).Select(g => g.First() with { Colour = ChairColours.Normalise(g.First().Colour), Style = ChairStyles.Stored(g.First().Style) }));
         foreach (var tile in state.CorridorChairs.Distinct().Where(t => ChairAt(t) is null))

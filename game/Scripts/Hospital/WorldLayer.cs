@@ -170,6 +170,13 @@ public partial class WorldLayer : Node2D
             _chairShifts[chair.Tile] = _sim.ChairShift(chair.Tile);
         }
 
+        // Seats on benches, sofas, armchairs and cafe tables.
+        foreach (var seat in _sim.DecorSeats)
+        {
+            _seatTiles[seat.Tile] = seat.Facing;
+            _chairShifts[seat.Tile] = (seat.ShiftX, seat.ShiftY);
+        }
+
         BuildWalls();
         BuildFurniture();
         Decorations.Plan(_sim);

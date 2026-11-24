@@ -161,7 +161,9 @@ public sealed partial class HospitalSimulation
     {
         TheatreSuite.Link(_spaces.Values);
         MarkRoomsInUse(announce: false);
-        return EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        var grid = EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
+        MarkDecorTiles(grid);
+        return grid;
     }
 
     /// <summary>The anaesthetic room joined to this theatre, if there is one.</summary>

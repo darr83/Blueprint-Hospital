@@ -25,6 +25,9 @@ public partial class ItemPanel : PanelContainer
     /// <summary>Raised when the player wants the whole room (build mode).</summary>
     public event Action<CareSpace>? RoomRequested;
 
+    /// <summary>Raised when the player wants to pick up a placed decoration and put it somewhere else.</summary>
+    public event Action<int>? MoveDecorationRequested;
+
     /// <summary>Raised when the player wants the patient in the bed (play mode).</summary>
     public event Action<Patient>? PatientRequested;
 
@@ -43,6 +46,12 @@ public partial class ItemPanel : PanelContainer
     private PlacedChair? Chair => Item is not null && Item.ItemId == HospitalSimulation.ChairItem ? _sim.ChairAt(Item.Tile) : null;
 
     private bool IsCorridorChair => Chair is not null;
+
+    private readonly VBoxContainer _decorTools = new();
+    private readonly HFlowContainer _decorSwatches = new();
+
+    /// <summary>The placed decoration shown, if the item is one.</summary>
+    private PlacedDecoration? Decoration => Item is not null && Hospital.HospitalScene.DecorationId(Item) is { } id ? _sim.FindDecoration(id) : null;
 
     public void Initialise(HospitalSimulation simulation)
     {
@@ -102,6 +111,58 @@ public partial class ItemPanel : PanelContainer
         _chairTools.AddChild(_swatches);
         _chairTools.AddChild(turn);
         column.AddChild(_chairTools);
+
+        // A placed decoration can be turned, recoloured and moved for free.
+        _decorTools.AddThemeConstantOverride("separation", 8);
+        _decorSwatches.AddThemeConstantOverride("h_separation", 4);
+        _decorSwatches.AddThemeConstantOverride("v_separation", 4);
+        foreach (var (name, hex) in DecorItems.Colours)
+        {
+            var swatch = new Button { FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(26, 26), TooltipText = $"{name} (free)" };
+            var box = new StyleBoxFlat { BgColor = new Color(hex) };
+            box.SetCornerRadiusAll(4);
+            swatch.AddThemeStyleboxOverride("normal", box);
+            var hover = (StyleBoxFlat)box.Duplicate();
+            hover.BorderColor = Colors.White;
+            hover.SetBorderWidthAll(2);
+            swatch.AddThemeStyleboxOverride("hover", hover);
+            swatch.AddThemeStyleboxOverride("pressed", hover);
+            swatch.Pressed += () =>
+            {
+                if (Decoration is { } d)
+                {
+                    _sim.RecolourDecoration(d.Id, hex);
+                    Refresh();
+                }
+            };
+            _decorSwatches.AddChild(swatch);
+        }
+
+        _decorTools.AddChild(_decorSwatches);
+        var decorButtons = new HBoxContainer();
+        decorButtons.AddThemeConstantOverride("separation", 6);
+        var decorTurn = new Button { Text = "Turn ⟳", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 34), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Turn it a quarter where it stands (free)" };
+        decorTurn.Pressed += () =>
+        {
+            if (Decoration is { } d && _sim.NextDecorationFacing(d.Id) is { } facing)
+            {
+                _sim.MoveDecoration(d.Id, d.Tile, facing);
+                Refresh();
+            }
+        };
+        decorButtons.AddChild(decorTurn);
+        var decorMove = new Button { Text = "Move", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 34), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Pick it up and click where it should go (free)" };
+        decorMove.Pressed += () =>
+        {
+            if (Decoration is { } d)
+            {
+                Close();
+                MoveDecorationRequested?.Invoke(d.Id);
+            }
+        };
+        decorButtons.AddChild(decorMove);
+        _decorTools.AddChild(decorButtons);
+        column.AddChild(_decorTools);
         column.AddChild(_action);
         _action.Pressed += OnAction;
     }
@@ -162,7 +223,7 @@ public partial class ItemPanel : PanelContainer
     private void RefreshText()
     {
         _refresh = 0.5;
-        if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !(room.Furniture.Contains(Item) || IsCorridorChair))
+        if (Room is null || Item is null || _sim.FindSpace(Room.Id) is not { } room || !(room.Furniture.Contains(Item) || IsCorridorChair || Decoration is not null))
         {
             Close();
             return;
@@ -171,6 +232,7 @@ public partial class ItemPanel : PanelContainer
         var def = _sim.Database.Furniture.GetValueOrDefault(Item.ItemId);
         var muted = "[color=#5B6B79]";
         _chairTools.Visible = false;
+        _decorTools.Visible = false;
         if (AsBed)
         {
             if (Item.ItemId == "incubator")
@@ -200,6 +262,31 @@ public partial class ItemPanel : PanelContainer
             _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}Patient[/color]  {status}";
             _action.Text = "Open patient record";
             _action.Visible = patient is not null;
+            return;
+        }
+
+        if (Decoration is { Item: { } decor } placed)
+        {
+            _decorTools.Visible = true;
+            _decorSwatches.Visible = decor.Tintable;
+            _title.Text = decor.Name;
+            var colour = decor.Tintable ? $" · {ChairColours.NameOf(DecorItems.TintOf(decor, placed.Colour))}" : string.Empty;
+            var lines = $"{muted}In[/color]  {room.Name}\n{muted}Faces[/color]  {placed.Facing.ToString().ToLowerInvariant()}{colour}";
+            if (decor.SeatSpecs.Count > 0)
+            {
+                var seats = DecorItems.SeatsOf(placed).Select(s => s.Tile).ToHashSet();
+                var sitting = _sim.Patients.Count(p => seats.Contains(p.Tile) && !p.IsMoving && p.IsAlive) + _sim.Outpatients.Count(o => seats.Contains(o.Tile) && !o.IsMoving);
+                lines += $"\n{muted}Seats[/color]  {decor.SeatSpecs.Count}, {sitting} in use";
+            }
+
+            if (decor.Comfort)
+            {
+                lines += $"\n{muted}Comfort[/color]  cheers up patients waiting nearby";
+            }
+
+            _info.Text = lines;
+            _action.Text = $"Sell (refund £{decor.Cost / 2:N0})";
+            _action.Visible = true;
             return;
         }
 
@@ -244,6 +331,13 @@ public partial class ItemPanel : PanelContainer
     {
         if (Room is not { } room || Item is not { } item)
         {
+            return;
+        }
+
+        if (!AsBed && Decoration is { } decoration)
+        {
+            _sim.RemoveDecoration(decoration.Id);
+            Close();
             return;
         }
 

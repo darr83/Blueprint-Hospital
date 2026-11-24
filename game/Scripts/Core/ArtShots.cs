@@ -98,6 +98,11 @@ public partial class ArtShots : Node
                     BuildChairStyles(h);
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-decor") >= 0)
+                {
+                    BuildDecor(h);
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-minors") >= 0)
                 {
                     BuildMinorsRoom(h);
@@ -236,6 +241,17 @@ public partial class ArtShots : Node
                     return (IsoDraw.ToScreen(v[0], v[1]), (float)v[2]);
                 }),
             }
+            : _decor
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("decor_corridor", h => { DecorUi(h, null); return (IsoDraw.ToScreen(55, 15), 1.9f); }),
+                ("open_area", h => { DecorUi(h, null); return (IsoDraw.ToScreen(83, 15), 0.95f); }),
+                ("lounge", h => { DecorUi(h, null); return (IsoDraw.ToScreen(76, 9), 2.3f); }),
+                ("cafe", h => { DecorUi(h, null); return (IsoDraw.ToScreen(89, 9), 2.0f); }),
+                ("decor_preview", h => { DecorUi(h, "preview"); return (IsoDraw.ToScreen(88, 19), 2.0f); }),
+                ("decor_bar", h => { DecorUi(h, "bar"); return (IsoDraw.ToScreen(83, 15), 0.95f); }),
+                ("decor_panel", h => { DecorUi(h, "panel"); return (IsoDraw.ToScreen(55, 15), 1.9f); }),
+            }
             : _chairStyles
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {
@@ -311,6 +327,146 @@ public partial class ArtShots : Node
     private bool _wing;
 
     private bool _chairStyles;
+
+    private bool _decor;
+
+    /// <summary>
+    /// Review: the test wing with a corridor dressed with decorations, opening into an open area with a lounge
+    /// corner, cafe tables, planters and a row of each chair style.
+    /// </summary>
+    private void BuildDecor(HospitalScene h)
+    {
+        _decor = true;
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(10_000_000);
+        foreach (var dept in new[] { "outpatients", "cardiology", "neurology", "radiology" })
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        Simulation.World.GridRect R(int x, int y, int w, int l) => new(x, y, w, l);
+        Report("extension", sim.ExtendBuilding(R(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", R(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", R(44, 13, 22, 5), Simulation.World.WallSide.South)));
+        Report("open area", sim.BuildRoom(new Simulation.Simulation.RoomPlan(DecorItems.OpenAreaTemplate, R(66, 2, 34, 28), Simulation.World.WallSide.South)));
+        Report("north 1", sim.BuildRoom(sim.AutoPlan("cardiology_clinic", R(44, 2, 11, 11))));
+        Report("north 2", sim.BuildRoom(sim.AutoPlan("neurology_clinic", R(55, 2, 11, 11))));
+        Report("south 1", sim.BuildRoom(sim.AutoPlan("outpatient_reception", R(44, 18, 11, 12))));
+        Report("south 2", sim.BuildRoom(sim.AutoPlan("xray_room", R(55, 18, 11, 12))));
+
+        var (n, s, e, w) = (Simulation.World.WallSide.North, Simulation.World.WallSide.South, Simulation.World.WallSide.East, Simulation.World.WallSide.West);
+
+        // Places an item so its middle is as near (x, y) as its tiles allow.
+        void D(string id, double x, double y, Simulation.World.WallSide facing, string? colour = null)
+        {
+            var item = DecorItems.Find(id)!;
+            var best = new Simulation.World.GridCoord((int)x, (int)y);
+            var bestGap = double.MaxValue;
+            for (var tx = (int)x - 4; tx <= (int)x + 4; tx++)
+            {
+                for (var ty = (int)y - 4; ty <= (int)y + 4; ty++)
+                {
+                    var (cx, cy) = DecorItems.Centre(item, new Simulation.World.GridCoord(tx, ty), facing);
+                    var gap = Math.Abs(cx - x) + Math.Abs(cy - y);
+                    if (gap < bestGap - 1e-6)
+                    {
+                        (best, bestGap) = (new Simulation.World.GridCoord(tx, ty), gap);
+                    }
+                }
+            }
+
+            Report($"{id} at {best}", sim.PlaceDecoration(id, best, facing, colour));
+        }
+
+        // The corridor: gel, a bench, a plant, a water cooler and leaflets along the clinic fronts; a fish tank,
+        // bins, a palm and another bench opposite.
+        D("gel_station", 44.5, 13.5, s);
+        D("bench", 53.0, 13.5, s);
+        D("plant", 45.5, 13.5, s);
+        D("water_cooler", 49.5, 13.5, s);
+        D("leaflet_rack", 63.5, 13.5, s);
+        D("fish_tank", 49.5, 17.5, n);
+        D("bins", 53.0, 17.5, n);
+        D("bench", 59.5, 17.5, n);
+        D("palm", 64.0, 17.0, n);
+
+        // The open area: a lounge corner on a rug, cafe tables, bookcases, palms and planters; pictures, a screen
+        // and a clock on the outside walls.
+        D("rug", 75.0, 9.5, s, "#4F7FB0");
+        D("sofa", 75.0, 7.0, s, "#2A9187");
+        D("armchair", 71.5, 10.0, e, "#E07A32");
+        D("armchair", 78.5, 10.0, w, "#E07A32");
+        D("coffee_table", 75.0, 10.5, s);
+        D("bookcase", 70.0, 2.5, s);
+        D("bookcase", 72.0, 2.5, s);
+        D("palm", 67.0, 4.0, s);
+        D("palm", 99.0, 3.0, s);
+        D("palm", 99.0, 29.0, n);
+        D("floor_lamp", 79.5, 6.5, s);
+        foreach (var (x, y) in new[] { (85.5, 5.5), (91.5, 5.5), (85.5, 10.5), (91.5, 10.5) })
+        {
+            D("cafe_table", x, y, s, "#D6A72C");
+        }
+
+        D("planter", 70.5, 15.5, s);
+        D("planter", 80.5, 15.5, s);
+        D("sculpture", 91.5, 18.5, s, "#4F7FB0");
+        D("notice_stand", 98.0, 13.5, w);
+        D("water_cooler", 99.5, 9.5, w);
+        D("bins", 99.5, 16.0, w);
+        D("picture", 83.0, 2.5, s);
+        D("tv", 89.0, 2.5, s);
+        D("clock", 99.5, 21.5, w);
+        D("notice_board", 99.5, 25.5, w);
+
+        // A row of each chair style.
+        var colours = new[] { "#4F7FB0", "#2A9187", "#7E6BB5", "#4A5058" };
+        for (var r = 0; r < ChairStyles.All.Count; r++)
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                Report($"chair {ChairStyles.All[r].ItemId}", sim.PlaceChair(new Simulation.World.GridCoord(70 + i + (r * 7), 25), s, colours[r], ChairStyles.All[r].ItemId));
+            }
+        }
+    }
+
+    /// <summary>For the decoration shots: nothing, a sofa being placed, the Decorations pop-up, or the fish tank's panel.</summary>
+    private static void DecorUi(HospitalScene h, string? what)
+    {
+        if (h.BuildTool.Active)
+        {
+            h.BuildTool.Cancel();
+        }
+
+        h.Hud.Visible = what is "bar" or "panel";
+        h.Hud.ItemInfo.Close();
+        if (what is "bar" or "panel" or "preview")
+        {
+            h.SetMode(GameMode.Build);
+        }
+        else
+        {
+            h.SetMode(GameMode.Play);
+        }
+
+        switch (what)
+        {
+            case "preview":
+                h.BuildTool.StartDecoration("sofa");
+                h.BuildTool.DecorColour = "#A23B4C";
+                h.BuildTool.PreviewAt(new Simulation.World.GridCoord(86, 20));
+                break;
+            case "bar":
+                h.Hud.Build.Open(Simulation.Data.BuildMenu.Decorations);
+                h.Hud.Build.Choose(DecorItems.TilePrefix + "palm");
+                h.BuildTool.PreviewAt(new Simulation.World.GridCoord(86, 20));
+                break;
+            case "panel" when h.Session.Simulation.PlacedDecorations.FirstOrDefault(d => d.ItemId == "fish_tank") is { } tank
+                && h.Session.Simulation.Spaces.FirstOrDefault(sp => sp.Rect.Contains(tank.Tile)) is { } home:
+                h.Hud.ItemInfo.ShowItem(home, new PlacedFurniture($"{HospitalScene.DecorationItemPrefix}{tank.Id}", tank.Tile.X, tank.Tile.Y, 1, 1));
+                break;
+        }
+    }
 
     /// <summary>Review: a corridor with a row of each chair style, clinics in picked colour schemes.</summary>
     private void BuildChairStyles(HospitalScene h)

@@ -41,7 +41,7 @@ public sealed partial class HospitalSimulation
     }
 
     /// <summary>Changes whenever a chair is placed, moved or removed.</summary>
-    private int ChairLayoutKey() => _chairs.Aggregate(_chairs.Count, (h, c) => HashCode.Combine(h, c.Tile));
+    private int ChairLayoutKey() => _chairs.Aggregate(HashCode.Combine(_chairs.Count, _decorStamp), (h, c) => HashCode.Combine(h, c.Tile));
 
     private List<GridCoord> FindCorridorCareSpots()
     {
@@ -185,7 +185,8 @@ public sealed partial class HospitalSimulation
             return false;
         }
 
-        return _chairs.All(c => Math.Abs(c.Tile.X - tile.X) > 1 || Math.Abs(c.Tile.Y - tile.Y) > 1);
+        return _chairs.All(c => Math.Abs(c.Tile.X - tile.X) > 1 || Math.Abs(c.Tile.Y - tile.Y) > 1)
+            && !DecorTiles.Any(d => Math.Abs(d.X - tile.X) <= 1 && Math.Abs(d.Y - tile.Y) <= 1);
     }
 
     /// <summary>

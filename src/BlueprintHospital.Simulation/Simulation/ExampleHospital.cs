@@ -93,10 +93,11 @@ public static class ExampleHospital
         Corridor(sim, 0, 6, NorthCorridorY, 5, 42);     // west link, down to the front corridor
         Corridor(sim, 0, 6, NorthCorridorY, 94, NorthCorridorDepth);
         Corridor(sim, 0, 95, NorthCorridorY, 5, SpineY - NorthCorridorY); // east link
-        Corridor(sim, 0, 62, SouthY, 8, 10);            // central link to the front corridor
+        Corridor(sim, 0, 62, SouthY, 8, 10, DecorItems.OpenAreaTemplate, "Central atrium"); // central link to the front corridor
         Corridor(sim, 0, 6, 57, 94, 5);                 // front corridor
 
         sim.BuildFittedWaitingRoom(new GridRect(52, 62, 14, 8), WallSide.North, "example_waiting_room", "Main waiting room");
+        DecorateAtrium(sim);
         BuildChildrensWaitingRoom(sim);
 
         // Lifts and stairs go through every floor, doors onto the spine.
@@ -292,10 +293,23 @@ public static class ExampleHospital
         }
     }
 
-    private static void Corridor(HospitalSimulation sim, int floor, int x, int y, int width, int length)
+    private static void Corridor(HospitalSimulation sim, int floor, int x, int y, int width, int length, string template = "corridor", string? name = null)
     {
         var rect = sim.Site.OnFloor(new GridRect(x, y, width, length), floor);
-        Must(sim.BuildRoom(new RoomPlan("corridor", rect, WallSide.South)), $"corridor at {rect} on floor {floor}");
+        Must(name is null ? sim.BuildRoom(new RoomPlan(template, rect, WallSide.South)) : sim.BuildRoom(new RoomPlan(template, rect, WallSide.South), name), $"{template} at {rect} on floor {floor}");
+    }
+
+    /// <summary>Benches and plants down the sides of the central atrium.</summary>
+    private static void DecorateAtrium(HospitalSimulation sim)
+    {
+        foreach (var (item, x, y, facing) in new[]
+                 {
+                     ("planter", 62, 48, WallSide.East), ("bench", 62, 52, WallSide.East), ("palm", 63, 55, WallSide.East),
+                     ("planter", 69, 48, WallSide.West), ("bench", 69, 52, WallSide.West), ("fish_tank", 69, 55, WallSide.West),
+                 })
+        {
+            Must(sim.PlaceDecoration(item, new GridCoord(x, y), facing), $"{item} in the atrium at {x},{y}");
+        }
     }
 
     private static void Build(HospitalSimulation sim, Room room)

@@ -1341,6 +1341,33 @@ public partial class SmokeTest : Node
         Check(placed >= 4, $"Only {placed} corridor chairs could be placed.");
         Check(sim.CheckChair(new Simulation.World.GridCoord(desk.Rect.X + 2, desk.Rect.Y + 2), Simulation.World.WallSide.South, Simulation.Hospital.ChairColours.Default).Problems.Any(p => p.Contains("corridor")), "A chair should not go inside a room.");
 
+        // A plant and a bench against the corridor's west wall, placed with the build tool, and the bench's panel.
+        var decorBefore = sim.PlacedDecorations.Count;
+        foreach (var id in new[] { "plant", "bench" })
+        {
+            tool.StartDecoration(id);
+            for (var y = b.Y - 13; y < b.Y + 8; y++)
+            {
+                var tile = new Simulation.World.GridCoord(b.X - 20, y);
+                if (sim.CheckDecoration(id, tile, tool.DecorFacingFor(tile)).CanBuild)
+                {
+                    tool.PreviewAt(tile);
+                    tool.Confirm();
+                    break;
+                }
+            }
+        }
+
+        tool.Cancel();
+        tool.FollowMouse = true;
+        Check(sim.PlacedDecorations.Count == decorBefore + 2, $"Placed {sim.PlacedDecorations.Count - decorBefore} of 2 decorations along the corridor.");
+        Check(sim.DecorSeats.Count >= 3, "The bench's seats are not seats.");
+        var bench = sim.PlacedDecorations.Last();
+        var benchRoom = sim.Spaces.First(s => s.Rect.Contains(bench.Tile));
+        hospital.Hud.ItemInfo.ShowItem(benchRoom, new Simulation.Hospital.PlacedFurniture($"{HospitalScene.DecorationItemPrefix}{bench.Id}", bench.Tile.X, bench.Tile.Y, 1, 1));
+        Check(hospital.Hud.ItemInfo.Visible, "The item panel did not open for a placed bench.");
+        hospital.Hud.ItemInfo.Close();
+
         var clock = hospital.Session.Clock;
         // Clinics run 09:00 to 16:30 on weekdays: run on to the next weekday morning's clinic if need be
         // (a Friday evening build would otherwise stop on Saturday, when there are no clinics).

@@ -312,7 +312,7 @@ public sealed class GameDatabase
                 Unknown("departments", "department", d);
             }
 
-            foreach (var r in level.Rooms.Where(r => !RoomTemplates.ContainsKey(r) && !BuildMenu.SpecialItems.Contains(r) && r != BuildMenu.Decorate))
+            foreach (var r in level.Rooms.Where(r => !RoomTemplates.ContainsKey(r) && !BuildMenu.SpecialItems.Contains(r) && r != BuildMenu.Decorate && r != BuildMenu.Decorations))
             {
                 Unknown("rooms", "room", r);
             }

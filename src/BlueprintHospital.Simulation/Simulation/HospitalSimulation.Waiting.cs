@@ -432,6 +432,11 @@ public sealed partial class HospitalSimulation
             return "Keep the reception desk and its queue clear.";
         }
 
+        if (DecorTiles.Contains(tile))
+        {
+            return "There's a decoration there.";
+        }
+
         return null;
     }
 
@@ -660,7 +665,7 @@ public sealed partial class HospitalSimulation
         var taken = TakenChairs();
         // Children (and their parents) wait in the children's waiting room when there is one; adults never do.
         var child = IsChildPatient(patient);
-        var chair = _chairs
+        var chair = WaitSeats
             .Where(c => !taken.Contains(c.Tile) && (!preTriage || InWaitingRoom(c.Tile)) && (child || !InChildrensWaitingRoom(c.Tile)))
             .OrderBy(c => child && InChildrensWaitingRoom(c.Tile) ? 0 : 1)
             .ThenBy(c => WaitDistance(c.Tile, target))
@@ -697,6 +702,7 @@ public sealed partial class HospitalSimulation
         }
 
         blocked.UnionWith(_chairs.Select(c => c.Tile));
+        blocked.UnionWith(DecorTiles);
         foreach (var entrance in MainBuilding.Entrances)
         {
             blocked.UnionWith(ApproachInside(entrance).Tiles());
@@ -757,7 +763,8 @@ public sealed partial class HospitalSimulation
         }
 
         _reseatCountdown = 30;
-        if (_chairs.Count == 0)
+        var seats = WaitSeats.ToList();
+        if (seats.Count == 0)
         {
             return;
         }
@@ -769,7 +776,7 @@ public sealed partial class HospitalSimulation
         {
             var preTriage = p.Triage is null;
             var taken = TakenChairs();
-            if (_chairs.Any(c => !taken.Contains(c.Tile) && (!preTriage || InWaitingRoom(c.Tile))))
+            if (seats.Any(c => !taken.Contains(c.Tile) && (!preTriage || InWaitingRoom(c.Tile))))
             {
                 SendToWaitingRoom(p);
             }
