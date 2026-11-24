@@ -252,15 +252,8 @@ public static class RoomLayoutEngine
         // A children's ward has a fold-out bed beside every bed, for a parent to stay the night.
         var parentBed = template.Furniture.Contains("parent_bed");
         var pitch = ventilated ? BedTilesX + 4 : cot || parentBed ? BedTilesX + 3 : BedTilesX + 2;
-        var north = (r.Y + 1, false);
-        var south = (r.Bottom - 1 - BedTilesY, true);
-        var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
-        if (r.Length >= 15)
-        {
-            rows.Add(plan.Frame.Side == WallSide.North ? north : south);
-        }
-
-        var door = plan.DoorApproach(4);
+        var rows = BedRows(plan, BedTilesY, BedTilesX);
+        var (xMin, xMax, door) = RowSpan(plan, rows.Count);
         var locker = template.Furniture.Contains("bedside_locker");
         // A minors room: a curtain hangs between each pair of neighbouring beds (and the foot rail is drawn with it).
         var curtained = template.Furniture.Contains(BayCurtain);
@@ -270,7 +263,7 @@ public static class RoomLayoutEngine
         foreach (var (rowY, headSouth) in rows)
         {
             int? lastX = null;
-            for (var x = r.X + 1; x + BedTilesX + (cot || parentBed ? 2 : 0) <= r.Right - 1; x += pitch)
+            for (var x = xMin; x + BedTilesX + (cot || parentBed ? 2 : 0) <= xMax; x += pitch)
             {
                 if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
                 {
@@ -293,31 +286,31 @@ public static class RoomLayoutEngine
                 plan.Reserve(staff);
 
                 var headY = headSouth ? rowY + BedTilesY - 1.0 : rowY + 0.1;
-                if (ventilated && x + BedTilesX + 3 <= r.Right - 1)
+                if (ventilated && x + BedTilesX + 3 <= xMax)
                 {
                     plan.AddWorld("ventilator", x + BedTilesX + 0.2, headY, 0.8, 0.8);
                     plan.AddWorld("obs_monitor", x + BedTilesX + 1.4, headY, 0.6, 0.6);
                 }
-                else if (cot && x + BedTilesX + 2 <= r.Right - 1)
+                else if (cot && x + BedTilesX + 2 <= xMax)
                 {
                     plan.AddWorld("cot", x + BedTilesX + 0.4, headSouth ? rowY + BedTilesY - 2.4 : rowY + 0.8, 1.2, 1.6);
                 }
-                else if (parentBed && x + BedTilesX + 2 <= r.Right - 1)
+                else if (parentBed && x + BedTilesX + 2 <= xMax)
                 {
                     plan.AddWorld("parent_bed", x + BedTilesX + 0.6, headSouth ? rowY + BedTilesY - 3.9 : rowY + 0.1, 1.5, 3.8);
                 }
-                else if (monitored && !locker && x + BedTilesX + 1 <= r.Right - 1)
+                else if (monitored && !locker && x + BedTilesX + 1 <= xMax)
                 {
                     plan.AddWorld("obs_monitor", x + BedTilesX + 0.2, headY, 0.6, 0.6);
                 }
-                else if (locker && x + BedTilesX + 1 <= r.Right - 1)
+                else if (locker && x + BedTilesX + 1 <= xMax)
                 {
                     plan.AddWorld("bedside_locker", x + BedTilesX + 0.1, headY, 0.9, 0.9);
                 }
 
                 // On the bed's right, or, for the last bed against the end wall, on its left.
                 var chairY = headSouth ? rowY + 1 : rowY + BedTilesY - 2;
-                var chairX = x + BedTilesX + 1 <= r.Right - 1 ? x + BedTilesX : x - 1 > r.X ? x - 1 : (int?)null;
+                var chairX = x + BedTilesX + 1 <= xMax ? x + BedTilesX : x - 1 > xMin - 1 ? x - 1 : (int?)null;
                 if (bedsideChairs && chairX is { } cx
                     && !(door.X < cx + 1 && cx < door.X + door.W && door.Y < chairY + 1 && chairY < door.Y + door.L))
                 {
@@ -337,6 +330,89 @@ public static class RoomLayoutEngine
         }
     }
 
+    /// <summary>The clear aisle between two rows of beds that face each other, in tiles.</summary>
+    private const int BedAisle = 3;
+
+    /// <summary>
+    /// Rows of beds (each <paramref name="depth"/> tiles from head to foot) that fill the room from the back wall
+    /// (the wall opposite the door; the north wall when the door is in a side wall). Beds stand in pairs of rows
+    /// facing each other across an aisle; the next pair stands back to back with the one before, heads to a
+    /// shared bed-head panel, and a last single row faces an aisle along the far wall when there is room for it.
+    /// Spare depth widens the aisles. Rows always run east to west (beds point north or south).
+    /// </summary>
+    /// <remarks>
+    /// More than two rows need a walkway through them (see <see cref="RowSpan"/>); when the room is too narrow
+    /// for a bed beside that walkway (<paramref name="width"/> tiles), it keeps to two rows facing each other.
+    /// </remarks>
+    private static List<(int Y, bool HeadSouth)> BedRows(Plan plan, int depth, int width)
+    {
+        var r = plan.Frame.Rect;
+        var inside = r.Length - 2;
+        var pairSize = (2 * depth) + BedAisle;
+        var pairs = inside / pairSize;
+        var single = pairs == 0 || inside - (pairs * pairSize) >= depth + BedAisle;
+        if (pairs + pairs + (single ? 1 : 0) > 2 && !WalkwayLeavesRoom(plan, width))
+        {
+            pairs = Math.Min(pairs, 1);
+            single = pairs == 0;
+        }
+
+        var aisles = pairs + (single ? 1 : 0);
+        var spare = Math.Max(0, inside - (pairs * pairSize) - (single ? depth + BedAisle : 0));
+
+        // Offsets from the back wall, and whether the bed's head is towards it.
+        var fromBack = new List<(int Offset, bool HeadToBack)>();
+        var offset = 0;
+        for (var a = 0; a < aisles; a++)
+        {
+            var aisle = BedAisle + (spare / aisles) + (a < spare % aisles ? 1 : 0);
+            fromBack.Add((offset, true));
+            offset += depth + aisle;
+            if (a < pairs)
+            {
+                fromBack.Add((offset, false));
+                offset += depth;
+            }
+        }
+
+        // A shallow room that can't fit a row and a full aisle still gets its one row against the back wall.
+        return fromBack.Select(row => plan.Frame.Side == WallSide.North
+                ? (r.Bottom - 1 - row.Offset - depth, row.HeadToBack)
+                : (r.Y + 1 + row.Offset, !row.HeadToBack))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Where beds may stand along each row (from <c>XMin</c> up to, not including, <c>XMax</c>) and the strip kept
+    /// clear inside the door. With more than two rows a walkway runs the whole depth of the room so every aisle
+    /// can be reached: straight in from a door in the north or south wall, or a metre wide along a door in a side wall.
+    /// </summary>
+    /// <summary>True when a bed <paramref name="width"/> tiles wide still fits along a row beside the walkway.</summary>
+    private static bool WalkwayLeavesRoom(Plan plan, int width)
+    {
+        var (xMin, xMax, door) = RowSpan(plan, 3);
+        return plan.Frame.SideOn
+            ? xMax - xMin >= width
+            : door.X - xMin >= width || xMax - (door.X + door.W) >= width;
+    }
+
+    private static (int XMin, int XMax, (double X, double Y, double W, double L) Door) RowSpan(Plan plan, int rows)
+    {
+        var r = plan.Frame.Rect;
+        var (xMin, xMax) = (r.X + 1, r.Right - 1);
+        if (rows <= 2)
+        {
+            return (xMin, xMax, plan.DoorApproach(4));
+        }
+
+        return plan.Frame.Side switch
+        {
+            WallSide.East => (xMin, xMax - 1, plan.DoorApproach(4)),
+            WallSide.West => (xMin + 1, xMax, plan.DoorApproach(4)),
+            _ => (xMin, xMax, plan.DoorApproach(plan.Frame.D)),
+        };
+    }
+
     /// <summary>Incubators are 1 m by 1.5 m (2 x 3 tiles) including room to reach in.</summary>
     private const int IncubatorTilesX = 2;
     private const int IncubatorTilesY = 3;
@@ -350,18 +426,11 @@ public static class RoomLayoutEngine
         var r = plan.Frame.Rect;
         var monitored = template.Furniture.Contains("obs_monitor");
         const int pitch = IncubatorTilesX + 3;
-        var north = (r.Y + 1, false);
-        var south = (r.Bottom - 1 - IncubatorTilesY, true);
-        var rows = new List<(int Y, bool HeadSouth)> { plan.Frame.Side == WallSide.North ? south : north };
-        if (r.Length >= 11)
-        {
-            rows.Add(plan.Frame.Side == WallSide.North ? north : south);
-        }
-
-        var door = plan.DoorApproach(4);
+        var rows = BedRows(plan, IncubatorTilesY, IncubatorTilesX);
+        var (xMin, xMax, door) = RowSpan(plan, rows.Count);
         foreach (var (rowY, headSouth) in rows)
         {
-            for (var x = r.X + 1; x + IncubatorTilesX <= r.Right - 1; x += pitch)
+            for (var x = xMin; x + IncubatorTilesX <= xMax; x += pitch)
             {
                 if (door.X < x + IncubatorTilesX && x < door.X + door.W && door.Y < rowY + IncubatorTilesY && rowY < door.Y + door.L)
                 {
@@ -374,7 +443,7 @@ public static class RoomLayoutEngine
                 plan.Beds.Add(new WardBed { PatientSpot = spot, StaffSpot = staff, HeadSouth = headSouth });
                 plan.Reserve(spot);
                 plan.Reserve(staff);
-                if (monitored && x + IncubatorTilesX + 1 <= r.Right - 1)
+                if (monitored && x + IncubatorTilesX + 1 <= xMax)
                 {
                     plan.AddWorld("obs_monitor", x + IncubatorTilesX + 0.2, headSouth ? rowY + IncubatorTilesY - 0.8 : rowY + 0.2, 0.6, 0.6);
                 }

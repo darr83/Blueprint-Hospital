@@ -84,7 +84,10 @@ public static class EmergencyDepartmentLayout
                 .Where(x => placed.All(o => x + w <= o.X || o.X + o.Width <= x))
                 .OrderBy(x => Math.Abs(x - room.X)).ThenBy(x => x).First();
             placed.Add((x, w));
-            moved.Add(x == room.X ? room : room.Door is WallSide.North ? room with { X = x } : room with { X = x, Width = room.Depth, Depth = room.Width, Door = WallSide.North });
+            // A room whose door faces the link (triage) keeps it only while the link is still beside it; otherwise
+            // its door turns to face the A&E corridor, so it isn't left opening onto nothing.
+            var keepsDoor = room.Door is WallSide.North || (room.Door is WallSide.West && link + 8 == x);
+            moved.Add(x == room.X && keepsDoor ? room : keepsDoor ? room with { X = x } : room with { X = x, Width = room.Depth, Depth = room.Width, Door = WallSide.North });
         }
 
         return Starter.Where(p => !front.Contains(p))

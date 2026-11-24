@@ -107,6 +107,7 @@ public sealed partial class HospitalSimulation
         var building = site.Buildings[0];
         _spaces = EmergencyDepartmentLayout.Create(building, database, site.Layout?.Plan).ToDictionary(s => s.Id);
         TheatreSuite.Link(_spaces.Values);
+        MarkRoomsInUse(announce: false);
         Nav = EmergencyDepartmentLayout.BuildNavGrid(site, _spaces.Values);
         foreach (var space in _spaces.Values)
         {
@@ -218,8 +219,12 @@ public sealed partial class HospitalSimulation
     public CareSpace? FindSpace(string id) => _spaces.GetValueOrDefault(id);
 
     /// <summary>Rooms of one kind, in a stable order.</summary>
+    /// <remarks>Rooms that are not in use (their door doesn't open onto a corridor yet) are left out: nobody is sent to them.</remarks>
     public IEnumerable<CareSpace> SpacesOfKind(CareSpaceKind kind) =>
-        _spaces.Values.Where(s => s.Kind == kind).OrderBy(s => s.Id, StringComparer.Ordinal);
+        _spaces.Values.Where(s => s.Kind == kind && s.InUse).OrderBy(s => s.Id, StringComparer.Ordinal);
+
+    /// <summary>Every room that is in use, for finding somewhere to send people.</summary>
+    private IEnumerable<CareSpace> UsableSpaces => _spaces.Values.Where(s => s.InUse);
 
     public Patient? FindPatient(int id) =>
         _patients.TryGetValue(id, out var p) ? p : _departed.FirstOrDefault(d => d.Id == id);
@@ -520,7 +525,7 @@ public sealed partial class HospitalSimulation
 
     private GridCoord UsualHome(StaffMember member)
     {
-        if (member.BaseRoomId is { } roomId && FindSpace(roomId) is { } room)
+        if (member.BaseRoomId is { } roomId && FindSpace(roomId) is { InUse: true } room)
         {
             return room.IsWard ? WardHome(member, room) : room.Kind == CareSpaceKind.TheatreRecovery ? RecoveryHome(member, room) : ServiceRoomHome(room);
         }

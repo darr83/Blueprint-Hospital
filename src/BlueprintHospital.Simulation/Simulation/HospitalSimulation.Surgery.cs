@@ -160,6 +160,7 @@ public sealed partial class HospitalSimulation
     private NavGrid BuildNav()
     {
         TheatreSuite.Link(_spaces.Values);
+        MarkRoomsInUse(announce: false);
         return EmergencyDepartmentLayout.BuildNavGrid(Site, _spaces.Values);
     }
 

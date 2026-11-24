@@ -579,7 +579,7 @@ public sealed partial class HospitalSimulation
                     continue;
                 }
 
-                target = _spaces.Values.Where(s => s.Kind == kind && IsVacant(s) && IsChildrensEmergencyRoom(s) == childrens).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
+                target = UsableSpaces.Where(s => s.Kind == kind && IsVacant(s) && IsChildrensEmergencyRoom(s) == childrens).OrderBy(s => s.Id, StringComparer.Ordinal).FirstOrDefault();
                 if (target is not null)
                 {
                     break;

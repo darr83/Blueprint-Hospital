@@ -30,6 +30,9 @@ public enum BuildMode
 
     /// <summary>The helipad: a 12 m square that follows the cursor over open ground; click to build it, or click the one there is to take it out.</summary>
     Helipad,
+
+    /// <summary>Moving an ordinary room's door by hand: point at any wall of the room and click; the furniture is laid out again around it.</summary>
+    RoomDoor,
 }
 
 /// <summary>
@@ -76,7 +79,13 @@ public partial class BuildTool : Node2D
     public WallSide? DoorChoice { get; private set; }
 
     /// <summary>The wall the door of the room being dragged out goes on, as things stand.</summary>
-    public WallSide? PlannedDoorSide => Mode == BuildMode.Room && Template is { } t && _dragStart is not null ? _sim.AutoPlan(t.Id, _rect, MovingId, DoorChoice).DoorSide : null;
+    public WallSide? PlannedDoorSide => Mode == BuildMode.Room && Template is { } t && _dragStart is not null ? _sim.AutoPlan(t.Id, _rect, MovingId, DoorChoice, _doorPinned).DoorSide : null;
+
+    /// <summary>
+    /// True once the player has turned this room's door with Z: it then stays on that wall even with no corridor
+    /// beside it (the room is built "Not in use" until one is laid). Otherwise the door looks for a corridor.
+    /// </summary>
+    private bool _doorPinned;
 
     /// <summary>The side of the reception desk patients stand on.</summary>
     public WallSide DeskFacing { get; private set; } = WallSide.South;
@@ -135,6 +144,16 @@ public partial class BuildTool : Node2D
 
         // Moving or resizing keeps the door on the same wall unless the player turns it.
         DoorChoice = movingId is not null ? _sim.FindSpace(movingId)?.DoorSide : null;
+        _doorPinned = false;
+        Restart();
+    }
+
+    /// <summary>Starts moving an ordinary room's door: the room stays put and the door follows the cursor round its walls.</summary>
+    public void StartRoomDoor(string roomId)
+    {
+        Mode = BuildMode.RoomDoor;
+        Template = null;
+        MovingId = roomId;
         Restart();
     }
 
@@ -197,9 +216,11 @@ public partial class BuildTool : Node2D
                 DeskFacing = WaitingRoomLayout.Clockwise(DeskFacing);
                 break;
             case BuildMode.Room when Template is { } room:
-                // Step the door round to the next wall with a corridor beside it; the furniture turns with it.
+                // Step the door round to the next wall, corridor or not; the furniture turns with it. A door on a wall
+                // with no corridor beside it leaves the room "Not in use" until one is laid.
                 var current = PlannedDoorSide ?? DoorChoice ?? WallSide.South;
-                DoorChoice = _dragStart is null ? WaitingRoomLayout.Clockwise(current) : _sim.NextDoorSide(room.Id, _rect, current, MovingId) ?? WaitingRoomLayout.Clockwise(current);
+                DoorChoice = _dragStart is null ? WaitingRoomLayout.Clockwise(current) : _sim.NextDoorSide(room.Id, _rect, current, MovingId, anyWall: true) ?? WaitingRoomLayout.Clockwise(current);
+                _doorPinned = _dragStart is not null;
                 break;
             default:
                 return;
@@ -385,7 +406,7 @@ public partial class BuildTool : Node2D
 
                 return true;
 
-            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door or BuildMode.Helipad:
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door or BuildMode.Helipad or BuildMode.RoomDoor:
                 Refresh(force: true);
                 Place();
                 return true;
@@ -459,8 +480,12 @@ public partial class BuildTool : Node2D
         switch (Mode)
         {
             case BuildMode.Room when MovingId is { } id:
-                result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id, DoorChoice));
+                result = _sim.MoveRoom(id, _sim.AutoPlan(Template!.Id, _rect, id, DoorChoice, _doorPinned));
                 what = $"Moved {_sim.FindSpace(id)?.Name}";
+                break;
+            case BuildMode.RoomDoor when MovingId is { } doorId:
+                result = _sim.MoveDoorTo(doorId, _hover);
+                what = $"Moved the door of {_sim.FindSpace(doorId)?.Name}";
                 break;
             case BuildMode.Chair:
             {
@@ -514,7 +539,7 @@ public partial class BuildTool : Node2D
                 break;
             case BuildMode.Room:
             case BuildMode.Corridor:
-                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null), withStaff: Mode == BuildMode.Room && (BlueprintHospital.Core.GameManager.Instance?.Settings.AutoStaffNewRooms ?? false));
+                result = _sim.BuildRoom(_sim.AutoPlan(Template!.Id, _rect, doorSide: Mode == BuildMode.Room ? DoorChoice : null, strict: Mode == BuildMode.Room && _doorPinned), withStaff: Mode == BuildMode.Room && (BlueprintHospital.Core.GameManager.Instance?.Settings.AutoStaffNewRooms ?? false));
                 what = $"Built {Template.Name.ToLowerInvariant()}";
                 break;
             default:
@@ -562,9 +587,16 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        _rect = Mode == BuildMode.Helipad ? (OverHelipad ? _sim.Helipad!.Value : HospitalSimulation.HelipadAt(HelipadCorner)) : DragRect();
+        _rect = Mode switch
+        {
+            BuildMode.Helipad => OverHelipad ? _sim.Helipad!.Value : HospitalSimulation.HelipadAt(HelipadCorner),
+            BuildMode.RoomDoor when MovingId is { } doorRoom && _sim.FindSpace(doorRoom) is { } r => r.Rect,
+            _ => DragRect(),
+        };
 
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
+        // Moving a door only changes when the cursor reaches another wall position.
+        var doorKey = Mode == BuildMode.RoomDoor && MovingId is { } d && _sim.FindSpace(d) is { } dr ? _sim.DoorPlanAt(dr, _hover).ToString() : string.Empty;
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{_doorPinned}|{doorKey}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -591,7 +623,9 @@ public partial class BuildTool : Node2D
             BuildMode.Door when RemovingDoor => _sim.CheckRemoveWaitingDoor(TargetRoom.Id, Inside(TargetRoom.Rect, _hover)),
             BuildMode.Door => _sim.CheckWaitingDoor(TargetRoom.Id, Inside(TargetRoom.Rect, _hover)),
             BuildMode.Room when _dragStart is null => new BuildCheck(0, new[] { $"Drag out the {Template!.Name.ToLowerInvariant()} from corner to corner." }),
-            BuildMode.Room => _sim.CheckRoomAt(Template!.Id, _rect, MovingId, DoorChoice),
+            BuildMode.Room => _sim.CheckRoom(_sim.AutoPlan(Template!.Id, _rect, MovingId, DoorChoice, _doorPinned), MovingId),
+            BuildMode.RoomDoor when MovingId is null => new BuildCheck(0, new[] { "Pick a room first." }),
+            BuildMode.RoomDoor => _sim.CheckDoorAt(MovingId, _hover),
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
@@ -660,7 +694,7 @@ public partial class BuildTool : Node2D
             return;
         }
 
-        if (_dragStart is null)
+        if (_dragStart is null && Mode != BuildMode.RoomDoor)
         {
             // Before the drag starts, just mark the tile under the cursor.
             var t = new[] { P(_hover.X, _hover.Y), P(_hover.X + 1, _hover.Y), P(_hover.X + 1, _hover.Y + 1), P(_hover.X, _hover.Y + 1) };
@@ -676,7 +710,7 @@ public partial class BuildTool : Node2D
         DrawColoredPolygon(quad, new Color(colour, 0.28f));
         DrawPolyline(quad.Append(quad[0]).ToArray(), colour, 3f, true);
 
-        if (Mode == BuildMode.Room && Check.Preview is { } room)
+        if (Mode is BuildMode.Room or BuildMode.RoomDoor && Check.Preview is { } room)
         {
             // The furniture as it will stand, faint, each piece outlined; and the doorways in a brighter colour.
             foreach (var item in room.Furniture)
@@ -883,7 +917,20 @@ public partial class BuildTool : Node2D
         var width = font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X;
         DrawRect(new Rect2(anchor + new Vector2(-6 / zoom, -size), new Vector2(width + (12 / zoom), size * 1.45f)), new Color(UiTop, 0.92f));
         DrawString(font, anchor, text, HorizontalAlignment.Left, -1, size, ok ? new Color("#9BE7B5") : new Color("#FFB4AE"));
+
+        // A room that can be built but won't be joined up yet says so underneath, in red.
+        if (ok && Check.Notes.Count > 0)
+        {
+            var note = $"⚠ {Check.Notes[0]}";
+            var below = anchor + new Vector2(0, size * 1.6f);
+            var noteWidth = font.GetStringSize(note, HorizontalAlignment.Left, -1, size).X;
+            DrawRect(new Rect2(below + new Vector2(-6 / zoom, -size), new Vector2(noteWidth + (12 / zoom), size * 1.45f)), new Color(NotInUseRed, 0.95f));
+            DrawString(font, below, note, HorizontalAlignment.Left, -1, size, Colors.White);
+        }
     }
+
+    /// <summary>The red of the "Not in use" sign and warning.</summary>
+    public static readonly Color NotInUseRed = new("#C62828");
 
     private static readonly Color UiTop = new("#1D2B36");
 

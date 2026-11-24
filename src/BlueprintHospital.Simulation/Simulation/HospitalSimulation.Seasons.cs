@@ -286,7 +286,7 @@ public sealed partial class HospitalSimulation
             Add(occupancy >= 0.98 ? 3 : occupancy >= 0.92 ? 2 : occupancy >= 0.85 ? 1 : 0, $"Ward beds {occupancy:P0} full");
         }
 
-        var spaces = _spaces.Values.Count(s => s.Kind is CareSpaceKind.Resus or CareSpaceKind.Majors or CareSpaceKind.Minors);
+        var spaces = UsableSpaces.Count(s => s.Kind is CareSpaceKind.Resus or CareSpaceKind.Majors or CareSpaceKind.Minors);
         if (spaces > 0)
         {
             var crowding = (double)Stats.PatientsInDepartment / spaces;

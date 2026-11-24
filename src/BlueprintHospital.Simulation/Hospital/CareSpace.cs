@@ -166,6 +166,13 @@ public sealed class CareSpace
 
     public IReadOnlyList<Doorway> Doors { get; init; } = Array.Empty<Doorway>();
 
+    /// <summary>
+    /// False while the room's door doesn't open onto a corridor (or the waiting room) that people can reach:
+    /// it can be built like that, but nobody is sent to it and it shows a red "Not in use" sign until it is joined up.
+    /// Worked out again whenever the layout changes; never saved.
+    /// </summary>
+    public bool InUse { get; set; } = true;
+
     /// <summary>The room template it was built from.</summary>
     public string TemplateId { get; init; } = string.Empty;
 

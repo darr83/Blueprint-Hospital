@@ -66,7 +66,10 @@ public class DoorSideTests
         var room = h.Sim.Spaces.Last(s => s.TemplateId == "resus_bay");
         Assert.Equal(WallSide.North, room.DoorSide);
 
-        Assert.Contains(h.Sim.CheckDoorSide(room.Id, WallSide.South).Problems, p => p.Contains("no corridor"));
+        // A wall with no corridor can take the door too, but the room would then be out of use.
+        var south = h.Sim.CheckDoorSide(room.Id, WallSide.South);
+        Assert.True(south.CanBuild, string.Join("; ", south.Problems));
+        Assert.Contains(HospitalSimulation.NotInUseNote, south.Notes);
         Assert.Contains(h.Sim.CheckDoorSide(room.Id, WallSide.North).Problems, p => p.Contains("already"));
 
         var check = h.Sim.CheckDoorSide(room.Id, WallSide.West);

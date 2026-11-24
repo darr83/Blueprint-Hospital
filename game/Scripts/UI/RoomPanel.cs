@@ -36,6 +36,9 @@ public partial class RoomPanel : PanelContainer
     /// <summary>Raised when the player wants to move or resize the room.</summary>
     public event Action<CareSpace>? MoveRequested;
 
+    /// <summary>Raised when the player wants to place the room's door by hand, anywhere along any wall.</summary>
+    public event Action<CareSpace>? DoorMoveRequested;
+
     public string? RoomId => _roomId;
 
     public void Initialise(HospitalSimulation simulation)
@@ -86,6 +89,17 @@ public partial class RoomPanel : PanelContainer
             _doorButtons[side] = button;
             _doorRow.AddChild(button);
         }
+
+        // Or place it anywhere along any wall, with the furniture laid out again around it.
+        var place = new Button { Text = "Place…", TooltipText = "Point at any wall of the room and click to put the door exactly there; the furniture is laid out again around it", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(64, 32) };
+        place.Pressed += () =>
+        {
+            if (_roomId is not null && _sim.FindSpace(_roomId) is { } room)
+            {
+                DoorMoveRequested?.Invoke(room);
+            }
+        };
+        _doorRow.AddChild(place);
 
         column.AddChild(_doorRow);
 
@@ -150,7 +164,8 @@ public partial class RoomPanel : PanelContainer
         var text = template is null ? string.Empty : BuildBar.Describe(template, room, _sim);
         text = text.Replace($"[color=#5B6B79]Cost[/color]  £{room.BuildCost:N0}", $"[color=#5B6B79]Value[/color]  £{room.BuildCost:N0}");
         var header = $"[color=#5B6B79]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
-        _info.Text = UiStyle.Facts($"{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}");
+        var notInUse = room.InUse ? string.Empty : "[color=#C62828][b]NOT IN USE[/b]: its door doesn't open onto a corridor. Lay a corridor to the door, or move the door.[/color]\n";
+        _info.Text = UiStyle.Facts($"{notInUse}{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}");
 
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";
@@ -257,7 +272,7 @@ public partial class RoomPanel : PanelContainer
             var check = _sim.CheckDoorSide(room.Id, side);
             button.Disabled = !check.CanBuild;
             button.TooltipText = check.CanBuild
-                ? $"Move the door to the {Facing(side)} wall and lay the room out again from there: £{check.Cost:N0}"
+                ? $"Move the door to the {Facing(side)} wall and lay the room out again from there: £{check.Cost:N0}" + (check.Notes.Count > 0 ? $"\n⚠ {check.Notes[0]}" : string.Empty)
                 : string.Join("\n", check.Problems);
         }
     }

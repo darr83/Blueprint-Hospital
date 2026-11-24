@@ -74,7 +74,7 @@ public class BuildingTests
     }
 
     [Fact]
-    public void Door_must_open_onto_a_corridor()
+    public void Door_may_not_open_through_the_outside_wall()
     {
         var h = new SimulationHarness();
 
@@ -205,13 +205,12 @@ public class DragToBuildTests
     }
 
     [Fact]
-    public void Room_away_from_any_corridor_is_refused_with_a_reason()
+    public void Room_away_from_any_corridor_can_be_built_but_is_flagged_not_in_use()
     {
         var h = WithWestWing();
-        var check = h.Sim.CheckRoomAt("minors_cubicle", new GridRect(B.X - 16, B.Y + 18, 8, 7));
-        Assert.True(check.CanBuild || check.Problems.Any());
         var isolated = h.Sim.CheckRoomAt("minors_cubicle", new GridRect(B.X - 15, B.Y + 19, 7, 7));
-        Assert.Contains(isolated.Problems, p => p.Contains("corridor"));
+        Assert.True(isolated.CanBuild, string.Join("; ", isolated.Problems));
+        Assert.Contains(HospitalSimulation.NotInUseNote, isolated.Notes);
     }
 
     [Fact]
