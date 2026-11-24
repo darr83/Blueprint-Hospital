@@ -719,6 +719,7 @@ public sealed partial class HospitalSimulation
         doctor.Caseload.Add(patient.Id);
         patient.WorkingDiagnosis = new Diagnosis(condition.Id, confidence, Now, doctor.Id);
         Stats.RecordDiagnosis(condition.Id == patient.Condition.Id);
+        RecordJournalDiagnosis(patient, condition.Id == patient.Condition.Id);
         patient.Log(Now, $"Diagnosis by {doctor.Name}: {condition.Name}.", important: true);
         TakeObservations(patient, allowDowngrade: true);
         PlanTreatment(patient, condition);

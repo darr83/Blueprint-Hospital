@@ -455,6 +455,7 @@ public sealed partial class HospitalSimulation
             o.Seat = null;
             Walk(o, clinic.PatientSpot);
             next.Appointment.Status = AppointmentStatus.InClinic;
+            next.Appointment.CalledInAt ??= Now;
             doctor.Activity = StaffActivity.WalkingToTask;
             doctor.StatusText = $"Calling {next.Appointment.FullName}";
             WalkTo(doctor, clinic.StaffSpot);

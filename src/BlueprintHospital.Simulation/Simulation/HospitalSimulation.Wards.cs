@@ -233,6 +233,7 @@ public sealed partial class HospitalSimulation
             patient.WardMoveRequestedAt = null;
             patient.DischargeDueAt = StayOn(patient, diagnosed, unit, moved: true);
             patient.Log(Now, $"Moved to {ward.Name}, bed {patient.BedIndex + 1}, by {nurse.Name}.", important: true);
+            LogRoom(ward.Id, RoomLogKind.Admitted, $"{patient.FullName} moved in to bed {patient.BedIndex + 1} from another ward");
             if (unit is WardUnit.IntensiveCare or WardUnit.HighDependency)
             {
                 AddTask(TaskKind.WardClerking, StaffRole.Doctor, patient, 15, unit == WardUnit.IntensiveCare ? "ICU admission" : "HDU admission");
@@ -250,6 +251,7 @@ public sealed partial class HospitalSimulation
         var how = patient.SameDay ? "Moved for same-day care" : patient.ForObservation ? "Moved for observation" : patient.PreOp ? "Moved to wait for theatre" : "Admitted";
         patient.Log(Now, $"{how} to {ward.Name}, bed {patient.BedIndex + 1}, handed over by {nurse.Name}. Time in A&E {(Now - patient.ArrivedAt).TotalHours:0.0} hours.", important: true);
         Stats.RecordAdmission(patient, Now);
+        LogRoom(ward.Id, RoomLogKind.Admitted, $"{patient.FullName} admitted to bed {patient.BedIndex + 1} ({diagnosed.Name.ToLowerInvariant()})");
         PayForAttendance(patient);
 
         foreach (var doctor in _staff.Where(s => s.BaseRoomId is null))

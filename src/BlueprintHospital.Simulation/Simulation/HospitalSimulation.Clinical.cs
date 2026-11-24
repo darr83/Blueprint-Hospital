@@ -242,6 +242,7 @@ public sealed partial class HospitalSimulation
             case DiagnosticDecision.Diagnose diagnose:
                 patient.WorkingDiagnosis = new Diagnosis(diagnose.Condition.Id, diagnose.Confidence, Now, doctor.Id);
                 Stats.RecordDiagnosis(diagnose.IsCorrect);
+                RecordJournalDiagnosis(patient, diagnose.IsCorrect);
                 patient.Log(Now, $"Diagnosis by {doctor.Name}: {diagnose.Condition.Name} ({diagnose.Confidence:P0} confident). Differential considered: {differential}.", important: true);
                 TakeObservations(patient, allowDowngrade: true);
                 PlanTreatment(patient, diagnose.Condition);

@@ -293,8 +293,10 @@ public sealed partial class HospitalSimulation
             Stats.ArrestSurvivors++;
         }
 
+        LogDeparture(patient, outcome);
         patient.Outcome = outcome;
         patient.LeftAt = Now;
+        RecordJournal(patient, outcome);
         LeaveCorridor(patient);
         ReleaseSpace(patient);
         ReleaseReservedBed(patient);
