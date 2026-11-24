@@ -108,6 +108,7 @@ public partial class WorldLayer : Node2D
     public void Initialise(HospitalSimulation simulation, SimulationClock clock)
     {
         _sim = simulation;
+        DepartmentRenderer.ChosenColour = space => simulation.RoomColourOf(space);
         _clock = clock;
         YSortEnabled = true;
         _layoutSubscription = _sim.Events.Subscribe<LayoutChanged>(_ => _layoutDirty = true);
@@ -570,7 +571,7 @@ public partial class WorldLayer : Node2D
         foreach (var space in _sim.Spaces)
         {
             text.Append('|').Append(space.Id).Append(',').Append(space.TemplateId).Append(',').Append(space.Kind).Append(',').Append(space.Name)
-                .Append(',').Append(space.Rect).Append(',').Append(space.HasWalls).Append(',').Append(space.DepartmentId);
+                .Append(',').Append(space.Rect).Append(',').Append(space.HasWalls).Append(',').Append(space.DepartmentId).Append(',').Append(_sim.RoomColourOf(space));
             foreach (var door in space.Doors)
             {
                 text.Append(',').Append(door);
@@ -687,7 +688,7 @@ public partial class WorldLayer : Node2D
 
         foreach (var chair in _sim.Chairs.Where(c => IsoDraw.OnViewFloor(c.Tile.Y)))
         {
-            _chairs.Add(new ChairInfo(chair.Tile, chair.Facing, new Color(chair.Colour), _chairShifts.GetValueOrDefault(chair.Tile), "waiting_seat"));
+            _chairs.Add(new ChairInfo(chair.Tile, chair.Facing, new Color(chair.Colour), _chairShifts.GetValueOrDefault(chair.Tile), chair.ItemId));
         }
     }
 

@@ -42,8 +42,9 @@ public partial class BuildBar : Control
     private Button? _openButton;
 
     /// <summary>Colour swatches and turning for waiting chairs, shown while placing them.</summary>
-    private HBoxContainer? _chairRow;
+    private VBoxContainer? _chairRow;
     private readonly List<(string Hex, Button Swatch)> _swatches = new();
+    private readonly List<(string Style, Button Button)> _styleButtons = new();
     private Control? _hoverAnchor;
     private string? _selectedItem;
     private string? _flash;
@@ -314,6 +315,7 @@ public partial class BuildBar : Control
         _openButton = null;
         _chairRow = null;
         _swatches.Clear();
+        _styleButtons.Clear();
         _hover.Visible = false;
         _hoverAnchor = null;
         if (OpenIcon is null)
@@ -431,12 +433,34 @@ public partial class BuildBar : Control
         _popup.Size = Vector2.Zero;
     }
 
-    /// <summary>The row under the tiles while placing chairs: upholstery colour, and which way they face.</summary>
-    private HBoxContainer ChairOptions()
+    /// <summary>The rows under the tiles while placing chairs: chair style, upholstery colour, and which way they face.</summary>
+    private VBoxContainer ChairOptions()
     {
-        var row = new HBoxContainer { Visible = false };
+        var rows = new VBoxContainer { Visible = false };
+        rows.AddThemeConstantOverride("separation", 6);
+        var styles = new HBoxContainer();
+        styles.AddThemeConstantOverride("separation", 6);
+        var styleLabel = new Label { Text = "Chair style", SizeFlagsVertical = SizeFlags.ShrinkCenter, CustomMinimumSize = new Vector2(84, 0) };
+        styleLabel.AddThemeFontSizeOverride("font_size", 13);
+        styleLabel.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        styles.AddChild(styleLabel);
+        foreach (var (name, style) in ChairStyles.All)
+        {
+            var button = new Button { Text = name, ToggleMode = true, FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(86, 30), TooltipText = $"Place {name.ToLowerInvariant()} chairs" };
+            button.Pressed += () =>
+            {
+                _tool.ChairStyle = style;
+                RefreshStatus();
+            };
+            _styleButtons.Add((style, button));
+            styles.AddChild(button);
+        }
+
+        rows.AddChild(styles);
+        var row = new HBoxContainer();
+        rows.AddChild(row);
         row.AddThemeConstantOverride("separation", 6);
-        var label = new Label { Text = "Chair colour", SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var label = new Label { Text = "Chair colour", SizeFlagsVertical = SizeFlags.ShrinkCenter, CustomMinimumSize = new Vector2(84, 0) };
         label.AddThemeFontSizeOverride("font_size", 13);
         label.AddThemeColorOverride("font_color", UiStyle.TextMuted);
         row.AddChild(label);
@@ -466,7 +490,7 @@ public partial class BuildBar : Control
         var auto = new Button { Text = "Back to wall", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 30), TooltipText = "Each chair faces away from the nearest wall, or lines up with the chair beside it" };
         auto.Pressed += _tool.AutoFacing;
         row.AddChild(auto);
-        return row;
+        return rows;
     }
 
     private Button Tile(BuildMenuIcon icon, string item)
@@ -724,6 +748,11 @@ public partial class BuildBar : Control
             foreach (var (hex, swatch) in _swatches)
             {
                 swatch.SetPressedNoSignal(string.Equals(hex, _tool.ChairColour, StringComparison.OrdinalIgnoreCase));
+            }
+
+            foreach (var (style, button) in _styleButtons)
+            {
+                button.SetPressedNoSignal(style == _tool.ChairStyle);
             }
         }
 

@@ -641,6 +641,16 @@ public static class FurnitureKit
                 p.Round(-0.33, -0.3, 0.66, 0.7, 0.1, Pen.Light(colour, 0.12f));
                 p.Round(-0.5, -0.5, 1, 0.24, 0.1, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
                 break;
+            case "beam_seat":
+                p.Rect(-0.5, -0.04, 1.0, 0.1, C("#5E6770"));
+                p.Solid(-0.44, -0.26, 0.88, 0.62, 0.06, colour, 0.03);
+                for (var i = 0; i < 3; i++)
+                {
+                    p.Line(-0.3 + (i * 0.3), -0.18, -0.3 + (i * 0.3), 0.28, Pen.Light(colour, 0.2f), 0.03);
+                }
+
+                p.Round(-0.44, -0.42, 0.88, 0.16, 0.05, Pen.Dark(colour, 0.15f), Pen.Outline(colour), 0.03);
+                break;
             case "waiting_seat":
                 p.Shadow(c => p.Round(-0.44, -0.4, 0.88, 0.8, 0.1, c), 0.05, 0.08);
                 p.Rect(-0.5, -0.02, 1.0, 0.08, C("#8E99A5"));

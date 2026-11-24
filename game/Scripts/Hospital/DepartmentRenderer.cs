@@ -322,7 +322,15 @@ public partial class DepartmentRenderer : Node2D
     }
 
     /// <summary>The colour of the band outside a clinical room's door, or null for rooms without one.</summary>
+    /// <summary>The colour scheme the player picked for a room's front, if any (set by the world layer).</summary>
+    public static Func<CareSpace, string?>? ChosenColour { get; set; }
+
+    /// <summary>A room's wayfinding colour: the scheme the player picked, else its department's colour (null for plain rooms).</summary>
     public static Color? WayfindingColour(CareSpace space) =>
+        ChosenColour?.Invoke(space) is { } chosen ? new Color(chosen) : DepartmentColour(space);
+
+    /// <summary>The wayfinding colour a room has from its kind and department, before any colour scheme is picked.</summary>
+    public static Color? DepartmentColour(CareSpace space) =>
         space.Kind switch
         {
             CareSpaceKind.Resus => new Color("#E53935"),

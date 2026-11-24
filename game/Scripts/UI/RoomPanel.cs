@@ -22,6 +22,8 @@ public partial class RoomPanel : PanelContainer
     private readonly Button _move = new() { Text = "Move or resize", TooltipText = "Drag out the room again where you want it, at the size you want", FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly Button _demolish = new() { Text = "Demolish", ThemeTypeVariation = UiStyle.Secondary, FocusMode = FocusModeEnum.None, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38) };
     private readonly HBoxContainer _doorRow = new();
+    private readonly VBoxContainer _scheme = new();
+    private readonly List<(string? Hex, Button Button)> _schemeButtons = new();
     private readonly VBoxContainer _visiting = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private readonly Label _visitFrom = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(58, 0) };
     private readonly Label _visitTo = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(70, 0) };
@@ -102,6 +104,8 @@ public partial class RoomPanel : PanelContainer
         _doorRow.AddChild(place);
 
         column.AddChild(_doorRow);
+        BuildScheme();
+        column.AddChild(_scheme);
 
         var buttons = new HBoxContainer();
         buttons.AddThemeConstantOverride("separation", 6);
@@ -172,6 +176,59 @@ public partial class RoomPanel : PanelContainer
         _move.Visible = room.Kind != CareSpaceKind.Corridor;
         RefreshDoors(room);
         RefreshVisiting(room);
+        RefreshScheme(room);
+    }
+
+    /// <summary>Colour scheme: the department's colour, or one of the scheme colours, for the panels by the door, the name sign and the stripes.</summary>
+    private void BuildScheme()
+    {
+        _scheme.AddThemeConstantOverride("separation", 4);
+        var heading = new Label { Text = "Colour scheme" };
+        heading.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _scheme.AddChild(heading);
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 4);
+        var dept = new Button { Text = "Dept", ToggleMode = true, FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(52, 30), TooltipText = "Use the department's colour (free)" };
+        dept.Pressed += () => SetScheme(null);
+        _schemeButtons.Add((null, dept));
+        row.AddChild(dept);
+        foreach (var colour in DecorCatalogue.SchemeColours)
+        {
+            var swatch = new Button { ToggleMode = true, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(25, 30), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = $"{colour.Name} (free)" };
+            foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+            {
+                var picked = state is "pressed" or "hover_pressed";
+                var box = UiStyle.Box(new Color(colour.Hex), 6, picked ? UiStyle.TextDark : state == "hover" ? Colors.White : new Color(colour.Hex).Darkened(0.2f));
+                box.BorderWidthBottom = box.BorderWidthTop = box.BorderWidthLeft = box.BorderWidthRight = picked ? 3 : 1;
+                swatch.AddThemeStyleboxOverride(state, box);
+            }
+
+            var hex = colour.Hex;
+            swatch.Pressed += () => SetScheme(hex);
+            _schemeButtons.Add((hex, swatch));
+            row.AddChild(swatch);
+        }
+
+        _scheme.AddChild(row);
+    }
+
+    private void SetScheme(string? hex)
+    {
+        if (_roomId is not null)
+        {
+            _sim.SetRoomColour(_roomId, hex);
+            Refresh();
+        }
+    }
+
+    private void RefreshScheme(CareSpace room)
+    {
+        _scheme.Visible = RoomSigns.Named(room);
+        var chosen = _sim.RoomColourOf(room);
+        foreach (var (hex, button) in _schemeButtons)
+        {
+            button.SetPressedNoSignal(string.Equals(hex, chosen, StringComparison.OrdinalIgnoreCase));
+        }
     }
 
     /// <summary>Visiting hours for a ward: from, to, and how many visitors may be at a bed at once.</summary>

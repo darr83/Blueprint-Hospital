@@ -72,6 +72,9 @@ public partial class BuildTool : Node2D
     /// <summary>Colour for new chairs.</summary>
     public string ChairColour { get; set; } = ChairColours.Default;
 
+    /// <summary>Which chair is being placed (see <see cref="ChairStyles"/>).</summary>
+    public string ChairStyle { get; set; } = ChairStyles.Default;
+
     /// <summary>The way the player has turned chairs with Z; null lets each chair face away from the nearest wall.</summary>
     public WallSide? ChairFacing { get; private set; }
 
@@ -495,7 +498,7 @@ public partial class BuildTool : Node2D
                 var cost = 0;
                 foreach (var tile in row)
                 {
-                    var one = _sim.PlaceChair(tile, facing, ChairColour);
+                    var one = _sim.PlaceChair(tile, facing, ChairColour, ChairStyle);
                     if (one.CanBuild)
                     {
                         placed++;
@@ -596,7 +599,7 @@ public partial class BuildTool : Node2D
 
         // Moving a door only changes when the cursor reaches another wall position.
         var doorKey = Mode == BuildMode.RoomDoor && MovingId is { } d && _sim.FindSpace(d) is { } dr ? _sim.DoorPlanAt(dr, _hover).ToString() : string.Empty;
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{DeskFacing}|{DoorChoice}|{_doorPinned}|{doorKey}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{ChairStyle}|{DeskFacing}|{DoorChoice}|{_doorPinned}|{doorKey}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -641,7 +644,7 @@ public partial class BuildTool : Node2D
     {
         var row = ChairRow();
         var facing = RowFacing(row);
-        var checks = row.Select(t => _sim.CheckChair(t, facing, ChairColour)).ToList();
+        var checks = row.Select(t => _sim.CheckChair(t, facing, ChairColour, ChairStyle)).ToList();
         var good = checks.Where(c => c.CanBuild).ToList();
         if (good.Count == 0)
         {
@@ -665,6 +668,7 @@ public partial class BuildTool : Node2D
 
     public override void _Draw()
     {
+        Ghosts = Array.Empty<Ghost>();
         if (!Active || Check is null)
         {
             return;
@@ -775,25 +779,29 @@ public partial class BuildTool : Node2D
     /// <summary>Ghost chairs along the row being placed, outlined green or red, with the cost.</summary>
     private void DrawChairPreview()
     {
+        var ghosts = new List<Ghost>();
         var row = ChairRow();
         var facing = RowFacing(row);
         var colour = new Color(ChairColour);
         foreach (var tile in row.OrderBy(t => IsoDraw.ToScreen(t.X + 0.5, t.Y + 0.5).Y))
         {
-            var ok = _sim.CheckChair(tile, facing, ChairColour).CanBuild;
+            var ok = _sim.CheckChair(tile, facing, ChairColour, ChairStyle).CanBuild;
             var quad = new[] { P(tile.X, tile.Y), P(tile.X + 1, tile.Y), P(tile.X + 1, tile.Y + 1), P(tile.X, tile.Y + 1) };
-            DrawColoredPolygon(quad, new Color(ok ? Good : Bad, 0.3f));
+            DrawColoredPolygon(quad, new Color(ok ? Good : Bad, ok && ThreeD ? 0.12f : 0.3f));
             DrawPolyline(quad.Append(quad[0]).ToArray(), ok ? Good : Bad, 2f, true);
             if (ok && ThreeD)
             {
-                ChairArt.Whole(this, tile, facing, new Color(colour, 0.85f), _sim.ChairShift(tile));
+                // The 3D view draws these chairs as see-through copies of the real ones (see World3D.Ghost3D).
+                var (cx, cy) = ChairArt.Centre(tile, facing, _sim.ChairShift(tile));
+                var (fx, fy) = ChairArt.Direction(facing);
+                ghosts.Add(new Ghost(ChairStyle, cx, cy, (int)fx, (int)fy, colour, Chair: true));
             }
             else if (ok)
             {
                 var pen = TopDown.Pen.OnMap(this);
                 pen.Alpha = 0.85f;
                 var (cx, cy) = ChairArt.Centre(tile, facing, _sim.ChairShift(tile));
-                TopDown.FurnitureKit.Chair(pen, "waiting_seat", cx, cy, ChairArt.Direction(facing), colour);
+                TopDown.FurnitureKit.Chair(pen, ChairStyle, cx, cy, ChairArt.Direction(facing), colour);
                 pen.Done();
             }
 
@@ -805,7 +813,14 @@ public partial class BuildTool : Node2D
 
         var last = row.MaxBy(t => IsoDraw.ToScreen(t.X + 1, t.Y).X);
         CostTag(P(last.X + 1, last.Y));
+        Ghosts = ghosts;
     }
+
+    /// <summary>A see-through copy of something about to be placed, for the 3D view to draw: a chair (by style) or a decoration.</summary>
+    public sealed record Ghost(string Kind, double X, double Y, int Dx, int Dy, Color Colour, bool Chair);
+
+    /// <summary>What the 3D view should show see-through where the player is about to place it (empty when nothing is).</summary>
+    public IReadOnlyList<Ghost> Ghosts { get; private set; } = Array.Empty<Ghost>();
 
     /// <summary>Every trolley's spot ringed; the tile under the cursor green or red, with a ghost trolley when placing.</summary>
     private void DrawTrolleyPreview()

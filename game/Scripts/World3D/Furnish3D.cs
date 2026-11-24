@@ -679,6 +679,19 @@ public static partial class Furnish3D
         var frame = new Color("#5E6770");
         const float half = 0.42f;
         const float depth = 0.36f;
+        if (id == "beam_seat")
+        {
+            // Linked airport-style seating: a steel beam with perforated steel seats, a leg under each.
+            var steel = new Color("#B8C2CA");
+            Blk(b, 0, 0.02f, 0.5f, 0.07f, seat - H(5), H(1.6f), frame);
+            Bar(b, new Vector3(0, 0, 0.02f), new Vector3(0, seat - H(4), 0.02f), 0.03f, frame);
+            Blk(b, 0, 0, 0.3f, 0.4f, 0, H(0.8f), frame);
+            Blk(b, 0, 0.04f, half * 2 - 0.05f, depth * 1.9f, seat - H(2), H(1.6f), colour);
+            b.Box(new Vector3(0, seat + H(9), -depth + 0.04f), new Vector3(half * 2 - 0.05f, H(15), 0.05f), new Basis(Vector3.Right, -0.14f), colour.Darkened(0.06f));
+            Blk(b, -half + 0.03f, 0.02f, 0.05f, depth * 1.6f, seat + H(6), H(1.3f), steel.Darkened(0.3f));
+            return;
+        }
+
         if (id == "staff_chair")
         {
             Spokes(b, 0.3f, Ink);

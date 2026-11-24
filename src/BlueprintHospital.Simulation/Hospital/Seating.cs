@@ -4,9 +4,38 @@ namespace BlueprintHospital.Simulation.Hospital;
 
 /// <summary>
 /// A waiting chair the player has placed on a corridor or in a waiting room. <see cref="Facing"/> is the way
-/// someone sitting on it looks; <see cref="Colour"/> is its upholstery, as a hex colour.
+/// someone sitting on it looks; <see cref="Colour"/> is its upholstery, as a hex colour; <see cref="Style"/>
+/// is which chair it is (see <see cref="ChairStyles"/>), null in older saves for the classic chair.
 /// </summary>
-public sealed record PlacedChair(GridCoord Tile, WallSide Facing, string Colour);
+public sealed record PlacedChair(GridCoord Tile, WallSide Facing, string Colour, string? Style = null)
+{
+    /// <summary>The furniture drawn for this chair.</summary>
+    public string ItemId => ChairStyles.Normalise(Style);
+}
+
+/// <summary>The waiting chair styles the player can choose, each drawn as its own piece of furniture.</summary>
+public static class ChairStyles
+{
+    public const string Classic = "waiting_seat";
+
+    public static readonly IReadOnlyList<(string Name, string ItemId)> All = new[]
+    {
+        ("Classic", Classic),
+        ("With arms", "visitor_chair"),
+        ("Padded", "lounge_chair"),
+        ("Linked row", "beam_seat"),
+    };
+
+    public static string Default => Classic;
+
+    public static string NameOf(string? style) => All.FirstOrDefault(s => s.ItemId == Normalise(style)).Name ?? "Classic";
+
+    /// <summary>What a chair keeps as its style: null for the classic chair (as in older saves), else the style.</summary>
+    public static string? Stored(string? style) => Normalise(style) is var known && known == Classic ? null : known;
+
+    /// <summary>A known style (saves can hold anything), falling back to the classic chair.</summary>
+    public static string Normalise(string? style) => All.Any(s => s.ItemId == style) ? style! : Classic;
+}
 
 /// <summary>The upholstery colours the player can choose for waiting chairs.</summary>
 public static class ChairColours

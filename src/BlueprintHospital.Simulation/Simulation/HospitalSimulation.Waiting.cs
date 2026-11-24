@@ -444,13 +444,14 @@ public sealed partial class HospitalSimulation
         _ => new GridRect(e.Tile.X - 1, e.Tile.Y, 2, e.WidthTiles),
     };
 
-    /// <summary>Whether a chair can be placed here; on an existing chair it turns and recolours it for free.</summary>
-    public BuildCheck CheckChair(GridCoord tile, WallSide facing, string colour)
+    /// <summary>Whether a chair can be placed here; on an existing chair it turns, recolours or restyles it for free.</summary>
+    public BuildCheck CheckChair(GridCoord tile, WallSide facing, string colour, string? style = null)
     {
         colour = ChairColours.Normalise(colour);
+        style = ChairStyles.Normalise(style);
         if (ChairAt(tile) is { } existing)
         {
-            return existing.Facing == facing && existing.Colour == colour
+            return existing.Facing == facing && existing.Colour == colour && existing.ItemId == style
                 ? new BuildCheck(0, new[] { "There is already a chair there." })
                 : new BuildCheck(0, Array.Empty<string>());
         }
@@ -469,17 +470,17 @@ public sealed partial class HospitalSimulation
         return new BuildCheck(ChairCost, problems);
     }
 
-    /// <summary>Places a waiting chair (or turns and recolours the one already there).</summary>
-    public BuildCheck PlaceChair(GridCoord tile, WallSide facing, string colour)
+    /// <summary>Places a waiting chair (or turns, recolours or restyles the one already there).</summary>
+    public BuildCheck PlaceChair(GridCoord tile, WallSide facing, string colour, string? style = null)
     {
-        var check = CheckChair(tile, facing, colour);
+        var check = CheckChair(tile, facing, colour, style);
         if (!check.CanBuild)
         {
             return check;
         }
 
         _chairs.RemoveAll(c => c.Tile == tile);
-        _chairs.Add(new PlacedChair(tile, facing, ChairColours.Normalise(colour)));
+        _chairs.Add(new PlacedChair(tile, facing, ChairColours.Normalise(colour), ChairStyles.Stored(style)));
         Book(MoneyCategory.Construction, -check.Cost);
         Events.Publish(new LayoutChanged());
         return check;
