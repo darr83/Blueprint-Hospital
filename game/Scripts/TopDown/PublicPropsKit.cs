@@ -167,7 +167,7 @@ public static class PublicPropsKit
             "Noticeboard" => (C("#C9A27A"), C("#7A5A3C")),
             _ => (C("#F3E5D8"), C("#8D6E63")),
         };
-        const double back = -0.32;
+        const double back = -0.14;
         if (kind == "Clock")
         {
             p.Circle(0, back + 0.18, 0.2, face, edge, 0.03);
