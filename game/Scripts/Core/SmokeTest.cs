@@ -1237,12 +1237,22 @@ public partial class SmokeTest : Node
         hospital.BuildTool.PreviewDrag(new Simulation.World.GridCoord(b.X - 10, b.Y), new Simulation.World.GridCoord(b.X - 1, b.Y + 8));
         Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should be buildable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
 
-        // Z moves the door to the next wall with a corridor beside it, and the preview stays buildable.
+        // Z steps the door round every wall; on a wall with no corridor the room can still be built, but is
+        // flagged "Not in use". Stepping on round brings it back to a corridor wall.
         var walls = sim.DoorSides(template.Id, new Simulation.World.GridRect(b.X - 10, b.Y, 10, 9));
         Check(walls.Count > 0 && hospital.BuildTool.PlannedDoorSide is { } first && walls.Contains(first), "The cubicle's door should be on a corridor wall.");
-        hospital.BuildTool.Turn();
-        Check(hospital.BuildTool.PlannedDoorSide is { } turned && walls.Contains(turned), "Z moved the door off the corridor.");
-        Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should still be buildable after Z: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
+        var sawNotInUse = false;
+        for (var i = 0; i < 4; i++)
+        {
+            hospital.BuildTool.Turn();
+            Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should still be buildable after Z: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
+            var onCorridor = hospital.BuildTool.PlannedDoorSide is { } turned && walls.Contains(turned);
+            Check(onCorridor == (hospital.BuildTool.Check!.Notes.Count == 0), "Only a door off the corridor should warn 'Not in use'.");
+            sawNotInUse |= !onCorridor;
+        }
+
+        Check(sawNotInUse, "Z should also reach walls with no corridor.");
+        Check(hospital.BuildTool.PlannedDoorSide is { } back && walls.Contains(back), "Four presses of Z should bring the door back round to a corridor wall.");
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
     }

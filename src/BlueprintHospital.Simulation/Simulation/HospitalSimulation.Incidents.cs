@@ -230,7 +230,7 @@ public sealed partial class HospitalSimulation
         return kinds.Count == 0 ? 0 : today / Math.Max(usual, 0.0001) / (DaysBetweenIncidents * 24);
     }
 
-    private bool HasResus => _spaces.Values.Any(s => s.Kind == CareSpaceKind.Resus);
+    private bool HasResus => UsableSpaces.Any(s => s.Kind == CareSpaceKind.Resus);
 
     /// <summary>Big incidents only on Realistic, and in a career from level 7.</summary>
     private bool BigIncidentsAllowed => MajorIncidents == MajorIncidentFrequency.Realistic && (!IsCareer || Level >= 7);
@@ -605,7 +605,7 @@ public sealed partial class HospitalSimulation
     /// <summary>"Trauma team to Resus": a senior doctor, an anaesthetist, two nurses and a radiographer wait in Resus.</summary>
     private string? CallTraumaTeam(MajorIncident incident)
     {
-        var resus = _spaces.Values.Where(s => s.Kind == CareSpaceKind.Resus).OrderBy(s => s.OccupantId is null ? 0 : 1).ThenBy(s => s.Id, StringComparer.Ordinal).ToList();
+        var resus = UsableSpaces.Where(s => s.Kind == CareSpaceKind.Resus).OrderBy(s => s.OccupantId is null ? 0 : 1).ThenBy(s => s.Id, StringComparer.Ordinal).ToList();
         if (resus.Count == 0)
         {
             return null;

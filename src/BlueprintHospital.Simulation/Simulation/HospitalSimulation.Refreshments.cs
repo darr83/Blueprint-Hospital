@@ -79,7 +79,7 @@ public sealed partial class HospitalSimulation
     private GameRandom RefreshmentRandom => _refreshmentRandom ??= new GameRandom(_options.Seed + 104_729);
 
     /// <summary>Cafeterias and vending points.</summary>
-    public IEnumerable<CareSpace> RefreshmentRooms => _spaces.Values.Where(s => s.IsRefreshments);
+    public IEnumerable<CareSpace> RefreshmentRooms => UsableSpaces.Where(s => s.IsRefreshments);
 
     /// <summary>Patients (and outpatients) out getting something to eat or drink right now.</summary>
     public IReadOnlyCollection<RefreshmentTrip> RefreshmentTrips => _trips.Values;

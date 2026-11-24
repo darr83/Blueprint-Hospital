@@ -244,6 +244,12 @@ public partial class HospitalScene : Node2D
             SetMode(GameMode.Build);
             _build.StartRoom(_session.Database.RoomTemplates[room.TemplateId], room.Id);
         };
+        _hud.RoomInfo.DoorMoveRequested += room =>
+        {
+            _hud.RoomInfo.Close();
+            SetMode(GameMode.Build);
+            _build.StartRoomDoor(room.Id);
+        };
         _hud.ModeRequested += SetMode;
 
         // Be A Doctor: its own screen, and the controller that turns keys and mouse into walking and looking.

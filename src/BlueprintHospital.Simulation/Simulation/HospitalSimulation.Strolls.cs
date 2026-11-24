@@ -431,7 +431,7 @@ public sealed partial class HospitalSimulation
         else
         {
             // A&E: look in on someone in a cubicle, or walk the floor.
-            foreach (var space in _spaces.Values.Where(s => s.IsTreatmentSpace && Site.FloorOf(s.StaffSpot) == floor && Chebyshev(s.StaffSpot, member.Tile) <= 30))
+            foreach (var space in UsableSpaces.Where(s => s.IsTreatmentSpace && Site.FloorOf(s.StaffSpot) == floor && Chebyshev(s.StaffSpot, member.Tile) <= 30))
             {
                 if (space.IsMultiBed)
                 {

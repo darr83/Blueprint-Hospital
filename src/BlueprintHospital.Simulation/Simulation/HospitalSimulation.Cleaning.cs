@@ -281,7 +281,7 @@ public sealed partial class HospitalSimulation
             return;
         }
 
-        var places = _spaces.Values
+        var places = UsableSpaces
             .Where(s => s.Kind is not (CareSpaceKind.CleaningRoom or CareSpaceKind.Lift or CareSpaceKind.Stairs))
             .OrderBy(s => s.Id, StringComparer.Ordinal)
             .ToList();

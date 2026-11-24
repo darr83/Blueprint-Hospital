@@ -16,7 +16,10 @@ public partial class Festive3D : Node3D
 {
     private HospitalSimulation _sim = null!;
     private WorldLayer _world = null!;
-    private (string Kind, int Version, int Floor, bool Cutaway, string Outbreaks)? _built;
+    private (string Kind, int Version, int Floor, bool Cutaway, string Outbreaks, string NotInUse)? _built;
+
+    /// <summary>How many red "Not in use" signs were built last time (for checks).</summary>
+    public int NotInUseSignCount { get; private set; }
 
     /// <summary>How many norovirus signs were built last time (for checks).</summary>
     public int OutbreakSignCount { get; private set; }
@@ -37,7 +40,7 @@ public partial class Festive3D : Node3D
     /// <summary>Rebuilds if anything that changes the decorations has changed.</summary>
     public void Sync(bool cutaway)
     {
-        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, cutaway, OutbreakSigns.Key(_sim));
+        var key = (SeasonalDecor.Current(_sim), _world.StaticVersion, IsoDraw.ViewFloor, cutaway, OutbreakSigns.Key(_sim), NotInUseSigns.Key(_sim));
         if (key == _built)
         {
             return;
@@ -86,6 +89,13 @@ public partial class Festive3D : Node3D
         {
             OutbreakSign(b, sign);
             OutbreakSignCount++;
+        }
+
+        NotInUseSignCount = 0;
+        foreach (var sign in NotInUseSigns.Plan(_sim).Where(s => IsoDraw.OnViewFloor(s.Y)))
+        {
+            NotInUseSign(b, sign);
+            NotInUseSignCount++;
         }
 
         b.AddTo(this);
@@ -150,6 +160,76 @@ public partial class Festive3D : Node3D
         };
         AddChild(heading);
         AddChild(body);
+    }
+
+    /// <summary>
+    /// A red A-frame floor sign in the middle of a room that isn't joined up to a corridor yet, with "NOT IN USE"
+    /// on both leaves, and the same words floating above it so they read from any angle and at any zoom.
+    /// </summary>
+    private void NotInUseSign(MeshBatch b, NotInUseSign sign)
+    {
+        var at = Kit3D.At(sign.X, sign.Y);
+        var outward = new Vector3((float)sign.Facing.X, 0, (float)sign.Facing.Y);
+        var yaw = Mathf.Atan2(outward.X, outward.Z);
+        const float Lean = 0.2f;
+        var height = Kit3D.M(1.0);
+        var width = Tiles(0.75);
+        var depth = Tiles(0.02);
+        var spread = Tiles(1.0 * Math.Sin(Lean) / 2);
+        var red = NotInUseSigns.Red;
+        foreach (var face in new[] { 1f, -1f })
+        {
+            // The words face out from each leaf: the back leaf's words are the front leaf's turned round.
+            var basis = Basis.FromEuler(new Vector3(-Lean, yaw + (face > 0 ? 0 : Mathf.Pi), 0));
+            var leafBasis = Basis.FromEuler(new Vector3(-face * Lean, yaw, 0));
+            var centre = at + (outward * (face * spread * 0.5f)) + (Vector3.Up * (height / 2));
+            b.Box(centre, new Vector3(width, height, depth), leafBasis, face > 0 ? red : red.Darkened(0.12f));
+
+            // A white band with the words, on the outside of each leaf.
+            var normal = (leafBasis * Vector3.Back) * face;
+            var middle = centre + (Vector3.Up * Kit3D.M(0.12)) + (normal * (depth / 2 + 0.004f));
+            b.Box(middle, new Vector3(width * 0.88f, Kit3D.M(0.2), 0.004f), leafBasis, Colors.White);
+            AddChild(new Label3D
+            {
+                Text = NotInUseSigns.Text,
+                FontSize = 30,
+                PixelSize = 0.0042f,
+                Modulate = red,
+                OutlineSize = 0,
+                Position = middle + (normal * 0.006f),
+                Basis = basis,
+                DoubleSided = false,
+            });
+            AddChild(new Label3D
+            {
+                Text = NotInUseSigns.Body,
+                FontSize = 20,
+                PixelSize = 0.0042f,
+                Modulate = Colors.White,
+                OutlineSize = 0,
+                Position = centre - (Vector3.Up * Kit3D.M(0.2)) + (normal * (depth / 2 + 0.008f)),
+                Basis = basis,
+                DoubleSided = false,
+            });
+        }
+
+        b.Box(at + (Vector3.Up * height), new Vector3(width, Kit3D.M(0.03), Tiles(0.04)), Basis.FromEuler(new Vector3(0, yaw, 0)), red.Darkened(0.35f));
+
+        // The words again, floating over the room and always turned to the camera.
+        AddChild(new Label3D
+        {
+            Text = NotInUseSigns.Text,
+            FontSize = 64,
+            PixelSize = 0.013f,
+            Modulate = Colors.White,
+            OutlineModulate = red,
+            OutlineSize = 30,
+            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+            NoDepthTest = true,
+            RenderPriority = 10,
+            OutlineRenderPriority = 9,
+            Position = at + (Vector3.Up * (height + Kit3D.M(0.9))),
+        });
     }
 
     private static void Run(MeshBatch b, DecorRun run, float height)

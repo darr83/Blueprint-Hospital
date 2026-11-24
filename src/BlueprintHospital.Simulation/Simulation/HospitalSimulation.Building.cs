@@ -25,6 +25,9 @@ public sealed record RoomPlan(string TemplateId, GridRect Rect, WallSide DoorSid
 public sealed record BuildCheck(int Cost, IReadOnlyList<string> Problems, CareSpace? Preview = null)
 {
     public bool CanBuild => Problems.Count == 0;
+
+    /// <summary>Things worth knowing that don't stop it being built, such as "Not in use until its door opens onto a corridor."</summary>
+    public IReadOnlyList<string> Notes { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>A room as stored in a save file.</summary>
@@ -116,23 +119,143 @@ public sealed partial class HospitalSimulation
     /// with <paramref name="doorSide"/>; if that wall has no corridor beside it the door goes where it would anyway.
     /// The furniture is laid out from the door, so choosing the door wall also turns the room.
     /// </summary>
-    public RoomPlan AutoPlan(string templateId, GridRect rect, string? replacingId = null, WallSide? doorSide = null)
+    /// <remarks>
+    /// With <paramref name="strict"/> (the player turned the door with Z) the door stays on the chosen wall even with
+    /// no corridor beside it, in the middle of the wall: the room can still be built, but stays "Not in use" until a
+    /// corridor reaches its door. With no corridor beside any wall the same happens on the chosen (or south) wall.
+    /// </remarks>
+    public RoomPlan AutoPlan(string templateId, GridRect rect, string? replacingId = null, WallSide? doorSide = null, bool strict = false)
     {
-        if (Database.RoomTemplates[templateId].IsCorridor)
+        var template = Database.RoomTemplates[templateId];
+        if (template.IsCorridor)
         {
             return new RoomPlan(templateId, rect, WallSide.South);
         }
 
         var runs = DoorRuns(templateId, rect, replacingId);
-        if (runs.Count == 0)
+        if (runs.Count == 0 && template.IsShaft)
         {
             // Nowhere for a door: the check will say so.
             return new RoomPlan(templateId, rect, doorSide ?? WallSide.South, 1, 0);
         }
 
+        if (doorSide is { } pinned && (runs.Count == 0 || (strict && !runs.ContainsKey(pinned))))
+        {
+            return new RoomPlan(templateId, rect, pinned);
+        }
+
+        if (runs.Count == 0)
+        {
+            return new RoomPlan(templateId, rect, LongestWall(rect));
+        }
+
         var b = doorSide is { } wanted && runs.ContainsKey(wanted) ? runs[wanted] : runs.Values.OrderByDescending(r => r.Run).ThenBy(r => Array.IndexOf(DoorSideOrder, r.Side)).First();
         return new RoomPlan(templateId, rect, b.Side, b.Start, b.Run);
     }
+
+    /// <summary>
+    /// A wall for a door that doesn't open onto a corridor yet: the longest one that faces the inside of the building
+    /// (so a corridor can be laid up to it later), and the room is laid out along its length.
+    /// </summary>
+    private WallSide LongestWall(GridRect rect)
+    {
+        bool FacesIndoors(WallSide side)
+        {
+            var middle = side switch
+            {
+                WallSide.North => new GridCoord(rect.X + (rect.Width / 2), rect.Y - 1),
+                WallSide.South => new GridCoord(rect.X + (rect.Width / 2), rect.Bottom),
+                WallSide.West => new GridCoord(rect.X - 1, rect.Y + (rect.Length / 2)),
+                _ => new GridCoord(rect.Right, rect.Y + (rect.Length / 2)),
+            };
+            return Site.IsIndoors(middle);
+        }
+
+        return DoorSideOrder
+            .OrderBy(side => FacesIndoors(side) ? 0 : 1)
+            .ThenByDescending(side => side is WallSide.North or WallSide.South ? rect.Width : rect.Length)
+            .ThenBy(side => Array.IndexOf(DoorSideOrder, side))
+            .First();
+    }
+
+    /// <summary>
+    /// A plan that keeps <paramref name="room"/> where it is but puts its door in the wall nearest
+    /// <paramref name="tile"/>, centred on that tile (as far as the corners allow). The furniture is laid out again
+    /// from the new door. The door may go on a wall with no corridor beside it; the room is then not in use.
+    /// </summary>
+    public RoomPlan DoorPlanAt(CareSpace room, GridCoord tile)
+    {
+        var r = room.Rect;
+        var inside = new GridCoord(Math.Clamp(tile.X, r.X, r.Right - 1), Math.Clamp(tile.Y, r.Y, r.Bottom - 1));
+        WallSide side;
+        if (tile.Y < r.Y)
+        {
+            side = WallSide.North;
+        }
+        else if (tile.Y >= r.Bottom)
+        {
+            side = WallSide.South;
+        }
+        else if (tile.X < r.X)
+        {
+            side = WallSide.West;
+        }
+        else if (tile.X >= r.Right)
+        {
+            side = WallSide.East;
+        }
+        else
+        {
+            // Inside the room: the nearest wall.
+            var distances = new[]
+            {
+                (Side: WallSide.North, D: inside.Y - r.Y),
+                (Side: WallSide.South, D: r.Bottom - 1 - inside.Y),
+                (Side: WallSide.West, D: inside.X - r.X),
+                (Side: WallSide.East, D: r.Right - 1 - inside.X),
+            };
+            side = distances.OrderBy(d => d.D).ThenBy(d => Array.IndexOf(DoorSideOrder, d.Side)).First().Side;
+        }
+
+        var length = side is WallSide.North or WallSide.South ? r.Width : r.Length;
+        var along = side is WallSide.North or WallSide.South ? inside.X - r.X : inside.Y - r.Y;
+        var template = Database.RoomTemplates[room.TemplateId];
+        var width = Math.Clamp(Units.MetresToTiles(template.DoorWidthM), 1, Math.Max(1, length - 2));
+        var start = Math.Clamp(along - (width / 2), 1, Math.Max(1, length - width - 1));
+        return new RoomPlan(room.TemplateId, r, side, start, width);
+    }
+
+    /// <summary>Checks moving a room's door to the wall nearest <paramref name="tile"/> (see <see cref="DoorPlanAt"/>). It costs the same as moving the room.</summary>
+    public BuildCheck CheckDoorAt(string id, GridCoord tile)
+    {
+        if (DoorMoveProblem(id) is { } problem)
+        {
+            return new BuildCheck(0, new[] { problem });
+        }
+
+        var room = FindSpace(id)!;
+        var plan = DoorPlanAt(room, tile);
+        var now = room.Doors.FirstOrDefault();
+        if (now is not null && now.Side == plan.DoorSide && now.Offset == plan.DoorStart)
+        {
+            return new BuildCheck(0, new[] { "The door is already there." });
+        }
+
+        return CheckRoom(plan, id);
+    }
+
+    /// <summary>Moves a room's door to the wall nearest <paramref name="tile"/> and lays the furniture out again around it.</summary>
+    public BuildCheck MoveDoorTo(string id, GridCoord tile)
+    {
+        var check = CheckDoorAt(id, tile);
+        return check.CanBuild ? MoveRoom(id, DoorPlanAt(FindSpace(id)!, tile)) : check;
+    }
+
+    /// <summary>Why this room's door can't be moved, or null if it can.</summary>
+    private string? DoorMoveProblem(string id) =>
+        FindSpace(id) is not { } room || room.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting || Database.RoomTemplates.GetValueOrDefault(room.TemplateId) is not { } template || template.IsShaft
+            ? "This room's door can't be moved."
+            : null;
 
     /// <summary>The order walls are tried in when choosing a door, and the order the Z key steps through them.</summary>
     public static readonly WallSide[] DoorSideOrder = { WallSide.South, WallSide.East, WallSide.North, WallSide.West };
@@ -144,10 +267,14 @@ public sealed partial class HospitalSimulation
         return DoorSideOrder.Where(runs.ContainsKey).ToList();
     }
 
-    /// <summary>The next wall round from <paramref name="current"/> that could take the door, clockwise.</summary>
-    public WallSide? NextDoorSide(string templateId, GridRect rect, WallSide current, string? replacingId = null)
+    /// <summary>
+    /// The next wall round from <paramref name="current"/> for the door, clockwise. Walls with a corridor beside them
+    /// come first; with <paramref name="anyWall"/> every wall takes a turn (a door on a wall with no corridor leaves
+    /// the room not in use until one is laid).
+    /// </summary>
+    public WallSide? NextDoorSide(string templateId, GridRect rect, WallSide current, string? replacingId = null, bool anyWall = false)
     {
-        var sides = DoorSides(templateId, rect, replacingId);
+        var sides = anyWall && !Database.RoomTemplates[templateId].IsShaft ? DoorSideOrder : DoorSides(templateId, rect, replacingId);
         if (sides.Count == 0)
         {
             return null;
@@ -216,29 +343,26 @@ public sealed partial class HospitalSimulation
     /// <summary>Checks moving an existing room's door to <paramref name="side"/>, re-laying its furniture to match. It costs the same as moving the room.</summary>
     public BuildCheck CheckDoorSide(string id, WallSide side)
     {
-        if (FindSpace(id) is not { } room || room.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting || Database.RoomTemplates.GetValueOrDefault(room.TemplateId) is not { } template || template.IsShaft)
+        if (DoorMoveProblem(id) is { } problem)
         {
-            return new BuildCheck(0, new[] { "This room's door can't be moved." });
+            return new BuildCheck(0, new[] { problem });
         }
 
+        var room = FindSpace(id)!;
         if (room.DoorSide == side)
         {
             return new BuildCheck(0, new[] { "The door is already on that wall." });
         }
 
-        if (!DoorSides(room.TemplateId, room.Rect, id).Contains(side))
-        {
-            return new BuildCheck(0, new[] { "There is no corridor on that side for a door." });
-        }
-
-        return CheckRoom(AutoPlan(room.TemplateId, room.Rect, id, side), id);
+        // A wall with no corridor beside it can still take the door; the room is then not in use until one is laid.
+        return CheckRoom(AutoPlan(room.TemplateId, room.Rect, id, side, strict: true), id);
     }
 
     /// <summary>Moves an existing room's door to <paramref name="side"/> and lays its furniture out again from there.</summary>
     public BuildCheck MoveDoor(string id, WallSide side)
     {
         var check = CheckDoorSide(id, side);
-        return check.CanBuild ? MoveRoom(id, AutoPlan(FindSpace(id)!.TemplateId, FindSpace(id)!.Rect, id, side)) : check;
+        return check.CanBuild ? MoveRoom(id, AutoPlan(FindSpace(id)!.TemplateId, FindSpace(id)!.Rect, id, side, strict: true)) : check;
     }
 
     /// <summary>Doorways where a room's wall lines up with an entrance in the building's outer wall.</summary>
@@ -328,7 +452,13 @@ public sealed partial class HospitalSimulation
         }
         else
         {
-            CheckDoors(room, replacing, problems);
+            CheckDoors(room, replacing, problems, mainDoorMustJoin: false);
+            if (room.Doors.Count > 0 && room.Kind != CareSpaceKind.Waiting
+                && DoorTiles(room, room.Doors[0]).Select(t => Step(t, room.Doors[0].Side)).Any(t => !Site.IsIndoors(t)))
+            {
+                problems.Add("The door would open through the outside wall: put it on a wall facing a corridor or the inside of the building.");
+            }
+
             if (template.Kind == CareSpaceKind.AnaestheticRoom)
             {
                 CheckAnaestheticRoom(room, replacing, problems);
@@ -356,7 +486,52 @@ public sealed partial class HospitalSimulation
             problems.Add($"Not enough money: costs £{cost:N0}, you have £{Balance:N0}.");
         }
 
-        return new BuildCheck(cost, problems, room);
+        var notes = !template.IsCorridor && !OpensOntoCirculation(room, _spaces.Values.Where(s => s != replacing))
+            ? new[] { NotInUseNote }
+            : Array.Empty<string>();
+        return new BuildCheck(cost, problems, room) { Notes = notes };
+    }
+
+    /// <summary>What the build preview says about a room whose door doesn't open onto a corridor yet.</summary>
+    public const string NotInUseNote = "Not in use until its door opens onto a corridor.";
+
+    /// <summary>
+    /// True when the room's main door opens onto a corridor or the waiting room among <paramref name="spaces"/>,
+    /// so people can come and go. Corridors, waiting rooms (fitted with their own doors), lifts and stairs always count.
+    /// </summary>
+    internal bool OpensOntoCirculation(CareSpace room, IEnumerable<CareSpace> spaces)
+    {
+        if (!room.HasWalls || room.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting || room.IsShaft || room.Doors.Count == 0)
+        {
+            return true;
+        }
+
+        var door = room.Doors[0];
+        var outside = DoorTiles(room, door).Select(t => Step(t, door.Side)).ToList();
+        var others = spaces.Where(s => s != room && s.Kind is CareSpaceKind.Corridor or CareSpaceKind.Waiting).ToList();
+        return outside.All(o => others.Any(s => s.Rect.Contains(o)));
+    }
+
+    /// <summary>Marks each room in use or not, from whether its door opens onto a corridor (see <see cref="CareSpace.InUse"/>).</summary>
+    /// <remarks>With <paramref name="announce"/>, a room that has just been joined up (or cut off) says so.</remarks>
+    private void MarkRoomsInUse(bool announce)
+    {
+        foreach (var space in _spaces.Values.OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            var inUse = OpensOntoCirculation(space, _spaces.Values);
+            if (space.InUse == inUse)
+            {
+                continue;
+            }
+
+            space.InUse = inUse;
+            if (announce)
+            {
+                Notifications.Add(Now, inUse ? NotificationLevel.Info : NotificationLevel.Warning, inUse
+                    ? $"{space.Name} is joined up to a corridor and now in use."
+                    : $"{space.Name} is not in use: its door doesn't open onto a corridor.");
+            }
+        }
     }
 
     internal static void CheckSize(RoomTemplate template, RoomPlan plan, List<string> problems)
@@ -388,10 +563,14 @@ public sealed partial class HospitalSimulation
         }
     }
 
-    /// <summary>Each door must open onto a corridor or the waiting room (a waiting room's second door may open to the street).</summary>
-    internal void CheckDoors(CareSpace room, CareSpace? replacing, List<string> problems)
+    /// <summary>
+    /// Each door must open onto a corridor or the waiting room (a waiting room's second door may open to the street).
+    /// The main door of an ordinary room may open onto nothing yet (<paramref name="mainDoorMustJoin"/> false):
+    /// the room is then built but not in use.
+    /// </summary>
+    internal void CheckDoors(CareSpace room, CareSpace? replacing, List<string> problems, bool mainDoorMustJoin = true)
     {
-        for (var i = 0; i < room.Doors.Count; i++)
+        for (var i = mainDoorMustJoin ? 0 : 1; i < room.Doors.Count; i++)
         {
             var door = room.Doors[i];
             var outside = DoorTiles(room, door).Select(t => Step(t, door.Side)).ToList();
@@ -482,9 +661,20 @@ public sealed partial class HospitalSimulation
             yield return "Would block the ambulance bay.";
         }
 
-        // A waiting room with no doors yet is still being fitted out.
+        // A waiting room with no doors yet is still being fitted out. A room whose door doesn't open onto a corridor is
+        // simply not in use, unless it is in use now and this change would cut it off.
         foreach (var space in spaces.Where(s => s.Kind != CareSpaceKind.Corridor && !(s.Kind == CareSpaceKind.Waiting && s.Doors.Count == 0)))
         {
+            if (!OpensOntoCirculation(space, spaces))
+            {
+                if (space.InUse && FindSpace(space.Id) == space)
+                {
+                    yield return $"{space.Name} would be cut off from the corridors.";
+                }
+
+                continue;
+            }
+
             var spots = new[] { space.StaffSpot, space.PatientSpot }.Concat(space.Seats).Concat(space.QueueTiles)
                 .Concat(space.Beds.SelectMany(b => new[] { b.PatientSpot, b.StaffSpot }));
             if (spots.Any(t => !reached.Contains(t)))
@@ -794,6 +984,7 @@ public sealed partial class HospitalSimulation
     /// <summary>Rebuilds pathfinding and sends anyone whose route or base changed on their way again.</summary>
     private void AfterLayoutChange()
     {
+        MarkRoomsInUse(announce: true);
         Nav = BuildNav();
         SyncRoomStaff();
         PruneChairs();

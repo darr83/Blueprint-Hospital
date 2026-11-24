@@ -27,7 +27,7 @@ public sealed partial class HospitalSimulation
                 missing.Add("a triage room");
             }
 
-            if (!_spaces.Values.Any(s => s.IsTreatmentSpace))
+            if (!UsableSpaces.Any(s => s.IsTreatmentSpace))
             {
                 missing.Add("a cubicle or resus bay");
             }

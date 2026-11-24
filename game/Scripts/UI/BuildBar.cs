@@ -742,6 +742,7 @@ public partial class BuildBar : Control
                     BuildMode.Door when _tool.RemovingDoor => "Click to take this door out",
                     BuildMode.Door => "Click to put a door here",
                     BuildMode.Room when _tool.PlannedDoorSide is { } door => $"{(_tool.MovingId is null ? "Release to build" : "Release to rebuild here")} · door on the {RoomPanel.Facing(door)} wall · Z moves it",
+                    BuildMode.RoomDoor when check.Preview is { } moved => $"Click to put the door here, on the {RoomPanel.Facing(moved.DoorSide)} wall; the room is laid out again around it",
                     _ => _tool.MovingId is null ? "Release to build" : "Release to rebuild here",
                 };
                 var price = check.Cost switch
@@ -750,7 +751,8 @@ public partial class BuildBar : Control
                     < 0 => $": refund £{-check.Cost:N0}",
                     _ => ": free",
                 };
-                _status.Text = $"[color=#2E8B57]✓ {verb}{price}[/color]";
+                var note = check.Notes.Count > 0 ? $"   [color=#C62828]⚠ {check.Notes[0]}[/color]" : string.Empty;
+                _status.Text = $"[color=#2E8B57]✓ {verb}{price}[/color]{note}";
             }
             else
             {
@@ -779,6 +781,7 @@ public partial class BuildBar : Control
                 BuildMode.Trolley => "Click a resus trolley to move it, or empty floor to buy one · Right click or Esc stops",
                 BuildMode.Door => "Click a waiting room wall: on the front path for the entrance, on a corridor for the way through · Right click or Esc stops",
                 BuildMode.Room => "Drag on the floor from corner to corner · Z moves the door to another wall · Right click or Esc stops",
+                BuildMode.RoomDoor => "Point at a wall of the room and click to move its door there · Right click or Esc stops",
                 _ => "Drag on the floor from corner to corner · Right click or Esc stops",
             }
             : "Hover over a room for details · Click it, then drag on the floor";

@@ -137,7 +137,18 @@ public partial class WallsLayer : Node2D
                 Label(p, space);
             }
         }
+
+        // A room built with no corridor to its door yet: a red sign in the middle of it.
+        NotInUseCount = 0;
+        foreach (var sign in NotInUseSigns.Plan(_sim).Where(s => IsoDraw.OnViewFloor(s.Y)))
+        {
+            p.Pill(NotInUseSigns.Text, sign.X, sign.Y, 15, NotInUseSigns.Red, Pen.Dark(NotInUseSigns.Red, 0.4f), Colors.White, 10, 6);
+            NotInUseCount++;
+        }
     }
+
+    /// <summary>How many "Not in use" signs were drawn.</summary>
+    public int NotInUseCount { get; private set; }
 
     /// <summary>
     /// Room fronts on the wall tops: the department's colour either side of each door, and glass along

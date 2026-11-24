@@ -118,10 +118,10 @@ public sealed partial class HospitalSimulation
     private GameRandom ToiletRandom => _toiletRandom ??= new GameRandom(_options.Seed + 130_363);
 
     /// <summary>Public toilets, accessible toilets and staff toilets.</summary>
-    public IEnumerable<CareSpace> ToiletRooms => _spaces.Values.Where(s => s.IsToilet);
+    public IEnumerable<CareSpace> ToiletRooms => UsableSpaces.Where(s => s.IsToilet);
 
     /// <summary>True when patients and visitors have a toilet they can use.</summary>
-    public bool HasPublicToilets => _spaces.Values.Any(s => s.Kind is CareSpaceKind.Toilets or CareSpaceKind.AccessibleToilet);
+    public bool HasPublicToilets => UsableSpaces.Any(s => s.Kind is CareSpaceKind.Toilets or CareSpaceKind.AccessibleToilet);
 
     /// <summary>Everyone on their way to, in or washing up after the toilet right now.</summary>
     public IReadOnlyCollection<ToiletTrip> ToiletTrips => _toiletTrips.Values;

@@ -376,7 +376,7 @@ public sealed partial class HospitalSimulation
 
             case LevelGoalType.Rooms:
             {
-                var n = _spaces.Values.Count(s => s.TemplateId == goal.Room);
+                var n = UsableSpaces.Count(s => s.TemplateId == goal.Room);
                 return new GoalProgress(goal, n, Fraction(n, goal.Target), n >= goal.Target, $"{Whole(Math.Min(n, goal.Target))} of {Whole(goal.Target)}");
             }
 
@@ -411,7 +411,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A department is open once it has been paid for and has at least one room built.</summary>
     public bool IsDepartmentOpen(string departmentId) =>
-        IsUnlocked(departmentId) && _spaces.Values.Any(s => s.DepartmentId == departmentId);
+        IsUnlocked(departmentId) && UsableSpaces.Any(s => s.DepartmentId == departmentId);
 
     // ---------------------------------------------------------------- saving
 
