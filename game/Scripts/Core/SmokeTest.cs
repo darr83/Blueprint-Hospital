@@ -435,6 +435,7 @@ public partial class SmokeTest : Node
                 var room = hospital.Session.Simulation.MainWaitingRoom!.Rect;
                 hospital.Camera.SnapTo(IsoDraw.ToScreen(room.X + 10, room.Bottom - 6), 1.1f);
                 hospital.BuildTool.ChairColour = Simulation.Hospital.ChairColours.All[3].Hex;
+                hospital.BuildTool.ChairStyle = "lounge_chair";
                 hospital.BuildTool.FaceChairs(Simulation.World.WallSide.North);
                 hospital.BuildTool.PreviewDrag(new Simulation.World.GridCoord(room.X + 2, room.Bottom - 2), new Simulation.World.GridCoord(room.X + 9, room.Bottom - 2));
                 break;
@@ -443,6 +444,13 @@ public partial class SmokeTest : Node
             case Stage.Departments when scene is HospitalScene hospital && _frame == 10:
                 Screenshot("06c2_build_bar_chairs");
                 Check(hospital.BuildTool.Check is { CanBuild: true }, "The chair row preview should be placeable: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
+                if (GameView.ThreeD)
+                {
+                    // The 3D preview is built from the real 3D chairs, in the chosen style, so it matches once placed.
+                    Check(hospital.View3D.Ghosts.Count > 0 && hospital.View3D.Ghosts.Count == hospital.BuildTool.Ghosts.Count, $"The 3D chair preview should show a see-through chair for each one that can go ({hospital.BuildTool.Ghosts.Count}), not {hospital.View3D.Ghosts.Count}.");
+                }
+
+                hospital.BuildTool.ChairStyle = Simulation.Hospital.ChairStyles.Classic;
                 hospital.BuildTool.Cancel();
                 hospital.BuildTool.FollowMouse = true;
                 hospital.Hud.Build.Open("cardiology");

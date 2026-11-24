@@ -1094,7 +1094,7 @@ public sealed partial class HospitalSimulation
         }
 
         Nav = BuildNav();
-        _chairs.AddRange(state.Chairs.Concat(upgraded).GroupBy(c => c.Tile).Select(g => g.First() with { Colour = ChairColours.Normalise(g.First().Colour) }));
+        _chairs.AddRange(state.Chairs.Concat(upgraded).GroupBy(c => c.Tile).Select(g => g.First() with { Colour = ChairColours.Normalise(g.First().Colour), Style = ChairStyles.Stored(g.First().Style) }));
         foreach (var tile in state.CorridorChairs.Distinct().Where(t => ChairAt(t) is null))
         {
             _chairs.Add(new PlacedChair(tile, SuggestChairFacing(tile), ChairColours.Default));

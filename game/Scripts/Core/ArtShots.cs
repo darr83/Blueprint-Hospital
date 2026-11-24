@@ -93,6 +93,11 @@ public partial class ArtShots : Node
                     BuildRooms(h, list["--art-rooms=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries));
                 }
 
+                if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-chair-styles") >= 0)
+                {
+                    BuildChairStyles(h);
+                }
+
                 if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-minors") >= 0)
                 {
                     BuildMinorsRoom(h);
@@ -231,6 +236,14 @@ public partial class ArtShots : Node
                     return (IsoDraw.ToScreen(v[0], v[1]), (float)v[2]);
                 }),
             }
+            : _chairStyles
+            ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
+            {
+                ("chair_styles", h => { Preview(h, false); return (IsoDraw.ToScreen(60, 15), 1.9f); }),
+                ("chair_preview", h => { Preview(h, true); return (IsoDraw.ToScreen(60, 15), 1.9f); }),
+                ("room_colours", h => { Preview(h, false); return (IsoDraw.ToScreen(55, 11), 1.4f); }),
+                ("room_panel", h => { Preview(h, false, panel: true); return (IsoDraw.ToScreen(55, 11), 1.4f); }),
+            }
             : _minors is { } room
             ? new (string Name, Func<HospitalScene, (Vector2 At, float Zoom)> Frame)[]
             {
@@ -296,6 +309,80 @@ public partial class ArtShots : Node
     }
 
     private bool _wing;
+
+    private bool _chairStyles;
+
+    /// <summary>Review: a corridor with a row of each chair style, clinics in picked colour schemes.</summary>
+    private void BuildChairStyles(HospitalScene h)
+    {
+        _chairStyles = true;
+        var sim = h.Session.Simulation;
+        sim.AdjustBalance(10_000_000);
+        foreach (var dept in new[] { "outpatients", "cardiology", "neurology", "gastroenterology" })
+        {
+            sim.UnlockDepartment(dept);
+        }
+
+        Report("extension", sim.ExtendBuilding(new Simulation.World.GridRect(40, 2, 60, 28)));
+        Report("link", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(40, 13, 4, 34), Simulation.World.WallSide.South)));
+        Report("corridor", sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(44, 13, 44, 6), Simulation.World.WallSide.South)));
+        var north = new[] { "cardiology_clinic", "neurology_clinic", "gastro_clinic", "medical_clinic" };
+        for (var i = 0; i < north.Length; i++)
+        {
+            Report(north[i], sim.BuildRoom(sim.AutoPlan(north[i], new Simulation.World.GridRect(44 + (i * 11), 2, 11, 11))));
+        }
+
+        foreach (var (prefix, hex) in new[] { ("Cardiology", "#00897B"), ("Neurology", "#F9A825"), ("Gastro", "#D46A9F") })
+        {
+            if (sim.Spaces.FirstOrDefault(s => s.Name.StartsWith(prefix, StringComparison.Ordinal)) is { } room)
+            {
+                sim.SetRoomColour(room.Id, hex);
+            }
+        }
+
+        if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--art-chair-check") >= 0)
+        {
+            for (var x = 60; x < 64; x++)
+            {
+                sim.PlaceChair(new Simulation.World.GridCoord(x, 13), Simulation.World.WallSide.South, "#E07A32", "lounge_chair");
+            }
+        }
+
+        var colours = new[] { "#4F7FB0", "#2A9187", "#7E6BB5", "#4A5058" };
+        for (var s = 0; s < ChairStyles.All.Count; s++)
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                Report($"chair {ChairStyles.All[s].ItemId}", sim.PlaceChair(new Simulation.World.GridCoord(46 + (s * 7) + i, 18), Simulation.World.WallSide.North, colours[s], ChairStyles.All[s].ItemId));
+            }
+        }
+    }
+
+    /// <summary>Shows (or hides) a row of see-through padded chairs being placed, and the room panel.</summary>
+    private static void Preview(HospitalScene h, bool chairs, bool panel = false)
+    {
+        if (chairs)
+        {
+            h.BuildTool.StartChairs("#E07A32");
+            h.BuildTool.ChairStyle = "lounge_chair";
+            h.BuildTool.FaceChairs(Simulation.World.WallSide.South);
+            h.BuildTool.PreviewDrag(new Simulation.World.GridCoord(52, 13), new Simulation.World.GridCoord(58, 13));
+        }
+        else if (h.BuildTool.Active)
+        {
+            h.BuildTool.Cancel();
+        }
+
+        h.Hud.Visible = panel;
+        if (panel && h.Session.Simulation.Spaces.FirstOrDefault(s => s.Name.StartsWith("Cardiology", StringComparison.Ordinal)) is { } room)
+        {
+            h.Hud.RoomInfo.Show(room);
+        }
+        else
+        {
+            h.Hud.RoomInfo.Close();
+        }
+    }
 
     private bool _corridor;
 

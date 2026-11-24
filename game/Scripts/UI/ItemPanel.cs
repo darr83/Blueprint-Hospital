@@ -68,7 +68,18 @@ public partial class ItemPanel : PanelContainer
 
         // A placed chair can be turned and recoloured in place.
         var turn = new Button { Text = "Turn ⟳", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 34), TooltipText = "Turn the chair a quarter (free)" };
-        turn.Pressed += () => Restyle(c => (WaitingRoomLayout.Clockwise(c.Facing), c.Colour));
+        turn.Pressed += () => Restyle(c => (WaitingRoomLayout.Clockwise(c.Facing), c.Colour, c.Style));
+        var styles = new HFlowContainer();
+        styles.AddThemeConstantOverride("h_separation", 4);
+        styles.AddThemeConstantOverride("v_separation", 4);
+        foreach (var (name, style) in ChairStyles.All)
+        {
+            var button = new Button { Text = name, FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 30), TooltipText = $"Change to a {name.ToLowerInvariant()} chair (free)" };
+            button.Pressed += () => Restyle(c => (c.Facing, c.Colour, style));
+            styles.AddChild(button);
+        }
+
+        _chairTools.AddChild(styles);
         _chairTools.AddThemeConstantOverride("separation", 8);
         _swatches.AddThemeConstantOverride("h_separation", 4);
         _swatches.AddThemeConstantOverride("v_separation", 4);
@@ -84,7 +95,7 @@ public partial class ItemPanel : PanelContainer
             hover.SetBorderWidthAll(2);
             swatch.AddThemeStyleboxOverride("hover", hover);
             swatch.AddThemeStyleboxOverride("pressed", hover);
-            swatch.Pressed += () => Restyle(c => (c.Facing, hex));
+            swatch.Pressed += () => Restyle(c => (c.Facing, hex, c.Style));
             _swatches.AddChild(swatch);
         }
 
@@ -201,7 +212,7 @@ public partial class ItemPanel : PanelContainer
             var who = patient?.FullName ?? (outpatient is not null && _sim.FindAppointment(outpatient.AppointmentId) is { } a ? a.FullName : "Free");
             var where = room.Kind == CareSpaceKind.Corridor ? "patients waiting for a nearby room or clinic" : "patients waiting for triage";
             _title.Text = "Waiting chair";
-            _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}For[/color]  {where}\n{muted}Faces[/color]  {chair.Facing.ToString().ToLowerInvariant()} · {ChairColours.NameOf(chair.Colour)}\n{muted}Sitting here[/color]  {who}";
+            _info.Text = $"{muted}In[/color]  {room.Name}\n{muted}For[/color]  {where}\n{muted}Faces[/color]  {chair.Facing.ToString().ToLowerInvariant()} · {ChairStyles.NameOf(chair.Style)} · {ChairColours.NameOf(chair.Colour)}\n{muted}Sitting here[/color]  {who}";
             _action.Text = $"Remove chair (refund £{_sim.ChairCost / 2:N0})";
             _action.Visible = true;
             return;
@@ -217,15 +228,15 @@ public partial class ItemPanel : PanelContainer
     }
 
     /// <summary>Turns or recolours the chair shown, for free.</summary>
-    private void Restyle(Func<PlacedChair, (WallSide Facing, string Colour)> change)
+    private void Restyle(Func<PlacedChair, (WallSide Facing, string Colour, string? Style)> change)
     {
         if (Chair is not { } chair)
         {
             return;
         }
 
-        var (facing, colour) = change(chair);
-        _sim.PlaceChair(chair.Tile, facing, colour);
+        var (facing, colour, style) = change(chair);
+        _sim.PlaceChair(chair.Tile, facing, colour, style);
         Refresh();
     }
 

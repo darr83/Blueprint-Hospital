@@ -21,6 +21,37 @@ public sealed partial class HospitalSimulation
     /// <summary>A room's floor and wall finish.</summary>
     public RoomDecor DecorOf(CareSpace space) => _decor.GetValueOrDefault(space.Id, RoomDecor.Standard);
 
+    /// <summary>Colour schemes the player picked for room fronts, by room id (others use their department's colour).</summary>
+    private readonly Dictionary<string, string> _roomColours = new();
+
+    /// <summary>The colour scheme picked for a room's front, or null for its department's colour.</summary>
+    public string? RoomColourOf(CareSpace space) => _roomColours.GetValueOrDefault(space.Id);
+
+    /// <summary>
+    /// Sets the colour of a room's front (door panels, name sign, stripes); null goes back to the
+    /// department's colour. Free, as it is only paint.
+    /// </summary>
+    public bool SetRoomColour(string roomId, string? hex)
+    {
+        if (FindSpace(roomId) is not { } space || !space.HasWalls)
+        {
+            return false;
+        }
+
+        if (DecorCatalogue.SchemeColour(hex) is { } colour)
+        {
+            _roomColours[space.Id] = colour;
+        }
+        else
+        {
+            _roomColours.Remove(space.Id);
+        }
+
+        Events.Publish(new DecorChanged());
+        Events.Publish(new LayoutChanged());
+        return true;
+    }
+
     /// <summary>The look a new room built from this template gets: the player's choice for that kind of room, or its usual one.</summary>
     public RoomDecor NewRoomDecor(string templateId) =>
         _decorDefaults.TryGetValue(templateId, out var chosen) ? chosen
@@ -121,6 +152,22 @@ public sealed partial class HospitalSimulation
 
     private Dictionary<string, RoomDecor> CaptureDecor() =>
         _decor.Where(d => _spaces.ContainsKey(d.Key)).OrderBy(d => d.Key, StringComparer.Ordinal).ToDictionary(d => d.Key, d => d.Value);
+
+    private Dictionary<string, string> CaptureRoomColours() =>
+        _roomColours.Where(d => _spaces.ContainsKey(d.Key)).OrderBy(d => d.Key, StringComparer.Ordinal).ToDictionary(d => d.Key, d => d.Value);
+
+    private void RestoreRoomColours(Dictionary<string, string>? colours)
+    {
+        // Older saves have none: every room keeps its department's colour.
+        _roomColours.Clear();
+        foreach (var (id, hex) in colours ?? new Dictionary<string, string>())
+        {
+            if (_spaces.ContainsKey(id) && DecorCatalogue.SchemeColour(hex) is { } colour)
+            {
+                _roomColours[id] = colour;
+            }
+        }
+    }
 
     private void RestoreDecor(Dictionary<string, RoomDecor>? decor, Dictionary<string, RoomDecor>? defaults)
     {

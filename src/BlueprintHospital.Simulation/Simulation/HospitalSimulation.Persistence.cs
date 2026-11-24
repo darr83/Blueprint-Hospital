@@ -460,6 +460,9 @@ public sealed class PeopleState
     /// <summary>The look the player chose for new rooms, by room template (null in older saves).</summary>
     public Dictionary<string, RoomDecor>? DecorDefaults { get; init; }
 
+    /// <summary>Colour schemes picked for room fronts, by room id (null in older saves: department colours).</summary>
+    public Dictionary<string, string>? RoomColours { get; init; }
+
     public List<Appointment> Appointments { get; init; } = new();
 
     public List<OutpatientState> Outpatients { get; init; } = new();
@@ -572,6 +575,7 @@ public sealed partial class HospitalSimulation
         TheatreAccess = SpacesOfKind(CareSpaceKind.Theatre).ToDictionary(t => t.Id, t => t.AllowedDepartments.OrderBy(d => d, StringComparer.Ordinal).ToList()),
         VisitingHours = CaptureVisitingHours(),
         Decor = CaptureDecor(),
+        RoomColours = CaptureRoomColours(),
         DecorDefaults = _decorDefaults.OrderBy(d => d.Key, StringComparer.Ordinal).ToDictionary(d => d.Key, d => d.Value),
         Appointments = _appointments.ToList(),
         Outpatients = _outpatients.Select(o => new OutpatientState
@@ -750,6 +754,7 @@ public sealed partial class HospitalSimulation
 
         RestoreVisitingHours(state.VisitingHours);
         RestoreDecor(state.Decor, state.DecorDefaults);
+        RestoreRoomColours(state.RoomColours);
 
         // A saved game can't carry on the old random sequence, so start a new one. The mix is fixed (not
         // HashCode.Combine, which changes every time the program runs) so a loaded game plays the same way each time.

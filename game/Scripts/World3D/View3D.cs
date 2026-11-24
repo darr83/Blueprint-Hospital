@@ -45,6 +45,7 @@ public partial class View3D : Node3D
     private Agents3D _agents = null!;
     private Beds3D _beds = null!;
     private Furniture3D _furniture = null!;
+    private Ghost3D _ghosts = null!;
     private Festive3D _festive = null!;
     private Decor3D _decor = null!;
     private Life3D _life = null!;
@@ -156,6 +157,8 @@ public partial class View3D : Node3D
         _root.AddChild(_decor);
         _decor.Initialise(this);
 
+        _ghosts = new Ghost3D { Name = "Ghosts" };
+        _root.AddChild(_ghosts);
         _life = new Life3D { Name = "Life" };
         _root.AddChild(_life);
         _life.Initialise(this);
@@ -180,6 +183,8 @@ public partial class View3D : Node3D
     public Beds3D Beds => _beds;
 
     public Furniture3D Furniture => _furniture;
+
+    public Ghost3D Ghosts => _ghosts;
 
     public Decor3D Decor => _decor;
 
@@ -325,6 +330,7 @@ public partial class View3D : Node3D
         _outside.Sync();
         _agents.Sync(delta);
         _life.Sync();
+        _ghosts.Sync(_scene.BuildTool);
         PlaceCamera();
     }
 

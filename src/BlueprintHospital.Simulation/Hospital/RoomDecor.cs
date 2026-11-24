@@ -52,6 +52,20 @@ public static class DecorCatalogue
         new("Walnut", "#8E6446"), new("Slate", "#8FA7B8"), new("Lavender", "#B9A3C9"), new("Navy", "#3B4A5A"),
     };
 
+    /// <summary>
+    /// Colour schemes for a room's front: the panels either side of its door, its name sign and the
+    /// stripes. A room without one uses its department's colour.
+    /// </summary>
+    public static readonly IReadOnlyList<DecorColour> SchemeColours = new DecorColour[]
+    {
+        new("Red", "#E53935"), new("Amber", "#F9A825"), new("Green", "#43A047"), new("Teal", "#00897B"), new("Blue", "#1E88E5"),
+        new("Indigo", "#3949AB"), new("Purple", "#7E57C2"), new("Pink", "#D46A9F"), new("Brown", "#8D6E63"), new("Slate", "#546E7A"),
+    };
+
+    /// <summary>The scheme colour matching <paramref name="hex"/>, or null if it isn't one.</summary>
+    public static string? SchemeColour(string? hex) =>
+        SchemeColours.FirstOrDefault(c => string.Equals(c.Hex, hex, StringComparison.OrdinalIgnoreCase))?.Hex;
+
     public static readonly IReadOnlyList<DecorColour> WallColours = new DecorColour[]
     {
         new("White", "#F6F8FA"), new("Sky", "#DCEBF5"), new("Sage", "#E3EFE6"), new("Mint", "#DDF0EC"),
