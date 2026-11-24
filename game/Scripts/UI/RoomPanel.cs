@@ -28,6 +28,25 @@ public partial class RoomPanel : PanelContainer
     private readonly Label _visitAtOnce = new() { HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(30, 0) };
     private readonly Label _visitNote = new() { AutowrapMode = TextServer.AutowrapMode.WordSmart };
     private readonly Dictionary<WallSide, Button> _doorButtons = new();
+    private readonly VBoxContainer _summary = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly (PanelContainer Tile, Label Value, Label Caption)[] _tiles = new (PanelContainer, Label, Label)[4];
+    private readonly BedStrip _bedStrip = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly HBoxContainer _tabRow = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private Control _tabTrack = null!;
+    private readonly Dictionary<RoomTab, Button> _tabButtons = new();
+    private readonly VBoxContainer _peoplePage = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly VBoxContainer _roomPage = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly Label _listHeading = new();
+    private readonly VBoxContainer _listBox = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly RichTextLabel _listNote = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly Label _secondHeading = new();
+    private readonly VBoxContainer _secondBox = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly RichTextLabel _secondNote = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly HBoxContainer _dayTiles = new() { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    private readonly Label[] _dayValues = new Label[4];
+    private DetailRows _rows = null!;
+    private DetailRows _secondRows = null!;
+    private RoomTab _tab = RoomTab.Room;
     private HospitalSimulation _sim = null!;
     private string? _roomId;
     private double _refresh;
@@ -41,6 +60,27 @@ public partial class RoomPanel : PanelContainer
 
     public string? RoomId => _roomId;
 
+    /// <summary>The tabs along the top of a room with patients in it.</summary>
+    public enum RoomTab
+    {
+        Patients,
+        Staff,
+        Today,
+        Room,
+    }
+
+    /// <summary>The tab showing.</summary>
+    public RoomTab Tab => _tab;
+
+    /// <summary>Raised when the player clicks a patient in the room's list.</summary>
+    public event Action<Simulation.Patients.Patient>? PatientClicked;
+
+    /// <summary>Raised when the player clicks a member of staff in the room's list.</summary>
+    public event Action<Simulation.Staff.StaffMember>? StaffClicked;
+
+    /// <summary>Raised when the player clicks a clinic patient in a clinic's list.</summary>
+    public event Action<Simulation.Patients.Outpatient>? OutpatientClicked;
+
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;
@@ -49,9 +89,11 @@ public partial class RoomPanel : PanelContainer
         AddThemeStyleboxOverride("panel", HudStyle.DarkPanel());
         CustomMinimumSize = new Vector2(360, 0);
 
-        var column = new VBoxContainer();
+        var outer = new VBoxContainer();
+        outer.AddThemeConstantOverride("separation", 10);
+        AddChild(outer);
+        var column = _roomPage;
         column.AddThemeConstantOverride("separation", 8);
-        AddChild(column);
 
         var header = new HBoxContainer();
         _name.TooltipText = "Type a new name and press Enter";
@@ -68,7 +110,30 @@ public partial class RoomPanel : PanelContainer
         header.AddChild(_name);
         var close = UiStyle.CloseButton(Close);
         header.AddChild(close);
-        column.AddChild(header);
+        outer.AddChild(header);
+
+        // Who is here: four figures and a block per bed, then the tabs.
+        BuildSummary();
+        outer.AddChild(_summary);
+        foreach (var tab in Enum.GetValues<RoomTab>())
+        {
+            var button = UiStyle.AsTab(new Button { Text = tab.ToString(), SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 36) });
+            button.Pressed += () => ShowTab(tab);
+            _tabButtons[tab] = button;
+            _tabRow.AddChild(button);
+        }
+
+        _tabTrack = UiStyle.TabTrack(_tabRow);
+        outer.AddChild(_tabTrack);
+
+        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        outer.AddChild(scroll);
+        var pages = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        pages.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(pages);
+        BuildPeoplePage();
+        pages.AddChild(_peoplePage);
+        pages.AddChild(_roomPage);
 
         _info.AddThemeColorOverride("default_color", UiStyle.TextDark);
         column.AddChild(_info);
@@ -120,8 +185,12 @@ public partial class RoomPanel : PanelContainer
         _demolish.Pressed += Demolish;
     }
 
-    public void Show(CareSpace room)
+    public void Show(CareSpace room) => Show(room, people: false);
+
+    /// <summary>Opens the panel on a room: on its Patients tab when <paramref name="people"/> (play mode) and it has any, otherwise on the Room tab.</summary>
+    public void Show(CareSpace room, bool people)
     {
+        _tab = people && HasPeople(room) ? RoomTab.Patients : RoomTab.Room;
         _roomId = room.Id;
         _doorTick = 0;
         _name.Text = room.Name;
@@ -166,6 +235,7 @@ public partial class RoomPanel : PanelContainer
         var header = $"[color=#5B6B79]{template?.Name ?? room.Kind.ToString()} · door faces {Facing(room.DoorSide)}[/color]";
         var notInUse = room.InUse ? string.Empty : "[color=#C62828][b]NOT IN USE[/b]: its door doesn't open onto a corridor. Lay a corridor to the door, or move the door.[/color]\n";
         _info.Text = UiStyle.Facts($"{notInUse}{header}\n{text}\n[color=#5B6B79]In use[/color]  {Usage(room)}");
+        RefreshPeople(room);
 
         var check = _sim.CheckDemolish(room.Id);
         _demolish.Text = $"Demolish (+£{-check.Cost:N0})";

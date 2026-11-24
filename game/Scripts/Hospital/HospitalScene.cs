@@ -290,6 +290,17 @@ public partial class HospitalScene : Node2D
         _hud.Roster.StaffClicked += m => SelectStaff(m, centre: true);
         _hud.Rota.ShowOnMapRequested += m => SelectStaff(m, centre: true);
         _hud.Clinics.OutpatientClicked += o => SelectOutpatient(o, centre: true);
+        _hud.RoomInfo.PatientClicked += p => SelectPatient(p, centre: true);
+        _hud.Monitor.RecordRequested += p => SelectPatient(p, centre: true);
+        _hud.OutpatientInfo.FindRequested += o => FocusOn(o);
+        _hud.OutpatientInfo.CalendarRequested += o =>
+        {
+            _hud.HideRightPanels();
+            _hud.Clinics.SelectedOutpatientId = o.Id;
+            _hud.Clinics.ShowToday();
+        };
+        _hud.RoomInfo.StaffClicked += m => SelectStaff(m, centre: true);
+        _hud.RoomInfo.OutpatientClicked += o => SelectOutpatient(o, centre: true);
         _hud.StaffInfo.CloseRequested += ClearSelection;
         _hud.StaffInfo.FocusRequested += m => FocusOn(m);
         _hud.ZoomRequested += factor => _camera.ZoomBy(factor);
@@ -372,7 +383,7 @@ public partial class HospitalScene : Node2D
         _world.Selected = outpatient;
         _hud.HideRightPanels();
         _hud.Clinics.SelectedOutpatientId = outpatient.Id;
-        _hud.Clinics.ShowToday();
+        _hud.OutpatientInfo.Show(outpatient);
         if (centre)
         {
             FocusOn(outpatient);
@@ -386,6 +397,7 @@ public partial class HospitalScene : Node2D
     {
         _world.Selected = null;
         _hud.Clinics.SelectedOutpatientId = null;
+        _hud.OutpatientInfo.Close();
         _hud.Record.Visible = false;
         _hud.StaffInfo.Visible = false;
     }
@@ -450,12 +462,14 @@ public partial class HospitalScene : Node2D
         _hoverMouse = mouse;
         _hoverAge = 0;
         Agent? agent = null;
+        ObsMonitorInfo? monitor = null;
         (CareSpace Room, PlacedFurniture Item)? bed = null;
         if (active)
         {
             var world = GetGlobalMousePosition();
             agent = AgentAt(world);
-            bed = agent is null ? ItemAt(world, bedsOnly: true) : null;
+            monitor = agent is null ? MonitorAt(world) : null;
+            bed = agent is null && monitor is null ? ItemAt(world, bedsOnly: true) : null;
         }
 
         PlayHover = (agent, bed);
@@ -464,14 +478,14 @@ public partial class HospitalScene : Node2D
         _itemHighlight.HoverItemHeight = ThreeD && bed is { } hb && _session.Database.Furniture.TryGetValue(hb.Item.ItemId, out var def)
             ? (float)System.Math.Min(System.Math.Max(def.HeightM, 0.3), 1.2) * IsoDraw.PixelsPerMetre
             : 0;
-        _cursor.OverPick = agent is not null || bed is not null;
+        _cursor.OverPick = agent is not null || bed is not null || monitor is not null;
         if (_cursor.OverPick != _pointingHand)
         {
             _pointingHand = _cursor.OverPick;
             Input.SetDefaultCursorShape(_pointingHand ? Input.CursorShape.PointingHand : Input.CursorShape.Arrow);
         }
 
-        _hud.ShowPickTag(agent is not null && ReferenceEquals(agent, _world.Selected) ? null : PickTag(agent, bed), mouse);
+        _hud.ShowPickTag(agent is not null && ReferenceEquals(agent, _world.Selected) ? null : monitor is not null ? MonitorTag(monitor) : PickTag(agent, bed), mouse);
     }
 
     /// <summary>The name tag beside the mouse: who a click would pick, or whose bed it is.</summary>
@@ -500,7 +514,27 @@ public partial class HospitalScene : Node2D
         }
 
         var occupant = ItemPanel.BedOccupant(b.Room, b.Item) is { } id ? _session.Simulation.FindPatient(id) : null;
-        return ($"Bed · {b.Room.Name}", occupant is null ? "Empty · click for details" : occupant.FullName);
+        return ($"Bed · {b.Room.Name}", occupant is null ? "Empty · click for details" : BedDetail(occupant));
+    }
+
+    /// <summary>Who is in a bed: name, what they have and their NEWS2.</summary>
+    private string BedDetail(Patient p)
+    {
+        var illness = p.WorkingDiagnosis is { } d && _session.Database.Conditions.TryGetValue(d.ConditionId, out var c) ? $" · {c.Name}" : string.Empty;
+        var news = p.Triage is null ? string.Empty : $" · NEWS2 {p.LiveNews2}";
+        return $"{p.FullName}, {p.Age}{illness}{news}";
+    }
+
+    /// <summary>The tag beside the mouse over a bedside monitor.</summary>
+    private (string Name, string Detail)? MonitorTag(ObsMonitorInfo monitor)
+    {
+        if (_world.ConnectedPatient(monitor) is not { } p)
+        {
+            return null;
+        }
+
+        var obs = p.CurrentObservations();
+        return ($"Monitor · {p.FullName}", $"HR {obs.HeartRate} · BP {obs.BloodPressure} · SpO₂ {obs.OxygenSaturation}% · NEWS2 {p.LiveNews2} · click to open");
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -532,7 +566,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Doctors.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Calendar.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible || _hud.Surgery.Visible:
+            case Key.Escape when _hud.Doctors.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Calendar.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible || _hud.Surgery.Visible || _hud.Journal.Visible || _hud.OutpatientInfo.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -571,6 +605,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.I:
                 _hud.ToggleStats();
+                break;
+            case Key.J:
+                _hud.ToggleJournal();
                 break;
             case Key.O:
                 _hud.ToggleDoctors();
@@ -640,14 +677,23 @@ public partial class HospitalScene : Node2D
             }
 
             ClearSelection();
-            if (ItemAt(world, bedsOnly: true) is { } bed)
+            if (MonitorAt(world) is { } monitor)
+            {
+                OpenMonitor(monitor);
+            }
+            else if (ItemAt(world, bedsOnly: true) is { } bed)
             {
                 _hud.HideRightPanels();
                 _hud.ItemInfo.ShowBed(bed.Room, bed.Item);
             }
+            else if (PlayRoomAt(world) is { } playRoom)
+            {
+                _hud.ShowRoom(playRoom, people: true);
+            }
             else
             {
                 _hud.ItemInfo.Close();
+                _hud.RoomInfo.Close();
             }
 
             return;
@@ -687,6 +733,62 @@ public partial class HospitalScene : Node2D
         {
             _hud.HideRightPanels();
         }
+    }
+
+    /// <summary>The obs monitor under a point on screen with a patient on it (play mode): its screen in 3D, its stand in the 2D view.</summary>
+    public ObsMonitorInfo? MonitorAt(Vector2 world)
+    {
+        ObsMonitorInfo? best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var monitor in _world.Monitors)
+        {
+            if (!IsoDraw.OnViewFloor(monitor.Space.Rect.Y) || _world.ConnectedPatient(monitor) is null)
+            {
+                continue;
+            }
+
+            if (ThreeD)
+            {
+                var mount = IsoDraw.ToScreen(monitor.X, monitor.Y) + new Vector2(0, -Figures.MonitorHeight);
+                var casing = new Rect2(mount + new Vector2(-31, -42), new Vector2(62, 42)).Grow(4);
+                var distance = world.DistanceTo(casing.GetCenter());
+                if (casing.HasPoint(world) && distance < bestDistance)
+                {
+                    best = monitor;
+                    bestDistance = distance;
+                }
+            }
+            else
+            {
+                var (gx, gy) = IsoDraw.ScreenToGrid(world);
+                var distance = (float)System.Math.Sqrt(System.Math.Pow(gx - monitor.X, 2) + System.Math.Pow(gy - monitor.Y, 2));
+                if (distance < 0.6f && distance < bestDistance)
+                {
+                    best = monitor;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>Opens the big monitor for the patient on a bedside monitor.</summary>
+    public void OpenMonitor(ObsMonitorInfo monitor)
+    {
+        if (_world.ConnectedPatient(monitor) is { } patient)
+        {
+            _hud.Monitor.Open(patient, monitor.Space, monitor.Bed is { } bed ? monitor.Space.Beds.ToList().IndexOf(bed) : null);
+        }
+    }
+
+    /// <summary>The room clicked in play mode (not corridors, lifts or stairs): opens on its Patients tab.</summary>
+    private CareSpace? PlayRoomAt(Vector2 world)
+    {
+        var tile = IsoDraw.ScreenToTile(world);
+        return _session.Simulation.Spaces
+            .Where(s => s.Rect.Contains(tile) && IsoDraw.OnViewFloor(s.Rect.Y) && s.Kind is not (CareSpaceKind.Corridor or CareSpaceKind.Lift or CareSpaceKind.Stairs))
+            .FirstOrDefault();
     }
 
     /// <summary>The room under a point on screen that the Decorate tool can work on: rooms before corridors, never lifts or stairs.</summary>
