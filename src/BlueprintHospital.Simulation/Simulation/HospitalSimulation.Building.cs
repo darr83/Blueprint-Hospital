@@ -159,23 +159,24 @@ public sealed partial class HospitalSimulation
     /// </summary>
     private WallSide LongestWall(GridRect rect)
     {
-        bool FacesIndoors(WallSide side)
-        {
-            var middle = side switch
-            {
-                WallSide.North => new GridCoord(rect.X + (rect.Width / 2), rect.Y - 1),
-                WallSide.South => new GridCoord(rect.X + (rect.Width / 2), rect.Bottom),
-                WallSide.West => new GridCoord(rect.X - 1, rect.Y + (rect.Length / 2)),
-                _ => new GridCoord(rect.Right, rect.Y + (rect.Length / 2)),
-            };
-            return Site.IsIndoors(middle);
-        }
-
         return DoorSideOrder
-            .OrderBy(side => FacesIndoors(side) ? 0 : 1)
+            .OrderBy(side => FacesIndoors(rect, side) ? 0 : 1)
             .ThenByDescending(side => side is WallSide.North or WallSide.South ? rect.Width : rect.Length)
             .ThenBy(side => Array.IndexOf(DoorSideOrder, side))
             .First();
+    }
+
+    /// <summary>True when the middle of that wall of <paramref name="rect"/> looks into the building, not out through its outside wall.</summary>
+    private bool FacesIndoors(GridRect rect, WallSide side)
+    {
+        var middle = side switch
+        {
+            WallSide.North => new GridCoord(rect.X + (rect.Width / 2), rect.Y - 1),
+            WallSide.South => new GridCoord(rect.X + (rect.Width / 2), rect.Bottom),
+            WallSide.West => new GridCoord(rect.X - 1, rect.Y + (rect.Length / 2)),
+            _ => new GridCoord(rect.Right, rect.Y + (rect.Length / 2)),
+        };
+        return Site.IsIndoors(middle);
     }
 
     /// <summary>
@@ -274,7 +275,11 @@ public sealed partial class HospitalSimulation
     /// </summary>
     public WallSide? NextDoorSide(string templateId, GridRect rect, WallSide current, string? replacingId = null, bool anyWall = false)
     {
-        var sides = anyWall && !Database.RoomTemplates[templateId].IsShaft ? DoorSideOrder : DoorSides(templateId, rect, replacingId);
+        // Every wall that looks into the building (a door can't open through the outside wall).
+        var corridorSides = DoorSides(templateId, rect, replacingId);
+        var sides = anyWall && !Database.RoomTemplates[templateId].IsShaft
+            ? (IReadOnlyList<WallSide>)DoorSideOrder.Where(side => corridorSides.Contains(side) || FacesIndoors(rect, side)).ToList()
+            : corridorSides;
         if (sides.Count == 0)
         {
             return null;

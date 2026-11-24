@@ -1242,7 +1242,8 @@ public partial class SmokeTest : Node
         var walls = sim.DoorSides(template.Id, new Simulation.World.GridRect(b.X - 10, b.Y, 10, 9));
         Check(walls.Count > 0 && hospital.BuildTool.PlannedDoorSide is { } first && walls.Contains(first), "The cubicle's door should be on a corridor wall.");
         var sawNotInUse = false;
-        for (var i = 0; i < 4; i++)
+        var start = hospital.BuildTool.PlannedDoorSide;
+        for (var i = 0; i < 4 && (i == 0 || hospital.BuildTool.PlannedDoorSide != start); i++)
         {
             hospital.BuildTool.Turn();
             Check(hospital.BuildTool.Check is { CanBuild: true }, "Preview should still be buildable after Z: " + string.Join("; ", hospital.BuildTool.Check?.Problems ?? Array.Empty<string>()));
@@ -1252,7 +1253,7 @@ public partial class SmokeTest : Node
         }
 
         Check(sawNotInUse, "Z should also reach walls with no corridor.");
-        Check(hospital.BuildTool.PlannedDoorSide is { } back && walls.Contains(back), "Four presses of Z should bring the door back round to a corridor wall.");
+        Check(hospital.BuildTool.PlannedDoorSide is { } back && walls.Contains(back), "Pressing Z round every wall should bring the door back to a corridor wall.");
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 2, b.Y + 8), 0.9f);
         GD.Print("[smoke] Building extended, corridor laid, cubicle previewed.");
     }
