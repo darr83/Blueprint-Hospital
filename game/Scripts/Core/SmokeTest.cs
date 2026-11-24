@@ -1480,10 +1480,10 @@ public partial class SmokeTest : Node
         var sim = hospital.Session.Simulation;
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
         sim.AdjustBalance(500_000);
-        // The first free 10 x 8 spot off a corridor, nearest the west wing.
+        // The first free 10 x 8 spot whose door opens onto a corridor (so it is in use), nearest the west wing.
         var spot = Enumerable.Range(-60, 120).SelectMany(dy => Enumerable.Range(-45, 110).Select(dx => new Simulation.World.GridRect(b.X + dx, b.Y + dy, 10, 8)))
             .OrderBy(r => Math.Abs(r.X - (b.X - 15)) + Math.Abs(r.Y - (b.Y + 5)))
-            .FirstOrDefault(r => sim.CheckRoom(sim.AutoPlan("pharmacy", r)).CanBuild);
+            .FirstOrDefault(r => sim.CheckRoom(sim.AutoPlan("pharmacy", r)) is { CanBuild: true } check && check.Notes.Count == 0);
         Check(spot.Width > 0, "Found nowhere to build a pharmacy.");
         var built = sim.BuildRoom(sim.AutoPlan("pharmacy", spot));
         Check(built.CanBuild, "Pharmacy refused: " + string.Join("; ", built.Problems));
