@@ -33,6 +33,10 @@ public partial class DepartmentDashboard : PanelContainer
     private CapacityBar _bedsBar = null!;
     private HospitalSimulation _sim = null!;
     private double _refresh;
+    private RichTextLabel _title = null!;
+    private readonly VBoxContainer _aePage = new();
+    private readonly Dictionary<Board, Button> _boardButtons = new();
+    private Board _board = Board.Emergency;
 
     public void Initialise(HospitalSimulation simulation)
     {
@@ -40,19 +44,42 @@ public partial class DepartmentDashboard : PanelContainer
         MouseFilter = MouseFilterEnum.Stop;
         AddThemeStyleboxOverride("panel", HudStyle.DarkPanel());
 
+        // One width for all three boards, so the card doesn't jump when switching tabs.
+        CustomMinimumSize = new Vector2(452, 0);
+
         var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         column.AddThemeConstantOverride("separation", 10);
         AddChild(column);
 
         var header = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
-        header.AddChild(Text("[b]A&E board[/b]", 18, expand: true));
+        _title = Text("[b]A&E board[/b]", 18, expand: true);
+        header.AddChild(_title);
         _inDepartment = Text(string.Empty, 13, UiStyle.TextMuted);
         _inDepartment.SizeFlagsVertical = SizeFlags.ShrinkEnd;
         header.AddChild(_inDepartment);
         column.AddChild(header);
 
+        // A&E, Inpatients and Clinics boards share the card; tabs pick which.
+        var tabRow = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        foreach (var (board, text) in new[] { (Board.Emergency, "A&E"), (Board.Inpatients, "Inpatients"), (Board.Clinics, "Clinics") })
+        {
+            var button = UiStyle.AsTab(new Button { Text = text, SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 32) });
+            button.Pressed += () => ShowBoard(board);
+            _boardButtons[board] = button;
+            tabRow.AddChild(button);
+        }
+
+        column.AddChild(UiStyle.TabTrack(tabRow));
+        _aePage.AddThemeConstantOverride("separation", 10);
+        _aePage.MouseFilter = MouseFilterEnum.Ignore;
+        column.AddChild(_aePage);
+        BuildInpatientPage();
+        column.AddChild(_inpatientPage);
+        BuildClinicPage();
+        column.AddChild(_clinicPage);
+
         _closed = Text(string.Empty, 13, UiStyle.AmberText, wrap: true);
-        column.AddChild(_closed);
+        _aePage.AddChild(_closed);
 
         var tiles = new GridContainer { Columns = 3, MouseFilter = MouseFilterEnum.Ignore };
         tiles.AddThemeConstantOverride("h_separation", 8);
@@ -66,9 +93,9 @@ public partial class DepartmentDashboard : PanelContainer
             tiles.AddChild(Tile(category, colour, ink));
         }
 
-        column.AddChild(tiles);
+        _aePage.AddChild(tiles);
         _triage = Text(string.Empty, 12, UiStyle.TextMuted);
-        column.AddChild(_triage);
+        _aePage.AddChild(_triage);
 
         var cubicles = SectionBox();
         var rows = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
@@ -81,7 +108,7 @@ public partial class DepartmentDashboard : PanelContainer
         rows.AddChild(CapacityRow("Majors", AmberTile));
         rows.AddChild(CapacityRow("Minors", GreenTile));
         cubicles.AddChild(rows);
-        column.AddChild(cubicles);
+        _aePage.AddChild(cubicles);
 
         // Free beds on the wards: where admitted patients go next.
         var wards = SectionBox();
@@ -99,7 +126,7 @@ public partial class DepartmentDashboard : PanelContainer
         wards.AddChild(wardRows);
         wards.MouseFilter = MouseFilterEnum.Pass;
         wards.TooltipText = "Empty beds on your wards (the bar fills as beds are taken)";
-        column.AddChild(wards);
+        _aePage.AddChild(wards);
 
         var ambulance = SectionBox();
         var line = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
@@ -109,14 +136,14 @@ public partial class DepartmentDashboard : PanelContainer
         line.AddChild(_ambulances);
         line.AddChild(_handover);
         ambulance.AddChild(line);
-        column.AddChild(ambulance);
+        _aePage.AddChild(ambulance);
 
         var stats = new GridContainer { Columns = 3, MouseFilter = MouseFilterEnum.Ignore };
         stats.AddThemeConstantOverride("h_separation", 8);
         stats.AddChild(StatBox("four", "4-hour target", "95% standard"));
         stats.AddChild(StatBox("doctor", "To doctor", "average"));
         stats.AddChild(StatBox("accuracy", "Diagnosis", "accurate"));
-        column.AddChild(stats);
+        _aePage.AddChild(stats);
         Refresh();
     }
 
@@ -132,6 +159,25 @@ public partial class DepartmentDashboard : PanelContainer
 
     private void Refresh()
     {
+        foreach (var (board, button) in _boardButtons)
+        {
+            button.SetPressedNoSignal(board == _board);
+        }
+
+        _aePage.Visible = _board == Board.Emergency;
+        _inpatientPage.Visible = _board == Board.Inpatients;
+        _clinicPage.Visible = _board == Board.Clinics;
+        switch (_board)
+        {
+            case Board.Inpatients:
+                RefreshInpatients();
+                return;
+            case Board.Clinics:
+                RefreshClinics();
+                return;
+        }
+
+        Set(_title, "[b]A&E board[/b]");
         var s = _sim.Stats;
         Set(_inDepartment, $"In department [b][color=#17232E]{s.PatientsInDepartment}[/color][/b]");
 
@@ -332,7 +378,8 @@ public partial class CapacityBar : Control
             return;
         }
 
-        if (_total > MaxSlots)
+        // One smooth bar when there are too many slots to tell apart at this width.
+        if (_total > MaxSlots || (width - (Gap * (_total - 1))) / _total < 8)
         {
             Slot(0, width, _empty);
             var share = Math.Clamp(_used / (float)_total, 0, 1);

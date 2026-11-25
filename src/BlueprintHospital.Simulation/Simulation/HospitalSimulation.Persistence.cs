@@ -521,6 +521,9 @@ public sealed class PeopleState
 
     /// <summary>Theatres: cleaning between cases, today's operations and the day's figures (absent in older saves).</summary>
     public SurgeryState? Surgery { get; init; }
+
+    /// <summary>The illness journal and room logs (absent in older saves).</summary>
+    public DetailsState? Details { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -604,6 +607,7 @@ public sealed partial class HospitalSimulation
         Outbreaks = SaveOutbreaks(),
         Progression = CaptureProgression(),
         Surgery = CaptureSurgery(),
+        Details = CaptureDetails(),
     };
 
     /// <summary>
@@ -856,6 +860,7 @@ public sealed partial class HospitalSimulation
         RestoreHelicopters(state.Helicopters, state.NextHelicopterId);
         RestoreIncident(state.Incident, state.NextIncidentId, state.NoIncidentBefore);
         RestoreOutbreaks(state.Outbreaks);
+        RestoreDetails(state.Details);
     }
 
     // ------------------------------------------------------------------ patients

@@ -82,7 +82,12 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            patient.UpdateMonitorRed();
+            var wasRed = patient.MonitorRed;
+            if (patient.UpdateMonitorRed() && !wasRed)
+            {
+                LogRoom(patient.CareSpaceId, RoomLogKind.RedMonitor, $"{patient.FullName}'s monitor went red (NEWS2 {patient.LiveNews2})");
+            }
+
             var calls = _tasks.Values.Where(t => t.PatientId == patient.Id && t.Kind is TaskKind.StayWithPatient or TaskKind.RedReview).ToList();
             if (!patient.MonitorIsRed)
             {

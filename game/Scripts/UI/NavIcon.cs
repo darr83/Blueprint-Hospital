@@ -17,6 +17,7 @@ public partial class NavIcon : Control
         Surgery,
         Finances,
         Stats,
+        Journal,
         Routes,
         Grid,
     }
@@ -108,6 +109,12 @@ public partial class NavIcon : Control
                 DrawPolyline(new[] { new Vector2(3, 3), new Vector2(3, 21), new Vector2(21, 21) }, c, w, true);
                 DrawPolyline(new[] { new Vector2(6, 16), new Vector2(10, 11), new Vector2(14, 14), new Vector2(20, 6) }, c, w, true);
                 DrawArc(new Vector2(20, 6), 1.5f, 0, Mathf.Tau, 12, c, w, true);
+                break;
+            case Kind.Journal:
+                // An open book.
+                DrawPolyline(new[] { new Vector2(12, 7), new Vector2(7, 4.5f), new Vector2(3, 5), new Vector2(3, 19), new Vector2(7, 18.5f), new Vector2(12, 21) }, c, w, true);
+                DrawPolyline(new[] { new Vector2(12, 7), new Vector2(17, 4.5f), new Vector2(21, 5), new Vector2(21, 19), new Vector2(17, 18.5f), new Vector2(12, 21) }, c, w, true);
+                L(12, 7, 12, 21);
                 break;
             case Kind.Routes:
                 for (var i = 0; i < 5; i++)

@@ -563,6 +563,7 @@ public partial class SmokeTest : Node
                 Screenshot("06g_stats_week");
                 hospital.Hud.ToggleStats();
                 Check(!hospital.Hud.StatsScreen.Visible, "The Stats screen did not close.");
+                CheckDetails(hospital);
                 _frame = 0;
                 _stage = Stage.Ward;
                 break;
@@ -788,7 +789,7 @@ public partial class SmokeTest : Node
                 break;
 
             case Stage.ClinicCalendar when scene is HospitalScene hospital && _frame >= 6:
-                Screenshot("09e_clinic_calendar");
+                Screenshot("09e_clinic_patient_card");
                 BuildSpecialtyRooms(hospital);
                 _frame = 0;
                 _stage = Stage.Specialty;
@@ -1514,10 +1515,10 @@ public partial class SmokeTest : Node
         var sim = hospital.Session.Simulation;
         var b = Simulation.World.StarterSite.MainBuildingFootprint;
         sim.AdjustBalance(500_000);
-        // The first free 10 x 8 spot off a corridor, nearest the west wing.
+        // The first free 10 x 8 spot whose door opens onto a corridor (so it is in use), nearest the west wing.
         var spot = Enumerable.Range(-60, 120).SelectMany(dy => Enumerable.Range(-45, 110).Select(dx => new Simulation.World.GridRect(b.X + dx, b.Y + dy, 10, 8)))
             .OrderBy(r => Math.Abs(r.X - (b.X - 15)) + Math.Abs(r.Y - (b.Y + 5)))
-            .FirstOrDefault(r => sim.CheckRoom(sim.AutoPlan("pharmacy", r)).CanBuild);
+            .FirstOrDefault(r => sim.CheckRoom(sim.AutoPlan("pharmacy", r)) is { CanBuild: true } check && check.Notes.Count == 0);
         Check(spot.Width > 0, "Found nowhere to build a pharmacy.");
         var built = sim.BuildRoom(sim.AutoPlan("pharmacy", spot));
         Check(built.CanBuild, "Pharmacy refused: " + string.Join("; ", built.Problems));
@@ -1986,14 +1987,14 @@ public partial class SmokeTest : Node
         hospital.Hud.Build.ClosePopup();
     }
 
-    /// <summary>Play mode: clicking a clinic patient opens the clinic calendars.</summary>
+    /// <summary>Play mode: clicking a clinic patient opens their card, which links to the clinic calendars.</summary>
     private static void ClickOutpatient(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var outpatient = sim.Outpatients.Where(o => !o.IsMoving).OrderBy(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting ? 0 : 1).First();
         hospital.ClickAt(hospital.World.FootPosition(outpatient) + Above(30));
         Check(hospital.World.Selected == outpatient, "Clicking a clinic patient did not select them.");
-        Check(hospital.Hud.Clinics.Visible, "Clicking a clinic patient did not open the clinic calendars.");
+        Check(hospital.Hud.OutpatientInfo.Visible && hospital.Hud.OutpatientInfo.OutpatientId == outpatient.Id, "Clicking a clinic patient did not open their card.");
     }
 
     /// <summary>Build mode: clicking bare floor in the new cubicle opens the room, and clicking a member of staff does nothing.</summary>
@@ -2022,7 +2023,6 @@ public partial class SmokeTest : Node
         Check(hospital.Hud.ItemInfo.Visible && !hospital.Hud.ItemInfo.AsBed && hospital.Hud.ItemInfo.Item == bed, "Clicking the bed in build mode did not open it as an item.");
     }
 
-    /// <summary>Play mode: clicking the ward floor picks nothing; clicking an empty bed opens the bed.</summary>
     /// <summary>In the 2D plan a click on someone's circle picks them, as clicking their figure does in 3D.</summary>
     private static void CheckPlanClick(HospitalScene hospital)
     {
@@ -2038,16 +2038,18 @@ public partial class SmokeTest : Node
         hospital.World.Selected = null;
     }
 
+    /// <summary>Play mode: clicking the ward floor shows who is on the ward; clicking an empty bed opens the bed.</summary>
     private static void ClickWardBed(HospitalScene hospital)
     {
         var sim = hospital.Session.Simulation;
         var ward = sim.Wards.Single();
         Check(hospital.Mode == GameMode.Play, "Should be in play mode on the ward.");
         var floor = IsoDraw.ToScreen(ward.Rect.X + 0.5, ward.Rect.Y + (ward.Rect.Length / 2.0));
-        if (hospital.AgentAt(floor) is null && hospital.ItemAt(floor, bedsOnly: true) is null)
+        if (hospital.AgentAt(floor) is null && hospital.ItemAt(floor, bedsOnly: true) is null && hospital.MonitorAt(floor) is null)
         {
             hospital.ClickAt(floor);
-            Check(!hospital.Hud.RoomInfo.Visible && !hospital.Hud.ItemInfo.Visible, "Play mode should not select rooms.");
+            Check(hospital.Hud.RoomInfo.Visible && !hospital.Hud.ItemInfo.Visible, "Clicking the ward floor in play mode should show who is on the ward.");
+            hospital.Hud.HideRightPanels();
         }
 
         var bed = ward.Furniture
@@ -2561,6 +2563,35 @@ public partial class SmokeTest : Node
         Check(hospital.Hud.Visible && !hospital.DoctorHud.Visible, "The main screen did not come back.");
         Check(Input.MouseMode == Input.MouseModeEnum.Visible, "The mouse pointer was not given back.");
         hospital.Hud.HideRightPanels();
+    }
+
+    /// <summary>The illness journal, the board tabs and a ward's people tabs open and close.</summary>
+    private static void CheckDetails(HospitalScene hospital)
+    {
+        var hud = hospital.Hud;
+        hud.ToggleJournal();
+        Check(hud.Journal.Visible, "The illness journal did not open.");
+        hud.ToggleJournal();
+        Check(!hud.Journal.Visible, "The illness journal did not close.");
+        foreach (var board in new[] { DepartmentDashboard.Board.Inpatients, DepartmentDashboard.Board.Clinics, DepartmentDashboard.Board.Emergency })
+        {
+            hud.Dashboard.ShowBoard(board);
+            Check(hud.Dashboard.Showing == board, $"The {board} board tab did not show.");
+        }
+
+        if (hospital.Session.Simulation.Wards.FirstOrDefault() is { } ward)
+        {
+            hud.ShowRoom(ward, people: true);
+            Check(hud.RoomInfo.Visible, "The ward panel did not open in play mode.");
+            foreach (var tab in new[] { RoomPanel.RoomTab.Staff, RoomPanel.RoomTab.Today, RoomPanel.RoomTab.Room, RoomPanel.RoomTab.Patients })
+            {
+                hud.RoomInfo.ShowTab(tab);
+            }
+
+            hud.HideRightPanels();
+        }
+
+        GD.Print("[smoke] Journal, boards and ward tabs open.");
     }
 
     private void Screenshot(string name)

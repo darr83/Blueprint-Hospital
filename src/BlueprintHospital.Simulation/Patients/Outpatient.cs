@@ -73,6 +73,9 @@ public sealed class Appointment
 
     public DateTime? SeenAt { get; set; }
 
+    /// <summary>When the clinic called them in.</summary>
+    public DateTime? CalledInAt { get; set; }
+
     public int? SeenByStaffId { get; set; }
 }
 

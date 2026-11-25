@@ -234,6 +234,7 @@ public sealed partial class HospitalSimulation
         patient.Stage = PatientStage.OnWard;
         patient.PreOp = true;
         patient.AdmittedAt = Now;
+        LogRoom(ward.Id, RoomLogKind.Admitted, $"{patient.FullName} admitted to bed {index + 1} ({condition.Name.ToLowerInvariant()})");
         WalkTo(patient, bed.PatientSpot);
 
         var place = operation.Room == CareSpaceKind.Theatre ? "the C-section theatre" : "a delivery room";

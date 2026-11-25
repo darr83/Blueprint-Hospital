@@ -248,6 +248,7 @@ public sealed partial class HospitalSimulation
         patient.PreOp = true;
         patient.DayCase = true;
         patient.AdmittedAt = Now;
+        LogRoom(ward.Id, RoomLogKind.Admitted, $"{patient.FullName} came in to bed {index + 1} for a planned {LowerFirst(operation.Name)}");
         WalkTo(patient, bed.PatientSpot);
 
         booking.Status = PlannedStatus.Admitted;

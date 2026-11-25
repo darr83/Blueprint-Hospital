@@ -102,6 +102,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The Stats screen: every figure for the last 24 hours, 7 days, 28 days and all time.</summary>
     public StatsPanel StatsScreen { get; } = new() { Name = "Stats", Visible = false };
 
+    /// <summary>The illness journal (J): every illness and how many patients were treated for each.</summary>
+    public JournalPanel Journal { get; } = new() { Name = "Journal", Visible = false };
+
     /// <summary>The Surgery panel: the theatre board and the waiting list for operations.</summary>
     public SurgeryPanel Surgery { get; } = new() { Name = "Surgery", Visible = false };
 
@@ -109,6 +112,9 @@ public partial class MainHUD : CanvasLayer
     public BuildBar Build { get; } = new() { Name = "BuildBar", Visible = false };
 
     public RoomPanel RoomInfo { get; } = new() { Name = "RoomInfo", Visible = false };
+
+    /// <summary>A clinic patient's card.</summary>
+    public OutpatientPanel OutpatientInfo { get; } = new() { Name = "OutpatientInfo", Visible = false };
 
     /// <summary>The Decorate panel: a room's floor and wall finish.</summary>
     public DecoratePanel Decorate { get; } = new() { Name = "Decorate", Visible = false };
@@ -144,6 +150,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The major incident banner and card (standby, get ready, casualties, debrief).</summary>
     public MajorIncidentPanel Incident { get; } = new() { Name = "MajorIncidentPanel" };
 
+    /// <summary>The big bedside monitor, opened by clicking a monitor in play mode.</summary>
+    public MonitorPopup Monitor { get; } = new() { Name = "MonitorPopup" };
+
     /// <summary>The cheat command line, opened with Ctrl+C.</summary>
     public CheatConsole Cheats { get; } = new() { Name = "CheatConsole", Visible = false };
 
@@ -172,7 +181,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors, Calendar };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, OutpatientInfo, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors, Calendar };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -183,8 +192,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Calendar.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Calendar.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = Journal.Visible = false;
         RoomInfo.Close();
+        OutpatientInfo.Close();
         Decorate.Close();
         ItemInfo.Close();
     }
@@ -244,10 +254,10 @@ public partial class MainHUD : CanvasLayer
     }
 
     /// <summary>Shows one room's details, closing the other right-hand panels.</summary>
-    public void ShowRoom(BlueprintHospital.Simulation.Hospital.CareSpace room)
+    public void ShowRoom(BlueprintHospital.Simulation.Hospital.CareSpace room, bool people = false)
     {
         HideRightPanels();
-        RoomInfo.Show(room);
+        RoomInfo.Show(room, people);
     }
 
     /// <summary>Opens the Decorate panel on a room, closing the other right-hand panels.</summary>
@@ -295,6 +305,17 @@ public partial class MainHUD : CanvasLayer
         if (show)
         {
             Surgery.ShowTab(waitingList: false);
+        }
+    }
+
+    /// <summary>Opens the illness journal, or closes it.</summary>
+    public void ToggleJournal()
+    {
+        var show = !Journal.Visible;
+        HideRightPanels();
+        if (show)
+        {
+            Journal.Open();
         }
     }
 
@@ -353,8 +374,11 @@ public partial class MainHUD : CanvasLayer
         DockRight(Roster, 360);
         root.AddChild(Roster);
         RoomInfo.Initialise(sim);
-        DockRight(RoomInfo, 380);
+        DockRight(RoomInfo, 420);
         root.AddChild(RoomInfo);
+        OutpatientInfo.Initialise(sim);
+        DockRight(OutpatientInfo, 420);
+        root.AddChild(OutpatientInfo);
         Decorate.Initialise(sim);
         DockRight(Decorate, 410);
         root.AddChild(Decorate);
@@ -399,6 +423,15 @@ public partial class MainHUD : CanvasLayer
         StatsScreen.OffsetBottom = -Gap;
         root.AddChild(StatsScreen);
 
+        // And the illness journal.
+        Journal.Initialise(sim);
+        Journal.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        Journal.OffsetLeft = NavWidth + Gap;
+        Journal.OffsetTop = TopBarHeight + Gap;
+        Journal.OffsetRight = -Gap;
+        Journal.OffsetBottom = -Gap;
+        root.AddChild(Journal);
+
         // So is the Surgery panel.
         Surgery.Initialise(sim);
         Surgery.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -442,6 +475,10 @@ public partial class MainHUD : CanvasLayer
         Cheats.OffsetTop = TopBarHeight + Gap;
         root.AddChild(Cheats);
 
+        // The big monitor opens over the map and panels.
+        Monitor.Initialise(sim);
+        root.AddChild(Monitor);
+
         // The notifications drop-down opens over everything else.
         root.AddChild(Feed.Dropdown);
 
@@ -462,7 +499,7 @@ public partial class MainHUD : CanvasLayer
         // In Build mode everything docked to the bottom of the screen moves up above the build bar.
         var reserve = Build.Visible ? BuildBar.Reserve : 0;
         _left.OffsetBottom = -Gap - reserve;
-        foreach (var panel in RightPanels.Append(Rota).Append(StatsScreen).Append(Surgery).Where(p => p != ItemInfo))
+        foreach (var panel in RightPanels.Append(Rota).Append(StatsScreen).Append(Surgery).Append(Journal).Where(p => p != ItemInfo))
         {
             panel.OffsetBottom = -Gap - reserve;
         }
@@ -716,6 +753,7 @@ public partial class MainHUD : CanvasLayer
         column.AddChild(NavButton("Hire", NavIcon.Kind.Hire, ToggleRecruitment, "Recruitment: hire and let go of staff (H)"));
         column.AddChild(NavButton("Finances", NavIcon.Kind.Finances, ToggleFinances, "Money in and out (F)"));
         column.AddChild(NavButton("Stats", NavIcon.Kind.Stats, ToggleStats, "Hospital stats: the last 24 hours, 7 days, 28 days and all time (I)"));
+        column.AddChild(NavButton("Journal", NavIcon.Kind.Journal, ToggleJournal, "Illness journal: every illness and how many patients you have treated for each (J)"));
         column.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
         column.AddChild(NavButton("Routes", NavIcon.Kind.Routes, () => RoutesToggled?.Invoke(), "Show where patients and staff are walking (R)"));
         column.AddChild(NavButton("Grid", NavIcon.Kind.Grid, () => GridToggled?.Invoke(), "Show or hide the building grid (G)"));
@@ -784,6 +822,7 @@ public partial class MainHUD : CanvasLayer
         Set("Hire", Recruitment.Visible);
         Set("Finances", Finances.Visible);
         Set("Stats", StatsScreen.Visible);
+        Set("Journal", Journal.Visible);
         Set("Routes", _routesShown);
         Set("Grid", _gridShown);
     }
