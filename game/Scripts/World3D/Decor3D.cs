@@ -471,7 +471,7 @@ public partial class Decor3D : Node3D
         {
             var frame = new Transform3D(new Basis(Vector3.Up, Kit3D.Yaw(prop.Dx, prop.Dy)).Scaled(Vector3.One * prop.Scale * 0.85f), Kit3D.At(prop.X, prop.Y));
             solid.Frame = glass.Frame = frame;
-            if (Props3D.Floor(solid, glass, prop.Kind))
+            if (Props3D.Floor(solid, glass, prop.Kind) || PublicProps3D.Floor(solid, glass, prop.Kind, new Color(prop.Tint ?? "#2A9187")))
             {
                 PropCount++;
             }

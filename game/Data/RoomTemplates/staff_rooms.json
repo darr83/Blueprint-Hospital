@@ -75,5 +75,28 @@
     "base_cost": 0, "cost_per_square_metre": 450,
     "staffing": "None.",
     "furniture": []
+  },
+  {
+    "id": "open_area",
+    "name": "Open area",
+    "category": "Corridors",
+    "description": "An open-plan space with no walls, joined to the corridors on every side like an atrium. People walk straight through it. Fill it with chairs, sofas, tables and decorations from the Decorations icon: visitors, clinic patients and patients out for a stroll use the seats. Starts with a wood floor (change it in Decorate).",
+    "kind": "corridor",
+    "department": "emergency",
+    "layout": "none",
+    "sizes": [
+      { "name": "Small (5 × 5 m)", "width_m": 5, "length_m": 5 },
+      { "name": "Lounge (8 × 6 m)", "width_m": 8, "length_m": 6 },
+      { "name": "Atrium (12 × 10 m)", "width_m": 12, "length_m": 10 }
+    ],
+    "min_width_m": 3,
+    "min_length_m": 3,
+    "max_width_m": 60,
+    "max_length_m": 60,
+    "door_width_m": 1.0,
+    "base_cost": 0,
+    "cost_per_square_metre": 500,
+    "staffing": "None.",
+    "furniture": []
   }
 ]

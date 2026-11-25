@@ -12,6 +12,32 @@ public static class BuildIcons
 {
     private static readonly Dictionary<string, string> Glyphs = new()
     {
+        // Decorations and the open area.
+        ["plant"] = "<path d='M8 15h8l-1 6H9z'/><path d='M12 15V9'/><path d='M12 11c-3 0-5-2-5-5 3 0 5 2 5 5zM12 9c0-3 2-5 5-5 0 3-2 5-5 5z'/>",
+        ["palm"] = "<path d='M9 21h6M12 21V9'/><path d='M12 9c-2-3-5-3-8-2M12 9c2-3 5-3 8-2M12 9c-1-3-1-5 1-7M12 9c-3-1-6 1-7 4M12 9c3-1 6 1 7 4'/>",
+        ["bench"] = "<path d='M3 13h18M4 9h16'/><path d='M5 13v6M19 13v6M5 9v4M19 9v4'/>",
+        ["cooler"] = "<rect x='8' y='3' width='8' height='6' rx='2'/><path d='M7 9h10v12H7z'/><path d='M10 13h2'/>",
+        ["bins"] = "<path d='M4 8h7l-1 13H5zM13 8h7l-1 13h-5z'/><path d='M3 6h9M12 6h9'/>",
+        ["leaflets"] = "<path d='M5 3h14v18H5z'/><path d='M8 7h3v4H8zM13 7h3v4h-3zM8 14h3v4H8zM13 14h3v4h-3z'/>",
+        ["gel"] = "<path d='M12 3s-5 6-5 10a5 5 0 0 0 10 0c0-4-5-10-5-10z'/><path d='M10 14a2 2 0 0 0 2 2'/>",
+        ["fish"] = "<rect x='2.5' y='5' width='19' height='12' rx='1.5'/><path d='M7 11c2-2.5 5-2.5 7 0-2 2.5-5 2.5-7 0zM14 11l3-2v4z'/><path d='M4 21h16M6 17v4M18 17v4'/>",
+        ["sculpture"] = "<path d='M7 21h10v-6H7z'/><circle cx='12' cy='9' r='5'/><path d='M7 9h10M12 4v10'/>",
+        ["stand"] = "<path d='M4 4h16v10H4z'/><path d='M7 14v7M17 14v7M7 7h4M7 10h6M14 7h3'/>",
+        ["planter"] = "<path d='M3 14h18l-2 6H5z'/><path d='M6 14c0-3 1-5 3-6M12 14V7M18 14c0-3-1-5-3-6M9 14c-1-2 0-4 0-5'/>",
+        ["kiosk"] = "<rect x='7' y='3' width='10' height='10' rx='1.5'/><path d='M12 13v6M8 21h8'/><path d='M11 7h2M12 7v3'/>",
+        ["lamp"] = "<path d='M8 3h8l2 6H6z'/><path d='M12 9v10M8 21h8'/>",
+        ["sofa"] = "<path d='M5 10V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3'/><path d='M3 10a2 2 0 0 1 2 2v2h14v-2a2 2 0 0 1 4 0v6H1v-6a2 2 0 0 1 2-2z'/><path d='M4 18v2M20 18v2'/>",
+        ["armchair"] = "<path d='M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4'/><path d='M5 10a2 2 0 0 1 2 2v2h10v-2a2 2 0 0 1 4 0v6H3v-6a2 2 0 0 1 2-2z'/><path d='M6 18v2M18 18v2'/>",
+        ["coffeetable"] = "<path d='M3 10h18v3H3z'/><path d='M5 13v6M19 13v6'/><path d='M8 8h3M14 7v3'/>",
+        ["cafetable"] = "<ellipse cx='12' cy='9' rx='5' ry='2'/><path d='M12 11v9M9 20h6'/><path d='M2 12v8M2 15h3v5M22 12v8M22 15h-3v5'/>",
+        ["rug"] = "<rect x='3' y='5' width='18' height='14' rx='1'/><rect x='6' y='8' width='12' height='8' rx='1'/><path d='M1.5 8v8M22.5 8v8'/>",
+        ["bookcase"] = "<path d='M4 3h16v18H4z'/><path d='M4 9h16M4 15h16'/><path d='M7 3v6M9 3v6M13 9v6M16 9v6M8 15v6M11 15v6'/>",
+        ["picture"] = "<rect x='3' y='4' width='18' height='14' rx='1'/><path d='M3 15l5-5 4 4 3-3 6 6'/><circle cx='16' cy='8' r='1.5'/>",
+        ["board"] = "<rect x='3' y='4' width='18' height='14' rx='1'/><path d='M6 7h5v4H6zM13 7h5v3h-5zM8 13h5v3H8z'/>",
+        ["clock"] = "<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>",
+        ["tv"] = "<rect x='2.5' y='4' width='19' height='12' rx='1.5'/><path d='M8 20h8M12 16v4'/>",
+        ["openarea"] = "<path d='M3 5h18v14H3z' stroke-dasharray='2.5 2.5'/><path d='M7 15v-3h4v3M7 13h4M14 11h4M16 11v4'/>",
+
         // Departments and the building.
         ["roller"] = "<rect x='3.5' y='3' width='14' height='5.5' rx='1.5'/><path d='M17.5 5.75h2.5v5.5h-8.5v3'/><rect x='10' y='14.25' width='3' height='7' rx='1'/>",
         ["building"] = "<path d='M3 21h18'/><path d='M5 21V9l7-5 7 5v12'/><path d='M9.5 21v-4.5h5V21'/><path d='M8.5 11h2M13.5 11h2M8.5 14h2M13.5 14h2'/>",
@@ -88,7 +114,8 @@ public static class BuildIcons
         ["childrens_waiting_room"] = "chairs", ["childrens_cubicle"] = "bed",
         ["play_room"] = "blocks", ["teen_room"] = "gamepad", ["parents_room"] = "mug",
         ["outpatient_reception"] = "reception", ["pharmacy"] = "pharmacy", ["cafeteria"] = "facilities", ["vending_point"] = "vend",
-        ["accessible_toilet"] = "access", ["cleaning_room"] = "mop",
+        ["accessible_toilet"] = "access", ["cleaning_room"] = "mop", ["open_area"] = "openarea",
+        ["decor:plant"] = "plant", ["decor:palm"] = "palm", ["decor:bench"] = "bench", ["decor:water_cooler"] = "cooler", ["decor:bins"] = "bins", ["decor:leaflet_rack"] = "leaflets", ["decor:gel_station"] = "gel", ["decor:fish_tank"] = "fish", ["decor:sculpture"] = "sculpture", ["decor:notice_stand"] = "stand", ["decor:planter"] = "planter", ["decor:kiosk"] = "kiosk", ["decor:floor_lamp"] = "lamp", ["decor:sofa"] = "sofa", ["decor:armchair"] = "armchair", ["decor:coffee_table"] = "coffeetable", ["decor:cafe_table"] = "cafetable", ["decor:rug"] = "rug", ["decor:bookcase"] = "bookcase", ["decor:picture"] = "picture", ["decor:notice_board"] = "board", ["decor:clock"] = "clock", ["decor:tv"] = "tv",
     };
 
     private static readonly Dictionary<string, Texture2D> Cache = new();

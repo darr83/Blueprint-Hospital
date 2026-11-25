@@ -354,7 +354,7 @@ public sealed partial class HospitalSimulation
     // ---------------------------------------------------------------- waiting
 
     /// <summary>Every chair a clinic patient can wait on: the chairs along the corridors (waiting room chairs are for A&amp;E).</summary>
-    public IEnumerable<GridCoord> OutpatientSeats => _chairs.Select(c => c.Tile).Where(t => !InWaitingRoom(t));
+    public IEnumerable<GridCoord> OutpatientSeats => WaitSeats.Select(c => c.Tile).Where(t => !InWaitingRoom(t));
 
     /// <summary>Checked-in clinic patients sit on the free corridor chair nearest their clinic, or stand outside it.</summary>
     private void SeatWaitingPatients()

@@ -31,6 +31,12 @@ public sealed partial class HospitalSimulation
                 return SpacesOfKind(CareSpaceKind.Waiting).Sum(r => FittingsOf(r).Doors.Count);
         }
 
+        if (item.StartsWith(DecorItems.TilePrefix, StringComparison.Ordinal))
+        {
+            var id = item[DecorItems.TilePrefix.Length..];
+            return _decorations.Count(d => d.ItemId == id);
+        }
+
         var rooms = _spaces.Values.Where(s => s.TemplateId == item);
         return rooms.Any(r => r.IsShaft)
             ? VerticalTransport.Shafts(Site, rooms).Count()

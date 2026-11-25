@@ -14,18 +14,18 @@ namespace BlueprintHospital.Simulation.Simulation;
 public sealed partial class HospitalSimulation
 {
     private HashSet<GridCoord>? _seatTiles;
-    private (int Spaces, int Chairs, int Furniture) _seatKey;
+    private (int Spaces, int Chairs, int Furniture, int Decor) _seatKey;
 
     /// <summary>Every tile someone can sit on: room chairs and sofas, and the waiting chairs the player placed.</summary>
     public IReadOnlySet<GridCoord> SeatTiles
     {
         get
         {
-            var key = (_spaces.Count, _chairs.Count, _spaces.Values.Sum(s => s.Furniture.Count));
+            var key = (_spaces.Count, _chairs.Count, _spaces.Values.Sum(s => s.Furniture.Count), _decorStamp);
             if (_seatTiles is null || key != _seatKey)
             {
                 _seatKey = key;
-                _seatTiles = new HashSet<GridCoord>(_chairs.Select(c => c.Tile));
+                _seatTiles = new HashSet<GridCoord>(WaitSeats.Select(c => c.Tile));
                 foreach (var space in _spaces.Values)
                 {
                     _seatTiles.UnionWith(space.Seats);

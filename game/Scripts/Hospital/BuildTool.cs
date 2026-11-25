@@ -33,6 +33,9 @@ public enum BuildMode
 
     /// <summary>Moving an ordinary room's door by hand: point at any wall of the room and click; the furniture is laid out again around it.</summary>
     RoomDoor,
+
+    /// <summary>Placing a decoration (or moving one already placed): click to put it down, Z turns it.</summary>
+    Decoration,
 }
 
 /// <summary>
@@ -74,6 +77,18 @@ public partial class BuildTool : Node2D
 
     /// <summary>Which chair is being placed (see <see cref="ChairStyles"/>).</summary>
     public string ChairStyle { get; set; } = ChairStyles.Default;
+
+    /// <summary>The decoration being placed (see <see cref="DecorItems"/>).</summary>
+    public string DecorItemId { get; private set; } = "plant";
+
+    /// <summary>Colour for decorations that take one.</summary>
+    public string DecorColour { get; set; } = "#2A9187";
+
+    /// <summary>The way the player has turned the decoration with Z; null lets it stand with its back to the nearest wall.</summary>
+    public WallSide? DecorFacing { get; private set; }
+
+    /// <summary>The placed decoration being moved, if this is a move rather than a new one.</summary>
+    public int? MovingDecorationId { get; private set; }
 
     /// <summary>The way the player has turned chairs with Z; null lets each chair face away from the nearest wall.</summary>
     public WallSide? ChairFacing { get; private set; }
@@ -160,10 +175,10 @@ public partial class BuildTool : Node2D
         Restart();
     }
 
-    public void StartCorridor()
+    public void StartCorridor(RoomTemplate? template = null)
     {
         Mode = BuildMode.Corridor;
-        Template = _sim.Database.RoomTemplates.Values.First(t => t.IsCorridor);
+        Template = template ?? _sim.Database.RoomTemplates.Values.First(t => t.IsCorridor && t.Id != DecorItems.OpenAreaTemplate);
         MovingId = null;
         Restart();
     }
@@ -178,6 +193,69 @@ public partial class BuildTool : Node2D
         ChairFacing = null;
         Restart();
     }
+
+    /// <summary>Starts placing a decoration: each click places one.</summary>
+    public void StartDecoration(string itemId)
+    {
+        Mode = BuildMode.Decoration;
+        Template = null;
+        MovingId = null;
+        MovingDecorationId = null;
+        if (DecorItemId != itemId)
+        {
+            DecorFacing = null;
+        }
+
+        DecorItemId = itemId;
+        if (DecorItems.Find(itemId) is { Tintable: true } item && !DecorItems.Colours.Any(c => c.Hex == DecorColour))
+        {
+            DecorColour = item.DefaultTint;
+        }
+
+        Restart();
+    }
+
+    /// <summary>Picks up a placed decoration to put it somewhere else (free).</summary>
+    public void StartDecorationMove(int id)
+    {
+        if (_sim.FindDecoration(id) is not { } placed)
+        {
+            return;
+        }
+
+        Mode = BuildMode.Decoration;
+        Template = null;
+        MovingId = null;
+        MovingDecorationId = id;
+        DecorItemId = placed.ItemId;
+        DecorFacing = placed.Facing;
+        DecorColour = placed.Colour ?? DecorColour;
+        Restart();
+    }
+
+    /// <summary>The way a decoration placed at <paramref name="tile"/> now would face: as turned, else back to a wall if that fits.</summary>
+    public WallSide DecorFacingFor(GridCoord tile)
+    {
+        if (DecorFacing is { } chosen)
+        {
+            return chosen;
+        }
+
+        var suggested = _sim.SuggestChairFacing(tile);
+        var order = new[] { suggested, WaitingRoomLayout.Clockwise(suggested), WaitingRoomLayout.Opposite(suggested), WaitingRoomLayout.Clockwise(WaitingRoomLayout.Opposite(suggested)) };
+        foreach (var facing in order)
+        {
+            if (DecorCheck(tile, facing).CanBuild)
+            {
+                return facing;
+            }
+        }
+
+        return suggested;
+    }
+
+    private BuildCheck DecorCheck(GridCoord tile, WallSide facing) =>
+        MovingDecorationId is { } id ? _sim.CheckMoveDecoration(id, tile, facing) : _sim.CheckDecoration(DecorItemId, tile, facing);
 
     /// <summary>Starts moving and buying resus trolleys.</summary>
     public void StartTrolleys()
@@ -217,6 +295,9 @@ public partial class BuildTool : Node2D
                 break;
             case BuildMode.Desk:
                 DeskFacing = WaitingRoomLayout.Clockwise(DeskFacing);
+                break;
+            case BuildMode.Decoration:
+                DecorFacing = WaitingRoomLayout.Clockwise(DecorFacing ?? DecorFacingFor(_hover));
                 break;
             case BuildMode.Room when Template is { } room:
                 // Step the door round to the next wall, corridor or not; the furniture turns with it. A door on a wall
@@ -353,6 +434,7 @@ public partial class BuildTool : Node2D
 
         Mode = BuildMode.None;
         MovingId = null;
+        MovingDecorationId = null;
         CarriedTrolley = null;
         _dragStart = null;
         Check = null;
@@ -409,12 +491,12 @@ public partial class BuildTool : Node2D
 
                 return true;
 
-            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door or BuildMode.Helipad or BuildMode.RoomDoor:
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true } when Mode is BuildMode.Desk or BuildMode.Door or BuildMode.Helipad or BuildMode.RoomDoor or BuildMode.Decoration:
                 Refresh(force: true);
                 Place();
                 return true;
 
-            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Z } when Mode is BuildMode.Chair or BuildMode.Desk or BuildMode.Room:
+            case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Z } when Mode is BuildMode.Chair or BuildMode.Desk or BuildMode.Room or BuildMode.Decoration:
                 Turn();
                 return true;
 
@@ -511,6 +593,15 @@ public partial class BuildTool : Node2D
                 break;
             }
 
+            case BuildMode.Decoration when MovingDecorationId is { } moving:
+                result = _sim.MoveDecoration(moving, _hover, DecorFacingFor(_hover));
+                what = $"Moved the {DecorItems.Find(DecorItemId)?.Name.ToLowerInvariant()}";
+                break;
+            case BuildMode.Decoration:
+                result = _sim.PlaceDecoration(DecorItemId, _hover, DecorFacingFor(_hover), DecorColour);
+                what = $"Placed a {DecorItems.Find(DecorItemId)?.Name.ToLowerInvariant()}";
+                break;
+
             case BuildMode.Desk when TargetRoom is { } deskRoom:
                 result = _sim.PlaceReceptionDesk(deskRoom.Id, _hover, DeskFacing);
                 what = $"Placed the reception desk in {deskRoom.Name}";
@@ -557,7 +648,7 @@ public partial class BuildTool : Node2D
         }
 
         Built?.Invoke(result.Cost < 0 ? $"{what}: £{-result.Cost:N0} refunded." : result.Cost == 0 ? $"{what}." : $"{what} for £{result.Cost:N0}.");
-        if (MovingId is not null)
+        if (MovingId is not null || MovingDecorationId is not null)
         {
             Cancel();
             return;
@@ -599,7 +690,7 @@ public partial class BuildTool : Node2D
 
         // Moving a door only changes when the cursor reaches another wall position.
         var doorKey = Mode == BuildMode.RoomDoor && MovingId is { } d && _sim.FindSpace(d) is { } dr ? _sim.DoorPlanAt(dr, _hover).ToString() : string.Empty;
-        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{ChairStyle}|{DeskFacing}|{DoorChoice}|{_doorPinned}|{doorKey}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}";
+        var key = $"{Mode}|{_rect}|{_sim.Balance}|{_sim.Helipad}|{_dragStart}|{ChairFacing}|{ChairColour}|{ChairStyle}|{DeskFacing}|{DoorChoice}|{_doorPinned}|{doorKey}|{CarriedTrolley?.Id}|{_sim.ResusTrolleys.Count}|{DecorItemId}|{DecorFacing}|{DecorColour}|{MovingDecorationId}|{_sim.PlacedDecorations.Count}";
         if (!force && key == _planKey)
         {
             return;
@@ -616,6 +707,7 @@ public partial class BuildTool : Node2D
         Check = Mode switch
         {
             BuildMode.Chair => CheckChairs(),
+            BuildMode.Decoration => DecorCheck(_hover, DecorFacingFor(_hover)),
             BuildMode.Helipad when OverHelipad => _sim.CheckRemoveHelipad(),
             BuildMode.Helipad => _sim.CheckHelipad(HelipadCorner),
             BuildMode.Trolley when CarriedTrolley is null && HoveredTrolley is not null => new BuildCheck(0, Array.Empty<string>()),
@@ -629,6 +721,7 @@ public partial class BuildTool : Node2D
             BuildMode.Room => _sim.CheckRoom(_sim.AutoPlan(Template!.Id, _rect, MovingId, DoorChoice, _doorPinned), MovingId),
             BuildMode.RoomDoor when MovingId is null => new BuildCheck(0, new[] { "Pick a room first." }),
             BuildMode.RoomDoor => _sim.CheckDoorAt(MovingId, _hover),
+            BuildMode.Corridor when _dragStart is null && Template!.Id == DecorItems.OpenAreaTemplate => new BuildCheck(0, new[] { "Drag out the open area from corner to corner. It joins up with the corridors." }),
             BuildMode.Corridor when _dragStart is null => new BuildCheck(0, new[] { "Drag out the corridor from corner to corner. It can cross other corridors." }),
             BuildMode.Corridor => _sim.CheckRoom(new RoomPlan(Template!.Id, _rect, WallSide.South)),
             _ when _dragStart is null => new BuildCheck(0, new[] { "Drag out the area to add to the building." }),
@@ -677,6 +770,12 @@ public partial class BuildTool : Node2D
         if (Mode == BuildMode.Chair)
         {
             DrawChairPreview();
+            return;
+        }
+
+        if (Mode == BuildMode.Decoration)
+        {
+            DrawDecorationPreview();
             return;
         }
 
@@ -816,8 +915,60 @@ public partial class BuildTool : Node2D
         Ghosts = ghosts;
     }
 
-    /// <summary>A see-through copy of something about to be placed, for the 3D view to draw: a chair (by style) or a decoration.</summary>
-    public sealed record Ghost(string Kind, double X, double Y, int Dx, int Dy, Color Colour, bool Chair);
+    /// <summary>The decoration under the cursor: its tiles green or red, the item itself see-through, and the cost.</summary>
+    private void DrawDecorationPreview()
+    {
+        if (DecorItems.Find(DecorItemId) is not { } item)
+        {
+            return;
+        }
+
+        var facing = DecorFacingFor(_hover);
+        var ok = Check!.CanBuild;
+        var colour = ok ? Good : Bad;
+        var tiles = DecorItems.Footprint(item, _hover, facing).ToList();
+        foreach (var tile in tiles)
+        {
+            var quad = new[] { P(tile.X, tile.Y), P(tile.X + 1, tile.Y), P(tile.X + 1, tile.Y + 1), P(tile.X, tile.Y + 1) };
+            DrawColoredPolygon(quad, new Color(colour, ok && ThreeD ? 0.12f : 0.25f));
+            DrawPolyline(quad.Append(quad[0]).ToArray(), colour, 2f, true);
+        }
+
+        var (x, y) = DecorItems.Centre(item, _hover, facing);
+        var (dx, dy) = DecorItems.Front(facing);
+        var tint = new Color(DecorItems.TintOf(item, DecorColour));
+        if (ThreeD)
+        {
+            Ghosts = new[] { new Ghost(item.Kind, x, y, dx, dy, tint, Chair: false, Wall: item.OnWall, Length: item.Width) };
+        }
+        else
+        {
+            var pen = TopDown.Pen.OnMap(this);
+            pen.Alpha = ok ? 0.8f : 0.45f;
+            if (item.OnWall)
+            {
+                TopDown.PublicPropsKit.WallItem(pen, item.Kind, x, y, item.Width == 1 ? 0.6 : item.Width - 0.4, dx, dy);
+            }
+            else if (!TopDown.FurnitureKit.Prop(pen, item.Kind, x, y, Decorations.PlacedScale, dx, dy))
+            {
+                TopDown.PublicPropsKit.Prop(pen, item.Kind, x, y, dx, dy, tint);
+            }
+
+            pen.Done();
+        }
+
+        // An arrow showing which way its front faces.
+        var centre = IsoDraw.ToScreen(_hover.X + 0.5, _hover.Y + 0.5);
+        DrawLine(centre, centre + (ChairArt.ScreenDirection(facing) * 0.55f), new Color("#1D2B36"), 2f, true);
+        var last = tiles.MaxBy(t => IsoDraw.ToScreen(t.X + 1, t.Y).X);
+        CostTag(P(last.X + 1, last.Y));
+    }
+
+    /// <summary>
+    /// A see-through copy of something about to be placed, for the 3D view to draw: a chair (by style) or a decoration
+    /// (a floor prop, or a <paramref name="Wall"/> item <paramref name="Length"/> tiles long on the wall behind (X, Y)).
+    /// </summary>
+    public sealed record Ghost(string Kind, double X, double Y, int Dx, int Dy, Color Colour, bool Chair, bool Wall = false, int Length = 1);
 
     /// <summary>What the 3D view should show see-through where the player is about to place it (empty when nothing is).</summary>
     public IReadOnlyList<Ghost> Ghosts { get; private set; } = Array.Empty<Ghost>();

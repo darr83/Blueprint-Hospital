@@ -404,5 +404,5 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A patient who has had something to eat or drink recently is half as likely to walk out; with no toilets, more likely.</summary>
     private double WalkOutFactor(Patient patient) =>
-        (patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0) * ToiletWalkOutFactor() * PlayWalkOutFactor(patient);
+        (patient.LastRefreshmentAt is { } at && Now - at < RefreshmentLasts ? 0.5 : 1.0) * ToiletWalkOutFactor() * PlayWalkOutFactor(patient) * ComfortWalkOutFactor(patient);
 }

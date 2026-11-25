@@ -1,6 +1,7 @@
 using BlueprintHospital.Core;
 using BlueprintHospital.Simulation.Agents;
 using System.Linq;
+using System.Collections.Generic;
 using BlueprintHospital.Simulation.Core;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Simulation;
@@ -263,6 +264,11 @@ public partial class HospitalScene : Node2D
         _hud.Doctors.PlayRequested += m => EnterDoctorMode(m);
         _hud.StaffInfo.PlayRequested += m => EnterDoctorMode(m);
         _hud.ItemInfo.RoomRequested += room => _hud.ShowRoom(room);
+        _hud.ItemInfo.MoveDecorationRequested += id =>
+        {
+            _hud.HideRightPanels();
+            _build.StartDecorationMove(id);
+        };
         _hud.ItemInfo.PatientRequested += p => SelectPatient(p, centre: true);
         _hud.GridToggled += ToggleGrid;
         _hud.RoutesToggled += ToggleRoutes;
@@ -762,7 +768,48 @@ public partial class HospitalScene : Node2D
             }
         }
 
+        // Decorations the player placed; a rug only when nothing standing on it is under the point.
+        if (!bedsOnly)
+        {
+            foreach (var (home, item) in DecorationItems())
+            {
+                var rug = _session.Simulation.FindDecoration(DecorationId(item) ?? 0)?.Item?.Flat == true;
+                var area = (item.Width * item.Length) + (rug ? 1000 : 0);
+                if (Hit((item.X, item.Y, item.Width, item.Length)) && area < bestArea)
+                {
+                    best = (home, item);
+                    bestArea = area;
+                }
+            }
+        }
+
         return best;
+    }
+
+    /// <summary>The item id the item panel uses for a placed decoration.</summary>
+    public const string DecorationItemPrefix = "decor#";
+
+    /// <summary>The placed decoration an item stands for, if it is one.</summary>
+    public static int? DecorationId(PlacedFurniture item) =>
+        item.ItemId.StartsWith(DecorationItemPrefix, System.StringComparison.Ordinal) && int.TryParse(item.ItemId[DecorationItemPrefix.Length..], out var id) ? id : null;
+
+    /// <summary>Each decoration on the floor in view as a piece of furniture over its tiles, with the space it stands in.</summary>
+    private IEnumerable<(CareSpace Room, PlacedFurniture Item)> DecorationItems()
+    {
+        var sim = _session.Simulation;
+        foreach (var placed in sim.PlacedDecorations.Where(d => d.Item is not null && IsoDraw.OnViewFloor(d.Tile.Y)))
+        {
+            var tiles = sim.FootprintOf(placed).ToList();
+            var home = sim.Spaces.Where(s => s.Rect.Contains(placed.Tile)).OrderBy(s => s.Kind == CareSpaceKind.Corridor ? 1 : 0).FirstOrDefault();
+            if (home is null || tiles.Count == 0)
+            {
+                continue;
+            }
+
+            var (x0, y0) = (tiles.Min(t => t.X), tiles.Min(t => t.Y));
+            var item = new PlacedFurniture($"{DecorationItemPrefix}{placed.Id}", x0 + 0.05, y0 + 0.05, tiles.Max(t => t.X) - x0 + 0.9, tiles.Max(t => t.Y) - y0 + 0.9);
+            yield return (home, item);
+        }
     }
 
     /// <summary>
@@ -854,6 +901,43 @@ public partial class HospitalScene : Node2D
                     bestDepth = depth;
                 }
             }
+        }
+
+        // Decorations the player placed (wall items reach up the wall); a rug only when nothing else is under the point.
+        if (!bedsOnly)
+        {
+            (CareSpace, PlacedFurniture)? rugHit = null;
+            foreach (var (home, item) in DecorationItems())
+            {
+                var placed = _session.Simulation.FindDecoration(DecorationId(item) ?? 0)?.Item;
+                const double pad = 0.05;
+                var lift = new Vector2(0, -(placed?.OnWall == true ? 2.2f : placed?.Flat == true ? 0.05f : 1.0f) * IsoDraw.PixelsPerMetre);
+                var floor = new[]
+                {
+                    IsoDraw.ToScreen(item.X - pad, item.Y - pad), IsoDraw.ToScreen(item.X + item.Width + pad, item.Y - pad),
+                    IsoDraw.ToScreen(item.X + item.Width + pad, item.Y + item.Length + pad), IsoDraw.ToScreen(item.X - pad, item.Y + item.Length + pad),
+                };
+                var hull = Geometry2D.ConvexHull(floor.Concat(floor.Select(p => p + lift)).ToArray());
+                if (!Geometry2D.IsPointInPolygon(world, hull))
+                {
+                    continue;
+                }
+
+                if (placed?.Flat == true)
+                {
+                    rugHit ??= (home, item);
+                    continue;
+                }
+
+                var depth = IsoDraw.ToScreen(item.CentreX, item.CentreY).Y;
+                if (depth > bestDepth)
+                {
+                    best = (home, item);
+                    bestDepth = depth;
+                }
+            }
+
+            best ??= rugHit;
         }
 
         return best;

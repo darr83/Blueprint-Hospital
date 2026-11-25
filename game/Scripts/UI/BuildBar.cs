@@ -45,6 +45,11 @@ public partial class BuildBar : Control
     private VBoxContainer? _chairRow;
     private readonly List<(string Hex, Button Swatch)> _swatches = new();
     private readonly List<(string Style, Button Button)> _styleButtons = new();
+
+    /// <summary>Colour swatches and turning for decorations, shown while placing one.</summary>
+    private HBoxContainer? _decorRow;
+    private HBoxContainer? _decorSwatchBox;
+    private readonly List<(string Hex, Button Swatch)> _decorSwatches = new();
     private Control? _hoverAnchor;
     private string? _selectedItem;
     private string? _flash;
@@ -271,7 +276,16 @@ public partial class BuildBar : Control
     private int LockedUntil(string item) => _sim.IsRoomUnlocked(item) ? 0 : _sim.LevelOfRoom(item);
 
     /// <summary>The items an icon pops up: in a Career game, those unlocked and those of the next level.</summary>
-    private List<string> ShownItems(BuildMenuIcon icon) => icon.Items.Where(i => !IsFarOff(_sim.IsCareer ? _sim.LevelOfRoom(i) : 0)).ToList();
+    private List<string> ShownItems(BuildMenuIcon icon) =>
+        icon.Items.Where(i => !IsFarOff(_sim.IsCareer ? _sim.LevelOfRoom(i) : 0))
+            .Concat(icon.Id == BuildMenu.Decorations && !IsFarOff(_sim.IsCareer ? _sim.LevelOfRoom(BuildMenu.Decorations) : 0)
+                ? DecorItems.All.Select(d => DecorItems.TilePrefix + d.Id)
+                : Enumerable.Empty<string>())
+            .ToList();
+
+    /// <summary>The decoration a build bar tile places, if it is one.</summary>
+    private static DecorItem? DecorOf(string item) =>
+        item.StartsWith(DecorItems.TilePrefix, StringComparison.Ordinal) ? DecorItems.Find(item[DecorItems.TilePrefix.Length..]) : null;
 
     /// <summary>Hides far-off icons, and shows the rest (called as the level changes).</summary>
     private void RefreshIconVisibility()
@@ -315,6 +329,9 @@ public partial class BuildBar : Control
         _openButton = null;
         _chairRow = null;
         _swatches.Clear();
+        _decorRow = null;
+        _decorSwatchBox = null;
+        _decorSwatches.Clear();
         _styleButtons.Clear();
         _hover.Visible = false;
         _hoverAnchor = null;
@@ -427,6 +444,12 @@ public partial class BuildBar : Control
             _popupBody.AddChild(_chairRow);
         }
 
+        if (icon.Id == BuildMenu.Decorations)
+        {
+            _decorRow = DecorOptions();
+            _popupBody.AddChild(_decorRow);
+        }
+
         _popupBody.AddChild(_status);
         RefreshTiles();
         RefreshStatus();
@@ -491,6 +514,44 @@ public partial class BuildBar : Control
         auto.Pressed += _tool.AutoFacing;
         row.AddChild(auto);
         return rows;
+    }
+
+    /// <summary>The row under the tiles while placing a decoration: its colour (for items that take one), and turning.</summary>
+    private HBoxContainer DecorOptions()
+    {
+        var row = new HBoxContainer { Visible = false };
+        row.AddThemeConstantOverride("separation", 6);
+        _decorSwatchBox = new HBoxContainer();
+        _decorSwatchBox.AddThemeConstantOverride("separation", 6);
+        var label = new Label { Text = "Colour", SizeFlagsVertical = SizeFlags.ShrinkCenter, CustomMinimumSize = new Vector2(84, 0) };
+        label.AddThemeFontSizeOverride("font_size", 13);
+        label.AddThemeColorOverride("font_color", UiStyle.TextMuted);
+        _decorSwatchBox.AddChild(label);
+        foreach (var (name, hex) in DecorItems.Colours)
+        {
+            var swatch = new Button { FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(30, 30), TooltipText = name, ToggleMode = true };
+            foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed" })
+            {
+                var box = UiStyle.Box(new Color(hex), 6, state is "pressed" or "hover_pressed" ? UiStyle.TextDark : state == "hover" ? Colors.White : new Color(hex).Darkened(0.2f));
+                box.BorderWidthBottom = box.BorderWidthTop = box.BorderWidthLeft = box.BorderWidthRight = state is "pressed" or "hover_pressed" ? 3 : 1;
+                swatch.AddThemeStyleboxOverride(state, box);
+            }
+
+            swatch.Pressed += () =>
+            {
+                _tool.DecorColour = hex;
+                RefreshStatus();
+            };
+            _decorSwatches.Add((hex, swatch));
+            _decorSwatchBox.AddChild(swatch);
+        }
+
+        _decorSwatchBox.AddChild(new Control { CustomMinimumSize = new Vector2(10, 0) });
+        row.AddChild(_decorSwatchBox);
+        var turn = new Button { Text = "Turn (Z)", FocusMode = FocusModeEnum.None, ThemeTypeVariation = UiStyle.Secondary, CustomMinimumSize = new Vector2(0, 30), TooltipText = "Turn it a quarter" };
+        turn.Pressed += _tool.Turn;
+        row.AddChild(turn);
+        return row;
     }
 
     private Button Tile(BuildMenuIcon icon, string item)
@@ -669,6 +730,14 @@ public partial class BuildBar : Control
         }
 
         _selectedItem = item;
+        if (DecorOf(item) is { } decor)
+        {
+            _tool.StartDecoration(decor.Id);
+            RefreshTiles();
+            RefreshStatus();
+            return;
+        }
+
         switch (item)
         {
             case BuildMenu.ExtendBuilding:
@@ -698,7 +767,7 @@ public partial class BuildBar : Control
                 var template = _sim.Database.RoomTemplates[item];
                 if (template.IsCorridor)
                 {
-                    _tool.StartCorridor();
+                    _tool.StartCorridor(template);
                 }
                 else
                 {
@@ -742,6 +811,20 @@ public partial class BuildBar : Control
 
     private void RefreshStatus()
     {
+        if (_decorRow is not null)
+        {
+            _decorRow.Visible = _tool.Mode == BuildMode.Decoration;
+            if (_decorSwatchBox is not null)
+            {
+                _decorSwatchBox.Visible = DecorItems.Find(_tool.DecorItemId) is { Tintable: true };
+            }
+
+            foreach (var (hex, swatch) in _decorSwatches)
+            {
+                swatch.SetPressedNoSignal(string.Equals(hex, _tool.DecorColour, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
         if (_chairRow is not null)
         {
             _chairRow.Visible = _tool.Mode == BuildMode.Chair;
@@ -765,6 +848,8 @@ public partial class BuildBar : Control
                 {
                     BuildMode.Chair => $"Click to place a chair, drag for a row · facing {_tool.FacingFor(_tool.Hover).ToString().ToLowerInvariant()} · Z turns",
                     BuildMode.Desk => $"Click to place the reception desk · Z turns",
+                    BuildMode.Decoration when _tool.MovingDecorationId is not null => $"Click to put it here · facing {_tool.DecorFacingFor(_tool.Hover).ToString().ToLowerInvariant()} · Z turns",
+                    BuildMode.Decoration => $"Click to place · facing {_tool.DecorFacingFor(_tool.Hover).ToString().ToLowerInvariant()} · Z turns",
                     BuildMode.Trolley when _tool.CarriedTrolley is null && _tool.HoveredTrolley is not null => "Click to pick this trolley up and move it" + (_tool.HoveredTrolley.HomeRoomId is null ? " · X sells it" : string.Empty),
                     BuildMode.Trolley when _tool.CarriedTrolley is not null => "Click to keep the trolley here",
                     BuildMode.Trolley => "Click to buy a resus trolley and keep it here",
@@ -807,6 +892,7 @@ public partial class BuildBar : Control
             {
                 BuildMode.Chair => "Click a waiting room or corridor tile for a chair, drag for a row · Z turns · Right click or Esc stops",
                 BuildMode.Desk => "Click inside a waiting room to place its reception desk · Z turns · Right click or Esc stops",
+                BuildMode.Decoration => "Click a corridor, open area or waiting room to place it · Z turns · Right click or Esc stops",
                 BuildMode.Trolley => "Click a resus trolley to move it, or empty floor to buy one · Right click or Esc stops",
                 BuildMode.Door => "Click a waiting room wall: on the front path for the entrance, on a corridor for the way through · Right click or Esc stops",
                 BuildMode.Room => "Drag on the floor from corner to corner · Z moves the door to another wall · Right click or Esc stops",
@@ -869,6 +955,7 @@ public partial class BuildBar : Control
         BuildMenu.ResusTrolleys => "Resus trolleys",
         BuildMenu.WaitingDesk => "Reception desk",
         BuildMenu.WaitingDoors => "Waiting room doors",
+        _ when DecorOf(item) is { } decor => decor.Name,
         _ => _sim.Database.RoomTemplates.TryGetValue(item, out var t) ? t.Name : item,
     };
 
@@ -876,6 +963,26 @@ public partial class BuildBar : Control
     {
         const string muted = "[color=#5B6B79]";
         var lines = new List<string> { $"[b]{ItemName(item)}[/b]" };
+        if (DecorOf(item) is { } decor)
+        {
+            lines.Add(DecorBlurb(decor));
+            var size = decor.OnWall ? $"{Units.TilesToMetres(decor.Width):0.#} m of wall" : $"{Units.TilesToMetres(decor.Width):0.#} × {Units.TilesToMetres(decor.Depth):0.#} m";
+            lines.Add($"{muted}Size[/color]  {size}");
+            lines.Add($"{muted}Cost[/color]  £{decor.Cost:N0}; turning, moving{(decor.Tintable ? " or recolouring" : string.Empty)} it is free; sells for half");
+            if (decor.SeatSpecs.Count > 0)
+            {
+                lines.Add($"{muted}Seats[/color]  {decor.SeatSpecs.Count}, used by anyone waiting nearby");
+            }
+
+            if (decor.Comfort)
+            {
+                lines.Add($"{muted}Comfort[/color]  patients waiting nearby are a little less likely to walk out");
+            }
+
+            lines.Add($"{muted}Placed[/color]  {_sim.BuiltCount(item)}");
+            return string.Join("\n", lines);
+        }
+
         switch (item)
         {
             case BuildMenu.ExtendBuilding:
@@ -998,6 +1105,14 @@ public partial class BuildBar : Control
 
         return string.Join("\n", lines);
     }
+
+    private static string DecorBlurb(DecorItem decor) => decor switch
+    {
+        { OnWall: true } => "Hangs on a solid wall along a corridor, an open area or a waiting room (not on a doorway or a room's glass front).",
+        { Flat: true } => "Lies on the floor of an open area or waiting room. Chairs, tables and sofas can stand on it.",
+        { OpenAreaOnly: true } => "For open areas and waiting rooms. Anywhere on the floor, as long as doorways stay clear.",
+        _ => "Along a corridor it stands against a wall and leaves room to walk past. In an open area or waiting room it goes anywhere.",
+    };
 
     // ------------------------------------------------------------------ room facts, shared with the room panel
 

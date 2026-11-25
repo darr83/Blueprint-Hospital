@@ -1,11 +1,13 @@
 {
-  "_comment": "The bottom build bar. Each icon pops up a row of rooms. A room may sit under several icons (shared rooms). Room ids that don't exist yet are skipped, an icon whose department doesn't exist is hidden, and any room template not listed here is added to the icon of its own department. The decorate icon has no items: it opens the Decorate tool. Special items: helipad, extend_building, add_floor, waiting_chairs, waiting_desk, waiting_doors, resus_trolleys.",
+  "_comment": "The bottom build bar. Each icon pops up a row of rooms. A room may sit under several icons (shared rooms). Room ids that don't exist yet are skipped, an icon whose department doesn't exist is hidden, and any room template not listed here is added to the icon of its own department. The decorate icon has no items: it opens the Decorate tool. The decorations icon adds a tile for every placeable decoration after its listed items. Special items: helipad, extend_building, add_floor, waiting_chairs, waiting_desk, waiting_doors, resus_trolleys.",
   "groups": [
     {
       "name": "Building",
       "icons": [
         { "id": "building", "label": "Building", "name": "Hospital building", "colour": "#37474F", "glyph": "building",
-          "items": ["extend_building", "add_floor", "corridor", "waiting_chairs", "resus_trolleys", "lift", "stairs"] },
+          "items": ["extend_building", "add_floor", "corridor", "open_area", "waiting_chairs", "resus_trolleys", "lift", "stairs"] },
+        { "id": "decorations", "label": "Decor", "name": "Decorations and open areas", "colour": "#4E9A5B", "glyph": "plant",
+          "items": ["open_area"] },
         { "id": "decorate", "label": "Decorate", "name": "Decorate rooms", "colour": "#1F5FBF", "glyph": "roller", "items": [] }
       ]
     },

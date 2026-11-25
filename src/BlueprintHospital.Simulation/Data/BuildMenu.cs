@@ -17,6 +17,9 @@ public sealed class BuildMenu
     /// <summary>The icon that opens the Decorate tool: click a room to choose its floor and walls.</summary>
     public const string Decorate = "decorate";
 
+    /// <summary>The icon that pops up the open area and every decoration the player can place.</summary>
+    public const string Decorations = "decorations";
+
     /// <summary>Pops up the building extension tool.</summary>
     public const string ExtendBuilding = "extend_building";
 

@@ -55,6 +55,7 @@ public sealed partial class HospitalSimulation
     /// <summary>The look a new room built from this template gets: the player's choice for that kind of room, or its usual one.</summary>
     public RoomDecor NewRoomDecor(string templateId) =>
         _decorDefaults.TryGetValue(templateId, out var chosen) ? chosen
+        : templateId == DecorItems.OpenAreaTemplate ? new RoomDecor(FloorFinish.WoodPlanks, "#C99A6B")
         : Database.RoomTemplates.TryGetValue(templateId, out var template) ? DecorCatalogue.StartingLook(template.Kind)
         : RoomDecor.Standard;
 

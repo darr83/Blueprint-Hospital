@@ -239,6 +239,13 @@ public partial class RoomsLayer : Node2D
             Furnish(p, space);
         }
 
+        // Rugs lie on the floor under the chairs and everything else.
+        foreach (var rug in Decorations.FloorPieces.Where(d => d.Kind == "Rug"))
+        {
+            PublicPropsKit.Prop(p, rug.Kind, rug.X, rug.Y, rug.Dx, rug.Dy, new Color(rug.Tint ?? "#3F6E8C"));
+            PropCount++;
+        }
+
         foreach (var chair in _world.Chairs)
         {
             var (cx, cy) = ChairArt.Centre(chair.Tile, chair.Facing, chair.Shift);
@@ -280,10 +287,21 @@ public partial class RoomsLayer : Node2D
         // The room decorations standing on the floor, and the small things on the desks.
         foreach (var prop in Decorations.FloorPieces)
         {
-            if (FurnitureKit.Prop(p, prop.Kind, prop.X, prop.Y, prop.Scale, prop.Dx, prop.Dy))
+            if (prop.Kind != "Rug" && (FurnitureKit.Prop(p, prop.Kind, prop.X, prop.Y, prop.Scale, prop.Dx, prop.Dy)
+                || PublicPropsKit.Prop(p, prop.Kind, prop.X, prop.Y, prop.Dx, prop.Dy, new Color(prop.Tint ?? "#2A9187"))))
             {
                 PropCount++;
             }
+        }
+
+        // Pictures, boards, clocks and screens the player hung on the walls.
+        foreach (var placed in _sim.PlacedDecorations.Where(d => d.Item is { OnWall: true } && IsoDraw.OnViewFloor(d.Tile.Y)))
+        {
+            var item = placed.Item!;
+            var (x, y) = DecorItems.Centre(item, placed.Tile, placed.Facing);
+            var (dx, dy) = DecorItems.Front(placed.Facing);
+            PublicPropsKit.WallItem(p, item.Kind, x, y, item.Width == 1 ? 0.6 : item.Width - 0.4, dx, dy);
+            PropCount++;
         }
 
         foreach (var top in Decorations.TopPieces)
