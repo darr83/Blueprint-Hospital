@@ -306,12 +306,30 @@ public sealed partial class HospitalSimulation
             _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(role))));
         }
 
+        // The tutorial's list always has enough of A&E's own staff for a day and a night team.
+        if (IsTutorial)
+        {
+            foreach (var (role, count) in TutorialCandidates)
+            {
+                for (var n = _candidates.Count(c => c.Role == role); n < count; n++)
+                {
+                    _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(role))));
+                }
+            }
+        }
+
         // A Career hospital with only a few kinds of staff still gets a decent list to choose from.
         while (IsCareer && roles.Count > 0 && _candidates.Count < MinimumCandidates)
         {
             _candidates.Add(MakeCandidate(PickGrade(GradesOpenFor(roles[RecruitRandom.Range(0, roles.Count - 1)]))));
         }
     }
+
+    /// <summary>How many of each of A&amp;E's own staff every tutorial list has: enough for both shifts of a small A&amp;E.</summary>
+    private static readonly (StaffRole Role, int Count)[] TutorialCandidates =
+    {
+        (StaffRole.Receptionist, 3), (StaffRole.Nurse, 6), (StaffRole.Doctor, 6), (StaffRole.HealthcareAssistant, 3), (StaffRole.Porter, 3),
+    };
 
     /// <summary>The fewest candidates in each list of a Career game.</summary>
     public const int MinimumCandidates = 8;

@@ -56,6 +56,8 @@ public partial class SmokeTest : Node
         Settings,
         NewGameChoice,
         EmptyBuilding,
+        Tutorial,
+        TutorialBuild,
         WaitForHospital,
         RunSimulation,
         Notifications,
@@ -212,6 +214,7 @@ public partial class SmokeTest : Node
                 {
                     // The view is picked on the main menu, before a game starts.
                     var menu = (UI.MainMenu)scene;
+                    Check(menu.TutorialButton.Visible && !menu.TutorialButton.Disabled, "The main menu has no Tutorial button.");
                     Check(menu.View2DButton.ButtonPressed != menu.View3DButton.ButtonPressed && menu.View3DButton.ButtonPressed == manager.Settings.View3D, "The main menu does not show which view is chosen.");
                     manager.Settings.View3D = ThreeD;
                     Check(GameView.ThreeD == ThreeD, "The view chosen on the main menu was not taken up.");
@@ -247,6 +250,41 @@ public partial class SmokeTest : Node
                 Check(empty.Session.Clock.Now.Month == 4 && empty.Session.Clock.Now.DayOfWeek == System.DayOfWeek.Monday, $"A new game should start on the first Monday in April, not {empty.Session.Clock.Now:dddd d MMMM}.");
                 Check(empty.Session.Simulation.SeasonsEnabled && empty.Session.Simulation.Seasons is not null, "A new game should have seasons on.");
                 GD.Print($"[smoke] Empty building: no rooms, no staff, £{empty.Session.Simulation.Balance:N0}, closed until it has {string.Join(", ", empty.Session.Simulation.ClosedReasons)}.");
+                manager.StartTutorial();
+                _frame = 0;
+                _stage = Stage.Tutorial;
+                break;
+
+            case Stage.Tutorial when scene is HospitalScene tutorial && tutorial.IsNodeReady() && _frame >= 15:
+                Screenshot("01d_tutorial");
+                {
+                    var tutorialSim = tutorial.Session.Simulation;
+                    Check(tutorialSim.IsTutorial && !tutorialSim.Spaces.Any() && !tutorialSim.Staff.Any(), "The tutorial should start on an empty building.");
+                    Check(tutorial.Session.Clock.IsPaused, "The tutorial should start paused.");
+                    Check(tutorial.Tutorial is { } card && card.Visible && card.Guide.Current.Id == "welcome", "The tutorial card did not show its welcome.");
+                    var guide = tutorial.Tutorial!;
+                    var screen = guide.GetViewportRect();
+                    Check(screen.Encloses(guide.CardRect) && guide.CardRect.Position.X >= UI.MainHUD.NavWidth, $"The tutorial card {guide.CardRect} is not on screen beside the navigation.");
+                    guide.Guide.Next();
+                    Check(guide.Guide.Current.Id == "camera", "Next did not move the tutorial on.");
+                    guide.Guide.Next();
+                    tutorial.SetMode(GameMode.Build);
+                }
+
+                _frame = 0;
+                _stage = Stage.TutorialBuild;
+                break;
+
+            // A finished step shows its tick for a moment before the next comes up.
+            case Stage.TutorialBuild when scene is HospitalScene tutorial && _frame >= 5 && (tutorial.Tutorial!.Guide.Current.Id != "build_mode" || _frame >= 600):
+                {
+                    // Build mode ticks off its step; the card then points at the A&E icon for the waiting room.
+                    var guide = tutorial.Tutorial!;
+                    Check(guide.Guide.Current.Id == "waiting_room", $"Build mode did not tick off its tutorial step (on {guide.Guide.Current.Id}).");
+                    Check(guide.PointingAt == "bar:emergency", $"The tutorial should point at the A&E icon, not {guide.PointingAt}.");
+                    GD.Print($"[smoke] Tutorial: card shows, Next and Build mode move it on, pointing at {guide.PointingAt}.");
+                }
+
                 manager.StartNewGame("Smoke Test General");
                 _stage = Stage.WaitForHospital;
                 break;

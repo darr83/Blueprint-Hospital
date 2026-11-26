@@ -15,6 +15,12 @@ public enum GameType
 
     /// <summary>Start as a small walk-in centre and unlock the rest by meeting each level's goals.</summary>
     Career,
+
+    /// <summary>
+    /// The guided tutorial: an empty building where the player builds and staffs a small A&amp;E step by step.
+    /// Everything is unlocked as in Sandbox, but only adults who are green or amber walk in, at a gentle rate.
+    /// </summary>
+    Tutorial,
 }
 
 /// <summary>Published when a Career hospital reaches a new level.</summary>
@@ -45,6 +51,12 @@ public sealed class ProgressionState
 
     /// <summary>The level's scripted major incident has happened.</summary>
     public bool ScriptedIncidentDone { get; init; }
+
+    /// <summary>How far through the tutorial the player is (Tutorial games only).</summary>
+    public int TutorialStep { get; init; }
+
+    /// <summary>The patient the tutorial follows (Tutorial games only).</summary>
+    public int? TutorialFirstPatientId { get; init; }
 }
 
 /// <summary>
@@ -67,6 +79,27 @@ public sealed partial class HospitalSimulation
 
     /// <summary>True when this is a Career game (and the game data has levels).</summary>
     public bool IsCareer => Type == GameType.Career && Database.Levels.Count > 0;
+
+    /// <summary>True when this is the guided tutorial.</summary>
+    public bool IsTutorial => Type == GameType.Tutorial;
+
+    /// <summary>The tutorial step the player is on (saved with the game; the guide itself lives in <see cref="TutorialGuide"/>).</summary>
+    public int TutorialStep { get; set; }
+
+    /// <summary>The patient the tutorial follows through A&amp;E: the first to come in once it opened.</summary>
+    public int? TutorialFirstPatientId { get; set; }
+
+    public Patient? TutorialFirstPatient =>
+        TutorialFirstPatientId is { } id ? FindPatient(id) ?? DepartedPatients.FirstOrDefault(p => p.Id == id) : null;
+
+    /// <summary>Career and the tutorial both keep who comes in to what the hospital can look after.</summary>
+    private bool LimitsPatients => IsCareer || IsTutorial;
+
+    /// <summary>The features the tutorial's patients bring: green and amber adults who walk in, nothing else.</summary>
+    private static readonly IReadOnlySet<string> TutorialFeatures = new HashSet<string>(StringComparer.Ordinal) { LevelFeatures.AmberPatients };
+
+    /// <summary>How busy A&amp;E is in the tutorial, as a share of a full hospital's arrivals.</summary>
+    public const double TutorialArrivalRate = 0.4;
 
     /// <summary>The Career level reached, from 1. 0 in a Sandbox game.</summary>
     public int Level { get; private set; }
@@ -118,10 +151,12 @@ public sealed partial class HospitalSimulation
     public bool IsGradeUnlocked(StaffGrades.Grade grade) => !IsCareer || LevelOfGrade(grade) <= Level;
 
     /// <summary>Whether a part of the game is switched on: always in Sandbox; from its level in Career. A feature no level lists is always on.</summary>
-    public bool IsFeatureOn(string feature) => !IsCareer || LevelOfFeature(feature) <= Level;
+    public bool IsFeatureOn(string feature) =>
+        IsTutorial ? !LevelFeatures.All.Contains(feature) || TutorialFeatures.Contains(feature)
+        : !IsCareer || LevelOfFeature(feature) <= Level;
 
     /// <summary>How busy A&amp;E is at this level, as a share of a full hospital's arrivals (1 in Sandbox).</summary>
-    public double LevelArrivalRate => CurrentLevel?.ArrivalRate ?? 1;
+    public double LevelArrivalRate => CurrentLevel?.ArrivalRate ?? (IsTutorial ? TutorialArrivalRate : 1);
 
     /// <summary>The worst a patient can start before red patients are unlocked.</summary>
     public const double MaxSeverityBeforeRedPatients = 0.4;
@@ -137,7 +172,7 @@ public sealed partial class HospitalSimulation
     /// Paediatrics department's own illnesses wait until it is open, so earlier levels keep their mix.
     /// </summary>
     private bool CanArriveAtThisLevel(ConditionDefinition condition) =>
-        !IsCareer || ((IsDepartmentOpen(condition.Department) || (CanBeSentHomeFromEmergency(condition) && condition.Department != PaediatricsDepartmentId))
+        !LimitsPatients || ((IsDepartmentOpen(condition.Department) || (CanBeSentHomeFromEmergency(condition) && condition.Department != PaediatricsDepartmentId))
                       && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients)
                       && (IsFeatureOn(LevelFeatures.Children) || condition.AgeRange.Length < 2 || condition.AgeRange[1] >= AdultAge));
 
@@ -145,7 +180,8 @@ public sealed partial class HospitalSimulation
     private bool CanBeSentHomeFromEmergency(ConditionDefinition condition) =>
         condition.Disposition == Disposition.Discharge
         && condition.KeyInvestigations.All(id => !Database.Investigations.TryGetValue(id, out var test) || test.Room is not { } room
-                                                 || Database.RoomTemplates.Values.Any(t => t.Kind == room && IsRoomUnlocked(t.Id)));
+                                                 || (IsTutorial ? UsableSpaces.Any(s => s.Kind == room)
+                                                     : Database.RoomTemplates.Values.Any(t => t.Kind == room && IsRoomUnlocked(t.Id))));
 
     /// <summary>
     /// Whether a newly made patient suits this level: an adult until children are unlocked, and no
@@ -154,7 +190,7 @@ public sealed partial class HospitalSimulation
     /// </summary>
     private bool SuitsThisLevel(Patient patient)
     {
-        if (!IsCareer)
+        if (!LimitsPatients)
         {
             return true;
         }
@@ -424,6 +460,8 @@ public sealed partial class HospitalSimulation
         ProgressDay = _progressDay,
         LevelReachedAt = _levelReachedAt,
         ScriptedIncidentDone = _scriptedIncidentDone,
+        TutorialStep = TutorialStep,
+        TutorialFirstPatientId = TutorialFirstPatientId,
     };
 
     /// <summary>Puts back Career progress; a save without any is a Sandbox game.</summary>
@@ -431,6 +469,8 @@ public sealed partial class HospitalSimulation
     {
         Type = state?.Type ?? GameType.Sandbox;
         Level = IsCareer ? Math.Clamp(state!.Level, 1, Database.Levels.Count) : 0;
+        TutorialStep = state?.TutorialStep ?? 0;
+        TutorialFirstPatientId = state?.TutorialFirstPatientId;
         _levelBaselines.Clear();
         if (state is not null)
         {

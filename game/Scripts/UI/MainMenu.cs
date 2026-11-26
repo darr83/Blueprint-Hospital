@@ -33,7 +33,11 @@ public partial class MainMenu : Control
 
         var newGame = UiStyle.Button("New Game", ShowNewGame);
         var loadGame = UiStyle.SecondaryButton("Load Game", () => AddChild(new LoadGamePanel()));
+        var tutorial = UiStyle.SecondaryButton("Tutorial", () => GameManager.Instance.StartTutorial());
+        tutorial.TooltipText = "New to the game? Build a small A&E step by step, from an empty building to your first patient.";
+        TutorialButton = tutorial;
         column.AddChild(newGame);
+        column.AddChild(tutorial);
         column.AddChild(loadGame);
         column.AddChild(BuildViewChoice());
         column.AddChild(UiStyle.SecondaryButton("Settings", () => AddChild(new SettingsPanel())));
@@ -42,6 +46,7 @@ public partial class MainMenu : Control
         if (manager.DataLoadError is { } error)
         {
             newGame.Disabled = true;
+            tutorial.Disabled = true;
             loadGame.Disabled = true;
             var errorLabel = UiStyle.Body("The game data could not be loaded, so a game can't be started. Fix these problems and restart:\n\n" + error);
             errorLabel.AddThemeColorOverride("font_color", new Color("#B71C1C"));
@@ -60,11 +65,14 @@ public partial class MainMenu : Control
         {
             SmokeTest.Begin(this);
         }
-        else if (!BlueprintHospital.Core.PerfProbe.Begin() && !BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.LayoutShots.Begin() && !BlueprintHospital.Core.WeatherShots.Begin() && !BlueprintHospital.Core.FestiveShots.Begin() && !BlueprintHospital.Core.IncidentShots.Begin() && !BlueprintHospital.Core.HelipadShots.Begin() && !BlueprintHospital.Core.OutbreakShots.Begin() && !BlueprintHospital.Core.SurgeryShots.Begin() && !BlueprintHospital.Core.PaediatricsShots.Begin() && !BlueprintHospital.Core.VisitorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.CursorShots.Begin() && !BlueprintHospital.Core.ResultShots.Begin() && !BlueprintHospital.Core.DetailShots.Begin())
+        else if (!BlueprintHospital.Core.PerfProbe.Begin() && !BlueprintHospital.Core.ModelShots.Begin() && !BlueprintHospital.Core.PeopleShots3D.Begin() && !BlueprintHospital.Core.AnimShots.Begin() && !BlueprintHospital.Core.SeatShots.Begin() && !BlueprintHospital.Core.DoctorShots.Begin() && !BlueprintHospital.Core.DoorShots.Begin() && !BlueprintHospital.Core.LayoutShots.Begin() && !BlueprintHospital.Core.WeatherShots.Begin() && !BlueprintHospital.Core.FestiveShots.Begin() && !BlueprintHospital.Core.IncidentShots.Begin() && !BlueprintHospital.Core.HelipadShots.Begin() && !BlueprintHospital.Core.OutbreakShots.Begin() && !BlueprintHospital.Core.SurgeryShots.Begin() && !BlueprintHospital.Core.PaediatricsShots.Begin() && !BlueprintHospital.Core.VisitorShots.Begin() && !BlueprintHospital.Core.CareerShots.Begin(this) && !BlueprintHospital.Core.SiteShots.Begin() && !BlueprintHospital.Core.CursorShots.Begin() && !BlueprintHospital.Core.ResultShots.Begin() && !BlueprintHospital.Core.DetailShots.Begin() && !BlueprintHospital.Core.TutorialShots.Begin(this))
         {
             ArtShots.Begin(this);
         }
     }
+
+    /// <summary>The Tutorial button (for the smoke test).</summary>
+    public Button TutorialButton { get; private set; } = null!;
 
     /// <summary>The 2D button of the view choice.</summary>
     public Button View2DButton { get; private set; } = null!;

@@ -251,7 +251,7 @@ public sealed partial class HospitalSimulation
             }
             else if (!stabilised && (patient.Stage != PatientStage.Leaving || !condition.CanBeFatal))
             {
-                var worst = IsCareer ? WorstSeverityAtThisLevel(patient) : condition.CanBeFatal ? 1.0 : 0.9;
+                var worst = LimitsPatients ? WorstSeverityAtThisLevel(patient) : condition.CanBeFatal ? 1.0 : 0.9;
                 patient.Severity = Math.Max(patient.Severity, Math.Min(worst, patient.Severity + (condition.DeteriorationPerHour * support * hours)));
             }
 
