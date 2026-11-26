@@ -702,6 +702,15 @@ public partial class BuildBar : Control
     /// <summary>The number on a tile's count badge in the open pop-up, or null when the tile isn't shown (for the smoke test).</summary>
     public string? CountShown(string item) => _counts.TryGetValue(item, out var count) ? count.Text.Text : null;
 
+    /// <summary>The item being placed from the bar, while its tool is in use (e.g. "corridor", "waiting_desk").</summary>
+    public string? SelectedItem => _tool.Active ? _selectedItem : null;
+
+    /// <summary>An icon on the bar, by id, for the tutorial to point at.</summary>
+    public Control? IconFor(string iconId) => _icons.GetValueOrDefault(iconId);
+
+    /// <summary>A tile in the open pop-up, by item id, for the tutorial to point at.</summary>
+    public Control? TileFor(string item) => _popup.Visible && _tiles.TryGetValue(item, out var tile) && tile.IsVisibleInTree() ? tile : null;
+
     /// <summary>Picks a tile in the open pop-up as if clicked (for the smoke test).</summary>
     public void Choose(string item) => Pick(item);
 

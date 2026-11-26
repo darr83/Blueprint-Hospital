@@ -62,6 +62,9 @@ public partial class HospitalScene : Node2D
 
     public MainHUD Hud => _hud;
 
+    /// <summary>The tutorial's guide card, in a tutorial game that hasn't been ended.</summary>
+    public BlueprintHospital.UI.TutorialPanel? Tutorial { get; private set; }
+
     /// <summary>Be A Doctor: playing one of the doctors, from above with the arrow keys in 2D or through their eyes in 3D.</summary>
     public DoctorMode Doctor => _doctor;
 
@@ -329,6 +332,29 @@ public partial class HospitalScene : Node2D
             Outpatient o when _session.Simulation.FindAppointment(o.AppointmentId) is { } a => (_world.FootPosition(o), a.FullName),
             _ => null,
         };
+
+        // The tutorial's guide card, and its outline of where to build on the map (both views).
+        if (_session.Simulation.IsTutorial && _session.Simulation.TutorialStep != TutorialGuide.Ended)
+        {
+            Tutorial = new BlueprintHospital.UI.TutorialPanel();
+            _hud.AddChild(Tutorial);
+            Tutorial.Initialise(this);
+            var hint = new BlueprintHospital.UI.TutorialMapHint();
+            AddChild(hint);
+            hint.Initialise(Tutorial);
+
+            // A new tutorial starts paused with the board folded away: there is nothing to see until A&E opens.
+            if (_session.Simulation.TutorialStep == 0 && _session.InitialCamera is null)
+            {
+                _session.Clock.SetSpeed(SimulationSpeed.Paused);
+                if (_hud.BoardShown)
+                {
+                    _hud.ToggleBoard();
+                }
+
+                Callable.From(Tutorial.FrameBuilding).CallDeferred();
+            }
+        }
 
         // A new game starts with the site plan: where the main entrance and ambulance bays go.
         if (manager.SitePlanning is not null)

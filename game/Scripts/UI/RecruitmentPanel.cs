@@ -21,6 +21,9 @@ public partial class RecruitmentPanel : PanelContainer
     private double _refresh;
     private Button _hireTeam = null!;
 
+    /// <summary>The "Hire minimum team" button, for the tutorial to point at.</summary>
+    public Control HireTeamButton => _hireTeam;
+
     public void Initialise(HospitalSimulation simulation)
     {
         _sim = simulation;

@@ -330,6 +330,18 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Shows or hides the A&amp;E board.</summary>
     public void ToggleBoard() => _left.Visible = !_left.Visible;
 
+    /// <summary>The A&amp;E board's area on screen, when it is showing (the tutorial card sits beside it).</summary>
+    public Rect2? BoardRect => _left.Visible ? _left.GetGlobalRect() : null;
+
+    /// <summary>A button on the left-hand navigation, by its label ("Build", "Hire"...), for the tutorial to point at.</summary>
+    public Control? NavButtonFor(string label) => _nav.GetValueOrDefault(label);
+
+    /// <summary>The Play or Build switch button in the top bar.</summary>
+    public Control? ModeButtonFor(BlueprintHospital.Hospital.GameMode mode) => _modeButtons.GetValueOrDefault(mode);
+
+    /// <summary>A clock speed button in the top bar.</summary>
+    public Control? SpeedButtonFor(SimulationSpeed speed) => _speedButtons.GetValueOrDefault(speed);
+
     public void Initialise(GameSession session, BlueprintHospital.Hospital.BuildTool tool)
     {
         _session = session;

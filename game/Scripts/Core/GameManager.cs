@@ -67,6 +67,14 @@ public partial class GameManager : Node
     }
 
     /// <summary>
+    /// Starts the guided tutorial: an empty building on the usual site, money that can't run out, no emergencies,
+    /// seasons or major incidents, and only green and amber adults walking in once A&amp;E opens.
+    /// </summary>
+    public void StartTutorial() =>
+        StartNewGame("Tutorial Hospital", Simulation.Simulation.StartingHospital.EmptyBuilding, unlimitedMoney: true, Simulation.Simulation.WardEmergencyFrequency.Off,
+            Simulation.Simulation.GameType.Tutorial, seasons: new SeasonChoice(false, SeasonChoice.Default.StartMonth, Simulation.Simulation.MajorIncidentFrequency.Off));
+
+    /// <summary>
     /// While a new game's site plan is being chosen: what the player picked on the New Game panel. The hospital
     /// is built again for each choice of entrance, so the picture always shows the real layout.
     /// </summary>
