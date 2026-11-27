@@ -1,0 +1,65 @@
+[
+  {
+    "id": "thoughts_of_suicide",
+    "name": "Thoughts of suicide",
+    "patient_description": "I keep thinking everyone would be better off without me.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "low_mood",
+    "name": "Low mood",
+    "patient_description": "I've felt empty and hopeless for weeks.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "not_sleeping",
+    "name": "Not sleeping",
+    "patient_description": "I can't sleep. I've hardly slept for days.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "self_inflicted_cuts",
+    "name": "Self-inflicted cuts",
+    "patient_description": "I cut my arm. I didn't know what else to do.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "not_eating_drinking",
+    "name": "Not eating or drinking",
+    "patient_description": "They've stopped eating and barely drink anything.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "hearing_voices",
+    "name": "Hearing voices",
+    "patient_description": "There are voices talking about me when no one's there.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "paranoia",
+    "name": "Feeling watched",
+    "patient_description": "People are following me. They've put cameras in my flat.",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "racing_thoughts",
+    "name": "Racing thoughts",
+    "patient_description": "My thoughts are going so fast, I've got so many plans!",
+    "body_system": "general",
+    "is_red_flag": false
+  },
+  {
+    "id": "recent_drug_use",
+    "name": "Recent drug use",
+    "patient_description": "I took something at a party last night.",
+    "body_system": "general",
+    "is_red_flag": false
+  }
+]

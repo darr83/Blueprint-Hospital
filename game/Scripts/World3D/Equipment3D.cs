@@ -34,6 +34,10 @@ public static partial class Furnish3D
             case "toy_shelf": Shelves(b, w, d, h, colour, seed, toys: true); return true;
             case "games_shelf": Shelves(b, w, d, h, colour, seed, toys: false); return true;
             case "play_mat": PlayMat(b, w, d, colour); return true;
+            case "bolted_table": BoltedTable(b, w, d, h, colour); return true;
+            case "soft_sofa": SoftSofa(b, w, d, h, colour); return true;
+            case "safety_door": SafetyDoor(b, glass, w, d, h, colour); return true;
+            case "alarm_strip": AlarmStrip(b, w, d); return true;
             case "tv_unit": TvUnit(b, w, d, h, colour); return true;
             case "breast_pump": BreastPump(b, glass, h, colour); return true;
             case "toilet_pan": Toilet(b, w, d, false); return true;
@@ -386,6 +390,47 @@ public static partial class Furnish3D
         Blk(b, -w * 0.3f, d * 0.3f, 0.14f, 0.08f, cabinet, H(1), new Color("#2B333C"));
         Blk(b, w * 0.32f, d * 0.3f, 0.14f, 0.08f, cabinet, H(1), new Color("#D32F2F"));
     }
+
+    // ------------------------------------------------------------------ mental health assessment room
+
+    /// <summary>A low table on a solid plinth, bolted to the floor: rounded top, nothing to pick up.</summary>
+    private static void BoltedTable(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        Blk(b, 0, 0, w * 0.55f, d * 0.55f, 0, h - H(1.5f), colour.Darkened(0.2f));
+        Blk(b, 0, 0, w, d, h - H(1.5f), H(1.5f), colour);
+        Blk(b, 0, 0, w * 0.62f, d * 0.62f, 0, H(0.4f), new Color("#7D8A95"));
+    }
+
+    /// <summary>A heavy two-seat sofa against the wall: solid base to the floor, wide arms, a back and two cushions.</summary>
+    private static void SoftSofa(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        var seat = H(14);
+        var arm = Math.Min(0.22f, w * 0.12f);
+        Blk(b, 0, 0, w, d, 0, seat - H(3), colour.Darkened(0.18f));
+        var cushion = (w - (2 * arm)) / 2;
+        foreach (var side in new[] { -1f, 1f })
+        {
+            Blk(b, side * cushion / 2, d * 0.12f, cushion - 0.03f, d * 0.75f, seat - H(3), H(3), colour);
+            Blk(b, side * ((w / 2) - (arm / 2)), 0, arm, d, 0, seat + H(6), colour.Darkened(0.08f));
+        }
+
+        Blk(b, 0, -(d / 2) + (d * 0.14f), w - (2 * arm), d * 0.28f, seat - H(3), h - seat + H(3), colour.Darkened(0.05f));
+    }
+
+    /// <summary>The second way out: a door flat against the wall in its frame, with a narrow vision panel and a push plate.</summary>
+    private static void SafetyDoor(MeshBatch b, MeshBatch glass, float w, float d, float h, Color colour)
+    {
+        var face = -(d / 2) + 0.03f;
+        Blk(b, 0, face, w, 0.06f, 0, h, colour.Darkened(0.15f));
+        Blk(b, 0, face + 0.035f, w - 0.14f, 0.02f, 0, h - H(1.5f), new Color("#F2F5F7"));
+        glass.Box(new Vector3(-w * 0.12f, h * 0.62f, face + 0.05f), new Vector3(w * 0.16f, h * 0.3f, 0.01f), new Color("#9ED0E6", 0.6f));
+        Blk(b, w * 0.3f, face + 0.05f, w * 0.12f, 0.015f, h * 0.42f, H(5), new Color("#B8C2CC"));
+        Blk(b, 0, face + 0.05f, w * 0.7f, 0.01f, h * 0.02f, H(2.5f), new Color("#C9D3DB"));
+    }
+
+    /// <summary>The red staff alarm strip along the wall at hand height.</summary>
+    private static void AlarmStrip(MeshBatch b, float w, float d) =>
+        Blk(b, 0, -(d / 2) + 0.02f, w, 0.04f, Kit3D.M(1.0), H(1.4f), new Color("#E53935"));
 
     private static void BreastPump(MeshBatch b, MeshBatch glass, float h, Color colour)
     {

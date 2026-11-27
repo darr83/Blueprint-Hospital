@@ -507,6 +507,55 @@ public static class FurnitureKit
                 TvUnit(p, w, d, colour);
                 return true;
 
+            // ---- mental health assessment room: nothing loose, nothing sharp
+            case "bolted_table":
+                // A low round-cornered table, its feet bolted down at the corners.
+                p.Box(l, t, w, d, 0.14, colour);
+                p.Round(l + 0.07, t + 0.07, w - 0.14, d - 0.14, 0.1, Pen.Light(colour, 0.1f));
+                foreach (var (bx, by) in new[] { (l + 0.12, t + 0.12), (l + w - 0.12, t + 0.12), (l + 0.12, t + d - 0.12), (l + w - 0.12, t + d - 0.12) })
+                {
+                    p.Circle(bx, by, 0.035, C("#7D8A95"));
+                }
+
+                p.Circle(0, 0, 0.12, C("#F2F5F7"), C("#B8C1CA"), 0.02);
+                return true;
+
+            case "soft_sofa":
+            {
+                // A heavy two-seat sofa: solid arms, a back along the wall and two cushions.
+                p.Shadow(c => p.Round(l, t, w, d, 0.16, c));
+                p.Round(l, t, w, d, 0.16, Pen.Dark(colour, 0.12f), Pen.Outline(colour), 0.03);
+                p.Round(l, t, w, d * 0.3, 0.1, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
+                var arm = Math.Min(0.22, w * 0.12);
+                p.Round(l, t, arm, d, 0.08, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
+                p.Round(l + w - arm, t, arm, d, 0.08, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
+                var seat = (w - (2 * arm)) / 2;
+                for (var i = 0; i < 2; i++)
+                {
+                    p.Round(l + arm + (i * seat) + 0.04, t + (d * 0.3), seat - 0.08, (d * 0.7) - 0.06, 0.08, Pen.Light(colour, 0.12f));
+                }
+
+                return true;
+            }
+
+            case "safety_door":
+            {
+                // The second way out: a door flat in the wall with a vision panel, swinging into the room.
+                var leaf = C("#F2F5F7");
+                p.Rect(l, t, w, Math.Max(d, 0.14), colour);
+                p.Rect(l + 0.08, t + 0.02, w - 0.16, Math.Max(d, 0.14) - 0.04, leaf);
+                p.Rect(l + (w * 0.3), t + 0.03, w * 0.4, 0.05, C("#9ED0E6"));
+                p.Arc(l + 0.1, t + 0.1, w - 0.2, 0, Math.PI / 2, new Color(colour, 0.6f), 0.025, dashed: true);
+                p.Circle(l + w - 0.25, t + 0.1, 0.05, C("#7D8A95"));
+                return true;
+            }
+
+            case "alarm_strip":
+                // A red alarm strip along the wall: press anywhere to call for help.
+                p.Rect(l, t, w, Math.Max(d, 0.08), C("#E53935"));
+                p.Rect(l, t + Math.Max(d, 0.08) - 0.025, w, 0.025, C("#9E1F1B"));
+                return true;
+
             default:
                 return false;
         }
@@ -640,6 +689,13 @@ public static class FurnitureKit
                 p.Round(-0.5, -0.5, 1, 0.96, 0.16, Pen.Dark(colour, 0.12f), Pen.Outline(colour), 0.03);
                 p.Round(-0.33, -0.3, 0.66, 0.7, 0.1, Pen.Light(colour, 0.12f));
                 p.Round(-0.5, -0.5, 1, 0.24, 0.1, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
+                break;
+            case "fixed_seat":
+                // A heavy moulded armchair fixed to the floor: wide solid arms, no gaps, no loose cushions.
+                p.Shadow(c => p.Round(-0.46, -0.46, 0.92, 0.9, 0.2, c), 0.05, 0.08);
+                p.Round(-0.46, -0.46, 0.92, 0.9, 0.2, Pen.Dark(colour, 0.14f), Pen.Outline(colour), 0.03);
+                p.Round(-0.3, -0.26, 0.6, 0.66, 0.14, Pen.Light(colour, 0.12f));
+                p.Round(-0.46, -0.46, 0.92, 0.22, 0.12, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
                 break;
             case "beam_seat":
                 p.Rect(-0.5, -0.04, 1.0, 0.1, C("#5E6770"));

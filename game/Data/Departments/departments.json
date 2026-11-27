@@ -130,6 +130,16 @@
     "opening_cost": 225000
   },
   {
+    "id": "mental_health",
+    "name": "Mental Health",
+    "short_name": "MH",
+    "description": "Mental health care. The liaison team see A&E patients in mental health crisis once their body has been treated, in a calm, safe assessment room, ideally within an hour. Without a mental health ward, patients who need admitting are transferred to a mental health hospital.",
+    "colour": "#0097A7",
+    "starts_unlocked": false,
+    "is_shared_service": false,
+    "opening_cost": 200000
+  },
+  {
     "id": "maternity",
     "name": "Maternity",
     "short_name": "MAT",

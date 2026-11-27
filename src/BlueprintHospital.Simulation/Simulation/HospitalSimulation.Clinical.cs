@@ -56,6 +56,11 @@ public sealed partial class HospitalSimulation
                 if (task.SpaceId is { } procedureRoom && FindSpace(procedureRoom) is { IsServiceRoom: true } specialistRoom)
                 {
                     patient.Log(Now, $"{task.Label} done by {member.Name} in {specialistRoom.Name}.");
+                    if (specialistRoom.Kind == CareSpaceKind.MentalHealthAssessment)
+                    {
+                        RecordLiaisonAssessment(patient, task);
+                    }
+
                     ReturnFromServiceRoom(patient);
                 }
 

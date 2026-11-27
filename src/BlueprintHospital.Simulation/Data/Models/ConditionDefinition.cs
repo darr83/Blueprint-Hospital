@@ -392,9 +392,9 @@ public sealed class ConditionDefinition : IDataRecord
             {
                 context.RequireText($"treatment[{i}].name", step.Name);
                 context.RequireRange($"treatment[{i}].minutes", step.Minutes, 1, 600);
-                if (step.Room is { } room && room != CareSpaceKind.PlasterRoom)
+                if (step.Room is { } room && room is not (CareSpaceKind.PlasterRoom or CareSpaceKind.MentalHealthAssessment))
                 {
-                    context.Error($"treatment[{i}].room", "must be plaster_room.");
+                    context.Error($"treatment[{i}].room", "must be plaster_room or mental_health_assessment.");
                 }
             }
         }

@@ -156,6 +156,13 @@ public static class Looks
             : age >= 52 ? Pick(seed, 11, HairStyle.Balding, HairStyle.Receding, HairStyle.Bald, HairStyle.Short, HairStyle.SidePart)
             : Pick(seed, 11, HairStyle.Short, HairStyle.Crop, HairStyle.SidePart, HairStyle.Quiff, HairStyle.Curly, HairStyle.Short, HairStyle.Receding);
 
+    /// <summary>A mental health nurse's polo: navy trousers, a personal alarm, keys on the belt and a lanyard.</summary>
+    private static PersonLook MentalHealthPolo(string colour, string? collar, StaffLook who, Color hair) =>
+        new(new Color(colour), new Color("#1E2A3A"), who.Skin, hair)
+        {
+            Kind = TopKind.Polo, Trim = collar is null ? null : new Color(collar), Lanyard = true, Alarm = true, Keys = true, ShoeColour = new Color("#1C1F22"),
+        };
+
     public static PersonLook Staff(StaffMember member)
     {
         var seed = member.Id;
@@ -166,6 +173,7 @@ public static class Looks
         {
             StaffRole.Midwife => Roll(seed, 3, 10) != 0,
             StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.ScrubNurse or StaffRole.Receptionist or StaffRole.ChildrensNurse => Roll(seed, 3, 10) < 7,
+            StaffRole.MentalHealthNurse => Roll(seed, 3, 10) < 6,
             StaffRole.Porter => Roll(seed, 3, 10) < 3,
             _ => Roll(seed, 3, 2) == 0,
         };
@@ -223,6 +231,27 @@ public static class Looks
             StaffRole.PlaySpecialist => new PersonLook(new Color(Is("Band 5") ? "#2E7D32" : "#43A047"), new Color("#2B3A55"), who.Skin, hair)
             {
                 Kind = TopKind.Tee, Motif = new Color("#FFD54F"), Lanyard = true, LanyardColour = new Color("#E8408A"), ShoeColour = new Color("#F2F4F7"),
+            },
+
+            // Mental health nurses: no tunic or stethoscope, a teal polo that deepens with the band, with a
+            // personal alarm and keys on the belt. Band 6 liaison nurses have an amber collar.
+            StaffRole.MentalHealthNurse when Is("Band 8") || Is("Matron") => MentalHealthPolo("#004F59", null, who, hair) with { Epaulettes = new Color("#8FD9E4") },
+            StaffRole.MentalHealthNurse when Is("Band 7") || Is("Manager") => MentalHealthPolo("#00707E", null, who, hair),
+            StaffRole.MentalHealthNurse when Is("Band 6") => MentalHealthPolo("#00ACC1", "#F2B134", who, hair),
+            StaffRole.MentalHealthNurse => MentalHealthPolo("#8FD9E4", null, who, hair),
+
+            // Psychiatrists: smart casual, no tie, no white coat, no stethoscope; consultants in a blazer.
+            StaffRole.Psychiatrist when Is("Consultant") => new PersonLook(new Color("#EEF2F5"), new Color("#30343C"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, Jacket = Pick(seed, 15, new Color("#2B3A55"), new Color("#4A4F57"), new Color("#5B4636")), Lanyard = true, Alarm = true, ShoeColour = new Color("#3A2A1E"),
+            },
+            StaffRole.Psychiatrist when Is("Registrar") || Is("Specialty") => new PersonLook(Pick(seed, 14, new Color("#6E8FAF"), new Color("#7B6E9C"), new Color("#5E8C7A")), new Color("#2E3440"), who.Skin, hair)
+            {
+                Kind = TopKind.Jumper, Trim = new Color("#F2F4F7"), Lanyard = true, Alarm = true, ShoeColour = new Color("#3A2A1E"),
+            },
+            StaffRole.Psychiatrist => new PersonLook(ShirtColours[Roll(seed, 14, ShirtColours.Length)], new Color("#3A3F4A"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, Lanyard = true, Alarm = true, ShoeColour = new Color("#2A2A2E"),
             },
 
             // Theatre and procedure staff: scrubs, a cap and a mask.

@@ -58,6 +58,12 @@ public enum StaffRole
 
     /// <summary>Hospital play specialist: runs the play room or teenage room, where children waiting in A&amp;E come to play.</summary>
     PlaySpecialist,
+
+    /// <summary>Mental health nurse (RMN): in A&amp;E as a liaison nurse, seeing people in crisis in the mental health assessment room.</summary>
+    MentalHealthNurse,
+
+    /// <summary>Psychiatrist: a doctor for the mind, who sees people in the mental health assessment room.</summary>
+    Psychiatrist,
 }
 
 public enum StaffActivity

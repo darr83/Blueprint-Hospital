@@ -679,6 +679,20 @@ public static partial class Furnish3D
         var frame = new Color("#5E6770");
         const float half = 0.42f;
         const float depth = 0.36f;
+        if (id == "fixed_seat")
+        {
+            // A heavy moulded armchair on a solid plinth to the floor: no legs, no gaps, wide solid arms.
+            Blk(b, 0, 0, half * 2.1f, depth * 2.2f, 0, seat - H(3), colour.Darkened(0.2f));
+            Blk(b, 0, 0.04f, half * 1.6f, depth * 1.9f, seat - H(3), H(3), colour);
+            Blk(b, 0, -depth + 0.02f, half * 2.1f, 0.16f, seat - H(3), H(17), colour.Darkened(0.06f));
+            foreach (var side in new[] { -1f, 1f })
+            {
+                Blk(b, side * (half + 0.01f), 0, 0.14f, depth * 2.2f, 0, seat + H(6), colour.Darkened(0.1f));
+            }
+
+            return;
+        }
+
         if (id == "beam_seat")
         {
             // Linked airport-style seating: a steel beam with perforated steel seats, a leg under each.

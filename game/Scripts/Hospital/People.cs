@@ -179,6 +179,12 @@ public sealed record PersonLook(Color Top, Color Trousers, Color Skin, Color Hai
 
     public bool Radio { get; init; }
 
+    /// <summary>A personal attack alarm clipped to the belt (mental health staff): a small black box with a red pull tab.</summary>
+    public bool Alarm { get; init; }
+
+    /// <summary>A bunch of ward keys on a belt chain (mental health staff).</summary>
+    public bool Keys { get; init; }
+
     /// <summary>The hair style actually drawn.</summary>
     public HairStyle Hairdo => Style;
 }
@@ -693,6 +699,25 @@ public static partial class Figures
             var at = P((away ? -1 : 1) * r.HipW * 0.6f, r.HipY - 5);
             pen.Rect(at + new Vector2(-1.7f, 0), new Vector2(3.4f, 5.5f), black);
             pen.Line(at + new Vector2(0.9f, 0), at + new Vector2(0.9f, -3.5f), black, 0.9f);
+        }
+
+        if (look.Alarm)
+        {
+            // A personal alarm on the belt, its red pull tab on top.
+            var at = P((away ? -1 : 1) * r.HipW * 0.55f, r.HipY - 4);
+            pen.Rect(at + new Vector2(-1.5f, 0), new Vector2(3f, 3.6f), new Color("#1C1F22"));
+            pen.Rect(at + new Vector2(-0.8f, -1.1f), new Vector2(1.6f, 1.2f), new Color("#E53935"));
+        }
+
+        if (look.Keys)
+        {
+            // Keys on a short chain from the belt on the other hip.
+            var silver = new Color("#B8C2CC");
+            var at = P((away ? 1 : -1) * r.HipW * 0.55f, r.HipY - 3);
+            pen.Line(at, at + new Vector2(0, 2.5f), silver, 0.7f);
+            pen.Arc(at + new Vector2(0, 3.6f), 1.2f, 0, Mathf.Tau, silver, 0.6f);
+            pen.Line(at + new Vector2(-0.6f, 4.6f), at + new Vector2(-1.2f, 7f), new Color("#D4AF37"), 0.8f);
+            pen.Line(at + new Vector2(0.6f, 4.6f), at + new Vector2(1f, 6.8f), silver, 0.8f);
         }
 
         // Arms: short sleeves and bare forearms (bare below the elbows) unless in long sleeves or a coat.

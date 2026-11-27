@@ -172,7 +172,7 @@ public sealed partial class HospitalSimulation
     /// Paediatrics department's own illnesses wait until it is open, so earlier levels keep their mix.
     /// </summary>
     private bool CanArriveAtThisLevel(ConditionDefinition condition) =>
-        !LimitsPatients || ((IsDepartmentOpen(condition.Department) || (CanBeSentHomeFromEmergency(condition) && condition.Department != PaediatricsDepartmentId))
+        !LimitsPatients || ((IsDepartmentOpen(condition.Department) || (CanBeSentHomeFromEmergency(condition) && condition.Department is not (PaediatricsDepartmentId or MentalHealthDepartmentId)))
                       && (IsFeatureOn(LevelFeatures.RedPatients) || condition.InitialSeverity.Length < 2 || condition.InitialSeverity[1] <= MaxSeverityBeforeRedPatients)
                       && (IsFeatureOn(LevelFeatures.Children) || condition.AgeRange.Length < 2 || condition.AgeRange[1] >= AdultAge));
 

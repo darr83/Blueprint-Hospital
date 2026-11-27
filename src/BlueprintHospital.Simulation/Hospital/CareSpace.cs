@@ -105,6 +105,12 @@ public enum CareSpaceKind
 
     /// <summary>A parents' room on the children's wards: a sofa, a kettle and a table, where parents take a break.</summary>
     ParentsRoom,
+
+    /// <summary>
+    /// Mental health assessment room, off A&amp;E: the liaison team (a mental health nurse or psychiatrist) see
+    /// people in crisis here once A&amp;E has treated their body. Soft seats fixed down, nothing loose, a second door.
+    /// </summary>
+    MentalHealthAssessment,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -244,7 +250,8 @@ public sealed class CareSpace
     /// <summary>A room with its own staff who come and go with it: imaging, theatres and pharmacy.</summary>
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
         or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab
-        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice or CareSpaceKind.DeliveryRoom;
+        or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice or CareSpaceKind.DeliveryRoom
+        or CareSpaceKind.MentalHealthAssessment;
 
     /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
     public static bool IsTestRoom(CareSpaceKind kind) =>

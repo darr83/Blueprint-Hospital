@@ -26,6 +26,7 @@ public partial class StatsPanel : PanelContainer
     private readonly StatsBarChart _arrivalsChart = new(UiStyle.Blue, UiStyle.Red);
     private readonly StatsBarChart _moneyChart = new(Positive, UiStyle.Red);
     private PanelContainer _maternity = null!;
+    private PanelContainer _mentalHealth = null!;
     private HospitalSimulation _sim = null!;
     private StatsPeriod _period = StatsPeriod.Last24Hours;
     private double _refresh;
@@ -124,6 +125,11 @@ public partial class StatsPanel : PanelContainer
             ("neonatal_out", "Babies sent elsewhere"), ("diverted", "Mothers sent elsewhere"),
         });
         grid.AddChild(_maternity);
+        _mentalHealth = Card("Mental health", new[]
+        {
+            ("liaison_seen", "Seen by the liaison team"), ("liaison_hour", "Seen within an hour"), ("liaison_wait", "Average wait to be seen"),
+        });
+        grid.AddChild(_mentalHealth);
         grid.AddChild(Card("Staff and facilities", new[]
         {
             ("on_shift", "Staff on shift"), ("hired", "Hired"), ("left_staff", "Left"), ("accidents", "Toilet accidents"),
@@ -383,6 +389,12 @@ public partial class StatsPanel : PanelContainer
         SetValue("neonatal", Count(T(StatKeys.NeonatalAdmissions)));
         SetValue("neonatal_out", Count(T(StatKeys.NeonatalTransfers)));
         SetValue("diverted", Count(T(StatKeys.MaternityDiverted)), null, T(StatKeys.MaternityDiverted) > 0 ? UiStyle.AmberText : null);
+        var liaison = T(StatKeys.LiaisonSeen);
+        _mentalHealth.Visible = _sim.IsUnlocked(HospitalSimulation.MentalHealthDepartmentId) || history.Total(StatsPeriod.AllTime, now, StatKeys.LiaisonSeen) > 0;
+        SetValue("liaison_seen", Count(liaison));
+        SetValue("liaison_hour", Count(T(StatKeys.LiaisonWithinHour)), Share(T(StatKeys.LiaisonWithinHour), liaison),
+            liaison > 0 && T(StatKeys.LiaisonWithinHour) / liaison < 0.8 ? UiStyle.AmberText : null);
+        SetValue("liaison_wait", liaison > 0 ? Minutes(T(StatKeys.LiaisonMinutes) / liaison) : "–");
         Gauge("on_shift", G(StatKeys.StaffOnDuty), v => $"{v:0.#}", v => $"{v:0}");
         SetValue("hired", Count(T(StatKeys.Hired)));
         SetValue("left_staff", Count(T(StatKeys.Left)));

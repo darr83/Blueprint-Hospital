@@ -154,6 +154,8 @@ public partial class RosterPanel : PanelContainer
                     StaffRole.ChildrensNurse => new Color("#C9573F"),
                     StaffRole.Paediatrician => new Color("#4C5BC0"),
                     StaffRole.PlaySpecialist => new Color("#43A047"),
+                    StaffRole.MentalHealthNurse => new Color("#00838F"),
+                    StaffRole.Psychiatrist => new Color("#37596B"),
                     _ => new Color("#6E5A8C"),
                 };
                 AddRow(colour, text, () => StaffClicked?.Invoke(member));
