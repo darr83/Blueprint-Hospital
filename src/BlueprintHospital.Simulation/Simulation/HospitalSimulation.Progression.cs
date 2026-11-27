@@ -320,10 +320,10 @@ public sealed partial class HospitalSimulation
         {
             if (level.Grant > 0)
             {
-                Book(MoneyCategory.Grants, level.Grant);
+                Book(MoneyCategory.Grants, (long)Math.Round(level.Grant * GrantFactor));
             }
 
-            var money = level.Grant > 0 ? $" Grant of £{level.Grant:N0} received." : string.Empty;
+            var money = level.Grant > 0 ? $" Grant of £{Math.Round(level.Grant * GrantFactor):N0} received" + (GrantFactor < 1 ? " (cut because patients rate the hospital under 3 stars)." : ".") : string.Empty;
             Notifications.Add(Now, NotificationLevel.Info, $"Level {level.Number} reached: {level.Name}.{money} {level.Description}");
             RefreshCandidatesForNewLevel();
             Events.Publish(new LevelReached(level));

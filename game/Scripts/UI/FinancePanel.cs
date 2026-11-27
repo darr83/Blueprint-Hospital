@@ -163,6 +163,7 @@ public partial class FinancePanel : PanelContainer
         MoneyCategory.Prescriptions => "Prescriptions",
         MoneyCategory.Cheats => "Cheats",
         MoneyCategory.Grants => "Level grants",
+        MoneyCategory.Complaints => "Complaints",
         _ => category.ToString(),
     };
 }

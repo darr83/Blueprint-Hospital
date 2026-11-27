@@ -304,6 +304,7 @@ public sealed partial class HospitalSimulation
         {
             patient.Log(Now, $"Out of the corridor after {(Now - since).TotalMinutes:0} minutes of corridor care.");
             Stats.RecordCorridorTime(Now - since);
+            patient.CorridorMinutes += (Now - since).TotalMinutes;
         }
     }
 }

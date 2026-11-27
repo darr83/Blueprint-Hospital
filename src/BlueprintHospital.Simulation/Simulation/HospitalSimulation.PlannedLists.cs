@@ -296,6 +296,7 @@ public sealed partial class HospitalSimulation
         }
 
         patient.PreOp = false;
+        patient.OperationCancelledWhy = why;
         patient.OutcomeNote = $"Planned {LowerFirst(procedure.Operation.Name)} cancelled on the day: {why}. Sent home to be rebooked.";
         patient.Log(Now, patient.OutcomeNote, important: true);
         EndVisit(patient, PatientOutcome.Discharged);

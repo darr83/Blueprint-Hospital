@@ -26,6 +26,7 @@ public sealed partial class HospitalSimulation
         "incident <kind>  a major incident now (incident list for the kinds, incident end to stand down)",
         "weather <kind>   today's weather (clear, sunny, cloudy, rain, heavy_rain, fog, storm, snow, ice, heatwave, or off for the forecast)",
         "norovirus [ward] norovirus on a ward (norovirus close closes the busiest ward now, norovirus off clears it)",
+        "complaint [kind] a patient complaint now (concern, formal or serious)",
         "help             list the commands",
     };
 
@@ -75,6 +76,14 @@ public sealed partial class HospitalSimulation
 
             case "weather":
                 return WeatherCheat(words.Length == 2 ? words[1].ToLowerInvariant() : string.Empty);
+
+            case "complaint":
+            {
+                var severity = words.Length == 2 && Enum.TryParse<ComplaintSeverity>(words[1], true, out var parsed) ? parsed : ComplaintSeverity.Formal;
+                return AddTestComplaint(severity) is { } added
+                    ? new CheatResult(true, $"Added a {SeverityName(added.Severity).ToLowerInvariant()} from {added.From}.")
+                    : new CheatResult(false, "Too many complaints are open already.");
+            }
 
             case "incident":
                 return new CheatResult(true, IncidentCheat(words.Length == 2 ? words[1].ToLowerInvariant() : string.Empty));
