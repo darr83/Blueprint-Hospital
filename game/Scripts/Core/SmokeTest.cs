@@ -58,6 +58,7 @@ public partial class SmokeTest : Node
         EmptyBuilding,
         Tutorial,
         TutorialBuild,
+        TutorialPopup,
         WaitForHospital,
         RunSimulation,
         Notifications,
@@ -285,6 +286,26 @@ public partial class SmokeTest : Node
                     Check(guide.Guide.Current.Id == "waiting_room", $"Build mode did not tick off its tutorial step (on {guide.Guide.Current.Id}).");
                     Check(guide.PointingAt == "bar:emergency", $"The tutorial should point at the A&E icon, not {guide.PointingAt}.");
                     GD.Print($"[smoke] Tutorial: card shows, Next and Build mode move it on, pointing at {guide.PointingAt}.");
+                    Check(tutorial.Hud.Build.Compact, "The tutorial should use the smaller build pop-up.");
+                    tutorial.Hud.Build.Open("emergency");
+                }
+
+                _frame = 0;
+                _stage = Stage.TutorialPopup;
+                break;
+
+            case Stage.TutorialPopup when scene is HospitalScene tutorial && _frame >= 5:
+                Screenshot("01e_tutorial_popup");
+                {
+                    var popup = tutorial.Hud.Build.PopupRect;
+                    Check(popup.Size.Y <= 190 && tutorial.GetViewport().GetVisibleRect().Encloses(popup), $"The tutorial's A&E pop-up should be one small row on screen, not {popup}.");
+                    GD.Print($"[smoke] Tutorial pop-up: {popup.Size.X:0} x {popup.Size.Y:0}.");
+
+                    // Ending the tutorial carries on as a normal hospital, with the usual pop-up.
+                    tutorial.Tutorial!.EndTutorial();
+                    var ended = tutorial.Session.Simulation;
+                    Check(!ended.IsTutorial && ended.Type == Simulation.Simulation.GameType.Sandbox && ended.IsFeatureOn(Simulation.Data.Models.LevelFeatures.RedPatients), "Ending the tutorial should leave a normal hospital with every kind of patient.");
+                    Check(!tutorial.Hud.Build.Compact, "The build pop-up should be full size again after the tutorial.");
                 }
 
                 manager.StartNewGame("Smoke Test General");

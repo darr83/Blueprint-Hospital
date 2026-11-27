@@ -92,6 +92,23 @@ public sealed partial class HospitalSimulation
     public Patient? TutorialFirstPatient =>
         TutorialFirstPatientId is { } id ? FindPatient(id) ?? DepartedPatients.FirstOrDefault(p => p.Id == id) : null;
 
+    /// <summary>
+    /// Ends the tutorial: the hospital carries on as a normal Sandbox game, so from now on every kind of patient
+    /// comes (red ones, children, ambulances), at the full rate, with emergencies and spills.
+    /// </summary>
+    public void EndTutorial()
+    {
+        if (!IsTutorial)
+        {
+            return;
+        }
+
+        Type = GameType.Sandbox;
+        TutorialStep = 0;
+        TutorialFirstPatientId = null;
+        Notifications.Add(Now, NotificationLevel.Info, "Tutorial over: this is now a normal hospital. Every kind of patient comes from now on, including Red patients by ambulance, so a resus bay is a good next build.");
+    }
+
     /// <summary>Career and the tutorial both keep who comes in to what the hospital can look after.</summary>
     private bool LimitsPatients => IsCareer || IsTutorial;
 

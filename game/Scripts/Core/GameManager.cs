@@ -41,6 +41,10 @@ public partial class GameManager : Node
         Settings = GameSettings.Load();
         Settings.Apply(GetTree());
 
+        // Smooth (Linear) texture filtering for every 2D and HUD texture. Set here as well as in project.godot,
+        // because the Godot editor drops that line on a re-save (Linear is its default value).
+        GetTree().Root.CanvasItemDefaultTextureFilter = Viewport.DefaultCanvasItemTextureFilter.Linear;
+
         try
         {
             Database = GameDatabase.Load(new GodotDataSource());

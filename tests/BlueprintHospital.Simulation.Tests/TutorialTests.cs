@@ -1,3 +1,4 @@
+using BlueprintHospital.Simulation.Data.Models;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Patients;
 using BlueprintHospital.Simulation.Simulation;
@@ -192,5 +193,26 @@ public sealed class TutorialTests
 
         Assert.True(loaded.Sim.IsTutorial);
         Assert.Equal("build_mode", new TutorialGuide(loaded.Sim).Current.Id);
+    }
+
+    [Fact]
+    public void Ending_the_tutorial_turns_it_into_a_normal_hospital()
+    {
+        var h = NewTutorial();
+        var sim = h.Sim;
+        Assert.False(sim.IsFeatureOn(LevelFeatures.RedPatients));
+        Assert.False(sim.IsFeatureOn(LevelFeatures.Ambulances));
+        Assert.Equal(HospitalSimulation.TutorialArrivalRate, sim.LevelArrivalRate);
+
+        sim.EndTutorial();
+
+        Assert.False(sim.IsTutorial);
+        Assert.Equal(GameType.Sandbox, sim.Type);
+        Assert.True(sim.IsFeatureOn(LevelFeatures.RedPatients));
+        Assert.True(sim.IsFeatureOn(LevelFeatures.Ambulances));
+        Assert.True(sim.IsFeatureOn(LevelFeatures.Children));
+        Assert.Equal(1, sim.LevelArrivalRate);
+        Assert.Contains(sim.Notifications.Recent, n => n.Text.Contains("normal hospital"));
+        Assert.Null(sim.CapturePeople().Progression);
     }
 }
