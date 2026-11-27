@@ -173,6 +173,9 @@ public sealed class Patient : Agent
     /// <summary>Couldn't get to a toilet in time during this visit.</summary>
     public bool HadToiletAccident { get; set; }
 
+    /// <summary>A PALS officer has listened to their concerns this visit.</summary>
+    public bool PalsListened { get; set; }
+
     /// <summary>Why their planned operation was cancelled on the day, if it was.</summary>
     public string? OperationCancelledWhy { get; set; }
 

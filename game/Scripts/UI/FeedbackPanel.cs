@@ -294,13 +294,13 @@ public partial class FeedbackPanel : PanelContainer
         return card;
     }
 
-    private static string Explain(ComplaintResponse response, ComplaintSeverity severity)
+    private string Explain(ComplaintResponse response, ComplaintSeverity severity)
     {
-        var chance = HospitalSimulation.SatisfyChance(response, severity);
+        var chance = _sim.ChanceToSettle(response, severity);
         var likely = chance >= 0.8 ? "Very likely" : chance >= 0.6 ? "Likely" : chance >= 0.4 ? "Might" : "Unlikely";
         return response switch
         {
-            ComplaintResponse.Apologise => $"A written apology. {likely} to settle a {HospitalSimulation.SeverityName(severity).ToLowerInvariant()}.",
+            ComplaintResponse.Apologise => $"A written apology{(_sim.HasPalsOfficer ? ", helped by your PALS officer" : string.Empty)}. {likely} to settle a {HospitalSimulation.SeverityName(severity).ToLowerInvariant()}.",
             ComplaintResponse.Meet => $"Your most senior doctor meets them for an hour. {likely} to settle it.",
             ComplaintResponse.Goodwill => $"A payment as a goodwill gesture. {likely} to settle it.",
             _ => $"A day-long investigation that tells you what went wrong, so you can fix it. {likely} to settle it.",

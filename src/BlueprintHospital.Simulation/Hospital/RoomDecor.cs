@@ -132,7 +132,7 @@ public static class DecorCatalogue
             or CareSpaceKind.PlasterRoom => new(FloorFinish.SafetyVinyl, null, WallFinish.Tiles),
         CareSpaceKind.Toilets or CareSpaceKind.AccessibleToilet or CareSpaceKind.StaffToilet or CareSpaceKind.CleaningRoom => new(FloorFinish.CeramicTiles, null, WallFinish.Tiles),
         CareSpaceKind.Waiting or CareSpaceKind.OutpatientReception => new(FloorFinish.Terrazzo, null, WallFinish.Paint),
-        CareSpaceKind.Clinic or CareSpaceKind.DoctorsOffice or CareSpaceKind.OutreachOffice or CareSpaceKind.Echo or CareSpaceKind.Eeg
+        CareSpaceKind.Clinic or CareSpaceKind.DoctorsOffice or CareSpaceKind.OutreachOffice or CareSpaceKind.PalsOffice or CareSpaceKind.Echo or CareSpaceKind.Eeg
             or CareSpaceKind.Ultrasound => new(FloorFinish.CarpetTiles, null, WallFinish.Stripe),
         CareSpaceKind.StaffRoom => new(FloorFinish.WoodPlanks, null, WallFinish.WoodPanel),
         CareSpaceKind.Cafeteria => new(FloorFinish.Chequer, null, WallFinish.WoodPanel),

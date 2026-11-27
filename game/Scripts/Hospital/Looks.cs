@@ -290,6 +290,12 @@ public static class Looks
                 Kind = TopKind.Polo, Apron = new Color("#6FAE3A"), Gloves = new Color("#F2C230"), Lanyard = true, ShoeColour = new Color("#1C1F22"),
             },
 
+            // PALS: smart office clothes, a teal blazer over a white shirt with a big PALS badge; the manager's blazer is charcoal.
+            StaffRole.PalsOfficer => new PersonLook(Colors.White, new Color("#2E3440"), who.Skin, hair)
+            {
+                Kind = TopKind.Shirt, Jacket = new Color(Is("Band 6") ? "#3A4150" : "#0E7C86"), Badge = new Color("#F2C230"), Lanyard = true, LanyardColour = new Color("#0E7C86"), ShoeColour = new Color("#2A1E16"),
+            },
+
             // Reception: a lilac blazer over a blouse.
             _ => new PersonLook(new Color("#F3F0FA"), new Color("#2E2E38"), who.Skin, hair)
             {

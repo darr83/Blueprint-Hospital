@@ -112,6 +112,12 @@ public enum CareSpaceKind
     /// </summary>
     MentalHealthAssessment,
 
+    /// <summary>
+    /// PALS office (Patient Advice and Liaison Service), run by a PALS officer: unhappy patients who have waited
+    /// a long time come here to raise a concern, and are listened to on the spot.
+    /// </summary>
+    PalsOffice,
+
     /// <summary>The lounge on a mental health ward: sofas, a television and a table, where patients spend the day out of their bedrooms.</summary>
     MentalHealthLounge,
 
