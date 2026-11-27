@@ -32,8 +32,8 @@
     "grant": 100000,
     "arrival_rate": 0.8,
     "departments": ["radiology"],
-    "rooms": ["majors_cubicle", "xray_room", "emergency_ward", "accessible_toilet", "staff_toilet"],
-    "staff": ["radiographer", "healthcare_assistant", "porter"],
+    "rooms": ["majors_cubicle", "xray_room", "emergency_ward", "accessible_toilet", "staff_toilet", "pals_office"],
+    "staff": ["radiographer", "healthcare_assistant", "porter", "pals_officer"],
     "grades": ["Band 7 nurse"],
     "features": ["ambulances", "amber_patients", "children", "seasons"],
     "goals": [

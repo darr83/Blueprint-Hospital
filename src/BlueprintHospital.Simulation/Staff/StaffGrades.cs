@@ -64,6 +64,8 @@ public static class StaffGrades
         new Grade(StaffRole.PlaySpecialist, "Band 3 play assistant", 0.35, 0.60, 0, 10, 24_000, 1.5),
         new Grade(StaffRole.PlaySpecialist, "Band 4 play specialist", 0.55, 0.80, 2, 15, 28_000, 2),
         new Grade(StaffRole.PlaySpecialist, "Band 5 senior play specialist", 0.75, 0.95, 6, 25, 32_000, 0.8),
+        new Grade(StaffRole.PalsOfficer, "Band 4 PALS officer", 0.50, 0.80, 1, 15, 27_000, 1.5),
+        new Grade(StaffRole.PalsOfficer, "Band 6 PALS manager", 0.75, 0.95, 6, 25, 38_000, 0.6),
     };
 
     public static IEnumerable<Grade> For(StaffRole role) => All.Where(g => g.Role == role);
@@ -129,6 +131,8 @@ public static class StaffGrades
         (StaffRole.MentalHealthNurse, true) => "mental health nurses",
         (StaffRole.Psychiatrist, false) => "psychiatrist",
         (StaffRole.Psychiatrist, true) => "psychiatrists",
+        (StaffRole.PalsOfficer, false) => "PALS officer",
+        (StaffRole.PalsOfficer, true) => "PALS officers",
         _ => "healthcare assistants",
     };
 }

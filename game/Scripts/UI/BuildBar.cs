@@ -1204,6 +1204,7 @@ public partial class BuildBar : Control
         CareSpaceKind.PlasterRoom => "1 patient at a time",
         CareSpaceKind.PhysioGym => "Physios visit patients on every ward",
         CareSpaceKind.OutreachOffice => "Outreach nurses check every ward",
+        CareSpaceKind.PalsOffice => "Fed-up patients come to talk",
         CareSpaceKind.EndoscopyRecovery => "1 patient coming round",
         CareSpaceKind.Lift => "Beds, trolleys, wheelchairs and walkers, to every floor",
         CareSpaceKind.Stairs => "People on foot, a floor at a time",

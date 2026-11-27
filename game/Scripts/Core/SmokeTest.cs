@@ -80,6 +80,8 @@ public partial class SmokeTest : Node
         StatsWeek,
         Feedback,
         FeedbackRatings,
+        Pals,
+        Thoughts,
         Ward,
         PlanWard,
         PlanEmergency,
@@ -913,6 +915,23 @@ public partial class SmokeTest : Node
             case Stage.ToiletsRotated when scene is HospitalScene hospital && _frame >= 6:
                 Screenshot("09j_toilets_rotated");
                 hospital.RotateView(2);
+                BuildPals(hospital);
+                _frame = 0;
+                _stage = Stage.Pals;
+                break;
+
+            case Stage.Pals when scene is HospitalScene hospital && _frame >= 6:
+                Screenshot("09k_pals_office");
+                hospital.ClearSelectionForTest();
+
+                // The busy waiting room: thought bubbles over the people waiting.
+                LookAtWaitingRoom(hospital);
+                _frame = 0;
+                _stage = Stage.Thoughts;
+                break;
+
+            case Stage.Thoughts when scene is HospitalScene hospital && _frame >= 40:
+                Screenshot("09k2_thoughts");
                 BuildPharmacy(hospital);
                 _frame = 0;
                 _stage = Stage.Pharmacy;
@@ -1520,6 +1539,38 @@ public partial class SmokeTest : Node
         GD.Print($"[smoke] Built {lab.Name}, {echo.Name} and the early pregnancy unit with their specialists.");
         hospital.ClearSelectionForTest();
         hospital.Camera.SnapTo(IsoDraw.ToScreen(b.X - 21, b.Y - 22), 0.8f);
+    }
+
+    /// <summary>
+    /// A PALS office in the facilities wing with a PALS officer at the desk, a fed-up patient talking to
+    /// them, and the waiting patients' thought bubbles showing.
+    /// </summary>
+    private static void BuildPals(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var b = Simulation.World.StarterSite.MainBuildingFootprint;
+        sim.AdjustBalance(500_000);
+        // A strip east of the facilities wing with a corridor down it, and the office in the wing's free corner under the vending point.
+        var wing = sim.ExtendBuilding(new Simulation.World.GridRect(b.X - 4, b.Y + 34, 4, 16));
+        Check(wing.CanBuild, "PALS strip refused: " + string.Join("; ", wing.Problems));
+        var corridor = sim.BuildRoom(new Simulation.Simulation.RoomPlan("corridor", new Simulation.World.GridRect(b.X - 4, b.Y + 34, 4, 16), Simulation.World.WallSide.West));
+        Check(corridor.CanBuild, "PALS corridor refused: " + string.Join("; ", corridor.Problems));
+        var built = sim.BuildRoom(sim.AutoPlan("pals_office", new Simulation.World.GridRect(b.X - 13, b.Y + 42, 9, 8)));
+        Check(built.CanBuild, "PALS office refused: " + string.Join("; ", built.Problems));
+        var office = sim.PalsOffices.Single();
+        Check(office.InUse, "The PALS office is not reachable from a corridor.");
+        Check(sim.RecommendedStaffing().Any(n => n.RoomId == office.Id && n.Role == Simulation.Staff.StaffRole.PalsOfficer), "The PALS office does not ask for a PALS officer.");
+        var officer = sim.HireStaff(Simulation.Staff.StaffRole.PalsOfficer, office.Id, skill: 0.7, shift: Simulation.Staff.StaffShift.Day);
+        Check(sim.HasPalsOfficer, "Hiring a PALS officer did not count.");
+        for (var i = 0; i < 180; i++)
+        {
+            hospital.Session.Clock.Step();
+        }
+
+        var thoughts = sim.Patients.Count(p => sim.ThoughtOf(p) is not null);
+        GD.Print($"[smoke] PALS office {office.Name}, officer {officer.Name} ({officer.StatusText}); {thoughts} patients with a thought.");
+        Check(sim.Patients.All(p => sim.ThoughtOf(p) is not { } t || !string.IsNullOrWhiteSpace(t.Text)), "A patient has an empty thought.");
+        hospital.Camera.SnapTo(IsoDraw.ToScreen(office.Rect.X + 4.5, office.Rect.Y + 4.5), 1.4f);
     }
 
     private static Vector2 ToiletsCentre(HospitalScene hospital)

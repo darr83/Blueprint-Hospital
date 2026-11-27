@@ -21,6 +21,16 @@ public enum StrollStage
     Back,
 }
 
+/// <summary>Why someone is up from their seat.</summary>
+public enum StrollPurpose
+{
+    /// <summary>Just stretching their legs.</summary>
+    Walk,
+
+    /// <summary>Gone to the PALS office to raise a concern.</summary>
+    Pals,
+}
+
 /// <summary>A patient stretching their legs: a waiting patient up from their chair, or a ward patient up from their bed.</summary>
 public sealed class Stroll
 {
@@ -36,6 +46,9 @@ public sealed class Stroll
     public bool FromBed { get; init; }
 
     public StrollStage Stage { get; set; } = StrollStage.Out;
+
+    /// <summary>A walk, or a visit to PALS.</summary>
+    public StrollPurpose Purpose { get; init; } = StrollPurpose.Walk;
 
     public DateTime? Until { get; set; }
 }
@@ -276,10 +289,24 @@ public sealed partial class HospitalSimulation
         {
             case StrollStage.Out when arrived:
                 stroll.Stage = StrollStage.Pausing;
-                stroll.Until = Now + TimeSpan.FromSeconds(StrollRandom.Range(45, 150));
+                if (stroll.Purpose == StrollPurpose.Pals)
+                {
+                    stroll.Until = Now + PalsTalk();
+                    StartPalsTalk(person);
+                }
+                else
+                {
+                    stroll.Until = Now + TimeSpan.FromSeconds(StrollRandom.Range(45, 150));
+                }
+
                 break;
 
             case StrollStage.Pausing when Now >= stroll.Until:
+                if (stroll.Purpose == StrollPurpose.Pals)
+                {
+                    FinishPalsTalk(person);
+                }
+
                 stroll.Stage = StrollStage.Back;
                 StrollMove(person, stroll.Home);
                 break;

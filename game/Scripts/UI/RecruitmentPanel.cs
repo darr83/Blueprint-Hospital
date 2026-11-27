@@ -245,6 +245,7 @@ public partial class RecruitmentPanel : PanelContainer
         StaffRole.PlaySpecialist => new Color("#43A047"),
         StaffRole.MentalHealthNurse => new Color("#00838F"),
         StaffRole.Psychiatrist => new Color("#37596B"),
+        StaffRole.PalsOfficer => new Color("#0E7C86"),
         _ => new Color("#6E5A8C"),
     };
 }

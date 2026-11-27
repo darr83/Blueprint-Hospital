@@ -227,7 +227,8 @@ public static class ExampleHospital
         new("theatre_recovery", 88, NorthRowY, 12, NorthRowDepth, WallSide.South, "Theatre recovery"),
 
         // Middle row: surgical admissions, day surgery and endoscopy.
-        new("surgical_assessment_unit", 24, MiddleRowY, 18, MiddleRowDepth, WallSide.South),
+        new("surgical_assessment_unit", 24, MiddleRowY, 12, MiddleRowDepth, WallSide.South),
+        new("pals_office", 36, MiddleRowY, 6, MiddleRowDepth, WallSide.South),
         new("childrens_assessment_unit", 42, MiddleRowY, 12, MiddleRowDepth, WallSide.South),
         new("gastro_clinic", 54, MiddleRowY, 7, MiddleRowDepth, WallSide.South),
         new("endoscopy_room", 61, MiddleRowY, 9, MiddleRowDepth, WallSide.South),

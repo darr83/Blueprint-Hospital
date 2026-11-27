@@ -3,7 +3,9 @@ using System.Linq;
 using BlueprintHospital.Simulation.Hospital;
 using BlueprintHospital.Simulation.Medical;
 using BlueprintHospital.Simulation.Patients;
+using BlueprintHospital.Simulation.Simulation;
 using BlueprintHospital.Simulation.Staff;
+using BlueprintHospital.UI;
 using Godot;
 
 namespace BlueprintHospital.Hospital;
@@ -17,6 +19,15 @@ public partial class OverlayLayer : Node2D
 {
     /// <summary>Below this zoom, staff bubbles are hidden to keep the view readable.</summary>
     private static float BubbleZoom => Core.GameView.ThreeD ? 0.5f : 0.65f;
+
+    /// <summary>At most this many patients show a thought at once, so a busy waiting room doesn't turn into a wall of bubbles.</summary>
+    private const int MaxThoughts = 12;
+
+    /// <summary>Each patient's thought comes up for this many seconds...</summary>
+    private const double ThoughtShows = 7;
+
+    /// <summary>...once in this many (sooner when they are unhappy or want something).</summary>
+    private const double ThoughtEvery = 40, UrgentThoughtEvery = 22;
 
     private WorldLayer _world = null!;
     private Font _font = null!;
@@ -63,6 +74,7 @@ public partial class OverlayLayer : Node2D
         }
 
         var zoom = GetViewport().GetCanvasTransform().X.X;
+        Thoughts(zoom);
         foreach (var member in sim.Staff)
         {
             if (member.Activity == StaffActivity.Working && _world.OnViewFloor(member) && (zoom >= BubbleZoom || ReferenceEquals(_world.Selected, member)))
@@ -70,6 +82,91 @@ public partial class OverlayLayer : Node2D
                 StaffBubble(member);
             }
         }
+    }
+
+    /// <summary>What patients are thinking, doing and wanting: a few at a time, each for a few seconds, and always the one selected.</summary>
+    private void Thoughts(float zoom)
+    {
+        var sim = _world.Simulation;
+        if (!sim.FeedbackOn)
+        {
+            return;
+        }
+
+        var shown = 0;
+        var near = zoom >= BubbleZoom;
+        foreach (var patient in sim.Patients)
+        {
+            var selected = ReferenceEquals(_world.Selected, patient);
+            if ((!near && !selected) || !_world.IsOnMap(patient) || !_world.OnViewFloor(patient) || (shown >= MaxThoughts && !selected))
+            {
+                continue;
+            }
+
+            if (sim.ThoughtOf(patient) is { } thought && (selected || Showing(patient.Id, thought)))
+            {
+                var lift = !Core.GameView.ThreeD ? -40 : _world.IsLying(patient) ? -62 : _world.IsSeated(patient) ? -86 : -94;
+                ThoughtBubble(_world.FootPosition(patient) + new Vector2(0, lift), thought);
+                shown++;
+            }
+        }
+
+        foreach (var outpatient in sim.Outpatients)
+        {
+            var selected = ReferenceEquals(_world.Selected, outpatient);
+            if ((!near && !selected) || !_world.OnViewFloor(outpatient) || (shown >= MaxThoughts && !selected))
+            {
+                continue;
+            }
+
+            if (sim.ThoughtOf(outpatient) is { } thought && (selected || Showing(100_000 + outpatient.Id, thought)))
+            {
+                var lift = !Core.GameView.ThreeD ? -40 : _world.IsSeated(outpatient) ? -86 : -94;
+                ThoughtBubble(_world.FootPosition(outpatient) + new Vector2(0, lift), thought);
+                shown++;
+            }
+        }
+    }
+
+    /// <summary>Whether this person's turn to show their thought has come round (staggered by id so they don't all pop up together).</summary>
+    private bool Showing(int id, Thought thought)
+    {
+        var every = thought.Kind is ThoughtKind.Unhappy or ThoughtKind.Wanting ? UrgentThoughtEvery : ThoughtEvery;
+        var phase = (_world.Time + (id * 7.37)) % every;
+        return phase < ThoughtShows;
+    }
+
+    public static Color ThoughtColour(ThoughtKind kind) => kind switch
+    {
+        ThoughtKind.Doing => new Color("#2F6FD0"),
+        ThoughtKind.Wanting => new Color("#E08A1E"),
+        ThoughtKind.Happy => new Color("#3A9B4A"),
+        ThoughtKind.Unhappy => new Color("#D24B45"),
+        _ => new Color("#7A8794"),
+    };
+
+    /// <summary>A rounded thought bubble with a trail of little circles down to the person, edged in the colour of the kind of thought.</summary>
+    private void ThoughtBubble(Vector2 at, Thought thought)
+    {
+        const int size = 13;
+        var font = UiStyle.Medium;
+        var colour = ThoughtColour(thought.Kind);
+        var text = thought.Text;
+        var width = font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X + 24;
+        var box = new Rect2(at - new Vector2(width / 2, 24), new Vector2(width, 22));
+        var fill = new Color(1, 1, 1, 0.96f);
+        var style = new StyleBoxFlat
+        {
+            BgColor = fill, BorderColor = colour, CornerDetail = 6,
+            BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 11, CornerRadiusTopRight = 11, CornerRadiusBottomLeft = 11, CornerRadiusBottomRight = 11,
+        };
+        DrawStyleBox(style, box);
+        DrawCircle(box.Position + new Vector2(11, 11), 4, colour);
+        DrawCircle(at + new Vector2(-3, 4), 3.2f, colour);
+        DrawCircle(at + new Vector2(-3, 4), 2, fill);
+        DrawCircle(at + new Vector2(-6, 10), 2, colour);
+        DrawString(font, box.Position + new Vector2(19, 16), text, HorizontalAlignment.Left, -1, size, new Color("#1D2B36"));
     }
 
     private void TriageMarker(Patient patient, Vector2 at)

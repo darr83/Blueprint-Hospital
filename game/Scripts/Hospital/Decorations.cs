@@ -112,6 +112,8 @@ public static class Decorations
         CareSpaceKind.CleaningRoom => new(new[] { Wall.StaffOnly, Wall.GloveDispenser }, NoFloors),
         CareSpaceKind.OutreachOffice => new(new[] { Wall.Noticeboard, Wall.Clock }, new[] { Floor.Bookshelf },
             new[] { ("office_desk", new[] { OnTop.Computer, OnTop.Phone }) }),
+        CareSpaceKind.PalsOffice => new(new[] { Wall.Noticeboard, Wall.Clock }, new[] { Floor.Bookshelf },
+            new[] { ("office_desk", new[] { OnTop.Computer, OnTop.Phone }) }),
         CareSpaceKind.Triage => new(new[] { Wall.HeightChart, Wall.PainPoster }, new[] { Floor.Scales }),
         CareSpaceKind.Minors => new(new[] { Wall.EyeChart, Wall.GelDispenser }, new[] { Floor.SlingBox }),
         CareSpaceKind.Majors => new(new[] { Wall.OxygenPanel, Wall.GloveDispenser, Wall.SharpsBin }, NoFloors),

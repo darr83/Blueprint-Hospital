@@ -111,6 +111,12 @@ public enum CareSpaceKind
     /// people in crisis here once A&amp;E has treated their body. Soft seats fixed down, nothing loose, a second door.
     /// </summary>
     MentalHealthAssessment,
+
+    /// <summary>
+    /// PALS office (Patient Advice and Liaison Service), run by a PALS officer: unhappy patients who have waited
+    /// a long time come here to raise a concern, and are listened to on the spot.
+    /// </summary>
+    PalsOffice,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
