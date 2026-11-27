@@ -298,6 +298,15 @@ public sealed partial class HospitalSimulation
         patient.LeftAt = Now;
         RecordJournal(patient, outcome);
         LeaveCorridor(patient);
+        if (outcome == PatientOutcome.Died)
+        {
+            MaybeFamilyComplaint(patient);
+        }
+        else
+        {
+            RateStay(patient, outcome);
+        }
+
         ReleaseSpace(patient);
         ReleaseReservedBed(patient);
         ReleaseSeat(patient);

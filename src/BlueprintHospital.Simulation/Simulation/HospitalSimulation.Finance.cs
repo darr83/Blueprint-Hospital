@@ -45,6 +45,9 @@ public enum MoneyCategory
 
     /// <summary>Grants paid for reaching a new Career level.</summary>
     Grants,
+
+    /// <summary>Goodwill payments, investigations and Ombudsman fines for patient complaints.</summary>
+    Complaints,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

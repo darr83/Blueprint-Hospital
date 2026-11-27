@@ -160,7 +160,7 @@ public sealed partial class HospitalSimulation
             var slot = TimeSpan.FromMinutes(definition.AppointmentMinutes);
             for (var t = date + start; t + slot <= date + end;)
             {
-                if (t < earliest || !Random.Chance(SlotBookedChance))
+                if (t < earliest || !Random.Chance(SlotBookedChance * ReferralFactor))
                 {
                     t += slot;
                     continue;
@@ -505,6 +505,7 @@ public sealed partial class HospitalSimulation
             doctor.StatusText = "Available";
             _consults.Remove(clinic.Id);
             SendHome(o, "Going home");
+            RateClinicVisit(appointment);
             OfferClinicPrescription(o);
         }
     }

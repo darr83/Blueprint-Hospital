@@ -138,6 +138,18 @@ public sealed class Patient : Agent
     /// <summary>How many visitors have come to see them on the ward.</summary>
     public int VisitsReceived { get; set; }
 
+    /// <summary>Minutes spent on a trolley in the corridor over the whole visit (for their feedback).</summary>
+    public double CorridorMinutes { get; set; }
+
+    /// <summary>Couldn't get to a toilet in time during this visit.</summary>
+    public bool HadToiletAccident { get; set; }
+
+    /// <summary>Why their planned operation was cancelled on the day, if it was.</summary>
+    public string? OperationCancelledWhy { get; set; }
+
+    /// <summary>The star rating (1 to 5) they gave their stay as they left, once they have.</summary>
+    public int? Stars { get; set; }
+
     public required IReadOnlyList<string> PastHistory { get; init; }
 
     public required IReadOnlyList<string> RegularMedications { get; init; }

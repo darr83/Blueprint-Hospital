@@ -59,7 +59,7 @@ public partial class NotificationFeed : PanelContainer
         style.ContentMarginRight = 12;
         style.ContentMarginTop = style.ContentMarginBottom = 6;
         AddThemeStyleboxOverride("panel", style);
-        CustomMinimumSize = new Vector2(220, 40);
+        CustomMinimumSize = new Vector2(180, 40);
         TooltipText = string.Empty;
 
         var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };

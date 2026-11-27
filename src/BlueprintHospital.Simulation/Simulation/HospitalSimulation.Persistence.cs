@@ -196,6 +196,14 @@ public sealed class PatientState
 
     public int VisitsReceived { get; init; }
 
+    public double CorridorMinutes { get; init; }
+
+    public bool HadToiletAccident { get; init; }
+
+    public string? OperationCancelledWhy { get; init; }
+
+    public int? Stars { get; init; }
+
     public bool Maternity { get; init; }
 
     public bool PoliceEscort { get; init; }
@@ -524,6 +532,9 @@ public sealed class PeopleState
 
     /// <summary>The illness journal and room logs (absent in older saves).</summary>
     public DetailsState? Details { get; init; }
+
+    /// <summary>Complaints, thank-yous and comments (null in older saves: none yet).</summary>
+    public FeedbackState? Feedback { get; init; }
 }
 
 /// <summary>Saving and loading everyone in the hospital.</summary>
@@ -608,6 +619,7 @@ public sealed partial class HospitalSimulation
         Progression = CaptureProgression(),
         Surgery = CaptureSurgery(),
         Details = CaptureDetails(),
+        Feedback = CaptureFeedback(),
     };
 
     /// <summary>
@@ -861,6 +873,7 @@ public sealed partial class HospitalSimulation
         RestoreIncident(state.Incident, state.NextIncidentId, state.NoIncidentBefore);
         RestoreOutbreaks(state.Outbreaks);
         RestoreDetails(state.Details);
+        RestoreFeedback(state.Feedback);
     }
 
     // ------------------------------------------------------------------ patients
@@ -887,7 +900,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
+        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, CorridorMinutes = p.CorridorMinutes, HadToiletAccident = p.HadToiletAccident, OperationCancelledWhy = p.OperationCancelledWhy, Stars = p.Stars, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -976,6 +989,10 @@ public sealed partial class HospitalSimulation
         p.LastRefreshmentAt = s.LastRefreshmentAt;
         p.Happiness = s.Happiness ?? UsualHappiness;
         p.VisitsReceived = s.VisitsReceived;
+        p.CorridorMinutes = s.CorridorMinutes;
+        p.HadToiletAccident = s.HadToiletAccident;
+        p.OperationCancelledWhy = s.OperationCancelledWhy;
+        p.Stars = s.Stars;
         p.Maternity = s.Maternity;
         p.PoliceEscort = s.PoliceEscort;
         p.FireCrewEscort = s.FireCrewEscort;

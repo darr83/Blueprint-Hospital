@@ -130,6 +130,11 @@ public partial class MainHUD : CanvasLayer
     /// <summary>The top bar's hospital pressure badge (1 steady to 4 critical); opens the Calendar.</summary>
     public Button PressureBadge { get; } = new() { Name = "PressureBadge", FocusMode = Control.FocusModeEnum.None };
 
+    /// <summary>The hospital's star rating and complaints waiting for a reply; opens Patient feedback (L).</summary>
+    public Button RatingBadge { get; } = new() { Name = "RatingBadge", FocusMode = Control.FocusModeEnum.None };
+
+    public FeedbackPanel Feedback { get; } = new() { Name = "Feedback", Visible = false };
+
     public RecruitmentPanel Recruitment { get; } = new() { Name = "Recruitment", Visible = false };
 
     /// <summary>Be A Doctor: the doctors on shift, to pick one to play.</summary>
@@ -181,7 +186,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>True while the A&amp;E board column is showing.</summary>
     public bool BoardShown => _left.Visible;
 
-    private IEnumerable<Control> RightPanels => new Control[] { Record, OutpatientInfo, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors, Calendar };
+    private IEnumerable<Control> RightPanels => new Control[] { Record, OutpatientInfo, StaffInfo, Roster, RoomInfo, Decorate, ItemInfo, Finances, Recruitment, Clinics, Doctors, Calendar, Feedback };
 
     /// <summary>Highlights the Routes button while everyone's routes are shown.</summary>
     public void SetRoutesShown(bool shown) => _routesShown = shown;
@@ -192,7 +197,7 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Closes every right-hand panel.</summary>
     public void HideRightPanels()
     {
-        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Calendar.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = Journal.Visible = false;
+        Record.Visible = StaffInfo.Visible = Roster.Visible = Doctors.Visible = Finances.Visible = Calendar.Visible = Recruitment.Visible = Clinics.Visible = Rota.Visible = StatsScreen.Visible = Surgery.Visible = Journal.Visible = Feedback.Visible = false;
         RoomInfo.Close();
         OutpatientInfo.Close();
         Decorate.Close();
@@ -205,6 +210,17 @@ public partial class MainHUD : CanvasLayer
         var show = !Finances.Visible;
         HideRightPanels();
         Finances.Visible = show;
+    }
+
+    /// <summary>Opens Patient feedback on a page, or closes it when that page is already showing.</summary>
+    public void ToggleFeedback(FeedbackPanel.Page? page = null)
+    {
+        var show = !(Feedback.Visible && (page is null || Feedback.Showing == page));
+        HideRightPanels();
+        if (show)
+        {
+            Feedback.ShowPage(page ?? (_session.Simulation.OpenComplaints.Any() ? FeedbackPanel.Page.Complaints : Feedback.Showing));
+        }
     }
 
     /// <summary>Opens the Calendar, or closes it.</summary>
@@ -410,6 +426,10 @@ public partial class MainHUD : CanvasLayer
         Clinics.Initialise(sim);
         DockRight(Clinics, 480);
         root.AddChild(Clinics);
+        Feedback.Initialise(sim);
+        Feedback.Visible = false;
+        DockRight(Feedback, 440);
+        root.AddChild(Feedback);
         ItemInfo.Initialise(sim);
         DockRight(ItemInfo, 360);
         ItemInfo.AnchorBottom = 0;
@@ -640,6 +660,15 @@ public partial class MainHUD : CanvasLayer
             pill.Pressed += ToggleCalendar;
             row.AddChild(pill);
         }
+
+        // The star rating patients give the hospital, and complaints waiting for a reply.
+        RatingBadge.ThemeTypeVariation = UiStyle.Secondary;
+        RatingBadge.CustomMinimumSize = new Vector2(0, 40);
+        RatingBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        RatingBadge.AddThemeFontSizeOverride("font_size", 14);
+        RatingBadge.Pressed += () => ToggleFeedback();
+        RatingBadge.Visible = _session.Simulation.FeedbackOn;
+        row.AddChild(RatingBadge);
 
         // The latest notification fills the gap; hovering drops down the last five.
         Feed.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
@@ -1084,6 +1113,7 @@ public partial class MainHUD : CanvasLayer
         SeasonPill.Text = text;
         SeasonPill.TooltipText = tip;
 
+        RefreshRating(sim);
         var pressure = sim.Pressure;
         PressureBadge.Text = $"Pressure {pressure.Level}";
         PressureBadge.TooltipText = $"Hospital pressure {pressure.Level} of 4: {pressure.Name}."
@@ -1093,6 +1123,32 @@ public partial class MainHUD : CanvasLayer
         foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
         {
             PressureBadge.AddThemeColorOverride(state, colour);
+        }
+    }
+
+    private void RefreshRating(HospitalSimulation sim)
+    {
+        // Working out the rating reads a week of history, so twice a second is plenty.
+        if (!RatingBadge.Visible || (Engine.GetProcessFrames() % 30 != 0 && RatingBadge.Text.Length > 0))
+        {
+            return;
+        }
+
+        var rating = sim.HospitalRating;
+        var open = sim.OpenComplaints.ToList();
+        RatingBadge.Text = (rating is { } r ? $"★ {r:0.0}" : "★ –") + (open.Count > 0 ? $" · {open.Count}" : string.Empty);
+        RatingBadge.TooltipText = (rating is { } value
+                ? $"Patients rate the hospital {value:0.0} out of 5 (last 7 days)."
+                : "No ratings yet: patients rate their stay as they leave.")
+            + (open.Count > 0 ? $"\n{open.Count} complaint{(open.Count == 1 ? string.Empty : "s")} to answer, the next by {open[0].DueAt:ddd HH:mm}." : string.Empty)
+            + "\nClick for Patient feedback (L)";
+        var colour = open.Any(c => c.DueAt - sim.Now < TimeSpan.FromHours(12) && c.Status == ComplaintStatus.Open) ? UiStyle.Red
+            : open.Count > 0 ? UiStyle.AmberText
+            : rating is null ? UiStyle.TextMuted
+            : rating >= 4 ? UiStyle.Green : rating >= 3 ? UiStyle.AmberText : UiStyle.Red;
+        foreach (var state in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color" })
+        {
+            RatingBadge.AddThemeColorOverride(state, colour);
         }
     }
 

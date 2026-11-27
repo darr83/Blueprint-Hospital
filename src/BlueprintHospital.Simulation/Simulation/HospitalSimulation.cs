@@ -35,6 +35,9 @@ public sealed class SimulationOptions
     /// </summary>
     public bool LivelyPeople { get; init; } = true;
 
+    /// <summary>Patients rate their stay, complain and send thank-yous (off in the tutorial whatever this says).</summary>
+    public bool PatientFeedback { get; init; } = true;
+
     /// <summary>What the player starts with.</summary>
     public StartingHospital Start { get; init; } = StartingHospital.SmallEmergency;
 
@@ -298,6 +301,7 @@ public sealed partial class HospitalSimulation
         ScheduleOutreach();
         ProcessScheduledResults();
         CheckOutcomeReviews();
+        UpdateFeedback();
         ScheduleObservations();
         UpdateRedMonitors();
         AllocateSpaces();
