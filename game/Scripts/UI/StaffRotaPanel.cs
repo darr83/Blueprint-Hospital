@@ -450,6 +450,8 @@ public partial class StaffRotaPanel : PanelContainer
             var role = HospitalSimulation.RoleForRoom(room.Kind);
             places.Add(room.Kind == CareSpaceKind.Theatre
                 ? new(room.Id, room.Name, "Surgeons, anaesthetists and scrub nurses", new[] { role, StaffRole.Anaesthetist, StaffRole.ScrubNurse })
+                : room.Kind == CareSpaceKind.MentalHealthAssessment
+                ? new(room.Id, room.Name, "Liaison team: mental health nurses and psychiatrists", new[] { role, StaffRole.Psychiatrist })
                 : new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
         }
 
@@ -527,6 +529,7 @@ public partial class StaffRotaPanel : PanelContainer
             StaffRole.Endoscopist => "Endoscopy",
             StaffRole.PlasterTechnician => "Plaster room",
             StaffRole.Physiotherapist => "Physiotherapy",
+            StaffRole.MentalHealthNurse => "Mental health",
             StaffRole.PalsOfficer => "PALS",
             var role => Capitalise(StaffGrades.RoleName(role, plural: true)),
         };

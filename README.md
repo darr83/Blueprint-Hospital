@@ -470,6 +470,31 @@ Midwives (Band 5 to Band 8 consultant midwife) are a new staff type in Recruitme
   `maternity` block (weeks pregnant, chances of twins, an emergency caesarean or the neonatal unit,
   neonatal reasons and stay). The medical editor edits these too.
 
+### Mental Health
+
+Unlock **Mental Health** (£200,000, career level 10) in Build → Departments, then build its rooms from
+**Build → Mental health** (the leaf icon). Mental health nurses (Band 5, Band 6, Band 7 ward manager,
+Band 8 matron) and psychiatrists (trainee, specialty doctor, registrar, consultant) are new staff types.
+They wear their own clothes rather than uniforms: teal polos for nurses (a Band 6 liaison nurse has an
+amber collar), smart casual for psychiatrists, with a personal alarm and keys on the belt.
+
+| Room | What it's for |
+| --- | --- |
+| Mental health assessment room | The A&E liaison team see patients in crisis here once their body has been treated: two heavy fixed seats either side of a bolted-down table (the nurse's nearer the door), a staff alarm strip and a second way out |
+
+- **Liaison:** a mental health condition's treatment plan ends with a *Mental health assessment* step.
+  A&E treats the body first (closing wounds, for example); then the patient walks to the assessment
+  room and a mental health nurse (or a psychiatrist) sees them. The target is to be seen within an
+  hour of being referred; **Stats → Mental health** shows how many were seen and how many within the hour.
+  With no staffed assessment room an A&E doctor does a basic assessment in the cubicle instead.
+- **Conditions:** low mood with suicidal thoughts and self-harm (home with the crisis team),
+  drug-induced psychosis (watched until it wears off), and severe depression, a first episode of
+  psychosis and mania (these need admitting). Until the mental health ward arrives they are transferred to a
+  mental health hospital. Panic attacks and overdoses stay with A&E.
+- **Tone:** no injuries beyond a dressing, no deaths from suicide, and no restraint or seclusion.
+- **Coming next:** the adult mental health ward, observations and the wellbeing meter, the Mental Health
+  Act with police Section 136 drop-offs, and the quiet room, activity room and psychologist.
+
 ### Upper floors, lifts and stairs
 
 - **Adding a floor:** Build bar → Building → *Add a floor* (or the **+▲** button on the right,

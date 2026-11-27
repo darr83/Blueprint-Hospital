@@ -1,0 +1,592 @@
+[
+  {
+    "department": "mental_health",
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.25,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "recovery_per_hour": 0.5,
+    "id": "low_mood_suicidal_thoughts",
+    "name": "Low mood with suicidal thoughts",
+    "description": "Weeks of low mood that have built up to thoughts of ending their life. The liaison team assess how safe they are, make a safety plan with them and arrange support from the home treatment (crisis) team.",
+    "prevalence": 3,
+    "age_range": [
+      16,
+      80
+    ],
+    "crew_assessment": "low mood, risk to self",
+    "presenting_complaint": "thoughts_of_suicide",
+    "symptoms": [
+      {
+        "symptom": "thoughts_of_suicide",
+        "probability": 1.0
+      },
+      {
+        "symptom": "low_mood",
+        "probability": 0.95
+      },
+      {
+        "symptom": "not_sleeping",
+        "probability": 0.6
+      },
+      {
+        "symptom": "loss_of_appetite",
+        "probability": 0.4
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        82,
+        9
+      ],
+      "systolic_bp": [
+        126,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 45,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "discharge",
+    "disposition_note": "Assessed by the liaison team. Home with a safety plan, the crisis team visiting tomorrow and the crisis line number."
+  },
+  {
+    "department": "mental_health",
+    "female_fraction": 0.65,
+    "ambulance_probability": 0.2,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [],
+    "recovery_per_hour": 0.5,
+    "id": "self_harm",
+    "name": "Self-harm (cuts)",
+    "description": "Cuts made on purpose, usually to the forearm, to cope with overwhelming feelings. A&E closes the wounds first, then the liaison team see them once they are medically fit.",
+    "prevalence": 3,
+    "age_range": [
+      16,
+      60
+    ],
+    "crew_assessment": "self-harm wounds to the arm, bleeding controlled",
+    "presenting_complaint": "self_inflicted_cuts",
+    "symptoms": [
+      {
+        "symptom": "self_inflicted_cuts",
+        "probability": 1.0
+      },
+      {
+        "symptom": "low_mood",
+        "probability": 0.8
+      },
+      {
+        "symptom": "thoughts_of_suicide",
+        "probability": 0.35
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        88,
+        9
+      ],
+      "systolic_bp": [
+        126,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        2,
+        4
+      ]
+    },
+    "treatment": [
+      {
+        "type": "procedure",
+        "name": "Wound cleaning and closure",
+        "performed_by": "doctor",
+        "minutes": 20,
+        "essential": true
+      },
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 40,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "discharge",
+    "disposition_note": "Wounds closed and assessed by the liaison team. Home with a safety plan and follow-up from the community mental health team."
+  },
+  {
+    "department": "mental_health",
+    "female_fraction": 0.55,
+    "ambulance_probability": 0.35,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urea_electrolytes",
+      "full_blood_count"
+    ],
+    "recovery_per_hour": 0.3,
+    "id": "severe_depression",
+    "name": "Severe depression",
+    "description": "Depression so deep they have stopped eating, drinking and looking after themselves. They need a stay on a mental health ward.",
+    "prevalence": 1.5,
+    "age_range": [
+      18,
+      90
+    ],
+    "crew_assessment": "severe low mood, not eating or drinking",
+    "presenting_complaint": "not_eating_drinking",
+    "symptoms": [
+      {
+        "symptom": "not_eating_drinking",
+        "probability": 1.0
+      },
+      {
+        "symptom": "low_mood",
+        "probability": 1.0
+      },
+      {
+        "symptom": "thoughts_of_suicide",
+        "probability": 0.5
+      },
+      {
+        "symptom": "fatigue",
+        "probability": 0.6
+      },
+      {
+        "symptom": "not_sleeping",
+        "probability": 0.5
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        90,
+        9
+      ],
+      "systolic_bp": [
+        118,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "compound_sodium_lactate",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 60,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "admit",
+    "length_of_stay_hours": [
+      72,
+      144
+    ],
+    "disposition_note": "Assessed by the liaison team and admitted to a mental health ward."
+  },
+  {
+    "department": "mental_health",
+    "female_fraction": 0.4,
+    "ambulance_probability": 0.3,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "capillary_glucose",
+      "full_blood_count"
+    ],
+    "recovery_per_hour": 0.3,
+    "id": "first_episode_psychosis",
+    "name": "First episode of psychosis",
+    "description": "Hearing voices and believing things that aren't true (that they are being watched or followed) for the first time. They are frightened and need a stay on a mental health ward to start treatment.",
+    "prevalence": 1.5,
+    "age_range": [
+      16,
+      45
+    ],
+    "crew_assessment": "hearing voices, paranoid and frightened",
+    "presenting_complaint": "hearing_voices",
+    "symptoms": [
+      {
+        "symptom": "hearing_voices",
+        "probability": 1.0
+      },
+      {
+        "symptom": "paranoia",
+        "probability": 0.9
+      },
+      {
+        "symptom": "not_sleeping",
+        "probability": 0.6
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        96,
+        9
+      ],
+      "systolic_bp": [
+        126,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "olanzapine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 60,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "admit",
+    "length_of_stay_hours": [
+      96,
+      144
+    ],
+    "disposition_note": "Assessed by the liaison team and admitted to a mental health ward to start treatment."
+  },
+  {
+    "department": "mental_health",
+    "female_fraction": 0.5,
+    "ambulance_probability": 0.3,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "urea_electrolytes"
+    ],
+    "recovery_per_hour": 0.3,
+    "id": "mania",
+    "name": "Mania",
+    "description": "Very high, racing mood: talking fast, no sleep for days, spending and big plans. Often part of bipolar disorder. They need a stay on a mental health ward.",
+    "prevalence": 1,
+    "age_range": [
+      18,
+      70
+    ],
+    "crew_assessment": "elated mood, not slept for days",
+    "presenting_complaint": "racing_thoughts",
+    "symptoms": [
+      {
+        "symptom": "racing_thoughts",
+        "probability": 1.0
+      },
+      {
+        "symptom": "not_sleeping",
+        "probability": 0.95
+      },
+      {
+        "symptom": "paranoia",
+        "probability": 0.3
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        100,
+        9
+      ],
+      "systolic_bp": [
+        134,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        36.7,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "olanzapine",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 60,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "admit",
+    "length_of_stay_hours": [
+      96,
+      144
+    ],
+    "disposition_note": "Assessed by the liaison team and admitted to a mental health ward."
+  },
+  {
+    "department": "mental_health",
+    "female_fraction": 0.25,
+    "ambulance_probability": 0.45,
+    "initial_severity": [
+      0.08,
+      0.18
+    ],
+    "deterioration_per_hour": 0,
+    "deterioration_effects": {
+      "heart_rate": 0,
+      "systolic_bp": 0,
+      "respiratory_rate": 0,
+      "oxygen_saturation": 0,
+      "temperature": 0
+    },
+    "can_be_fatal": false,
+    "key_investigations": [
+      "ecg",
+      "capillary_glucose"
+    ],
+    "recovery_per_hour": 0.6,
+    "id": "drug_induced_psychosis",
+    "name": "Drug-induced psychosis",
+    "description": "Seeing and hearing things after taking drugs, frightened and on edge. They are watched in A&E while it wears off, then the liaison team check they are safe to go home.",
+    "prevalence": 1.5,
+    "age_range": [
+      16,
+      45
+    ],
+    "crew_assessment": "agitated and hallucinating after drug use",
+    "presenting_complaint": "hearing_voices",
+    "symptoms": [
+      {
+        "symptom": "hearing_voices",
+        "probability": 0.8
+      },
+      {
+        "symptom": "hallucinations",
+        "probability": 0.9
+      },
+      {
+        "symptom": "recent_drug_use",
+        "probability": 1.0
+      },
+      {
+        "symptom": "paranoia",
+        "probability": 0.6
+      },
+      {
+        "symptom": "sweating",
+        "probability": 0.4
+      }
+    ],
+    "observations": {
+      "heart_rate": [
+        112,
+        9
+      ],
+      "systolic_bp": [
+        138,
+        11
+      ],
+      "diastolic_bp": [
+        78,
+        8
+      ],
+      "respiratory_rate": [
+        15,
+        2
+      ],
+      "oxygen_saturation": [
+        98.5,
+        0.8
+      ],
+      "temperature": [
+        37.2,
+        0.3
+      ],
+      "pain_score": [
+        0,
+        2
+      ]
+    },
+    "treatment": [
+      {
+        "type": "medication",
+        "medication": "lorazepam_oral",
+        "essential": false
+      },
+      {
+        "type": "procedure",
+        "name": "Mental health assessment",
+        "performed_by": "doctor",
+        "minutes": 40,
+        "essential": true,
+        "room": "mental_health_assessment"
+      }
+    ],
+    "disposition": "discharge",
+    "disposition_note": "Settled as the drugs wore off. Seen by the liaison team and home with drug service details."
+  }
+]

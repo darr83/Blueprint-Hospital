@@ -895,5 +895,34 @@
       "Fluid overload"
     ],
     "cost_per_dose": 60
+    },
+  {
+    "id": "olanzapine",
+    "name": "Olanzapine",
+    "drug_class": "Antipsychotic",
+    "route": "oral",
+    "typical_dose": "5-10 mg",
+    "indications": "Psychosis or mania, to calm distress and agitation.",
+    "contraindications": "Known olanzapine allergy.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness",
+      "Increased appetite"
+    ],
+    "cost_per_dose": 1
+  },
+  {
+    "id": "lorazepam_oral",
+    "name": "Lorazepam (tablet)",
+    "drug_class": "Benzodiazepine",
+    "route": "oral",
+    "typical_dose": "1 mg",
+    "indications": "Short-term relief of severe anxiety or agitation.",
+    "contraindications": "Respiratory depression.",
+    "allergy_groups": [],
+    "common_side_effects": [
+      "Drowsiness"
+    ],
+    "cost_per_dose": 1
   }
 ]

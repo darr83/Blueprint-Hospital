@@ -168,6 +168,11 @@ public sealed partial class HospitalSimulation
         }
 
         var department = DepartmentOf(patient);
+        if (department == MentalHealthDepartmentId)
+        {
+            return NoWardReasonForMentalHealth();
+        }
+
         var name = DepartmentName(department);
         return IsUnlocked(department)
             ? $"There is no {name} ward on site, so they are being transferred to a neighbouring hospital for admission."

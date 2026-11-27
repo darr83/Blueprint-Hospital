@@ -175,7 +175,9 @@ public static class ExampleHospital
         new("medical_ward", 44, NorthRowY, 14, NorthRowDepth, WallSide.South),
         new("ct_scanner", 58, NorthRowY, 12, NorthRowDepth, WallSide.South),
         new("xray_room", 70, NorthRowY, 12, NorthRowDepth, WallSide.South),
-        new("cafeteria", 82, NorthRowY, 18, NorthRowDepth, WallSide.South, "Hospital café"),
+        new("cafeteria", 82, NorthRowY, 11, NorthRowDepth, WallSide.South, "Hospital café"),
+        // The mental health assessment room, 6 m deep, set back from the corridor's edge of the row.
+        new("mental_health_assessment_room", 93, NorthRowY + 4, 7, 12, WallSide.South, "Mental health assessment"),
 
         // Middle row (7 m), doors onto the spine.
         new("resus_bay", 24, MiddleRowY, 12, MiddleRowDepth, WallSide.South, "Resus 1"),

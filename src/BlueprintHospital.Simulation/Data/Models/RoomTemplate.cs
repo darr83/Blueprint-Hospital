@@ -58,6 +58,9 @@ public enum RoomLayoutKind
 
     /// <summary>A cleaners' sink, shelves of cleaning supplies, a rack of brushes and mops and a mop bucket.</summary>
     Cleaning,
+
+    /// <summary>A mental health assessment room: two fixed seats either side of a low table (the staff seat nearer the door), soft seating for family and a second door out on the back wall.</summary>
+    Interview,
 }
 
 /// <summary>What kind of unit a ward is, when it is more than a plain ward.</summary>

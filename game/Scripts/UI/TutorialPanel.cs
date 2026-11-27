@@ -75,6 +75,7 @@ public partial class TutorialPanel : Control
         _guide.Update(_screen);
 
         AddChild(_ring);
+        scene.Hud.Build.Compact = true;
         BuildCard();
         BuildPill();
         Refresh(force: true);
@@ -108,7 +109,7 @@ public partial class TutorialPanel : Control
 
         // End the tutorial? [End tutorial] [Carry on]
         _confirm.AddThemeConstantOverride("separation", 8);
-        var question = UiStyle.Body("End the tutorial? You can keep playing this hospital.");
+        var question = UiStyle.Body("End the tutorial? The hospital carries on as a normal game.");
         question.AddThemeFontSizeOverride("font_size", UiStyle.SizeSmall);
         question.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         _confirm.AddChild(question);
@@ -238,14 +239,13 @@ public partial class TutorialPanel : Control
         Refresh(force: true);
     }
 
-    /// <summary>Ends the tutorial: the card goes, and the hospital carries on as it is.</summary>
+    /// <summary>Ends the tutorial: the card goes, and the hospital carries on as a normal game with every kind of patient.</summary>
     public void EndTutorial()
     {
-        _scene.Session.Simulation.TutorialStep = TutorialGuide.Ended;
+        _scene.Session.Simulation.EndTutorial();
+        _scene.Hud.Build.Compact = false;
         _ring.Target = null;
         QueueFree();
-        _scene.Session.Simulation.Notifications.Add(_scene.Session.Simulation.Now, Simulation.Simulation.NotificationLevel.Info,
-            "Tutorial ended. The hospital is yours: patients keep coming as they did in the tutorial.");
     }
 
     // ---------------------------------------------------------------- each frame

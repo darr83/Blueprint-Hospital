@@ -112,7 +112,7 @@ public sealed class TutorialGuide
         public static readonly GridRect Majors = new(B.X + 32, B.Y + 9, 8, 9);
     }
 
-    /// <summary>The saved step of a tutorial the player has ended: the guide no longer shows.</summary>
+    /// <summary>The saved step of a tutorial ended by older builds: the guide no longer shows. (Ending a tutorial now turns it into a Sandbox game.)</summary>
     public const int Ended = -1;
 
     /// <summary>How many chairs the waiting room needs for the tutorial.</summary>
@@ -330,7 +330,7 @@ public sealed class TutorialGuide
                 Tasks = new TutorialTask[] { new("A majors cubicle off the corridor", (sim, _) => InUse(sim, CareSpaceKind.Majors) > 0) },
                 Pointer = (_, s) => BuildPointer(s, "emergency", "majors_cubicle"),
                 Suggested = Spots.Majors, SuggestedLabel = "Majors",
-                Tip = "Red patients need a resus bay. The tutorial only sends Green and Amber patients, so you can build one later.",
+                Tip = "Red patients need a resus bay. The tutorial only sends Green and Amber patients; once it ends, Red patients come too.",
             },
             new()
             {
@@ -397,7 +397,7 @@ public sealed class TutorialGuide
             new()
             {
                 Id = "done", Part = Open, Title = "Your A&E is running",
-                Text = "Well done: you built an A&E from nothing and treated your first patient. From here, try:\n• a resus bay for Red patients\n• a staff room, so staff can take their breaks\n• toilets and a vending machine for the waiting room\n• an X-ray room, so A&E can scan broken bones\n\nKeep playing this hospital, or start a Career game from the main menu.",
+                Text = "Well done: you built an A&E from nothing and treated your first patient. From here, try:\n• a resus bay for Red patients\n• a staff room, so staff can take their breaks\n• toilets and a vending machine for the waiting room\n• an X-ray room, so A&E can scan broken bones\n\nPress Keep playing to carry on as a normal hospital: from then on every kind of patient comes, including Red patients by ambulance.",
             },
         };
     }

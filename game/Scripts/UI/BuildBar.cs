@@ -25,7 +25,35 @@ public partial class BuildBar : Control
     public const float Reserve = 112;
 
     private const float Edge = 12;
-    private const float TileWidth = 108;
+    private const float FullTileWidth = 108;
+    private const float CompactTileWidth = 74;
+    private bool _compact;
+
+    /// <summary>
+    /// Smaller pop-up tiles in one row (the tutorial turns this on, so the pop-up covers less of the map).
+    /// The same bar is used in 2D and 3D.
+    /// </summary>
+    public bool Compact
+    {
+        get => _compact;
+        set
+        {
+            if (_compact == value)
+            {
+                return;
+            }
+
+            _compact = value;
+            if (_popup.Visible)
+            {
+                RebuildPopup();
+                RefreshTiles();
+                RefreshStatus();
+            }
+        }
+    }
+
+    private float TileWidth => _compact ? CompactTileWidth : FullTileWidth;
     private const float HoverWidth = 360;
 
     private readonly PanelContainer _bar = new() { Name = "Bar" };
@@ -426,9 +454,9 @@ public partial class BuildBar : Control
         }
 
         // A long row wraps onto a second line so the pop-up stays on screen.
-        const int perRow = 12;
-        var tiles = new HFlowContainer { CustomMinimumSize = new Vector2(Math.Min(items.Count, perRow) * (TileWidth + 8), 0) };
-        tiles.AddThemeConstantOverride("h_separation", 8);
+        var perRow = _compact ? Math.Max(8, (int)((GetViewportRect().Size.X - MainHUD.NavWidth - (4 * Edge) - 40) / (TileWidth + 6))) : 12;
+        var tiles = new HFlowContainer { CustomMinimumSize = new Vector2(Math.Min(items.Count, perRow) * (TileWidth + (_compact ? 6 : 8)), 0) };
+        tiles.AddThemeConstantOverride("h_separation", _compact ? 6 : 8);
         tiles.AddThemeConstantOverride("v_separation", 8);
         foreach (var item in items)
         {
@@ -558,7 +586,7 @@ public partial class BuildBar : Control
     {
         var colour = new Color(icon.Colour);
         var template = _sim.Database.RoomTemplates.GetValueOrDefault(item);
-        var tile = new Button { Name = item, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(TileWidth, 96), ToggleMode = true };
+        var tile = new Button { Name = item, FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(TileWidth, _compact ? 66 : 96), ToggleMode = true };
         foreach (var state in new[] { "normal", "hover", "pressed", "hover_pressed", "disabled" })
         {
             var selected = state is "pressed" or "hover_pressed";
@@ -573,19 +601,20 @@ public partial class BuildBar : Control
 
         var column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         column.SetAnchorsPreset(LayoutPreset.FullRect);
-        column.OffsetTop = 8;
+        column.OffsetTop = _compact ? 5 : 8;
         column.OffsetLeft = 4;
         column.OffsetRight = -4;
-        column.AddThemeConstantOverride("separation", 4);
-        var circle = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(40, 40), SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
-        var tint = UiStyle.Box(new Color(colour, 0.18f), 20);
+        column.AddThemeConstantOverride("separation", _compact ? 1 : 4);
+        var circleSize = _compact ? 28 : 40;
+        var circle = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(circleSize, circleSize), SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
+        var tint = UiStyle.Box(new Color(colour, 0.18f), circleSize / 2);
         circle.AddThemeStyleboxOverride("panel", tint);
         var glyph = new TextureRect
         {
             Texture = BuildIcons.Get(BuildIcons.RoomGlyph(item, template), colour.Darkened(0.2f), 48),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            CustomMinimumSize = new Vector2(24, 24),
+            CustomMinimumSize = _compact ? new Vector2(17, 17) : new Vector2(24, 24),
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
             MouseFilter = MouseFilterEnum.Ignore,
@@ -599,12 +628,12 @@ public partial class BuildBar : Control
         var countBox = UiStyle.Box(UiStyle.Surface, 10, colour);
         countBox.BorderWidthBottom = countBox.BorderWidthTop = countBox.BorderWidthLeft = countBox.BorderWidthRight = 2;
         countBox.ContentMarginLeft = countBox.ContentMarginRight = 4;
-        var badge = new PanelContainer { Name = "Count", MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(20, 20) };
+        var badge = new PanelContainer { Name = "Count", MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = _compact ? new Vector2(16, 16) : new Vector2(20, 20) };
         badge.AddThemeStyleboxOverride("panel", countBox);
         badge.AddChild(countText);
         badge.AnchorLeft = badge.AnchorRight = 0.5f;
-        badge.OffsetLeft = 8;
-        badge.OffsetTop = 30;
+        badge.OffsetLeft = _compact ? 4 : 8;
+        badge.OffsetTop = _compact ? 18 : 30;
         tile.AddChild(badge);
         _counts[item] = (countText, countBox, colour);
         var label = new Label
@@ -613,11 +642,11 @@ public partial class BuildBar : Control
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(TileWidth - 8, 36),
+            CustomMinimumSize = new Vector2(TileWidth - 8, _compact ? 28 : 36),
             MaxLinesVisible = 2,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        label.AddThemeFontSizeOverride("font_size", 13);
+        label.AddThemeFontSizeOverride("font_size", _compact ? 11 : 13);
         label.AddThemeColorOverride("font_color", UiStyle.TextDark);
         label.AddThemeConstantOverride("line_spacing", -2);
         column.AddChild(label);
@@ -641,7 +670,7 @@ public partial class BuildBar : Control
         }
 
         // Rooms that sit under more than one department are tagged.
-        if (icon.Department is not null && Menu.IconsWith(item).Count(i => i.Department is not null) > 1)
+        if (!_compact && icon.Department is not null && Menu.IconsWith(item).Count(i => i.Department is not null) > 1)
         {
             var tag = new Label { Text = "SHARED", MouseFilter = MouseFilterEnum.Ignore };
             tag.AddThemeFontSizeOverride("font_size", 9);
@@ -1187,7 +1216,7 @@ public partial class BuildBar : Control
     {
         RoomLayoutKind.BedSpace => "1 patient on a bed",
         RoomLayoutKind.Ward => room.Beds.Count == 1 ? "1 bed" : $"{room.Beds.Count} beds",
-        RoomLayoutKind.Triage => "1 patient at a time",
+        RoomLayoutKind.Triage or RoomLayoutKind.Interview => "1 patient at a time",
         RoomLayoutKind.Waiting => $"{room.Seats.Count} seats, queue of {room.QueueTiles.Count}",
         RoomLayoutKind.Office or RoomLayoutKind.StaffRoom => $"{room.Seats.Count} staff",
         _ => "—",

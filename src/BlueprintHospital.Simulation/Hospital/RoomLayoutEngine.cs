@@ -26,6 +26,7 @@ public static class RoomLayoutEngine
         // Wards need beds; a neonatal unit has incubators instead.
         RoomLayoutKind.Ward => Array.Empty<string>(),
         RoomLayoutKind.Triage => new[] { "staff_chair", "visitor_chair", "obs_monitor" },
+        RoomLayoutKind.Interview => new[] { "fixed_seat" },
         RoomLayoutKind.Waiting => new[] { "reception_desk", "staff_chair" },
         RoomLayoutKind.Cafeteria => new[] { "food_counter", "cafe_table", "cafe_chair" },
         RoomLayoutKind.Vending => new[] { "vending_machine" },
@@ -87,6 +88,9 @@ public static class RoomLayoutEngine
                 break;
             case RoomLayoutKind.Triage:
                 Triage(plan, template);
+                break;
+            case RoomLayoutKind.Interview:
+                Interview(plan, template);
                 break;
             case RoomLayoutKind.Waiting when template.Kind == CareSpaceKind.OutpatientReception:
                 CheckIn(plan);
@@ -479,6 +483,51 @@ public static class RoomLayoutEngine
         plan.AddWorld("obs_monitor", monitor.X, monitor.Y, monitor.W, monitor.L);
 
         foreach (var item in template.Furniture.Where(i => i is not "triage_desk" and not "obs_monitor" and not "staff_chair" and not "visitor_chair"))
+        {
+            plan.TryPlaceAgainstWalls(item);
+        }
+    }
+
+    /// <summary>
+    /// A mental health assessment room. The patient and the nurse sit in heavy fixed seats either side of a
+    /// low bolted table, the nurse on the side nearer the door so they can always step out. A second door
+    /// out sits on the back wall, and any soft seating for a relative goes against the walls.
+    /// </summary>
+    private static void Interview(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+
+        // The seats go in a column to one side of the doorway, so the way in stays clear.
+        var doorMiddle = plan.DoorOffset + (plan.DoorWidth / 2.0);
+        var col = doorMiddle >= f.W / 2.0 ? 1 : f.W - 2;
+        // Close enough to talk across the low table between them, the patient further in.
+        var staffV = Math.Max(3, f.D - 3);
+        var patientV = staffV - 2;
+        var staff = f.Tile(col, staffV);
+        var patient = f.Tile(col, patientV);
+        plan.StaffSpot = staff;
+        plan.PatientSpot = patient;
+        plan.AddChair("fixed_seat", staff);
+        plan.AddChair("fixed_seat", patient);
+
+        if (template.Furniture.Contains("bolted_table") && plan.Database.Furniture.TryGetValue("bolted_table", out var table) && staffV - patientV >= 2)
+        {
+            var su = table.WidthM / Units.MetresPerTile;
+            var sv = table.DepthM / Units.MetresPerTile;
+            var t = f.ToWorld(col + 0.5 - (su / 2), patientV + 1 + ((staffV - patientV - 1 - sv) / 2), su, sv);
+            plan.AddWorld("bolted_table", t.X, t.Y, t.W, t.L);
+        }
+
+        if (template.Furniture.Contains("safety_door") && plan.Database.Furniture.TryGetValue("safety_door", out var door))
+        {
+            // The second way out, on the back wall at the far side from the seats.
+            var su = door.WidthM / Units.MetresPerTile;
+            var u = col == 1 ? f.W - 0.5 - su : 0.5;
+            var d = f.ToWorld(u, 0.2, su, door.DepthM / Units.MetresPerTile);
+            plan.AddWorld("safety_door", d.X, d.Y, d.W, d.L);
+        }
+
+        foreach (var item in template.Furniture.Where(i => i is not "fixed_seat" and not "bolted_table" and not "safety_door"))
         {
             plan.TryPlaceAgainstWalls(item);
         }

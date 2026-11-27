@@ -9,7 +9,7 @@ namespace BlueprintHospital.Hospital;
 public enum Pictogram
 {
     None, Bed, Cross, Heart, Pulse, Pill, Cup, Cutlery, Man, Woman, Wheelchair, Bone, Baby, Brain, Dumbbell, Info, Staff, Chair,
-    Lift, Stairs, Scalpel, Radiation, Waves, Clipboard, Scope, Mug, Monitor, Drop,
+    Lift, Stairs, Scalpel, Radiation, Waves, Clipboard, Scope, Mug, Monitor, Drop, Leaf,
 }
 
 /// <summary>How the name board over a door is styled.</summary>
@@ -93,6 +93,7 @@ public static class Signs
         CareSpaceKind.Lift => Pictogram.Lift,
         CareSpaceKind.Stairs => Pictogram.Stairs,
         CareSpaceKind.DeliveryRoom => Pictogram.Baby,
+        CareSpaceKind.MentalHealthAssessment => Pictogram.Leaf,
         _ => Pictogram.None,
     };
 
@@ -212,6 +213,12 @@ public static class Signs
                 c.DrawColoredPolygon(new[] { P(-0.3f, -0.2f), P(0.3f, -0.2f), P(0.22f, 0.46f), P(-0.22f, 0.46f) }, ink);
                 R(-0.36f, -0.32f, 0.72f, 0.12f);
                 L(0.02f, -0.34f, 0.2f, -0.52f, 0.08f);
+                break;
+
+            case Pictogram.Leaf:
+                // A leaf, the mental health department's sign: a pointed oval with its midrib.
+                c.DrawColoredPolygon(new[] { P(-0.42f, 0.44f), P(-0.44f, 0.04f), P(-0.26f, -0.26f), P(0.06f, -0.44f), P(0.46f, -0.48f), P(0.42f, -0.08f), P(0.24f, 0.24f), P(-0.06f, 0.42f) }, ink);
+                c.DrawLine(P(-0.42f, 0.44f), P(0.2f, -0.2f), ground, thin, true);
                 break;
 
             case Pictogram.Mug:

@@ -14,9 +14,9 @@ public class MedicalDataLoadingTests
     {
         var db = GameDatabase.Load(new FileSystemDataSource(TestData.GameDataDirectory()));
 
-        Assert.Equal(16, db.Departments.Count);
+        Assert.Equal(17, db.Departments.Count);
         Assert.Equal("emergency", db.StartingDepartment.Id);
-        foreach (var id in new[] { "cardiology", "gynaecology", "neurology", "gastroenterology", "general_surgery", "critical_care", "radiology", "theatres", "pharmacy", "outpatients", "facilities", "maternity", "paediatrics" })
+        foreach (var id in new[] { "cardiology", "gynaecology", "neurology", "gastroenterology", "general_surgery", "critical_care", "radiology", "theatres", "pharmacy", "outpatients", "facilities", "maternity", "paediatrics", "mental_health" })
         {
             Assert.Contains(id, db.Departments.Keys);
         }
