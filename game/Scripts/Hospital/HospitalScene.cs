@@ -288,6 +288,7 @@ public partial class HospitalScene : Node2D
         };
         _hud.Roster.PatientClicked += p => SelectPatient(p, centre: true);
         _hud.Surgery.PatientClicked += p => SelectPatient(p, centre: true);
+        _hud.Feedback.PatientClicked += p => SelectPatient(p, centre: true);
         _hud.Crash.FollowRequested += id =>
         {
             if (_session.Simulation.FindPatient(id) is { } patient)
@@ -598,7 +599,7 @@ public partial class HospitalScene : Node2D
 
         switch (key.Keycode)
         {
-            case Key.Escape when _hud.Doctors.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Calendar.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible || _hud.Surgery.Visible || _hud.Journal.Visible || _hud.OutpatientInfo.Visible:
+            case Key.Escape when _hud.Doctors.Visible || _hud.StaffInfo.Visible || _hud.Roster.Visible || _hud.RoomInfo.Visible || _hud.Decorate.Visible || _hud.ItemInfo.Visible || _hud.Finances.Visible || _hud.Calendar.Visible || _hud.Recruitment.Visible || _hud.Clinics.Visible || _hud.Rota.Visible || _hud.StatsScreen.Visible || _hud.Surgery.Visible || _hud.Journal.Visible || _hud.OutpatientInfo.Visible || _hud.Feedback.Visible:
                 ClearSelection();
                 _hud.HideRightPanels();
                 break;
@@ -640,6 +641,9 @@ public partial class HospitalScene : Node2D
                 break;
             case Key.J:
                 _hud.ToggleJournal();
+                break;
+            case Key.L when _session.Simulation.FeedbackOn:
+                _hud.ToggleFeedback();
                 break;
             case Key.O:
                 _hud.ToggleDoctors();

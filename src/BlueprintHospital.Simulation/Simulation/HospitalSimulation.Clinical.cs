@@ -479,6 +479,7 @@ public sealed partial class HospitalSimulation
                 ? $"Re-attended another hospital with {p.Condition.Name.ToLowerInvariant()} after being discharged. Serious incident review opened."
                 : $"Re-attended their GP with worsening {p.Condition.Name.ToLowerInvariant()} after being discharged.", important: true);
             Stats.ReputationPenalties += serious ? 5 : 1;
+            ComplainAboutMissedDiagnosis(p, serious);
             Notifications.Add(Now, serious ? NotificationLevel.Critical : NotificationLevel.Warning,
                 $"Missed diagnosis: {p.FullName}, discharged at {p.LeftAt:HH:mm}, actually had {p.Condition.Name.ToLowerInvariant()}.", p.Id);
         }

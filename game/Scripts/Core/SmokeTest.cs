@@ -77,6 +77,8 @@ public partial class SmokeTest : Node
         RotaBreaks,
         Stats,
         StatsWeek,
+        Feedback,
+        FeedbackRatings,
         Ward,
         PlanWard,
         PlanEmergency,
@@ -602,6 +604,24 @@ public partial class SmokeTest : Node
                 hospital.Hud.ToggleStats();
                 Check(!hospital.Hud.StatsScreen.Visible, "The Stats screen did not close.");
                 CheckDetails(hospital);
+                OpenFeedback(hospital);
+                _frame = 0;
+                _stage = Stage.Feedback;
+                break;
+
+            case Stage.Feedback when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06h_feedback_complaints");
+                hospital.Hud.Feedback.ShowPage(FeedbackPanel.Page.Ratings);
+                _frame = 0;
+                _stage = Stage.FeedbackRatings;
+                break;
+
+            case Stage.FeedbackRatings when scene is HospitalScene hospital && _frame >= 10:
+                Screenshot("06i_feedback_ratings");
+                hospital.Hud.Feedback.ShowPage(FeedbackPanel.Page.ThankYous);
+                Check(hospital.Hud.Feedback.Showing == FeedbackPanel.Page.ThankYous, "The thank-yous page did not show.");
+                hospital.Hud.ToggleFeedback(FeedbackPanel.Page.ThankYous);
+                Check(!hospital.Hud.Feedback.Visible, "Patient feedback did not close.");
                 _frame = 0;
                 _stage = Stage.Ward;
                 break;
@@ -2601,6 +2621,21 @@ public partial class SmokeTest : Node
         Check(hospital.Hud.Visible && !hospital.DoctorHud.Visible, "The main screen did not come back.");
         Check(Input.MouseMode == Input.MouseModeEnum.Visible, "The mouse pointer was not given back.");
         hospital.Hud.HideRightPanels();
+    }
+
+    /// <summary>Two complaints arrive; one is investigated; Patient feedback opens on the complaints.</summary>
+    private static void OpenFeedback(HospitalScene hospital)
+    {
+        var sim = hospital.Session.Simulation;
+        var hud = hospital.Hud;
+        Check(hud.RatingBadge.Visible, "The star rating is missing from the top bar.");
+        var formal = sim.AddTestComplaint(BlueprintHospital.Simulation.Simulation.ComplaintSeverity.Formal);
+        var serious = sim.AddTestComplaint(BlueprintHospital.Simulation.Simulation.ComplaintSeverity.Serious);
+        Check(formal is not null && serious is not null, "Test complaints could not be added.");
+        Check(sim.Respond(serious!.Id, BlueprintHospital.Simulation.Simulation.ComplaintResponse.Investigate), "Could not start an investigation.");
+        hud.ToggleFeedback(FeedbackPanel.Page.Complaints);
+        Check(hud.Feedback.Visible && hud.Feedback.Showing == FeedbackPanel.Page.Complaints, "Patient feedback did not open on the complaints.");
+        GD.Print($"[smoke] Patient feedback: {sim.OpenComplaints.Count()} complaints open, rating {sim.HospitalRating?.ToString("0.0") ?? "none yet"}.");
     }
 
     /// <summary>The illness journal, the board tabs and a ward's people tabs open and close.</summary>
