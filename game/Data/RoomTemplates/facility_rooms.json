@@ -57,5 +57,23 @@
     "base_cost": 1500, "cost_per_square_metre": 600,
     "staffing": "Base for the hospital's cleaners.",
     "furniture": ["cleaners_sink", "cleaning_shelves", "broom_rack", "mop_bucket"]
+  },
+  {
+    "id": "pals_office",
+    "name": "PALS office",
+    "category": "Facilities",
+    "description": "The Patient Advice and Liaison Service. Patients who have waited a long time come here to raise a concern, and a PALS officer listens and sorts it out on the spot: they leave happier, rate their stay higher and complain less. A PALS officer also makes your written apologies more likely to settle a complaint.",
+    "kind": "pals_office",
+    "department": "facilities",
+    "layout": "office",
+    "sizes": [
+      { "name": "Small", "width_m": 3.5, "length_m": 3.5 },
+      { "name": "Standard", "width_m": 4.5, "length_m": 4 }
+    ],
+    "min_width_m": 3, "min_length_m": 3, "max_width_m": 8, "max_length_m": 7,
+    "door_width_m": 1.0,
+    "base_cost": 4000, "cost_per_square_metre": 700,
+    "staffing": "Hire a PALS officer from Recruitment (H), posted to the office.",
+    "furniture": ["office_desk", "staff_chair", "visitor_chair", "lounge_chair"]
   }
 ]

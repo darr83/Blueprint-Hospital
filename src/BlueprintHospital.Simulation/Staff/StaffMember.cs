@@ -58,6 +58,9 @@ public enum StaffRole
 
     /// <summary>Hospital play specialist: runs the play room or teenage room, where children waiting in A&amp;E come to play.</summary>
     PlaySpecialist,
+
+    /// <summary>Patient Advice and Liaison Service officer: listens to unhappy patients in the PALS office and helps answer complaints.</summary>
+    PalsOfficer,
 }
 
 public enum StaffActivity

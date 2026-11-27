@@ -105,6 +105,12 @@ public enum CareSpaceKind
 
     /// <summary>A parents' room on the children's wards: a sofa, a kettle and a table, where parents take a break.</summary>
     ParentsRoom,
+
+    /// <summary>
+    /// PALS office (Patient Advice and Liaison Service), run by a PALS officer: unhappy patients who have waited
+    /// a long time come here to raise a concern, and are listened to on the spot.
+    /// </summary>
+    PalsOffice,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

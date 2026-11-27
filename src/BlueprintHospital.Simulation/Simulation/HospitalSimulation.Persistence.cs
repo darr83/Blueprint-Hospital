@@ -200,6 +200,8 @@ public sealed class PatientState
 
     public bool HadToiletAccident { get; init; }
 
+    public bool PalsListened { get; init; }
+
     public string? OperationCancelledWhy { get; init; }
 
     public int? Stars { get; init; }
@@ -900,7 +902,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, CorridorMinutes = p.CorridorMinutes, HadToiletAccident = p.HadToiletAccident, OperationCancelledWhy = p.OperationCancelledWhy, Stars = p.Stars, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
+        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, CorridorMinutes = p.CorridorMinutes, HadToiletAccident = p.HadToiletAccident, PalsListened = p.PalsListened, OperationCancelledWhy = p.OperationCancelledWhy, Stars = p.Stars, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -991,6 +993,7 @@ public sealed partial class HospitalSimulation
         p.VisitsReceived = s.VisitsReceived;
         p.CorridorMinutes = s.CorridorMinutes;
         p.HadToiletAccident = s.HadToiletAccident;
+        p.PalsListened = s.PalsListened;
         p.OperationCancelledWhy = s.OperationCancelledWhy;
         p.Stars = s.Stars;
         p.Maternity = s.Maternity;

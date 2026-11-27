@@ -154,6 +154,7 @@ public sealed partial class HospitalSimulation
         new("visitors", true, "Family could visit"),
         new("food", true, "Food and drink"),
         new("cheerful", true, "Felt well looked after"),
+        new("pals", true, "PALS listened to them"),
         new("wait", false, "Long wait in A&E"),
         new("doctor_wait", false, "Long wait to see a doctor"),
         new("corridor", false, "Care in the corridor"),
@@ -375,6 +376,12 @@ public sealed partial class HospitalSimulation
             facts.Insert(0, $"Left without being seen after {FormatWait(inEmergency)}");
         }
 
+        if (p.PalsListened)
+        {
+            score += 0.5;
+            good.Add("pals");
+        }
+
         score += luck;
         var stars = (int)Math.Clamp(Math.Round(score), 1, 5);
         if (stars >= 4)
@@ -418,7 +425,7 @@ public sealed partial class HospitalSimulation
         AddComment(new FeedbackComment(p.Id, p.FullName, FeedbackDepartmentName(department), stars, quote, Now));
         p.Log(Now, $"Rated their stay {stars} out of 5" + (reasons.Count > 0 ? $": {string.Join(", ", reasons.Take(3).Select(r => ReasonById(r).Label.ToLowerInvariant()))}." : "."));
 
-        if (stars <= 2 && random.Chance(stars == 1 ? 0.55 : 0.25))
+        if (stars <= 2 && random.Chance((stars == 1 ? 0.55 : 0.25) * (p.PalsListened ? 0.5 : 1)))
         {
             var primary = reasons.FirstOrDefault(r => !ReasonById(r).Good) ?? "wait";
             var severity = stars == 1 || primary is "cancelled" or "accident" || p.TimeInEmergency(Now) > TimeSpan.FromHours(12)
@@ -763,6 +770,10 @@ public sealed partial class HospitalSimulation
         _ => 0.85,
     };
 
+    /// <summary>The chance this hospital's reply settles a complaint: a PALS officer helps an apology land.</summary>
+    public double ChanceToSettle(ComplaintResponse response, ComplaintSeverity severity) =>
+        Math.Min(0.97, SatisfyChance(response, severity) + (response == ComplaintResponse.Apologise && HasPalsOfficer ? PalsApologyBonus : 0));
+
     private void Settle(Complaint complaint, ComplaintResponse response)
     {
         complaint.Pending = null;
@@ -780,7 +791,7 @@ public sealed partial class HospitalSimulation
             ComplaintResponse.Goodwill => "the goodwill gesture",
             _ => "the investigation",
         };
-        if (FeedbackRandom.Chance(SatisfyChance(response, complaint.Severity)))
+        if (FeedbackRandom.Chance(ChanceToSettle(response, complaint.Severity)))
         {
             complaint.Status = ComplaintStatus.Resolved;
             complaint.ClosedAt = Now;
@@ -904,6 +915,8 @@ public static class FeedbackKeys
     public const string ComplaintsResolved = "feedback.complaints_resolved";
     public const string Ombudsman = "feedback.ombudsman";
     public const string ThankYous = "feedback.thank_yous";
+
+    public const string PalsListened = "feedback.pals_listened";
     public const string DepartmentPrefix = "feedback.dept_count.";
     public const string ClinicsDepartment = "clinics";
     public const string MaternityDepartment = "maternity_unit";

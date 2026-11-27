@@ -63,6 +63,7 @@ public sealed partial class HospitalSimulation
         StaffRole.OutreachNurse => new[] { CareSpaceKind.OutreachOffice },
         StaffRole.Midwife => new[] { CareSpaceKind.DeliveryRoom },
         StaffRole.PlaySpecialist => new[] { CareSpaceKind.PlayRoom },
+        StaffRole.PalsOfficer => new[] { CareSpaceKind.PalsOffice },
         _ => Array.Empty<CareSpaceKind>(),
     };
 
@@ -79,6 +80,7 @@ public sealed partial class HospitalSimulation
         CareSpaceKind.PhysioGym => StaffRole.Physiotherapist,
         CareSpaceKind.OutreachOffice => StaffRole.OutreachNurse,
         CareSpaceKind.DeliveryRoom => StaffRole.Midwife,
+        CareSpaceKind.PalsOffice => StaffRole.PalsOfficer,
         _ => StaffRole.Radiographer,
     };
 
@@ -174,7 +176,7 @@ public sealed partial class HospitalSimulation
     }
 
     private bool IsDayOnly(string? roomId) =>
-        roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception or CareSpaceKind.PlayRoom };
+        roomId is { } id && FindSpace(id) is { Kind: CareSpaceKind.Clinic or CareSpaceKind.OutpatientReception or CareSpaceKind.PlayRoom or CareSpaceKind.PalsOffice };
 
     private IEnumerable<StaffingNeed> RecommendedForShift(StaffShift shift)
     {
@@ -261,6 +263,11 @@ public sealed partial class HospitalSimulation
         foreach (var play in SpacesOfKind(CareSpaceKind.PlayRoom).OrderBy(s => s.Id, StringComparer.Ordinal))
         {
             needs.Add(new(play.Name, play.Id, StaffRole.PlaySpecialist, 1, Have(StaffRole.PlaySpecialist, play.Id)));
+        }
+
+        foreach (var pals in SpacesOfKind(CareSpaceKind.PalsOffice).OrderBy(s => s.Id, StringComparer.Ordinal))
+        {
+            needs.Add(new(pals.Name, pals.Id, StaffRole.PalsOfficer, 1, Have(StaffRole.PalsOfficer, pals.Id)));
         }
 
         return needs.Select(n => n with { Shift = shift });

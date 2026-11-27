@@ -40,7 +40,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>Patients are brought to this room in wheelchairs and on trolleys, so upstairs it needs a lift.</summary>
     private static bool NeedsLift(CareSpace space) => space.Kind is not (CareSpaceKind.Corridor or CareSpaceKind.Stairs
-        or CareSpaceKind.NursesStation or CareSpaceKind.DoctorsOffice or CareSpaceKind.StaffRoom or CareSpaceKind.OutreachOffice or CareSpaceKind.Pharmacy);
+        or CareSpaceKind.NursesStation or CareSpaceKind.DoctorsOffice or CareSpaceKind.StaffRoom or CareSpaceKind.OutreachOffice or CareSpaceKind.PalsOffice or CareSpaceKind.Pharmacy);
 
     /// <summary>A walking route for anyone; wheelchairs and trolleys go by lift (falling back to any route if there is none).</summary>
     public IReadOnlyList<GridCoord> PathFor(Agent agent, GridCoord destination)

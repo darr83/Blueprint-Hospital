@@ -440,6 +440,11 @@ public partial class StaffRotaPanel : PanelContainer
             places.Add(new(desk.Id, desk.Name, "Outpatients · days only", new[] { StaffRole.Receptionist }));
         }
 
+        foreach (var office in _sim.PalsOffices)
+        {
+            places.Add(new(office.Id, office.Name, "Patient advice and liaison · days only", new[] { StaffRole.PalsOfficer }));
+        }
+
         foreach (var room in _sim.Spaces.Where(s => s.IsServiceRoom).OrderBy(s => s.Kind).ThenBy(s => s.Id, StringComparer.Ordinal))
         {
             var role = HospitalSimulation.RoleForRoom(room.Kind);
@@ -522,6 +527,7 @@ public partial class StaffRotaPanel : PanelContainer
             StaffRole.Endoscopist => "Endoscopy",
             StaffRole.PlasterTechnician => "Plaster room",
             StaffRole.Physiotherapist => "Physiotherapy",
+            StaffRole.PalsOfficer => "PALS",
             var role => Capitalise(StaffGrades.RoleName(role, plural: true)),
         };
     }
