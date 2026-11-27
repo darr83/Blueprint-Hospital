@@ -241,6 +241,20 @@ public partial class Person3D : Node3D
             body.Box(new Vector3(-hipW * 0.9f, _hipY + V(4), depth * 0.4f), new Vector3(W(2.6f), V(5), 0.05f), new Color("#22262B"));
         }
 
+        if (look.Alarm)
+        {
+            // A personal alarm on the belt with its red pull tab.
+            body.Box(new Vector3(-hipW * 0.85f, _hipY + V(3.5f), depth * 0.42f), new Vector3(W(2.4f), V(3), 0.045f), new Color("#22262B"));
+            body.Box(new Vector3(-hipW * 0.85f, _hipY + V(5.4f), depth * 0.42f), new Vector3(W(1.2f), V(0.9f), 0.03f), new Color("#E53935"));
+        }
+
+        if (look.Keys)
+        {
+            // Keys hanging from the belt on the other hip.
+            body.Box(new Vector3(hipW * 0.85f, _hipY + V(2.2f), depth * 0.45f), new Vector3(W(0.6f), V(2.6f), 0.02f), new Color("#B8C2CC"));
+            body.Box(new Vector3(hipW * 0.85f, _hipY + V(0.2f), depth * 0.45f), new Vector3(W(1.8f), V(2.2f), 0.03f), new Color("#C9A93A"));
+        }
+
         // ---- neck and head
         var headY = shY + V(2.2f * s) + V(0.86f * 7.5f * look.HeadScale) + V(1);
         var head = new Vector3(0, headY, stoop * 0.3f);

@@ -150,6 +150,8 @@ public static class Decorations
         CareSpaceKind.TheatreRecovery => new(new[] { Wall.Clock, Wall.OxygenPanel, Wall.GloveDispenser }, new[] { Floor.BlanketStack }),
         CareSpaceKind.DeliveryRoom => new(new[] { Wall.Clock, Wall.PastelPrint, Wall.GelDispenser, Wall.OxygenPanel }, new[] { Floor.BlanketStack, Floor.Plant }),
         CareSpaceKind.PlasterRoom => new(new[] { Wall.BonePoster }, new[] { Floor.PlasterShelf, Floor.Bucket }),
+        // Calm and bare: one soft print on the wall and a plant, nothing that could be pulled down or thrown.
+        CareSpaceKind.MentalHealthAssessment => new(new[] { Wall.PastelPrint }, new[] { Floor.Plant }),
         CareSpaceKind.PhysioGym => new(new[] { Wall.Mirror, Wall.Mirror }, new[] { Floor.GymBall, Floor.Dumbbells, Floor.GymBall }),
         CareSpaceKind.Pharmacy => new(new[] { Wall.PharmacySign, Wall.StaffOnly, Wall.Clock }, NoFloors, new[] { ("pharmacy_counter", new[] { OnTop.PillTray, OnTop.Computer }) }),
         CareSpaceKind.Ward => new(new[] { Wall.WardBoard, Wall.GelDispenser, Wall.VisitingTimes, WardPoster(space), Wall.Clock }, new[] { Floor.Plant, WardExtra(space) }),

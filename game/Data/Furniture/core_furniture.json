@@ -713,5 +713,60 @@
    "colour": "#8D6E63",
    "cost": 220,
    "is_equipment": false
+ },
+ {
+   "id": "fixed_seat",
+   "name": "Fixed armchair",
+   "width_m": 0.6,
+   "depth_m": 0.6,
+   "height_m": 0.8,
+   "style": "chair",
+   "colour": "#4F9AA6",
+   "cost": 450,
+   "is_equipment": false
+ },
+ {
+   "id": "bolted_table",
+   "name": "Low table (fixed to the floor)",
+   "width_m": 0.7,
+   "depth_m": 0.5,
+   "height_m": 0.45,
+   "style": "box",
+   "colour": "#B89A78",
+   "cost": 260,
+   "is_equipment": false
+ },
+ {
+   "id": "safety_door",
+   "name": "Second way out (door)",
+   "width_m": 1.0,
+   "depth_m": 0.1,
+   "height_m": 2.1,
+   "style": "box",
+   "colour": "#7FB8C2",
+   "cost": 1200,
+   "is_equipment": false
+ },
+ {
+   "id": "soft_sofa",
+   "name": "Two-seat sofa (heavy)",
+   "width_m": 1.4,
+   "depth_m": 0.7,
+   "height_m": 0.8,
+   "style": "box",
+   "colour": "#7FB8C2",
+   "cost": 600,
+   "is_equipment": false
+ },
+ {
+   "id": "alarm_strip",
+   "name": "Staff alarm strip",
+   "width_m": 1.2,
+   "depth_m": 0.1,
+   "height_m": 0.1,
+   "style": "box",
+   "colour": "#E53935",
+   "cost": 400,
+   "is_equipment": true
  }
 ]
