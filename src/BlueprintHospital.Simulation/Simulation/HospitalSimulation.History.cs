@@ -53,6 +53,7 @@ public static class StatKeys
     public const string LiaisonSeen = "mental_health.liaison_seen";
     public const string LiaisonWithinHour = "mental_health.liaison_within_hour";
     public const string LiaisonMinutes = "mental_health.liaison_minutes";
+    public const string LiaisonWardReviews = "mental_health.liaison_ward_reviews";
     public const string ToiletAccidents = "facilities.toilet_accidents";
     public const string IncidentsHandled = "incidents.handled";
     public const string IncidentSurvivors = "incidents.survived";

@@ -50,7 +50,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A nurse takes the one-to-one themselves when no healthcare assistant has come.</summary>
     private bool NurseCanSit(ClinicalTask task, StaffMember member) =>
-        task.Kind == TaskKind.StayWithPatient && member.Role is StaffRole.Nurse or StaffRole.ChildrensNurse && Now - task.CreatedAt >= NurseSitsAfter;
+        task.Kind == TaskKind.StayWithPatient && member.Role is StaffRole.Nurse or StaffRole.ChildrensNurse or StaffRole.MentalHealthNurse && Now - task.CreatedAt >= NurseSitsAfter;
 
     /// <summary>
     /// Calls someone to sit with, and a doctor to review, every red monitor; stands the sitter down once their
@@ -67,9 +67,11 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
-            if (!patient.UpdateMonitorRed())
+            if (!patient.UpdateMonitorRed() && !NeedsCloseObservation(patient))
             {
-                patient.Log(Now, $"Monitor no longer red (NEWS2 {patient.LiveNews2}); {carer.Name} has left the bedside.");
+                patient.Log(Now, patient.Wellbeing is not null
+                    ? $"Off close observations; {carer.Name} has stepped back."
+                    : $"Monitor no longer red (NEWS2 {patient.LiveNews2}); {carer.Name} has left the bedside.");
                 LeaveBedside(carer);
             }
         }
@@ -91,9 +93,15 @@ public sealed partial class HospitalSimulation
             var calls = _tasks.Values.Where(t => t.PatientId == patient.Id && t.Kind is TaskKind.StayWithPatient or TaskKind.RedReview).ToList();
             if (!patient.MonitorIsRed)
             {
-                foreach (var call in calls)
+                var close = NeedsCloseObservation(patient);
+                foreach (var call in calls.Where(c => !(close && c.Kind == TaskKind.StayWithPatient)))
                 {
                     RemoveTask(call);
+                }
+
+                if (close && BedsideCarerFor(patient) is null && calls.All(t => t.Kind != TaskKind.StayWithPatient))
+                {
+                    CallForCloseObservation(patient);
                 }
 
                 continue;
@@ -103,7 +111,7 @@ public sealed partial class HospitalSimulation
             var called = false;
             if (BedsideCarerFor(patient) is null && calls.All(t => t.Kind != TaskKind.StayWithPatient))
             {
-                AddTask(TaskKind.StayWithPatient, HasHealthcareAssistants ? StaffRole.HealthcareAssistant : StaffRole.Nurse, patient, 0.5, "Sit with patient (1:1)");
+                AddTask(TaskKind.StayWithPatient, IsOnMentalHealthWard(patient) ? CloseObservationRole(patient) : HasHealthcareAssistants ? StaffRole.HealthcareAssistant : StaffRole.Nurse, patient, 0.5, "Sit with patient (1:1)");
                 called = true;
             }
 
@@ -150,7 +158,9 @@ public sealed partial class HospitalSimulation
         }
 
         carer.BedsidePatientId = patient.Id;
-        patient.Log(Now, $"{carer.Name} is sitting with them until the monitor is no longer red (NEWS2 {patient.LiveNews2}).");
+        patient.Log(Now, !patient.MonitorIsRed && NeedsCloseObservation(patient)
+            ? $"{carer.Name} is with them on {ObservationLevelName(patient.ObservationLevel).ToLowerInvariant()} observations."
+            : $"{carer.Name} is sitting with them until the monitor is no longer red (NEWS2 {patient.LiveNews2}).");
     }
 
     private void LeaveBedside(StaffMember carer)
@@ -167,7 +177,7 @@ public sealed partial class HospitalSimulation
     private bool IsBedsideWork(ClinicalTask task, StaffMember carer, Patient patient) =>
         task.PatientId == patient.Id
         && task.Kind is not (TaskKind.StayWithPatient or TaskKind.RedReview or TaskKind.MovePatient)
-        && (task.Role == carer.Role || task.Kind == TaskKind.Observations)
+        && (task.Role == carer.Role || task.Kind is TaskKind.Observations or TaskKind.ObservationCheck)
         && ServiceRoomKind(task) is null;
 
     /// <summary>Nothing to do for their patient: sit at the bed (following them if they are being moved).</summary>
@@ -180,7 +190,9 @@ public sealed partial class HospitalSimulation
         }
 
         carer.Activity = StaffActivity.Working;
-        carer.StatusText = $"Sitting with {patient.FullName} (1:1) · NEWS2 {patient.LiveNews2}";
+        carer.StatusText = !patient.MonitorIsRed && NeedsCloseObservation(patient)
+            ? $"With {patient.FullName} ({ObservationLevelName(patient.ObservationLevel).ToLowerInvariant()})"
+            : $"Sitting with {patient.FullName} (1:1) · NEWS2 {patient.LiveNews2}";
     }
 
     private GridCoord BedsideSpot(Patient patient)

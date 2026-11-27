@@ -100,8 +100,14 @@ public sealed partial class HospitalSimulation
             return WardsForChild(patient);
         }
 
+        // Mental health patients go to the mental health wards (there is no overflow onto other wards), and nobody else does.
+        if (IsMentalHealthPatient(patient) && MentalHealthWards.Any() && !patient.ForObservation && !patient.HadSurgery && patient.CareLevel < 2)
+        {
+            return MentalHealthWards.ToList();
+        }
+
         // Adults never go to the children's wards.
-        return AdultWardsFor(patient).Where(w => !IsPaediatricWard(w)).ToList();
+        return AdultWardsFor(patient).Where(w => !IsPaediatricWard(w) && !IsMentalHealthWard(w)).ToList();
     }
 
     private List<CareSpace> AdultWardsFor(Patient patient)

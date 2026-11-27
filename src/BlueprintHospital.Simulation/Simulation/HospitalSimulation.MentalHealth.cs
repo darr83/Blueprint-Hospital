@@ -24,9 +24,14 @@ public sealed partial class HospitalSimulation
     /// <summary>Staff who belong to the mental health team.</summary>
     public static bool IsMentalHealthRole(StaffRole role) => role is StaffRole.MentalHealthNurse or StaffRole.Psychiatrist;
 
-    /// <summary>A psychiatrist can do any mental health nurse's assessment.</summary>
-    private static bool PsychiatristCanCover(ClinicalTask task, StaffMember member) =>
-        member.Role == StaffRole.Psychiatrist && task.Role == StaffRole.MentalHealthNurse;
+    /// <summary>Mental health nurses, psychiatrists and support workers.</summary>
+    public static bool IsMentalHealthTeam(StaffRole role) => IsMentalHealthRole(role) || role == StaffRole.SupportWorker;
+
+    /// <summary>A psychiatrist can do any mental health nurse's assessment, and the doctors' work on their own ward.</summary>
+    private bool PsychiatristCanCover(ClinicalTask task, StaffMember member) =>
+        member.Role == StaffRole.Psychiatrist
+        && (task.Role == StaffRole.MentalHealthNurse || (task.Role == StaffRole.Doctor && member.BaseRoomId is { } ward && FindSpace(ward) is { } space && IsMentalHealthWard(space)))
+        && task.Kind is not (TaskKind.StayWithPatient or TaskKind.ObservationCheck);
 
     /// <summary>Whether a patient is under the mental health team (their working diagnosis is a mental health condition).</summary>
     public bool IsMentalHealthPatient(Patient patient) =>

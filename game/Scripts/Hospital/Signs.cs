@@ -92,7 +92,7 @@ public static class Signs
         CareSpaceKind.Lift => Pictogram.Lift,
         CareSpaceKind.Stairs => Pictogram.Stairs,
         CareSpaceKind.DeliveryRoom => Pictogram.Baby,
-        CareSpaceKind.MentalHealthAssessment => Pictogram.Leaf,
+        CareSpaceKind.MentalHealthAssessment or CareSpaceKind.MentalHealthLounge or CareSpaceKind.MentalHealthGarden => Pictogram.Leaf,
         _ => Pictogram.None,
     };
 

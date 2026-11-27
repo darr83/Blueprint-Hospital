@@ -34,5 +34,129 @@
       "soft_sofa",
       "alarm_strip"
     ]
+  },
+  {
+    "id": "mental_health_ward",
+    "name": "Mental health ward",
+    "category": "Mental Health",
+    "description": "An adult mental health ward of single bedrooms, each with its own shower room. Patients stay a few days while they settle. Run by mental health nurses (one for every six beds), a psychiatrist and support workers, who stay with anyone on close observations. Nobody goes home until they are settled. Build a lounge and a garden nearby: time out of their rooms helps them settle.",
+    "kind": "ward",
+    "department": "mental_health",
+    "layout": "ward",
+    "sizes": [
+      {
+        "name": "4 bedrooms",
+        "width_m": 15,
+        "length_m": 5.5
+      },
+      {
+        "name": "8 bedrooms",
+        "width_m": 15,
+        "length_m": 9
+      },
+      {
+        "name": "12 bedrooms",
+        "width_m": 22,
+        "length_m": 9
+      }
+    ],
+    "min_width_m": 5,
+    "min_length_m": 5,
+    "max_width_m": 30,
+    "max_length_m": 16,
+    "door_width_m": 2.0,
+    "base_cost": 25000,
+    "cost_per_square_metre": 1500,
+    "staffing": "Hire a mental health nurse for every 6 beds, a psychiatrist and a support worker for every 6 beds from Recruitment (H), posted to this ward. Other nurses and doctors can't work here.",
+    "furniture": [
+      "hospital_bed",
+      "bedroom_wall",
+      "ensuite_pod",
+      "station_counter",
+      "clinical_cupboard",
+      "hand_basin",
+      "alarm_strip"
+    ]
+  },
+  {
+    "id": "mental_health_lounge",
+    "name": "Ward lounge",
+    "category": "Mental Health",
+    "description": "A homely lounge for the mental health wards: sofas, a television and a table for games and jigsaws. Patients come here by day to get out of their rooms, which helps them settle.",
+    "kind": "mental_health_lounge",
+    "department": "mental_health",
+    "layout": "staff_room",
+    "sizes": [
+      {
+        "name": "Small",
+        "width_m": 5,
+        "length_m": 4
+      },
+      {
+        "name": "Standard",
+        "width_m": 7,
+        "length_m": 5
+      },
+      {
+        "name": "Large",
+        "width_m": 9,
+        "length_m": 6
+      }
+    ],
+    "min_width_m": 3.5,
+    "min_length_m": 4,
+    "max_width_m": 14,
+    "max_length_m": 10,
+    "door_width_m": 2.0,
+    "base_cost": 12000,
+    "cost_per_square_metre": 900,
+    "staffing": "No staff of its own: the ward team look in on patients here.",
+    "furniture": [
+      "staff_table",
+      "lounge_chair",
+      "tv_unit",
+      "soft_sofa",
+      "games_shelf"
+    ]
+  },
+  {
+    "id": "mental_health_garden",
+    "name": "Garden courtyard",
+    "category": "Mental Health",
+    "description": "A walled garden for the mental health wards, with raised planters, a tree and benches. On dry days patients sit out here for fresh air, which helps them settle more than anything else.",
+    "kind": "mental_health_garden",
+    "department": "mental_health",
+    "layout": "garden",
+    "sizes": [
+      {
+        "name": "Small",
+        "width_m": 6,
+        "length_m": 5
+      },
+      {
+        "name": "Standard",
+        "width_m": 8,
+        "length_m": 6
+      },
+      {
+        "name": "Large",
+        "width_m": 11,
+        "length_m": 8
+      }
+    ],
+    "min_width_m": 4,
+    "min_length_m": 4,
+    "max_width_m": 16,
+    "max_length_m": 12,
+    "door_width_m": 2.0,
+    "base_cost": 10000,
+    "cost_per_square_metre": 600,
+    "staffing": "No staff of its own: the ward team look in on patients here.",
+    "furniture": [
+      "picnic_table",
+      "garden_bench",
+      "planter",
+      "garden_tree"
+    ]
   }
 ]

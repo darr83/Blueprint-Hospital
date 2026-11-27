@@ -556,6 +556,98 @@ public static class FurnitureKit
                 p.Rect(l, t + Math.Max(d, 0.08) - 0.025, w, 0.025, C("#9E1F1B"));
                 return true;
 
+            // ---- mental health ward: single bedrooms, a lounge and a garden
+            case "bedroom_wall":
+            {
+                // A solid wall between two bedrooms, running from the head wall out past the foot of the beds.
+                var wall = C("#C9D3DB");
+                p.Shadow(c => p.Rect(l - 0.04, t, w + 0.08, d, c), 0.04, 0.06);
+                p.Rect(l - 0.04, t, w + 0.08, d, wall);
+                p.Rect(l - 0.04, t, 0.04, d, Pen.Dark(wall, 0.18f));
+                p.Rect(l - 0.06, t + d - 0.1, w + 0.12, 0.1, Pen.Dark(wall, 0.25f));
+                return true;
+            }
+
+            case "ensuite_pod":
+            {
+                // The bedroom's own shower room: walls on three sides, a door in the front, a shower tray, a toilet and a basin.
+                var wall = C("#C9D3DB");
+                p.Shadow(c => p.Rect(l, t, w, d, c), 0.05, 0.08);
+                p.Rect(l, t, w, d, C("#EEF4F6"));
+                for (var i = 0; i < 4; i++)
+                {
+                    p.Line(l + 0.1, t + 0.1 + (i * (d - 0.2) / 3), l + w - 0.1, t + 0.1 + (i * (d - 0.2) / 3), new Color("#C8D7DD", 0.6f), 0.015);
+                }
+
+                var tray = Math.Min(w * 0.45, 1.0);
+                p.Round(l + 0.1, t + 0.1, tray, d * 0.55, 0.06, C("#DDEBF2"), C("#9AB4C2"), 0.025);
+                p.Circle(l + 0.1 + (tray / 2), t + 0.1 + (d * 0.275), 0.06, C("#7D8A95"));
+                p.In(l + w - 0.5, t + 0.45, 0, () => Pan(p, 0, 0), 0.6);
+                p.Round(l + w - 0.7, t + d - 0.62, 0.5, 0.3, 0.08, C("#F4F6F8"), C("#9AA6B2"), 0.025);
+                p.Line(l, t, l + w, t, wall, 0.12);
+                p.Line(l, t, l, t + d, wall, 0.12);
+                p.Line(l + w, t, l + w, t + d, wall, 0.12);
+                p.Line(l, t + d, l + (w * 0.2), t + d, wall, 0.12);
+                p.Line(l + (w * 0.75), t + d, l + w, t + d, wall, 0.12);
+                // The door, ajar, swinging out into the bedroom.
+                p.Line(l + (w * 0.2), t + d, l + (w * 0.2) + (w * 0.42), t + d + (w * 0.3), C("#B39778"), 0.08);
+                return true;
+            }
+
+            case "picnic_table":
+            {
+                // A wooden garden table with a parasol, seen from above.
+                p.Shadow(c => p.Round(l, t, w, d, 0.06, c));
+                var wood = C("#A07A52");
+                p.Round(l, t, w, d, 0.06, wood, Pen.Outline(wood), 0.025);
+                var planks = Math.Max(3, (int)(d / 0.3));
+                for (var i = 1; i < planks; i++)
+                {
+                    p.Line(l + 0.04, t + (i * d / planks), l + w - 0.04, t + (i * d / planks), Pen.Dark(wood, 0.18f), 0.02);
+                }
+
+                if (seed % 2 == 0)
+                {
+                    p.Circle(0, 0, 0.55, new Color("#E8F1EC", 0.92f), C("#7FA88E"), 0.03);
+                    p.Circle(0, 0, 0.05, C("#7D8A95"));
+                }
+
+                return true;
+            }
+
+            case "planter":
+            {
+                // A raised wooden planter full of shrubs and flowers.
+                var wood = C("#7A5A3C");
+                p.Shadow(c => p.Rect(l, t, w, d, c), 0.05, 0.08);
+                p.Rect(l, t, w, d, wood);
+                p.Rect(l + 0.06, t + 0.06, w - 0.12, d - 0.12, C("#5D4630"));
+                var leaves = new[] { C("#4E8A4A"), C("#6BA35A"), C("#3F7A45") };
+                var flowers = new[] { C("#F2B134"), C("#E57373"), C("#BA68C8"), C("#FFFFFF") };
+                var n = Math.Max(2, (int)(w / 0.35));
+                for (var i = 0; i < n; i++)
+                {
+                    var cx = l + ((i + 0.5) * w / n);
+                    p.Circle(cx, (i % 2 == 0 ? -0.04 : 0.05), Math.Min(d, w / n) * 0.42, leaves[(i + seed) % 3]);
+                    p.Circle(cx + 0.06, (i % 2 == 0 ? 0.0 : -0.02), 0.05, flowers[(i + seed) % 4]);
+                }
+
+                return true;
+            }
+
+            case "garden_tree":
+            {
+                // A small tree in a round bed: layered leafy canopy.
+                var r = Math.Min(w, d) / 2;
+                p.Circle(0, 0, r * 0.55, C("#6D5640"));
+                p.Shadow(c => p.Circle(0.1, 0.12, r * 1.05, c), 0.08, 0.1);
+                p.Circle(0, 0, r * 1.0, C("#3F7A45"));
+                p.Circle(-r * 0.25, -r * 0.2, r * 0.6, C("#4E8A4A"));
+                p.Circle(r * 0.28, r * 0.1, r * 0.5, C("#5C9A50"));
+                p.Circle(-r * 0.05, r * 0.32, r * 0.4, C("#6BA35A"));
+                return true;
+            }
+
             default:
                 return false;
         }
@@ -689,6 +781,18 @@ public static class FurnitureKit
                 p.Round(-0.5, -0.5, 1, 0.96, 0.16, Pen.Dark(colour, 0.12f), Pen.Outline(colour), 0.03);
                 p.Round(-0.33, -0.3, 0.66, 0.7, 0.1, Pen.Light(colour, 0.12f));
                 p.Round(-0.5, -0.5, 1, 0.24, 0.1, Pen.Dark(colour, 0.05f), Pen.Outline(colour), 0.025);
+                break;
+            case "garden_bench":
+                // A slatted wooden bench seat on two cast iron ends.
+                p.Shadow(c => p.Rect(-0.48, -0.42, 0.96, 0.84, c), 0.05, 0.08);
+                for (var i = 0; i < 4; i++)
+                {
+                    p.Rect(-0.48, -0.2 + (i * 0.15), 0.96, 0.11, Pen.Light(colour, (i % 2) * 0.06f));
+                }
+
+                p.Rect(-0.48, -0.42, 0.96, 0.12, Pen.Dark(colour, 0.12f));
+                p.Rect(-0.5, -0.42, 0.06, 0.84, C("#3A3F44"));
+                p.Rect(0.44, -0.42, 0.06, 0.84, C("#3A3F44"));
                 break;
             case "fixed_seat":
                 // A heavy moulded armchair fixed to the floor: wide solid arms, no gaps, no loose cushions.

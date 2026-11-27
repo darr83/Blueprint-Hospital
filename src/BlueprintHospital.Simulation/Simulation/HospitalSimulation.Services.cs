@@ -56,6 +56,11 @@ public sealed partial class HospitalSimulation
             return member.Role == StaffRole.Physiotherapist;
         }
 
+        if (task.Kind == TaskKind.LiaisonReview)
+        {
+            return IsLiaisonMember(member);
+        }
+
         if (task.Kind == TaskKind.OutreachReview)
         {
             return member.Role == StaffRole.OutreachNurse;

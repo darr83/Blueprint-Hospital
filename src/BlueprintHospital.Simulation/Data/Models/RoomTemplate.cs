@@ -61,6 +61,9 @@ public enum RoomLayoutKind
 
     /// <summary>A mental health assessment room: two fixed seats either side of a low table (the staff seat nearer the door), soft seating for family and a second door out on the back wall.</summary>
     Interview,
+
+    /// <summary>A garden: trees in the corners, planters along the back wall, and small tables with a bench seat on either side.</summary>
+    Garden,
 }
 
 /// <summary>What kind of unit a ward is, when it is more than a plain ward.</summary>

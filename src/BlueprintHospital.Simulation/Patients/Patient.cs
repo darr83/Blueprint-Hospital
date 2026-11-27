@@ -138,6 +138,35 @@ public sealed class Patient : Agent
     /// <summary>How many visitors have come to see them on the ward.</summary>
     public int VisitsReceived { get; set; }
 
+    /// <summary>
+    /// On a mental health ward: how settled they are, from 0 (very distressed) to 1 (settled and ready for home).
+    /// Null for everyone else. It shows on the bed's monitor instead of the NEWS2 colour (see <see cref="MonitorColour"/>).
+    /// </summary>
+    public double? Wellbeing { get; set; }
+
+    /// <summary>On a mental health ward: how closely staff watch them. The top two levels need someone with them all the time.</summary>
+    public ObservationLevel ObservationLevel { get; set; }
+
+    /// <summary>When the next routine observation check is due (general and intermittent observations).</summary>
+    public DateTime? NextObsCheckAt { get; set; }
+
+    /// <summary>When the psychiatrist last reviewed them on the ward.</summary>
+    public DateTime? LastMentalHealthReviewAt { get; set; }
+
+    /// <summary>After an overdose: the liaison team have seen them on the ward, so they can go home.</summary>
+    public bool LiaisonReviewed { get; set; }
+
+    /// <summary>The wellbeing band they are in, on a mental health ward.</summary>
+    public WellbeingBand? WellbeingBand => Wellbeing is { } w ? BandFor(w) : null;
+
+    /// <summary>Settled from 0.6, unsettled from 0.3, distressed below that.</summary>
+    public static WellbeingBand BandFor(double wellbeing) =>
+        wellbeing >= SettledWellbeing ? Patients.WellbeingBand.Settled : wellbeing >= UnsettledWellbeing ? Patients.WellbeingBand.Unsettled : Patients.WellbeingBand.Distressed;
+
+    public const double SettledWellbeing = 0.6;
+
+    public const double UnsettledWellbeing = 0.3;
+
     /// <summary>Minutes spent on a trolley in the corridor over the whole visit (for their feedback).</summary>
     public double CorridorMinutes { get; set; }
 
@@ -358,6 +387,12 @@ public sealed class Patient : Agent
     /// </summary>
     public TriageCategory? MonitorColour => Triage is null ? null
         : MonitorIsRed ? TriageCategory.Red
+        : WellbeingBand is { } band ? band switch
+        {
+            Patients.WellbeingBand.Settled => TriageCategory.Green,
+            Patients.WellbeingBand.Unsettled => TriageCategory.Amber,
+            _ => TriageCategory.Red,
+        }
         : MonitorColourFor(News2.Calculate(CurrentObservations()));
 
     /// <summary>The NHS NEWS2 colour band for a score: green 0-4, amber 5-6 or any single 3, red 7+.</summary>
@@ -578,4 +613,30 @@ public sealed class Patient : Agent
     }
 
     private static int Clamp(double value, int min, int max) => (int)Math.Round(Math.Clamp(value, min, max));
+}
+
+/// <summary>How settled a patient on a mental health ward is: the wellbeing meter on their monitor.</summary>
+public enum WellbeingBand
+{
+    Settled,
+    Unsettled,
+    Distressed,
+}
+
+/// <summary>
+/// The four levels of observation on a mental health ward. The top two tie up a member of staff one-to-one.
+/// </summary>
+public enum ObservationLevel
+{
+    /// <summary>Level 1: checked on about once an hour.</summary>
+    General,
+
+    /// <summary>Level 2: checked on every 15 minutes.</summary>
+    Intermittent,
+
+    /// <summary>Level 3: someone keeps them in sight at all times.</summary>
+    WithinEyesight,
+
+    /// <summary>Level 4: someone stays within arm's reach.</summary>
+    ArmsLength,
 }

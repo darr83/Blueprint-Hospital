@@ -57,6 +57,8 @@ public static class StaffGrades
         new Grade(StaffRole.MentalHealthNurse, "Band 6 mental health nurse", 0.60, 0.72, 3, 7, 39_000, 3),
         new Grade(StaffRole.MentalHealthNurse, "Band 7 ward manager", 0.72, 0.85, 6, 12, 48_000, 1.5),
         new Grade(StaffRole.MentalHealthNurse, "Band 8 mental health matron", 0.85, 0.97, 10, 25, 60_000, 0.5),
+        new Grade(StaffRole.SupportWorker, "Mental health support worker (Band 3)", 0.35, 0.60, 0, 15, 24_500, 2.5),
+        new Grade(StaffRole.SupportWorker, "Senior support worker (Band 4)", 0.60, 0.80, 5, 20, 27_000, 1),
         new Grade(StaffRole.Psychiatrist, "Psychiatry trainee", 0.45, 0.60, 0, 2, 38_000, 2.5),
         new Grade(StaffRole.Psychiatrist, "Specialty doctor in psychiatry", 0.60, 0.72, 2, 6, 55_000, 2),
         new Grade(StaffRole.Psychiatrist, "Psychiatry registrar", 0.72, 0.85, 4, 9, 66_000, 1.5),
@@ -129,6 +131,8 @@ public static class StaffGrades
         (StaffRole.MentalHealthNurse, true) => "mental health nurses",
         (StaffRole.Psychiatrist, false) => "psychiatrist",
         (StaffRole.Psychiatrist, true) => "psychiatrists",
+        (StaffRole.SupportWorker, false) => "support worker",
+        (StaffRole.SupportWorker, true) => "support workers",
         _ => "healthcare assistants",
     };
 }

@@ -37,7 +37,7 @@
         { "id": "paediatrics", "label": "Children", "name": "Paediatrics", "department": "paediatrics", "colour": "#F4B400", "glyph": "teddy",
           "items": ["childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu", "play_room", "teen_room", "parents_room", "childrens_clinic", "nurses_station", "doctors_office"] },
         { "id": "mental_health", "label": "Mental health", "name": "Mental Health", "department": "mental_health", "colour": "#0097A7", "glyph": "leaf",
-          "items": ["mental_health_assessment_room", "nurses_station", "doctors_office"] }
+          "items": ["mental_health_assessment_room", "mental_health_ward", "mental_health_lounge", "mental_health_garden", "nurses_station", "doctors_office"] }
       ]
     },
     {

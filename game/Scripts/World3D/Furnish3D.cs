@@ -679,6 +679,28 @@ public static partial class Furnish3D
         var frame = new Color("#5E6770");
         const float half = 0.42f;
         const float depth = 0.36f;
+        if (id == "garden_bench")
+        {
+            // A slatted timber bench seat on cast iron ends, with a slatted back.
+            var iron = new Color("#3A3F44");
+            foreach (var side in new[] { -1f, 1f })
+            {
+                Blk(b, side * (half + 0.02f), 0, 0.05f, depth * 2, 0, seat + H(2), iron);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                Blk(b, 0, -depth + 0.12f + (i * 0.15f), half * 2.05f, 0.11f, seat - H(1.2f), H(1.2f), i % 2 == 0 ? colour : colour.Darkened(0.08f));
+            }
+
+            for (var i = 0; i < 3; i++)
+            {
+                Blk(b, 0, -depth + 0.03f, half * 2.05f, 0.05f, seat + H(3) + (i * H(4)), H(2.5f), colour.Darkened(0.05f));
+            }
+
+            return;
+        }
+
         if (id == "fixed_seat")
         {
             // A heavy moulded armchair on a solid plinth to the floor: no legs, no gaps, wide solid arms.

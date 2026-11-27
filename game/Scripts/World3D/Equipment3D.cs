@@ -38,6 +38,11 @@ public static partial class Furnish3D
             case "soft_sofa": SoftSofa(b, w, d, h, colour); return true;
             case "safety_door": SafetyDoor(b, glass, w, d, h, colour); return true;
             case "alarm_strip": AlarmStrip(b, w, d); return true;
+            case "bedroom_wall": BedroomWall(b, w, d); return true;
+            case "ensuite_pod": EnsuitePod(b, w, d, seed); return true;
+            case "picnic_table": PicnicTable(b, w, d, h, colour, seed); return true;
+            case "planter": Planter(b, w, d, h, colour, seed); return true;
+            case "garden_tree": GardenTree(b, w, d, h); return true;
             case "tv_unit": TvUnit(b, w, d, h, colour); return true;
             case "breast_pump": BreastPump(b, glass, h, colour); return true;
             case "toilet_pan": Toilet(b, w, d, false); return true;
@@ -431,6 +436,127 @@ public static partial class Furnish3D
     /// <summary>The red staff alarm strip along the wall at hand height.</summary>
     private static void AlarmStrip(MeshBatch b, float w, float d) =>
         Blk(b, 0, -(d / 2) + 0.02f, w, 0.04f, Kit3D.M(1.0), H(1.4f), new Color("#E53935"));
+
+    // ------------------------------------------------------------------ mental health ward
+
+    private static readonly Color PartitionWall = new("#E3EAEE");
+
+    /// <summary>
+    /// The wall between two bedrooms, built to the height of the cut-away walls so you can still see into the rooms:
+    /// a painted panel with a timber cap along the top.
+    /// </summary>
+    private static void BedroomWall(MeshBatch b, float w, float d)
+    {
+        var h = Kit3D.M(1.25);
+        var t = Math.Max(w, 0.16f);
+        Blk(b, 0, 0, t, d, 0, h, PartitionWall);
+        Blk(b, 0, 0, t + 0.04f, d, 0, H(1.2f), new Color("#9AA8B2"));
+        Blk(b, 0, 0, t + 0.06f, d + 0.02f, h, H(0.8f), new Color("#B39778"));
+    }
+
+    /// <summary>
+    /// A bedroom's shower room: low walls on three sides with a door in the front (+z) standing ajar, a shower tray
+    /// with its riser rail, a toilet and a small basin.
+    /// </summary>
+    private static void EnsuitePod(MeshBatch b, float w, float d, int seed)
+    {
+        var h = Kit3D.M(1.25);
+        var t = 0.1f;
+        var cap = new Color("#B39778");
+        Blk(b, 0, 0, w, d, 0, H(0.3f), new Color("#DCE6EA"));
+        Blk(b, 0, -(d / 2) + (t / 2), w, t, 0, h, PartitionWall);
+        foreach (var side in new[] { -1f, 1f })
+        {
+            Blk(b, side * ((w / 2) - (t / 2)), 0, t, d, 0, h, PartitionWall);
+        }
+
+        // The front wall either side of the door.
+        Blk(b, -(w / 2) + (w * 0.1f), (d / 2) - (t / 2), w * 0.2f, t, 0, h, PartitionWall);
+        Blk(b, (w / 2) - (w * 0.125f), (d / 2) - (t / 2), w * 0.25f, t, 0, h, PartitionWall);
+        foreach (var (x, z, cw, cd) in new[] { (0f, -(d / 2) + (t / 2), w, t), (-(w / 2) + (t / 2), 0f, t, d), ((w / 2) - (t / 2), 0f, t, d) })
+        {
+            Blk(b, x, z, cw + 0.02f, cd + 0.02f, h, H(0.8f), cap);
+        }
+
+        // The door, swung part open into the bedroom, with its lever handle.
+        var door = new Color("#C9A97F");
+        var hinge = new Vector3(-(w / 2) + (w * 0.2f), 0, d / 2);
+        var leaf = w * 0.55f;
+        var yaw = -0.6f;
+        var along = new Vector3(Mathf.Cos(yaw), 0, -Mathf.Sin(yaw));
+        b.Box(hinge + (along * (leaf / 2)) + new Vector3(0, h * 0.48f, 0), new Vector3(leaf, h * 0.96f, 0.05f), new Basis(Vector3.Up, yaw), door);
+        b.Box(hinge + (along * (leaf * 0.85f)) + new Vector3(0, h * 0.5f, 0.04f), new Vector3(0.1f, 0.03f, 0.03f), new Basis(Vector3.Up, yaw), Chrome);
+
+        // Shower tray and rail in the back corner, a toilet beside it, a basin by the door.
+        var tray = Math.Min(w * 0.45f, 1.0f);
+        var trayX = -(w / 2) + t + (tray / 2) + 0.02f;
+        var trayZ = -(d / 2) + t + (d * 0.27f);
+        Blk(b, trayX, trayZ, tray, d * 0.52f, 0, H(1.2f), new Color("#DDEBF2"));
+        b.Cylinder(new Vector3(trayX, H(1.3f), trayZ), 0.05f, H(0.2f), 0.05f, new Color("#7D8A95"));
+        Bar(b, new Vector3(-(w / 2) + t + 0.04f, H(10), trayZ), new Vector3(-(w / 2) + t + 0.04f, H(38), trayZ), 0.02f, Chrome);
+        Blk(b, -(w / 2) + t + 0.06f, trayZ, 0.06f, 0.12f, H(32), H(2), Chrome);
+        var frame = b.Frame;
+        b.Frame = frame * new Transform3D(Basis.FromScale(new Vector3(0.62f, 1, 0.62f)), new Vector3((w / 2) - t - 0.35f, 0, -(d / 2) + t + 0.45f));
+        Toilet(b, 0.8f, 1.4f, false);
+        b.Frame = frame;
+        Blk(b, (w / 2) - t - 0.3f, (d / 2) - t - 0.3f, 0.5f, 0.3f, H(20), H(3), Porcelain);
+        _ = seed;
+    }
+
+    /// <summary>A wooden garden table with slatted top on A-frame legs, and (every other one) a parasol.</summary>
+    private static void PicnicTable(MeshBatch b, float w, float d, float h, Color colour, int seed)
+    {
+        var top = h;
+        var planks = Math.Max(3, (int)(d / 0.3f));
+        for (var i = 0; i < planks; i++)
+        {
+            var z = -(d / 2) + ((i + 0.5f) * d / planks);
+            Blk(b, 0, z, w, (d / planks) - 0.03f, top - H(1.2f), H(1.2f), i % 2 == 0 ? colour : colour.Darkened(0.08f));
+        }
+
+        foreach (var x in new[] { -(w / 2) + 0.2f, (w / 2) - 0.2f })
+        {
+            Bar(b, new Vector3(x, 0, -(d / 2) + 0.08f), new Vector3(x, top - H(1.2f), 0), 0.035f, colour.Darkened(0.25f));
+            Bar(b, new Vector3(x, 0, (d / 2) - 0.08f), new Vector3(x, top - H(1.2f), 0), 0.035f, colour.Darkened(0.25f));
+        }
+
+        if (seed % 2 == 0)
+        {
+            var pole = Kit3D.M(2.1);
+            Bar(b, new Vector3(0, top, 0), new Vector3(0, pole, 0), 0.025f, new Color("#7D8A95"));
+            b.Cylinder(new Vector3(0, pole - H(3), 0), 0.6f, H(3), 0.6f, new Color("#E8F1EC"), cone: true);
+            b.Cylinder(new Vector3(0, pole - H(3.5f), 0), 0.6f, H(0.6f), 0.6f, new Color("#7FA88E"));
+        }
+    }
+
+    /// <summary>A raised timber planter of shrubs and flowers.</summary>
+    private static void Planter(MeshBatch b, float w, float d, float h, Color colour, int seed)
+    {
+        Blk(b, 0, 0, w, d, 0, h, colour);
+        Blk(b, 0, 0, w + 0.04f, d + 0.04f, h - H(0.8f), H(0.8f), colour.Lightened(0.12f));
+        Blk(b, 0, 0, w - 0.1f, d - 0.1f, h, H(0.3f), new Color("#5D4630"));
+        var leaves = new[] { new Color("#4E8A4A"), new Color("#6BA35A"), new Color("#3F7A45") };
+        var flowers = new[] { new Color("#F2B134"), new Color("#E57373"), new Color("#BA68C8"), new Color("#FFFFFF") };
+        var n = Math.Max(2, (int)(w / 0.35f));
+        for (var i = 0; i < n; i++)
+        {
+            var x = -(w / 2) + ((i + 0.5f) * w / n);
+            var r = Math.Min(d, w / n) * 0.48f;
+            b.Ball(new Vector3(x, h + (r * 0.6f), (i % 2 == 0 ? -0.03f : 0.04f)), new Vector3(r * 2, r * 1.5f, r * 2), leaves[(i + seed) % 3]);
+            b.Ball(new Vector3(x + 0.06f, h + (r * 1.25f), 0), new Vector3(0.1f, 0.08f, 0.1f), flowers[(i + seed) % 4], small: true);
+        }
+    }
+
+    /// <summary>A small tree in a round bed: a trunk and a layered, leafy crown.</summary>
+    private static void GardenTree(MeshBatch b, float w, float d, float h)
+    {
+        var r = Math.Min(w, d) / 2;
+        b.Cylinder(new Vector3(0, H(0.5f), 0), r * 0.7f, H(1), r * 0.7f, new Color("#6D5640"));
+        Bar(b, new Vector3(0, 0, 0), new Vector3(0, h * 0.6f, 0), r * 0.12f, new Color("#7A5A3C"));
+        b.Ball(new Vector3(0, h * 0.72f, 0), new Vector3(r * 2.1f, h * 0.45f, r * 2.1f), new Color("#3F7A45"));
+        b.Ball(new Vector3(-r * 0.3f, h * 0.82f, r * 0.2f), new Vector3(r * 1.3f, h * 0.32f, r * 1.3f), new Color("#4E8A4A"));
+        b.Ball(new Vector3(r * 0.3f, h * 0.9f, -r * 0.15f), new Vector3(r * 1.1f, h * 0.26f, r * 1.1f), new Color("#5C9A50"));
+    }
 
     private static void BreastPump(MeshBatch b, MeshBatch glass, float h, Color colour)
     {

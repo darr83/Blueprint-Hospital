@@ -67,10 +67,13 @@ def build_lines():
     lines["arrest_majors"] = "Adult cardiac arrest, Majors. Adult cardiac arrest, Majors."
     lines["arrest_ae"] = "Adult cardiac arrest, A and E. Adult cardiac arrest, A and E."
     # Crash calls anywhere in the hospital: each kind of ward by name, a few other rooms, children and maternity.
-    with open(os.path.join(ROOT, "game", "Data", "RoomTemplates", "ward_rooms.json")) as f:
-        for ward in json.load(f):
-            spoken = ward["name"].replace("A&E", "A and E")
-            lines[f"arrest_{ward['id']}"] = f"Adult cardiac arrest, {spoken}. Adult cardiac arrest, {spoken}."
+    wards = []
+    for file in ("ward_rooms.json", "mental_health_rooms.json"):
+        with open(os.path.join(ROOT, "game", "Data", "RoomTemplates", file)) as f:
+            wards += [r for r in json.load(f) if r.get("kind") == "ward"]
+    for ward in wards:
+        spoken = ward["name"].replace("A&E", "A and E")
+        lines[f"arrest_{ward['id']}"] = f"Adult cardiac arrest, {spoken}. Adult cardiac arrest, {spoken}."
     for key, place in [("theatre", "Theatres"), ("xray", "X-ray"), ("ct", "C T"), ("cathlab", "the cath lab"), ("endoscopy", "Endoscopy"), ("physiogym", "the physio gym"),
                        ("endoscopyrecovery", "Endoscopy recovery"), ("plasterroom", "the plaster room"), ("clinic", "Outpatients"),
                        ("echo", "Echo"), ("eeg", "E E G"), ("ultrasound", "Ultrasound"), ("waiting", "the A and E waiting room"),

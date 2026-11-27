@@ -83,6 +83,13 @@ public sealed partial class HospitalSimulation
             return;
         }
 
+        // On a mental health ward people are well in body, and up and about.
+        if (IsOnMentalHealthWard(patient) && !patient.MonitorIsRed && patient.CareLevel < 2)
+        {
+            patient.Mobility = Mobility.Walking;
+            return;
+        }
+
         var ambulance = patient.ArrivalMethod == ArrivalMethod.Ambulance;
         if (patient.Triage == TriageCategory.Red || patient.Stage == PatientStage.AwaitingSurgery || patient.PreOp || patient.CareLevel >= 2 || (ambulance && patient.Triage != TriageCategory.Green))
         {

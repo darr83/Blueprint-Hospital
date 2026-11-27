@@ -130,7 +130,7 @@ public partial class Furniture3D : Node3D
                 }
 
                 var front = FrontOf(space, item, def.Id, sim);
-                if (def.Id == RoomLayoutEngine.BayCurtain && space.Beds.Count > 0)
+                if (def.Id is RoomLayoutEngine.BayCurtain or RoomLayoutEngine.BedroomWall or RoomLayoutEngine.EnsuitePod && space.Beds.Count > 0)
                 {
                     // Faces the foot of the beds either side, where the aisle is.
                     var beside = space.Beds.MinBy(b => Math.Abs(b.PatientSpot.Y + 0.5 - item.CentreY) + (Math.Abs(b.PatientSpot.X + 0.5 - item.CentreX) * 0.1))!;

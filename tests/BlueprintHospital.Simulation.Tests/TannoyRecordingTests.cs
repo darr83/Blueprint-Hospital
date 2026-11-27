@@ -21,7 +21,8 @@ public class TannoyRecordingTests
     {
         var db = GameDatabase.Load(new FileSystemDataSource(TestData.GameDataDirectory()));
         // Maternity wards use the obstetric emergency and paediatric arrest calls instead, and children's wards the paediatric arrest call.
-        var wards = db.RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Ward && t.Category is not ("Maternity" or "Paediatrics"));
+        // Mental health wards use the general crash call ("arrest_x") until their own line is recorded.
+        var wards = db.RoomTemplates.Values.Where(t => t.Kind == CareSpaceKind.Ward && t.Category is not ("Maternity" or "Paediatrics" or "Mental Health"));
         AssertRecorded(wards.Select(t => $"arrest_{t.Id}"));
     }
 

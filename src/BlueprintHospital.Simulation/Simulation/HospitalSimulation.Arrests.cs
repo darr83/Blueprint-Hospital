@@ -326,7 +326,8 @@ public sealed partial class HospitalSimulation
             var bed = patient.BedIndex is { } i ? $", Bed {i + 1}" : string.Empty;
             var template = space.TemplateId;
             var spoken = Database.RoomTemplates.TryGetValue(template, out var t) ? t.Name : space.Name;
-            return new ArrestPlaceName(space.Name + bed, spoken, template, template);
+            // The mental health ward's own line isn't recorded yet: the general crash call plays there.
+            return new ArrestPlaceName(space.Name + bed, spoken, IsMentalHealthWard(space) ? "x" : template, template);
         }
 
         return new ArrestPlaceName(space.Name, space.Name, space.Kind.ToString().ToLowerInvariant(), null);

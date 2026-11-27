@@ -594,6 +594,23 @@ public partial class PatientRecordPanel : PanelContainer
             detail.Add($"[color={ClinicalText.RedHex}]Red monitor (NEWS2 {p.LiveNews2}): {with}, {review}; {trend}[/color]");
         }
 
+        if (p.WellbeingBand is { } wellbeing && p.IsInDepartment)
+        {
+            // The mental health ward's wellbeing meter and observation level, in place of NEWS2 on the monitor.
+            var colour = wellbeing switch
+            {
+                WellbeingBand.Settled => ClinicalText.GreenHex,
+                WellbeingBand.Unsettled => ClinicalText.AmberHex,
+                _ => ClinicalText.RedHex,
+            };
+            var level = HospitalSimulation.ObservationLevelName(p.ObservationLevel).ToLowerInvariant();
+            var watch = _sim.NeedsCloseObservation(p)
+                ? _sim.CarerAtBedside(p) is { } carer ? $"{E(carer.Name)} is with them" : "waiting for someone to stay with them"
+                : p.NextObsCheckAt is { } next ? $"next check {next:HH:mm}" : string.Empty;
+            var where = _sim.DayRoomOf(p) is { } room ? $" · in {E(room.Name)}" : string.Empty;
+            detail.Add($"Wellbeing: [color={colour}][b]{HospitalSimulation.WellbeingName(wellbeing)}[/b][/color] ({p.Wellbeing:P0}) · {char.ToUpperInvariant(level[0])}{level[1..]} observations" + (watch.Length > 0 ? $" · {watch}" : string.Empty) + where);
+        }
+
         if (p.Stage == PatientStage.OnWard)
         {
             var mood = p.Happiness >= 0.75 ? "cheerful" : p.Happiness >= 0.55 ? "settled" : p.Happiness >= 0.4 ? "a bit low" : "fed up";

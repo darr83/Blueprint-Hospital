@@ -170,7 +170,8 @@ public sealed partial class HospitalSimulation
                     AddTask(TaskKind.WardDischarge, StaffRole.Nurse, patient, 15, "Discharge home");
                 }
             }
-            else if (Now >= patient.DischargeDueAt && !HasTask(patient, TaskKind.WardRound) && !HasTask(patient, TaskKind.WardClerking) && !HasTask(patient, TaskKind.DispenseMedicines) && !HasTask(patient, TaskKind.DeliverMedicines))
+            else if (Now >= patient.DischargeDueAt && !HasTask(patient, TaskKind.WardRound) && !HasTask(patient, TaskKind.WardClerking) && !HasTask(patient, TaskKind.DispenseMedicines) && !HasTask(patient, TaskKind.DeliverMedicines)
+                     && !HoldMentalHealthDischarge(patient) && !WaitForLiaisonReview(patient))
             {
                 AddTask(TaskKind.WardRound, StaffRole.Doctor, patient, 10, "Ward round review");
             }
@@ -260,6 +261,11 @@ public sealed partial class HospitalSimulation
         }
 
         AddTask(TaskKind.WardClerking, StaffRole.Doctor, patient, 15, "Admission clerking");
+        if (IsMentalHealthWard(ward))
+        {
+            AdmitToMentalHealthWard(patient, diagnosed);
+        }
+
         if (patient.PreOp)
         {
             var operation = diagnosed.Operation!;

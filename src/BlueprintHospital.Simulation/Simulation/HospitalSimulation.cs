@@ -292,6 +292,7 @@ public sealed partial class HospitalSimulation
         UpdateSurgery();
         UpdateRefreshments(dt);
         UpdatePlay(dt);
+        UpdateMentalHealthWards(dt);
         UpdateToilets(dt);
         UpdateStrolls(dt);
         UpdatePharmacyTrips();

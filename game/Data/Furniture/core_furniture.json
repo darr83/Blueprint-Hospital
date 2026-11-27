@@ -768,5 +768,71 @@
    "colour": "#E53935",
    "cost": 400,
    "is_equipment": true
+ },
+ {
+   "id": "bedroom_wall",
+   "name": "Bedroom wall",
+   "width_m": 0.1,
+   "depth_m": 2.8,
+   "height_m": 2.4,
+   "style": "box",
+   "colour": "#E6EEF0",
+   "cost": 900,
+   "is_equipment": false
+ },
+ {
+   "id": "ensuite_pod",
+   "name": "En-suite shower room",
+   "width_m": 1.3,
+   "depth_m": 1.3,
+   "height_m": 2.4,
+   "style": "box",
+   "colour": "#E6EEF0",
+   "cost": 4500,
+   "is_equipment": false
+ },
+ {
+   "id": "garden_bench",
+   "name": "Garden bench seat",
+   "width_m": 0.6,
+   "depth_m": 0.6,
+   "height_m": 0.8,
+   "style": "chair",
+   "colour": "#8D6E4F",
+   "cost": 300,
+   "is_equipment": false
+ },
+ {
+   "id": "picnic_table",
+   "name": "Garden table",
+   "width_m": 2.0,
+   "depth_m": 1.0,
+   "height_m": 0.75,
+   "style": "box",
+   "colour": "#9C7A55",
+   "cost": 400,
+   "is_equipment": false
+ },
+ {
+   "id": "planter",
+   "name": "Raised planter",
+   "width_m": 1.2,
+   "depth_m": 0.5,
+   "height_m": 0.6,
+   "style": "box",
+   "colour": "#7A5A3C",
+   "cost": 250,
+   "is_equipment": false
+ },
+ {
+   "id": "garden_tree",
+   "name": "Small tree",
+   "width_m": 1.0,
+   "depth_m": 1.0,
+   "height_m": 3.0,
+   "style": "box",
+   "colour": "#4E8A4A",
+   "cost": 600,
+   "is_equipment": false
  }
 ]

@@ -64,6 +64,9 @@ public enum StaffRole
 
     /// <summary>Psychiatrist: a doctor for the mind, who sees people in the mental health assessment room.</summary>
     Psychiatrist,
+
+    /// <summary>Mental health support worker (Band 3): on the mental health wards, keeps patients company and does close observations one-to-one.</summary>
+    SupportWorker,
 }
 
 public enum StaffActivity

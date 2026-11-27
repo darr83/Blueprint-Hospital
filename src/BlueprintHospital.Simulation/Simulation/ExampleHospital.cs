@@ -6,7 +6,8 @@ using BlueprintHospital.Simulation.World;
 namespace BlueprintHospital.Simulation.Simulation;
 
 /// <summary>
-/// The ready-made example hospital offered in Load Game: the building extended to 47 × 33 m on three floors,
+/// The ready-made example hospital offered in Load Game: the building extended to 47 × 33 m on four floors (the top one
+/// for mental health),
 /// every department open with every kind of room, and staffed to the recommended numbers. It is built with the
 /// same rules and checks the player builds with, so it is an ordinary game once loaded.
 /// <para>
@@ -87,6 +88,7 @@ public static class ExampleHospital
         Must(sim.ExtendBuilding(Footprint), "extend the building");
         Must(sim.AddFloor(), "add the first floor");
         Must(sim.AddFloor(), "add the second floor");
+        Must(sim.AddFloor(), "add the third floor");
 
         // Ground floor corridors: the spine joins the ambulance doors; everything else joins the spine.
         Corridor(sim, 0, 6, SpineY, 94, SpineDepth);
@@ -105,7 +107,7 @@ public static class ExampleHospital
         Build(sim, new Room("stairs", 18, MiddleRowY, 6, MiddleRowDepth, WallSide.South, "Main stairs"));
         Build(sim, new Room("lift", 88, 29, 7, 10, WallSide.South, "East bed lifts"));
 
-        for (var floor = 1; floor < 3; floor++)
+        for (var floor = 1; floor < 4; floor++)
         {
             Corridor(sim, floor, 6, SpineY, 94, SpineDepth);
             Corridor(sim, floor, 6, NorthCorridorY, 5, SpineY - NorthCorridorY);
@@ -114,7 +116,7 @@ public static class ExampleHospital
         }
 
         // Landings in front of the lifts' back walls, so the north corridor runs round them.
-        for (var floor = 0; floor < 3; floor++)
+        for (var floor = 0; floor < 4; floor++)
         {
             Corridor(sim, floor, 11, MiddleRowY, 7, 4);
             Corridor(sim, floor, 88, MiddleRowY, 7, 4);
@@ -133,6 +135,11 @@ public static class ExampleHospital
         foreach (var room in SecondFloor)
         {
             Build(sim, room with { Y = room.Y + (2 * site.FloorStride) });
+        }
+
+        foreach (var room in ThirdFloor)
+        {
+            Build(sim, room with { Y = room.Y + (3 * site.FloorStride) });
         }
 
         // Every theatre takes every surgical specialty (the caesarean theatre is maternity's own).
@@ -275,6 +282,14 @@ public static class ExampleHospital
         new("gynaecology_ward", 64, SouthY, 12, 23, WallSide.North),
         new("childrens_ward", 76, SouthY, 14, 23, WallSide.North),
         new("childrens_hdu", 90, SouthY, 10, 23, WallSide.North),
+    };
+
+    private static readonly Room[] ThirdFloor =
+    {
+        // North row: the mental health ward, its roof garden and lounge.
+        new("mental_health_ward", 6, NorthRowY, 34, NorthRowDepth, WallSide.South, "Willow ward"),
+        new("mental_health_garden", 40, NorthRowY, 20, NorthRowDepth, WallSide.South, "Roof garden"),
+        new("mental_health_lounge", 60, NorthRowY, 12, NorthRowDepth, WallSide.South, "Willow lounge"),
     };
 
     // ------------------------------------------------------------------ helpers
