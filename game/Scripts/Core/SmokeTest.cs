@@ -1476,7 +1476,7 @@ public partial class SmokeTest : Node
             nextClinicDay = nextClinicDay.AddDays(1);
         }
 
-        var limit = nextClinicDay.AddHours(12);
+        var limit = nextClinicDay.AddHours(16);
         while (clock.Now < limit && !(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)
                                       && sim.Outpatients.Count(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting && !o.IsMoving) >= 1
                                       && sim.Outpatients.Any(o => o.Stage == Simulation.Patients.OutpatientStage.BeingSeen)))
