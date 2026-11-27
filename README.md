@@ -474,13 +474,17 @@ Midwives (Band 5 to Band 8 consultant midwife) are a new staff type in Recruitme
 
 Unlock **Mental Health** (£200,000, career level 10) in Build → Departments, then build its rooms from
 **Build → Mental health** (the leaf icon). Mental health nurses (Band 5, Band 6, Band 7 ward manager,
-Band 8 matron) and psychiatrists (trainee, specialty doctor, registrar, consultant) are new staff types.
-They wear their own clothes rather than uniforms: teal polos for nurses (a Band 6 liaison nurse has an
-amber collar), smart casual for psychiatrists, with a personal alarm and keys on the belt.
+Band 8 matron), psychiatrists (trainee, specialty doctor, registrar, consultant) and mental health
+support workers (Band 3, senior Band 4) are new staff types. They wear their own clothes rather than
+uniforms: teal polos for nurses (a Band 6 liaison nurse has an amber collar), lilac polos for support
+workers, smart casual for psychiatrists, with a personal alarm and keys on the belt.
 
 | Room | What it's for |
 | --- | --- |
 | Mental health assessment room | The A&E liaison team see patients in crisis here once their body has been treated: two heavy fixed seats either side of a bolted-down table (the nurse's nearer the door), a staff alarm strip and a second way out |
+| Mental health ward | Single bedrooms, each with its own en-suite shower room and a low wall between neighbours; a nurses' station, clinic cupboard and alarm strip. Staffed only by its own team: mental health nurses (1 per 6 beds), support workers (1 per 6 beds) and a psychiatrist |
+| Mental health lounge | Sofas, a TV, games and a table where ward patients spend time during the day |
+| Mental health garden | Planters, trees and picnic tables, often on a roof; patients use it when it is dry |
 
 - **Liaison:** a mental health condition's treatment plan ends with a *Mental health assessment* step.
   A&E treats the body first (closing wounds, for example); then the patient walks to the assessment
@@ -489,11 +493,21 @@ amber collar), smart casual for psychiatrists, with a personal alarm and keys on
   With no staffed assessment room an A&E doctor does a basic assessment in the cubicle instead.
 - **Conditions:** low mood with suicidal thoughts and self-harm (home with the crisis team),
   drug-induced psychosis (watched until it wears off), and severe depression, a first episode of
-  psychosis and mania (these need admitting). Until the mental health ward arrives they are transferred to a
-  mental health hospital. Panic attacks and overdoses stay with A&E.
+  psychosis and mania (these need admitting). They go to a mental health ward, or are transferred to a
+  mental health hospital when there isn't one. Panic attacks and overdoses stay with A&E.
+- **Wellbeing meter:** on a mental health ward the bed monitor shows wellbeing instead of NEWS2:
+  settled (green), unsettled (amber) or distressed (red). Time in the lounge or garden, a daily
+  psychiatrist's review (9:00 to 17:00) and regular checks help; missed checks and nobody being there
+  when someone is on close observations make it worse. The patient record shows wellbeing, the
+  observation level and who is with them.
+- **Observations:** general (a check every hour), intermittent (every 15 minutes), within eyesight and
+  arm's length. The top two tie up a support worker (or a mental health nurse) 1:1 until the psychiatrist
+  steps them down. Patients go home only when settled and on general observations.
+- **Overdoses:** a patient admitted to a medical ward after an overdose is seen on the ward by the
+  liaison team before going home.
 - **Tone:** no injuries beyond a dressing, no deaths from suicide, and no restraint or seclusion.
-- **Coming next:** the adult mental health ward, observations and the wellbeing meter, the Mental Health
-  Act with police Section 136 drop-offs, and the quiet room, activity room and psychologist.
+- **Coming next:** the Mental Health Act with police Section 136 drop-offs and out-of-area beds, then
+  the quiet room, activity room and psychologist.
 
 ### Upper floors, lifts and stairs
 

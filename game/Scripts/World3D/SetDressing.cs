@@ -51,7 +51,7 @@ public static class SetDressing
         var was = b.Kind;
         var t = (float)WorldLayer.WallThickness / 2;
         var top = Walls3D.FullHeight;
-        var curtained = space.IsWard && !space.Furniture.Any(f => f.ItemId == RoomLayoutEngine.BayCurtain);
+        var curtained = space.IsWard && !space.Furniture.Any(f => f.ItemId is RoomLayoutEngine.BayCurtain or RoomLayoutEngine.BedroomWall);
         var count = 0;
         try
         {

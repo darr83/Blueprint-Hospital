@@ -42,6 +42,8 @@ public partial class DepartmentRenderer : Node2D
         [CareSpaceKind.CathLab] = new Color("#DFE3E8"),
         [CareSpaceKind.PlasterRoom] = new Color("#E6E4DE"),
         [CareSpaceKind.MentalHealthAssessment] = new Color("#DDEDEE"),
+        [CareSpaceKind.MentalHealthLounge] = new Color("#EDE3D3"),
+        [CareSpaceKind.MentalHealthGarden] = new Color("#A9CC8C"),
         [CareSpaceKind.PhysioGym] = new Color("#DDE9E2"),
         [CareSpaceKind.EndoscopyRecovery] = new Color("#E2EAEE"),
         [CareSpaceKind.OutreachOffice] = new Color("#E6DFEE"),
@@ -63,7 +65,8 @@ public partial class DepartmentRenderer : Node2D
     /// A room's usual floor colour: by its kind, except the children's rooms, which have their own
     /// brighter colours (sunny yellow wards, mint cubicles, sky blue waiting, lavender intensive care).
     /// </summary>
-    public static Color FloorColourOf(CareSpace space) => KindColour(space).Lerp(CleanWhite, CleanMix);
+    public static Color FloorColourOf(CareSpace space) =>
+        space.Kind == CareSpaceKind.MentalHealthGarden ? KindColour(space) : KindColour(space).Lerp(CleanWhite, CleanMix);
 
     /// <summary>The clean white the floors are laid in: each room's own colour shows only as a faint tint.</summary>
     private static readonly Color CleanWhite = new("#F6F8F9");
@@ -90,6 +93,18 @@ public partial class DepartmentRenderer : Node2D
                 case CareSpaceKind.PlayRoom when space.TemplateId == "teen_room":
                     return new Color("#DCE1F2");
             }
+        }
+
+        if (space.Kind == CareSpaceKind.Ward && space.DepartmentId == HospitalSimulation.MentalHealthDepartmentId)
+        {
+            // Calm pale teal, like the assessment room.
+            return new Color("#DDEDEE");
+        }
+
+        if (space.Kind == CareSpaceKind.MentalHealthGarden)
+        {
+            // Grass: kept strong, not washed out like the floors indoors.
+            return FloorColours[space.Kind];
         }
 
         return FloorColours.GetValueOrDefault(space.Kind, new Color("#E6E9EC"));
@@ -341,6 +356,8 @@ public partial class DepartmentRenderer : Node2D
             CareSpaceKind.Triage => new Color("#7E57C2"),
             CareSpaceKind.Ward when IsCriticalCare(space) => new Color("#5E35B1"),
             CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MaternityDepartmentId => new Color("#D46A9F"),
+            CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MentalHealthDepartmentId => new Color("#0097A7"),
+            CareSpaceKind.MentalHealthLounge or CareSpaceKind.MentalHealthGarden => new Color("#0097A7"),
             CareSpaceKind.DeliveryRoom => new Color("#D46A9F"),
             CareSpaceKind.Ward => new Color("#1E88E5"),
             CareSpaceKind.OutreachOffice => new Color("#5E35B1"),

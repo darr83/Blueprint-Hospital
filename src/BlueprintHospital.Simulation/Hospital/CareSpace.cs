@@ -117,6 +117,12 @@ public enum CareSpaceKind
     /// a long time come here to raise a concern, and are listened to on the spot.
     /// </summary>
     PalsOffice,
+
+    /// <summary>The lounge on a mental health ward: sofas, a television and a table, where patients spend the day out of their bedrooms.</summary>
+    MentalHealthLounge,
+
+    /// <summary>A garden courtyard for the mental health wards: planters, a tree and benches in the fresh air.</summary>
+    MentalHealthGarden,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>

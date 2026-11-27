@@ -110,7 +110,7 @@ public static class BuildIcons
         ["ambulatory_care_unit"] = "chairs", ["echo_room"] = "heart", ["cath_lab"] = "icu", ["eeg_room"] = "brainwave",
         ["ct_scanner"] = "scanner", ["xray_room"] = "imaging", ["operating_theatre"] = "theatres", ["csection_theatre"] = "theatres", ["caesarean_theatre"] = "theatres", ["anaesthetic_room"] = "icu", ["theatre_recovery"] = "bed", ["antenatal_scan_room"] = "wave", ["delivery_room"] = "bed",
         ["early_pregnancy_unit"] = "wave", ["ultrasound_room"] = "wave", ["endoscopy_room"] = "scope",
-        ["plaster_room"] = "cast", ["mental_health_assessment_room"] = "leaf", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
+        ["plaster_room"] = "cast", ["mental_health_assessment_room"] = "leaf", ["mental_health_ward"] = "bed", ["mental_health_lounge"] = "sofa", ["mental_health_garden"] = "planter", ["physio_gym"] = "dumbbell", ["intensive_care_unit"] = "icu", ["high_dependency_unit"] = "icu",
         ["day_surgery_unit"] = "bed", ["mother_baby_ward"] = "cot", ["neonatal_unit"] = "incubator",
         ["childrens_ward"] = "teddy", ["childrens_hdu"] = "icu", ["picu"] = "icu", ["childrens_assessment_unit"] = "teddy",
         ["childrens_waiting_room"] = "chairs", ["childrens_cubicle"] = "bed",

@@ -67,6 +67,9 @@ public enum StaffRole
 
     /// <summary>Patient Advice and Liaison Service officer: listens to unhappy patients in the PALS office and helps answer complaints.</summary>
     PalsOfficer,
+
+    /// <summary>Mental health support worker (Band 3): on the mental health wards, keeps patients company and does close observations one-to-one.</summary>
+    SupportWorker,
 }
 
 public enum StaffActivity

@@ -1193,12 +1193,12 @@ public partial class SmokeTest : Node
                 _stage = Stage.ExampleHospital;
                 break;
 
-            // The ready-made example hospital in Load Game: three floors, every department, every post filled.
+            // The ready-made example hospital in Load Game: four floors, every department, every post filled.
             case Stage.ExampleHospital when scene is HospitalScene example && example.IsNodeReady()
                                             && example.Session.HospitalName == Simulation.Simulation.ExampleHospital.HospitalName && _frame >= 20:
             {
                 var exampleSim = example.Session.Simulation;
-                Check(exampleSim.FloorCount == 3, $"The example hospital has {exampleSim.FloorCount} floors, not 3.");
+                Check(exampleSim.FloorCount == 4, $"The example hospital has {exampleSim.FloorCount} floors, not 4.");
                 var missing = manager.Database!.RoomTemplates.Keys.Where(t => exampleSim.Spaces.All(r => r.TemplateId != t)).ToList();
                 Check(missing.Count == 0, "The example hospital is missing " + string.Join(", ", missing) + ".");
                 Check(exampleSim.RecommendedStaffing().All(n => n.Short == 0), "The example hospital is short of staff.");
@@ -1476,7 +1476,7 @@ public partial class SmokeTest : Node
             nextClinicDay = nextClinicDay.AddDays(1);
         }
 
-        var limit = nextClinicDay.AddHours(12);
+        var limit = nextClinicDay.AddHours(16);
         while (clock.Now < limit && !(sim.Appointments.Any(a => a.Status == Simulation.Patients.AppointmentStatus.Seen)
                                       && sim.Outpatients.Count(o => o.Stage == Simulation.Patients.OutpatientStage.Waiting && !o.IsMoving) >= 1
                                       && sim.Outpatients.Any(o => o.Stage == Simulation.Patients.OutpatientStage.BeingSeen)))

@@ -107,6 +107,15 @@ public sealed partial class HospitalSimulation
             case TaskKind.DispenseMedicines:
                 CompleteDispensing(member, patient);
                 break;
+            case TaskKind.ObservationCheck:
+                CompleteObservationCheck(member, patient);
+                break;
+            case TaskKind.MentalHealthReview:
+                CompleteMentalHealthReview(member, patient);
+                break;
+            case TaskKind.LiaisonReview:
+                CompleteLiaisonReview(member, patient);
+                break;
         }
     }
 

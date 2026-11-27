@@ -19,6 +19,12 @@ public static class RoomLayoutEngine
     /// <summary>The privacy curtain hung between neighbouring beds in a minors room.</summary>
     public const string BayCurtain = "bay_curtain";
 
+    /// <summary>The wall between two single bedrooms on a mental health ward.</summary>
+    public const string BedroomWall = "bedroom_wall";
+
+    /// <summary>A bedroom's own shower room, in the corner beside the bed.</summary>
+    public const string EnsuitePod = "ensuite_pod";
+
     /// <summary>Furniture a layout cannot work without.</summary>
     public static IReadOnlyList<string> RequiredFurniture(RoomLayoutKind layout) => layout switch
     {
@@ -91,6 +97,9 @@ public static class RoomLayoutEngine
                 break;
             case RoomLayoutKind.Interview:
                 Interview(plan, template);
+                break;
+            case RoomLayoutKind.Garden:
+                Garden(plan, template);
                 break;
             case RoomLayoutKind.Waiting when template.Kind == CareSpaceKind.OutpatientReception:
                 CheckIn(plan);
@@ -255,7 +264,9 @@ public static class RoomLayoutEngine
         var cot = template.Furniture.Contains("cot");
         // A children's ward has a fold-out bed beside every bed, for a parent to stay the night.
         var parentBed = template.Furniture.Contains("parent_bed");
-        var pitch = ventilated ? BedTilesX + 4 : cot || parentBed ? BedTilesX + 3 : BedTilesX + 2;
+        // A mental health ward: single bedrooms, each with a shower room beside the bed and a wall between them.
+        var bedrooms = template.Furniture.Contains(BedroomWall);
+        var pitch = ventilated || bedrooms ? BedTilesX + 4 : cot || parentBed ? BedTilesX + 3 : BedTilesX + 2;
         var rows = BedRows(plan, BedTilesY, BedTilesX);
         var (xMin, xMax, door) = RowSpan(plan, rows.Count);
         var locker = template.Furniture.Contains("bedside_locker");
@@ -263,11 +274,11 @@ public static class RoomLayoutEngine
         var curtained = template.Furniture.Contains(BayCurtain);
         // A visitor's chair beside every bed, at its foot end (the locker, monitor or cot is at the head):
         // wards that list one, and the critical care units. Children's wards have the parent's fold-out bed instead.
-        var bedsideChairs = !parentBed && !curtained && (template.Furniture.Contains("visitor_chair") || ventilated || monitored);
+        var bedsideChairs = !parentBed && !curtained && !bedrooms && (template.Furniture.Contains("visitor_chair") || ventilated || monitored);
         foreach (var (rowY, headSouth) in rows)
         {
             int? lastX = null;
-            for (var x = xMin; x + BedTilesX + (cot || parentBed ? 2 : 0) <= xMax; x += pitch)
+            for (var x = xMin; x + BedTilesX + (cot || parentBed ? 2 : bedrooms ? 3 : 0) <= xMax; x += pitch)
             {
                 if (door.X < x + BedTilesX && x < door.X + door.W && door.Y < rowY + BedTilesY && rowY < door.Y + door.L)
                 {
@@ -278,6 +289,12 @@ public static class RoomLayoutEngine
                 if (curtained && lastX is { } previous && x - previous == pitch)
                 {
                     plan.AddWorld(BayCurtain, x - 0.6, rowY + 0.15, 0.2, BedTilesY - 0.5);
+                }
+
+                if (bedrooms && lastX is { } before && x - before == pitch)
+                {
+                    // Reaches from the head wall to just past the foot of the bed, leaving the corridor along the ward clear.
+                    plan.AddWorld(BedroomWall, x - 0.6, headSouth ? rowY - 0.6 : rowY, 0.2, BedTilesY + 0.6);
                 }
 
                 lastX = x;
@@ -294,6 +311,10 @@ public static class RoomLayoutEngine
                 {
                     plan.AddWorld("ventilator", x + BedTilesX + 0.2, headY, 0.8, 0.8);
                     plan.AddWorld("obs_monitor", x + BedTilesX + 1.4, headY, 0.6, 0.6);
+                }
+                else if (bedrooms && x + BedTilesX + 3 <= xMax)
+                {
+                    plan.AddWorld(EnsuitePod, x + BedTilesX + 0.3, headSouth ? rowY + BedTilesY - 2.6 : rowY, 2.6, 2.6);
                 }
                 else if (cot && x + BedTilesX + 2 <= xMax)
                 {
@@ -327,7 +348,7 @@ public static class RoomLayoutEngine
         plan.StaffSpot = plan.Frame.Tile(plan.DoorOffset + (plan.DoorWidth / 2), plan.Frame.D - 3);
         plan.PatientSpot = plan.Beds.Count > 0 ? plan.Beds[0].PatientSpot : plan.StaffSpot;
 
-        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot" and not "parent_bed" and not BayCurtain
+        foreach (var item in template.Furniture.Where(i => i is not "hospital_bed" and not "bedside_locker" and not "ventilator" and not "obs_monitor" and not "cot" and not "parent_bed" and not BayCurtain and not BedroomWall and not EnsuitePod
                                                            && !(bedsideChairs && i == "visitor_chair")))
         {
             plan.TryPlaceAgainstWalls(item);
@@ -493,6 +514,68 @@ public static class RoomLayoutEngine
     /// low bolted table, the nurse on the side nearer the door so they can always step out. A second door
     /// out sits on the back wall, and any soft seating for a relative goes against the walls.
     /// </summary>
+    /// <summary>
+    /// A garden: a tree in each back corner, raised planters along the back wall and down the sides, and small
+    /// tables spread over the lawn with a bench seat either side of each. Anything else goes against the walls.
+    /// </summary>
+    private static void Garden(Plan plan, RoomTemplate template)
+    {
+        var f = plan.Frame;
+        var db = plan.Database;
+        var tree = template.Furniture.Contains("garden_tree");
+        if (tree)
+        {
+            plan.TryPlaceLocal("garden_tree", 0.4, 0.4);
+            plan.TryPlaceLocal("garden_tree", f.W - 2.4, 0.4);
+        }
+
+        if (template.Furniture.Contains("planter") && db.Furniture.TryGetValue("planter", out var planter))
+        {
+            var pw = planter.WidthM / Units.MetresPerTile;
+            for (var u = tree ? 3.0 : 0.6; u + pw <= f.W - (tree ? 3.0 : 0.6); u += pw + 1.2)
+            {
+                plan.TryPlaceLocal("planter", u, 0.3);
+            }
+
+            for (var v = 4.0; v + pw <= f.D - 4; v += pw + 2)
+            {
+                plan.TryPlaceLocal("planter", 0.3, v, turned: true);
+                plan.TryPlaceLocal("planter", f.W - 1.3, v, turned: true);
+            }
+        }
+
+        var table = template.Furniture.Select(i => db.Furniture.GetValueOrDefault(i)).FirstOrDefault(i => i is { Style: FurnitureStyle.Box } && i.Id is not ("planter" or "garden_tree"));
+        var bench = template.Furniture.Select(i => db.Furniture.GetValueOrDefault(i)).FirstOrDefault(i => i is { Style: FurnitureStyle.Chair });
+        if (table is not null && bench is not null)
+        {
+            var tw = table.WidthM / Units.MetresPerTile;
+            var td = table.DepthM / Units.MetresPerTile;
+            for (var v = 4; v + 4 <= f.D - 2; v += 6)
+            {
+                for (var u = 3; u + tw + 1 <= f.W - 3; u += (int)Math.Ceiling(tw) + 3)
+                {
+                    if (!plan.TryPlaceLocal(table.Id, u, v + 1))
+                    {
+                        continue;
+                    }
+
+                    foreach (var du in new[] { 0, (int)Math.Ceiling(tw) - 1 })
+                    {
+                        plan.AddSeat(bench.Id, f.Tile(u + du, v));
+                        plan.AddSeat(bench.Id, f.Tile(u + du, v + 1 + (int)Math.Ceiling(td)));
+                    }
+                }
+            }
+        }
+
+        plan.StaffSpot = plan.Seats.Count > 0 ? plan.Seats[0] : f.Tile(f.W / 2, f.D / 2);
+        plan.PatientSpot = plan.StaffSpot;
+        foreach (var item in template.Furniture.Where(i => i != table?.Id && i != bench?.Id && i is not ("planter" or "garden_tree")))
+        {
+            plan.TryPlaceAgainstWalls(item);
+        }
+    }
+
     private static void Interview(Plan plan, RoomTemplate template)
     {
         var f = plan.Frame;

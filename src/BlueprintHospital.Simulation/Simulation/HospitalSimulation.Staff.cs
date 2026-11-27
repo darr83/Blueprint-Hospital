@@ -287,7 +287,7 @@ public sealed partial class HospitalSimulation
         var candidates = _tasks.Values
             .Where(t => t.AssignedStaffId is null && CanStart(t) && (bedside is not null
                 ? IsBedsideWork(t, member, bedside)
-                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member) || MidwifeCanCover(t, member) || ChildrensNurseCanCover(t, member) || PaediatricianCanCover(t, member) || PsychiatristCanCover(t, member)) && IsForMember(t, member)))
+                : (t.Role == member.Role || NurseCanCover(t, member) || NurseCanSit(t, member) || AnaesthetistCanCover(t, member) || MidwifeCanCover(t, member) || ChildrensNurseCanCover(t, member) || PaediatricianCanCover(t, member) || PsychiatristCanCover(t, member) || MentalHealthNurseCanCover(t, member) || SupportWorkerCanCover(t, member)) && IsForMember(t, member)))
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Id);
 
@@ -446,6 +446,12 @@ public sealed partial class HospitalSimulation
             return false;
         }
 
+        // In the lounge or garden: only a look-in happens there; anything else waits until they are back in their room.
+        if (InDayRoom(patient) && task.Kind is not (TaskKind.ObservationCheck or TaskKind.StayWithPatient))
+        {
+            return false;
+        }
+
         if (task.Kind == TaskKind.MovePatient)
         {
             return patient.PendingMove is not null;
@@ -508,6 +514,12 @@ public sealed partial class HospitalSimulation
                 }
 
                 return BesideTile(patient.Tile);
+        }
+
+        if (task.Kind == TaskKind.ObservationCheck && BedOf(patient) is { } own && patient.Tile != own.PatientSpot)
+        {
+            // Looked in on wherever they are: the lounge, the garden or walking about.
+            return BesideTile(patient.Tile);
         }
 
         if (patient.CorridorSpot is { } parked && patient.Tile == parked && !patient.IsMoving)

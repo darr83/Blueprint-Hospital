@@ -173,7 +173,7 @@ public static class Looks
         {
             StaffRole.Midwife => Roll(seed, 3, 10) != 0,
             StaffRole.Nurse or StaffRole.OutreachNurse or StaffRole.HealthcareAssistant or StaffRole.ScrubNurse or StaffRole.Receptionist or StaffRole.ChildrensNurse => Roll(seed, 3, 10) < 7,
-            StaffRole.MentalHealthNurse => Roll(seed, 3, 10) < 6,
+            StaffRole.MentalHealthNurse or StaffRole.SupportWorker => Roll(seed, 3, 10) < 6,
             StaffRole.Porter => Roll(seed, 3, 10) < 3,
             _ => Roll(seed, 3, 2) == 0,
         };
@@ -239,6 +239,10 @@ public static class Looks
             StaffRole.MentalHealthNurse when Is("Band 7") || Is("Manager") => MentalHealthPolo("#00707E", null, who, hair),
             StaffRole.MentalHealthNurse when Is("Band 6") => MentalHealthPolo("#00ACC1", "#F2B134", who, hair),
             StaffRole.MentalHealthNurse => MentalHealthPolo("#8FD9E4", null, who, hair),
+
+            // Support workers: a lilac polo with the same alarm and keys; the senior support worker's is a shade deeper.
+            StaffRole.SupportWorker when Is("Senior") => MentalHealthPolo("#9C8DD0", null, who, hair),
+            StaffRole.SupportWorker => MentalHealthPolo("#B7ABDF", null, who, hair),
 
             // Psychiatrists: smart casual, no tie, no white coat, no stethoscope; consultants in a blazer.
             StaffRole.Psychiatrist when Is("Consultant") => new PersonLook(new Color("#EEF2F5"), new Color("#30343C"), who.Skin, hair)
@@ -620,7 +624,11 @@ public static class Looks
     public static Color WardBlanketFor(BlueprintHospital.Simulation.Simulation.HospitalSimulation sim, BlueprintHospital.Simulation.Hospital.CareSpace ward, BlueprintHospital.Simulation.Hospital.WardBed bed) =>
         sim.IsMotherAndBabyWard(ward) ? MaternityBlanket
         : sim.IsPaediatricWard(ward) ? ChildrensBlankets[Math.Max(0, System.Linq.Enumerable.ToList(ward.Beds).IndexOf(bed)) % ChildrensBlankets.Length]
+        : sim.IsMentalHealthWard(ward) ? MentalHealthDuvets[Math.Max(0, System.Linq.Enumerable.ToList(ward.Beds).IndexOf(bed)) % MentalHealthDuvets.Length]
         : WardBlanket;
+
+    /// <summary>Homely duvets on the mental health ward's beds: soft sage, oatmeal, dusky blue and heather.</summary>
+    private static readonly Color[] MentalHealthDuvets = { new("#9DBFA8"), new("#D9CBB0"), new("#93AFC9"), new("#B9A7C9") };
 
     /// <summary>The blanket on an A&amp;E cubicle bed: bright on a children's cubicle, otherwise the A&amp;E blanket.</summary>
     public static Color CubicleBlanket(BlueprintHospital.Simulation.Simulation.HospitalSimulation sim, BlueprintHospital.Simulation.Hospital.CareSpace space) =>

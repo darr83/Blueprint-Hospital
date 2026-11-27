@@ -155,6 +155,7 @@ public partial class RosterPanel : PanelContainer
                     StaffRole.Paediatrician => new Color("#4C5BC0"),
                     StaffRole.PlaySpecialist => new Color("#43A047"),
                     StaffRole.MentalHealthNurse => new Color("#00838F"),
+                    StaffRole.SupportWorker => new Color("#7E6BC4"),
                     StaffRole.Psychiatrist => new Color("#37596B"),
                     StaffRole.PalsOfficer => new Color("#0E7C86"),
                     _ => new Color("#6E5A8C"),

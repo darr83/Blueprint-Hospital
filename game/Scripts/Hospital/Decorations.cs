@@ -154,6 +154,9 @@ public static class Decorations
         CareSpaceKind.PlasterRoom => new(new[] { Wall.BonePoster }, new[] { Floor.PlasterShelf, Floor.Bucket }),
         // Calm and bare: one soft print on the wall and a plant, nothing that could be pulled down or thrown.
         CareSpaceKind.MentalHealthAssessment => new(new[] { Wall.PastelPrint }, new[] { Floor.Plant }),
+        CareSpaceKind.MentalHealthLounge => new(new[] { Wall.PastelPrint, Wall.Noticeboard, Wall.Clock }, new[] { Floor.Plant, Floor.Bookshelf, Floor.FloorLamp }),
+        CareSpaceKind.MentalHealthGarden => new(Array.Empty<Wall>(), NoFloors),
+        CareSpaceKind.Ward when space.DepartmentId == HospitalSimulation.MentalHealthDepartmentId => new(new[] { Wall.WardBoard, Wall.PastelPrint, Wall.VisitingTimes, Wall.Clock }, new[] { Floor.Plant }),
         CareSpaceKind.PhysioGym => new(new[] { Wall.Mirror, Wall.Mirror }, new[] { Floor.GymBall, Floor.Dumbbells, Floor.GymBall }),
         CareSpaceKind.Pharmacy => new(new[] { Wall.PharmacySign, Wall.StaffOnly, Wall.Clock }, NoFloors, new[] { ("pharmacy_counter", new[] { OnTop.PillTray, OnTop.Computer }) }),
         CareSpaceKind.Ward => new(new[] { Wall.WardBoard, Wall.GelDispenser, Wall.VisitingTimes, WardPoster(space), Wall.Clock }, new[] { Floor.Plant, WardExtra(space) }),

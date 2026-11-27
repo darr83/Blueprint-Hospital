@@ -424,6 +424,12 @@ public partial class StaffRotaPanel : PanelContainer
         foreach (var ward in _sim.Wards.OrderBy(w => w.Id, StringComparer.Ordinal))
         {
             var used = ward.Beds.Count(b => b.OccupantId.HasValue);
+            if (_sim.IsMentalHealthWard(ward))
+            {
+                places.Add(new(ward.Id, ward.Name, $"{ward.Beds.Count} bedrooms · {used} in use", new[] { StaffRole.MentalHealthNurse, StaffRole.SupportWorker, StaffRole.Psychiatrist }));
+                continue;
+            }
+
             var children = _sim.IsPaediatricWard(ward);
             var doctors = children ? StaffRole.Paediatrician : _sim.UnitOf(ward) == WardUnit.IntensiveCare ? StaffRole.Anaesthetist : StaffRole.Doctor;
             var nurses = children ? StaffRole.ChildrensNurse : StaffRole.Nurse;

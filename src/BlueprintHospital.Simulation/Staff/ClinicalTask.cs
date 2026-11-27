@@ -77,6 +77,15 @@ public enum TaskKind
 
     /// <summary>The treatment for a ward emergency, at the bedside. <see cref="ClinicalTask.Detail"/> is the emergency id.</summary>
     EmergencyTreatment,
+
+    /// <summary>A routine observation check on a mental health ward: someone looks in on the patient wherever they are.</summary>
+    ObservationCheck,
+
+    /// <summary>The psychiatrist's daily review of a patient on a mental health ward.</summary>
+    MentalHealthReview,
+
+    /// <summary>The liaison team see a patient on a medical ward after an overdose, before they go home.</summary>
+    LiaisonReview,
 }
 
 /// <summary>
