@@ -123,6 +123,12 @@ public enum CareSpaceKind
 
     /// <summary>A garden courtyard for the mental health wards: planters, a tree and benches in the fresh air.</summary>
     MentalHealthGarden,
+
+    /// <summary>
+    /// Section 136 suite: a place of safety where the police bring someone they have detained under Section 136,
+    /// so they can hand over and leave, and the person waits there (not in A&amp;E) for their Mental Health Act assessment.
+    /// </summary>
+    Section136Suite,
 }
 
 /// <summary>A doorway in a room wall. <see cref="Offset"/> counts tiles along the wall from the room's corner.</summary>
@@ -263,7 +269,7 @@ public sealed class CareSpace
     public bool IsServiceRoom => Kind is CareSpaceKind.XRay or CareSpaceKind.CT or CareSpaceKind.Theatre or CareSpaceKind.Pharmacy
         or CareSpaceKind.Echo or CareSpaceKind.Eeg or CareSpaceKind.Ultrasound or CareSpaceKind.Endoscopy or CareSpaceKind.CathLab
         or CareSpaceKind.PlasterRoom or CareSpaceKind.PhysioGym or CareSpaceKind.OutreachOffice or CareSpaceKind.DeliveryRoom
-        or CareSpaceKind.MentalHealthAssessment;
+        or CareSpaceKind.MentalHealthAssessment or CareSpaceKind.Section136Suite;
 
     /// <summary>A room where tests are done by its own specialist: the patient is brought to it (X-ray, CT, echo, EEG, ultrasound, endoscopy).</summary>
     public static bool IsTestRoom(CareSpaceKind kind) =>

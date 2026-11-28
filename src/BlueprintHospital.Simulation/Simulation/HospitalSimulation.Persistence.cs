@@ -208,6 +208,16 @@ public sealed class PatientState
 
     public bool LiaisonReviewed { get; init; }
 
+    public bool Section136 { get; init; }
+
+    public bool InSection136Suite { get; init; }
+
+    public bool Section136Overran { get; init; }
+
+    public MentalHealthActStatus MentalHealthAct { get; init; }
+
+    public DateTime? AmhpDueAt { get; init; }
+
     public bool HadToiletAccident { get; init; }
 
     public bool PalsListened { get; init; }
@@ -658,6 +668,8 @@ public sealed partial class HospitalSimulation
             }
         }
 
+        RestoreAmhps();
+
         foreach (var saved in state.Departed)
         {
             if (LoadPatient(saved) is { } patient)
@@ -912,7 +924,7 @@ public sealed partial class HospitalSimulation
         SameDay = p.SameDay, PhysioSessions = p.PhysioSessions, LastPhysioAt = p.LastPhysioAt,
         CareLevel = p.CareLevel, DayCase = p.DayCase, PreOp = p.PreOp, SurgeryBookedAt = p.SurgeryBookedAt, SurgeryUrgency = p.SurgeryUrgency, ConsentAt = p.ConsentAt, GroupAndSaveAt = p.GroupAndSaveAt, LastAteAt = p.LastAteAt, SurgeryBreached = p.SurgeryBreached, ReturningToTheatre = p.ReturningToTheatre, Complication = p.Complication, ExtraStayHours = p.ExtraStayHours, WardMoveRequestedAt = p.WardMoveRequestedAt,
         IntensiveCareHours = p.IntensiveCareHours, HighDependencyHours = p.HighDependencyHours,
-        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, CorridorMinutes = p.CorridorMinutes, Wellbeing = p.Wellbeing, ObservationLevel = p.ObservationLevel, NextObsCheckAt = p.NextObsCheckAt, LastMentalHealthReviewAt = p.LastMentalHealthReviewAt, LiaisonReviewed = p.LiaisonReviewed, HadToiletAccident = p.HadToiletAccident, PalsListened = p.PalsListened, OperationCancelledWhy = p.OperationCancelledWhy, Stars = p.Stars, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
+        LastRefreshmentAt = p.LastRefreshmentAt, Happiness = p.Happiness, VisitsReceived = p.VisitsReceived, CorridorMinutes = p.CorridorMinutes, Wellbeing = p.Wellbeing, ObservationLevel = p.ObservationLevel, NextObsCheckAt = p.NextObsCheckAt, LastMentalHealthReviewAt = p.LastMentalHealthReviewAt, LiaisonReviewed = p.LiaisonReviewed, Section136 = p.Section136, InSection136Suite = p.InSection136Suite, Section136Overran = p.Section136Overran, MentalHealthAct = p.MentalHealthAct, AmhpDueAt = p.AmhpDueAt, HadToiletAccident = p.HadToiletAccident, PalsListened = p.PalsListened, OperationCancelledWhy = p.OperationCancelledWhy, Stars = p.Stars, Maternity = p.Maternity, PoliceEscort = p.PoliceEscort, FireCrewEscort = p.FireCrewEscort, AirAmbulance = p.AirAmbulance, Norovirus = p.Norovirus, GestationWeeks = p.GestationWeeks, Delivered = p.Delivered,
         ObservationHistory = p.ObservationHistory.Select(o => new ObservationState(o.Time, o.Obs)).ToList(),
         Position = PositionOf(p),
     };
@@ -1007,6 +1019,11 @@ public sealed partial class HospitalSimulation
         p.NextObsCheckAt = s.NextObsCheckAt;
         p.LastMentalHealthReviewAt = s.LastMentalHealthReviewAt;
         p.LiaisonReviewed = s.LiaisonReviewed;
+        p.Section136 = s.Section136;
+        p.InSection136Suite = s.InSection136Suite;
+        p.Section136Overran = s.Section136Overran;
+        p.MentalHealthAct = s.MentalHealthAct;
+        p.AmhpDueAt = s.AmhpDueAt;
         p.HadToiletAccident = s.HadToiletAccident;
         p.PalsListened = s.PalsListened;
         p.OperationCancelledWhy = s.OperationCancelledWhy;

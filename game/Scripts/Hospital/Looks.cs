@@ -503,11 +503,33 @@ public static class Looks
                 return Firefighter(parent);
             case EscortKind.AirCrew:
                 return AirCrew(parent);
+            case EscortKind.Amhp:
+                return Amhp(parent);
         }
 
         var seed = parent.Id + 200_003;
         var look = Civilian(seed, parent.Sex, parent.Age, coat: parent.FoldOutBed is null && parent.Activity != ParentActivity.InParentsRoom && CoatOn(seed, Roll(seed, 54, 3) == 0), bump: false);
         return child is null ? look : look with { Skin = Patient(child).Skin };
+    }
+
+    /// <summary>
+    /// An approved mental health professional (AMHP) visiting from the council: smart casual, a cardigan or jacket over a
+    /// shirt, a council lanyard and a coat in the cold. No uniform, so nothing about them says "hospital".
+    /// </summary>
+    public static PersonLook Amhp(Parent amhp)
+    {
+        var seed = amhp.Id + 400_021;
+        var female = amhp.Sex == Sex.Female;
+        var who = Person(seed, female, amhp.Age);
+        var style = StaffHair(seed, female, amhp.Age);
+        var hair = style is HairStyle.Hijab or HairStyle.Turban ? ScarfColours[Roll(seed, 12, ScarfColours.Length)] : who.Hair;
+        var top = Pick(seed, 14, new Color("#E9EEF3"), new Color("#F3EBDD"), new Color("#DCE8E2"));
+        var look = new PersonLook(top, Pick(seed, 15, new Color("#2F3542"), new Color("#4B4F58"), new Color("#3B3A44")), who.Skin, hair)
+        {
+            Kind = TopKind.Shirt, Jacket = Pick(seed, 16, new Color("#6B4E71"), new Color("#2E5E6B"), new Color("#7A5A3C")), Lanyard = true,
+            LongSleeves = true, ShoeColour = new Color("#2A2522"), Style = style,
+        };
+        return WithFace(look, seed, female, amhp.Age, who.SkinIndex, neat: true);
     }
 
     /// <summary>A police officer: black uniform under a fluorescent yellow vest with silver bands, a radio and a peaked cap.</summary>

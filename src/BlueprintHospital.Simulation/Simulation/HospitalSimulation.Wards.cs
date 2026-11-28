@@ -127,8 +127,14 @@ public sealed partial class HospitalSimulation
                 continue;
             }
 
+            if (MentalHealthBedOverdue(patient))
+            {
+                continue;
+            }
+
             var wards = WardsFor(patient);
-            if (wards.Count == 0 || Now - patient.BedRequestedAt > MaxWaitForBed)
+            var mentalHealthBed = IsMentalHealthPatient(patient) && MentalHealthWards.Any();
+            if (wards.Count == 0 || (Now - patient.BedRequestedAt > MaxWaitForBed && !mentalHealthBed))
             {
                 var reason = wards.Count > 0
                     ? $"No ward bed after {MaxWaitForBed.TotalHours:0} hours, so they are being transferred to a neighbouring hospital."

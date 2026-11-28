@@ -164,6 +164,7 @@ public partial class FinancePanel : PanelContainer
         MoneyCategory.Cheats => "Cheats",
         MoneyCategory.Grants => "Level grants",
         MoneyCategory.Complaints => "Complaints",
+        MoneyCategory.OutOfAreaBeds => "Out-of-area beds",
         _ => category.ToString(),
     };
 }

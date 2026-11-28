@@ -293,6 +293,7 @@ public sealed partial class HospitalSimulation
         UpdateRefreshments(dt);
         UpdatePlay(dt);
         UpdateMentalHealthWards(dt);
+        UpdateMentalHealthAct(dt);
         UpdateToilets(dt);
         UpdateStrolls(dt);
         UpdatePals(dt);
@@ -335,6 +336,12 @@ public sealed partial class HospitalSimulation
         {
             var patient = _generator.Generate(Now, IsFeatureOn(LevelFeatures.Ambulances) ? null : ArrivalMethod.WalkIn);
             MaybePoliceEscort(patient);
+            if (patient.ArrivalMethod == ArrivalMethod.WalkIn)
+            {
+                MaybeSection136(patient);
+            }
+
+            NoteSection136Arrival(patient);
             if (NeedsPreAlert(patient))
             {
                 PreAlert(patient);

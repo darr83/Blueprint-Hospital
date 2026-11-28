@@ -54,6 +54,30 @@ public static class StatKeys
     public const string LiaisonWithinHour = "mental_health.liaison_within_hour";
     public const string LiaisonMinutes = "mental_health.liaison_minutes";
     public const string LiaisonWardReviews = "mental_health.liaison_ward_reviews";
+
+    /// <summary>People brought in by the police under Section 136.</summary>
+    public const string Section136Arrivals = "mental_health.s136_arrivals";
+
+    /// <summary>Of those, the ones the police handed over in a Section 136 suite.</summary>
+    public const string Section136InSuite = "mental_health.s136_in_suite";
+
+    /// <summary>Minutes police officers spent in A&amp;E waiting with someone on a Section 136.</summary>
+    public const string PoliceMinutes = "mental_health.police_minutes";
+
+    /// <summary>Sections 136 that ran past 24 hours.</summary>
+    public const string Section136Overruns = "mental_health.s136_overruns";
+
+    /// <summary>Mental Health Act assessments done.</summary>
+    public const string MentalHealthActAssessments = "mental_health.mha_assessments";
+
+    /// <summary>Of those, the ones where the patient was detained under Section 2.</summary>
+    public const string Detentions = "mental_health.detentions";
+
+    /// <summary>Patients sent to a mental health bed in another area because none was free here.</summary>
+    public const string OutOfAreaBeds = "mental_health.out_of_area_beds";
+
+    /// <summary>Mental health patients who waited over 12 hours in A&amp;E for a bed.</summary>
+    public const string MentalHealthTwelveHourWaits = "mental_health.twelve_hour_waits";
     public const string ToiletAccidents = "facilities.toilet_accidents";
     public const string IncidentsHandled = "incidents.handled";
     public const string IncidentSurvivors = "incidents.survived";

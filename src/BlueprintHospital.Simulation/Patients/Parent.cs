@@ -35,6 +35,9 @@ public enum EscortKind
 
     /// <summary>The air ambulance paramedic, who wheels them in from the helipad and hands over.</summary>
     AirCrew,
+
+    /// <summary>An approved mental health professional (AMHP) from the council, visiting for a Mental Health Act assessment.</summary>
+    Amhp,
 }
 
 /// <summary>
@@ -82,6 +85,7 @@ public sealed class Parent : Agent
         EscortKind.Police => "The police officer",
         EscortKind.FireCrew => "The firefighter",
         EscortKind.AirCrew => "The air ambulance paramedic",
+        EscortKind.Amhp => "The AMHP",
         _ => Sex == Sex.Female ? "Mum" : "Dad",
     };
 

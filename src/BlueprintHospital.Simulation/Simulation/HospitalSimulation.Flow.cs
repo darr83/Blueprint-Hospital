@@ -381,6 +381,7 @@ public sealed partial class HospitalSimulation
 
                 case PatientStage.WaitingForSpace when patient.Triage == TriageCategory.Green
                                                        && patient.CorridorSpot is null
+                                                       && !patient.Section136
                                                        && Now - patient.QueuedSince > LeaveWithoutBeingSeenAfter
                                                        && patient.BusyWithTaskId is null
                                                        && Random.Chance(WalkOutFactor(patient) / 3600):

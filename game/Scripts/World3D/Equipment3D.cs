@@ -38,6 +38,8 @@ public static partial class Furnish3D
             case "soft_sofa": SoftSofa(b, w, d, h, colour); return true;
             case "safety_door": SafetyDoor(b, glass, w, d, h, colour); return true;
             case "alarm_strip": AlarmStrip(b, w, d); return true;
+            case "safe_bed": SafeBed(b, w, d, h, colour); return true;
+            case "observation_window": ObservationWindow(b, glass, w, d, h); return true;
             case "bedroom_wall": BedroomWall(b, w, d); return true;
             case "ensuite_pod": EnsuitePod(b, w, d, seed); return true;
             case "picnic_table": PicnicTable(b, w, d, h, colour, seed); return true;
@@ -436,6 +438,37 @@ public static partial class Furnish3D
     /// <summary>The red staff alarm strip along the wall at hand height.</summary>
     private static void AlarmStrip(MeshBatch b, float w, float d) =>
         Blk(b, 0, -(d / 2) + 0.02f, w, 0.04f, Kit3D.M(1.0), H(1.4f), new Color("#E53935"));
+
+    /// <summary>The Section 136 suite's low padded bed: one moulded block with rounded edges, a thick mattress and a pillow.</summary>
+    private static void SafeBed(MeshBatch b, float w, float d, float h, Color colour)
+    {
+        var top = Math.Max(h, H(8));
+        Blk(b, 0, 0, w, d, 0, top - H(3), colour.Darkened(0.1f));
+        Blk(b, 0, 0, w - 0.08f, d - 0.08f, top - H(3), H(3), new Color("#EEF3F4"));
+        Blk(b, 0, -(d / 2) + 0.28f, w - 0.24f, 0.32f, top, H(1.6f), new Color("#FFFFFF"));
+        Blk(b, 0, d * 0.16f, w - 0.14f, d * 0.5f, top, H(0.8f), colour.Lightened(0.25f));
+    }
+
+    /// <summary>A window into the corridor at eye height, with a blind between the panes so staff can look in.</summary>
+    private static void ObservationWindow(MeshBatch b, MeshBatch glass, float w, float d, float h)
+    {
+        var face = -(d / 2) + 0.03f;
+        var sill = Kit3D.M(0.9);
+        var tall = Math.Min(h, Kit3D.M(0.9));
+        Blk(b, 0, face, w + 0.08f, 0.06f, sill - 0.04f, 0.04f, new Color("#E9EEF1"));
+        Blk(b, 0, face, w + 0.08f, 0.06f, sill + tall, 0.04f, new Color("#E9EEF1"));
+        foreach (var side in new[] { -1f, 1f })
+        {
+            Blk(b, side * ((w / 2) + 0.02f), face, 0.04f, 0.06f, sill, tall, new Color("#E9EEF1"));
+        }
+
+        for (var i = 0; i < 7; i++)
+        {
+            Blk(b, 0, face + 0.01f, w - 0.04f, 0.01f, sill + 0.05f + (i * (tall - 0.1f) / 7), 0.03f, new Color("#9FBFCC"));
+        }
+
+        glass.Box(new Vector3(0, sill + (tall / 2), face + 0.035f), new Vector3(w, tall, 0.01f), new Color("#AFD3E2", 0.45f));
+    }
 
     // ------------------------------------------------------------------ mental health ward
 

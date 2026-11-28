@@ -48,6 +48,9 @@ public enum MoneyCategory
 
     /// <summary>Goodwill payments, investigations and Ombudsman fines for patient complaints.</summary>
     Complaints,
+
+    /// <summary>Mental health beds paid for in another area when none was free here.</summary>
+    OutOfAreaBeds,
 }
 
 /// <summary>Money in and out on one day, by category. Spending is negative.</summary>

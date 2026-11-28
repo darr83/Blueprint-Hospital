@@ -179,7 +179,7 @@
     "grant": 300000,
     "arrival_rate": 1.0,
     "departments": ["maternity", "paediatrics", "mental_health"],
-    "rooms": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu", "play_room", "teen_room", "parents_room", "childrens_clinic", "mental_health_assessment_room", "mental_health_ward", "mental_health_lounge", "mental_health_garden"],
+    "rooms": ["antenatal_clinic", "antenatal_scan_room", "delivery_room", "mother_baby_ward", "neonatal_unit", "caesarean_theatre", "childrens_waiting_room", "childrens_cubicle", "childrens_assessment_unit", "childrens_ward", "childrens_hdu", "picu", "play_room", "teen_room", "parents_room", "childrens_clinic", "mental_health_assessment_room", "section_136_suite", "mental_health_ward", "mental_health_lounge", "mental_health_garden"],
     "staff": ["midwife", "childrens_nurse", "paediatrician", "play_specialist", "mental_health_nurse", "psychiatrist", "support_worker"],
     "grades": [],
     "features": ["maternity"],

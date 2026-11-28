@@ -371,7 +371,7 @@ public partial class WorldLayer : Node2D
         }
 
         // On an X-ray, CT or operating table (in the mental health assessment room they sit in a chair).
-        if (_sim.Spaces.Any(s => s.IsServiceRoom && s.Kind is not (CareSpaceKind.Pharmacy or CareSpaceKind.MentalHealthAssessment) && s.PatientSpot == patient.Tile))
+        if (_sim.Spaces.Any(s => s.IsServiceRoom && s.Kind is not (CareSpaceKind.Pharmacy or CareSpaceKind.MentalHealthAssessment or CareSpaceKind.Section136Suite) && s.PatientSpot == patient.Tile))
         {
             return true;
         }

@@ -31,7 +31,7 @@ public sealed partial class HospitalSimulation
     private readonly List<Parent> _leavingCrew = new();
 
     /// <summary>Parents in the hospital with their children (and police, fire and air ambulance crew with their patients).</summary>
-    public IEnumerable<Parent> Parents => _parents.Values.Concat(_leavingCrew);
+    public IEnumerable<Parent> Parents => _parents.Values.Concat(_leavingCrew).Concat(_amhps.Values);
 
     /// <summary>The mum or dad with a child, if they are here.</summary>
     public Parent? ParentOf(Patient child) => _parents.GetValueOrDefault(child.Id);
@@ -43,7 +43,7 @@ public sealed partial class HospitalSimulation
 
     /// <summary>A police officer is with them: brought in by the police and still in A&amp;E (they go once the patient goes up to a ward or home).</summary>
     public static bool HasPoliceWith(Patient patient) =>
-        patient.PoliceEscort && !HasParentWith(patient) && patient.Stage is not (PatientStage.OnWard or PatientStage.Gone) && patient.LeftEmergencyAt is null;
+        patient.PoliceEscort && !HasParentWith(patient) && !patient.InSection136Suite && patient.Stage is not (PatientStage.OnWard or PatientStage.Gone) && patient.LeftEmergencyAt is null;
 
     /// <summary>
     /// A firefighter or the air ambulance paramedic is with them: they came in with a major incident casualty
@@ -68,6 +68,11 @@ public sealed partial class HospitalSimulation
             if ((escort.Police || escort.Crew) && _patients.TryGetValue(id, out var left) && left.Stage != PatientStage.Gone)
             {
                 left.Log(Now, $"{escort.FullName} handed over and left.");
+            }
+
+            if (escort.Police && (_patients.GetValueOrDefault(id) ?? _departed.FirstOrDefault(p => p.Id == id)) is { } escorted)
+            {
+                NotePoliceLeft(escorted);
             }
 
             _parents.Remove(id);

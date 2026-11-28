@@ -86,6 +86,9 @@ public enum TaskKind
 
     /// <summary>The liaison team see a patient on a medical ward after an overdose, before they go home.</summary>
     LiaisonReview,
+
+    /// <summary>A Mental Health Act assessment: a psychiatrist (or an A&amp;E doctor) and the visiting AMHP decide whether the patient must be detained.</summary>
+    MentalHealthActAssessment,
 }
 
 /// <summary>

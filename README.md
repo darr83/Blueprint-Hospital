@@ -482,6 +482,7 @@ workers, smart casual for psychiatrists, with a personal alarm and keys on the b
 | Room | What it's for |
 | --- | --- |
 | Mental health assessment room | The A&E liaison team see patients in crisis here once their body has been treated: two heavy fixed seats either side of a bolted-down table (the nurse's nearer the door), a staff alarm strip and a second way out |
+| Section 136 suite | A place of safety for people the police detain under Section 136: a low padded bed, fixed seats, its own toilet, an observation window and a second way out. The police hand over here and leave, and the person waits in the suite (not an A&E cubicle) for their Mental Health Act assessment. Run by a mental health nurse |
 | Mental health ward | Single bedrooms, each with its own en-suite shower room and a low wall between neighbours; a nurses' station, clinic cupboard and alarm strip. Staffed only by its own team: mental health nurses (1 per 6 beds), support workers (1 per 6 beds) and a psychiatrist |
 | Mental health lounge | Sofas, a TV, games and a table where ward patients spend time during the day |
 | Mental health garden | Planters, trees and picnic tables, often on a roof; patients use it when it is dry |
@@ -506,8 +507,17 @@ workers, smart casual for psychiatrists, with a personal alarm and keys on the b
 - **Overdoses:** a patient admitted to a medical ward after an overdose is seen on the ward by the
   liaison team before going home.
 - **Tone:** no injuries beyond a dressing, no deaths from suicide, and no restraint or seclusion.
-- **Coming next:** the Mental Health Act with police Section 136 drop-offs and out-of-area beds, then
-  the quiet room, activity room and psychologist.
+- **Section 136:** once the department is open, the police bring in some adults in crisis under Section 136.
+  With a staffed Section 136 suite they hand over there and get back on patrol; without one the officer waits
+  in A&E with them (**Stats → Mental health** counts the police hours). A Section 136 lasts up to 24 hours.
+- **Mental Health Act assessments:** someone who needs admitting but may not agree (most Section 136s, and some
+  people with psychosis, mania or severe depression) needs an assessment. An AMHP from the council comes in
+  (one to three hours, longer at night) and, with a psychiatrist (or an A&E doctor if no psychiatrist is on),
+  decides whether to detain them under Section 2. The patient record shows where they are with it.
+- **No mental health bed:** mental health patients wait in A&E for a bed for up to 12 hours (not the usual 6).
+  At 12 hours the hospital pays £4,500 for a bed in another area, or you can pay sooner with the patient
+  record's *Pay for an out-of-area bed* button. Finances lists this as *Out-of-area beds*.
+- **Coming next:** the quiet room, activity room, psychologist, clinic and under-16s (CAMHS).
 
 ### Upper floors, lifts and stairs
 
