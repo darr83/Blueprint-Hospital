@@ -128,6 +128,9 @@ public partial class StatsPanel : PanelContainer
         _mentalHealth = Card("Mental health", new[]
         {
             ("liaison_seen", "Seen by the liaison team"), ("liaison_hour", "Seen within an hour"), ("liaison_wait", "Average wait to be seen"),
+            ("s136", "Section 136 (police)"), ("s136_suite", "Handed over in the suite"), ("police_hours", "Police hours in A&E"),
+            ("mha", "Mental Health Act assessments"), ("detained", "Detained (Section 2)"),
+            ("mh_12h", "12-hour waits for a bed"), ("out_of_area", "Out-of-area beds"),
         });
         grid.AddChild(_mentalHealth);
         grid.AddChild(Card("Staff and facilities", new[]
@@ -395,6 +398,14 @@ public partial class StatsPanel : PanelContainer
         SetValue("liaison_hour", Count(T(StatKeys.LiaisonWithinHour)), Share(T(StatKeys.LiaisonWithinHour), liaison),
             liaison > 0 && T(StatKeys.LiaisonWithinHour) / liaison < 0.8 ? UiStyle.AmberText : null);
         SetValue("liaison_wait", liaison > 0 ? Minutes(T(StatKeys.LiaisonMinutes) / liaison) : "–");
+        var s136 = T(StatKeys.Section136Arrivals);
+        SetValue("s136", Count(s136));
+        SetValue("s136_suite", Count(T(StatKeys.Section136InSuite)), Share(T(StatKeys.Section136InSuite), s136));
+        SetValue("police_hours", $"{T(StatKeys.PoliceMinutes) / 60:0.#}", null, T(StatKeys.PoliceMinutes) > 0 ? UiStyle.AmberText : null);
+        SetValue("mha", Count(T(StatKeys.MentalHealthActAssessments)));
+        SetValue("detained", Count(T(StatKeys.Detentions)), Share(T(StatKeys.Detentions), T(StatKeys.MentalHealthActAssessments)));
+        SetValue("mh_12h", Count(T(StatKeys.MentalHealthTwelveHourWaits)), null, T(StatKeys.MentalHealthTwelveHourWaits) > 0 ? UiStyle.AmberText : null);
+        SetValue("out_of_area", Count(T(StatKeys.OutOfAreaBeds)), null, T(StatKeys.OutOfAreaBeds) > 0 ? UiStyle.AmberText : null);
         Gauge("on_shift", G(StatKeys.StaffOnDuty), v => $"{v:0.#}", v => $"{v:0}");
         SetValue("hired", Count(T(StatKeys.Hired)));
         SetValue("left_staff", Count(T(StatKeys.Left)));

@@ -156,6 +156,24 @@ public sealed class Patient : Agent
     /// <summary>After an overdose: the liaison team have seen them on the ward, so they can go home.</summary>
     public bool LiaisonReviewed { get; set; }
 
+    /// <summary>Brought in by the police under Section 136 of the Mental Health Act (a place of safety for up to 24 hours).</summary>
+    public bool Section136 { get; set; }
+
+    /// <summary>Was handed over in a Section 136 suite (the police have left); they wait there until they go to a ward or home.</summary>
+    public bool InSection136Suite { get; set; }
+
+    /// <summary>Their Section 136 ran past 24 hours without a Mental Health Act assessment (counted once).</summary>
+    public bool Section136Overran { get; set; }
+
+    /// <summary>Where they are with the Mental Health Act.</summary>
+    public MentalHealthActStatus MentalHealthAct { get; set; }
+
+    /// <summary>When the AMHP is due, while one is on the way.</summary>
+    public DateTime? AmhpDueAt { get; set; }
+
+    /// <summary>Detained under Section 2 of the Mental Health Act.</summary>
+    public bool Detained => MentalHealthAct == MentalHealthActStatus.Detained;
+
     /// <summary>The wellbeing band they are in, on a mental health ward.</summary>
     public WellbeingBand? WellbeingBand => Wellbeing is { } w ? BandFor(w) : null;
 
@@ -642,4 +660,23 @@ public enum ObservationLevel
 
     /// <summary>Level 4: someone stays within arm's reach.</summary>
     ArmsLength,
+}
+
+/// <summary>Where a patient is with the Mental Health Act.</summary>
+public enum MentalHealthActStatus
+{
+    /// <summary>Not needed.</summary>
+    None,
+
+    /// <summary>An assessment has been asked for: the approved mental health professional (AMHP) is on their way.</summary>
+    AwaitingAmhp,
+
+    /// <summary>The AMHP is here and the assessment is under way.</summary>
+    Assessing,
+
+    /// <summary>Detained under Section 2 of the Mental Health Act.</summary>
+    Detained,
+
+    /// <summary>Agreed to come into hospital after the assessment, so not detained.</summary>
+    Informal,
 }

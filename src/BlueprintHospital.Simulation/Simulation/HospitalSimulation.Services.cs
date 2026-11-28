@@ -40,7 +40,7 @@ public sealed partial class HospitalSimulation
         FindPatient(task.PatientId) is { } patient
         && int.TryParse(task.Detail, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var index)
         && index >= 0 && index < patient.TreatmentPlan.Count
-            ? patient.TreatmentPlan[index].Step.Room
+            ? Section136Room(patient, patient.TreatmentPlan[index].Step.Room)
             : null;
 
     /// <summary>Whether this member of staff's team does the task: service work in their own room, ward work on their ward, or A&amp;E work.</summary>
@@ -59,6 +59,11 @@ public sealed partial class HospitalSimulation
         if (task.Kind == TaskKind.LiaisonReview)
         {
             return IsLiaisonMember(member);
+        }
+
+        if (task.Kind == TaskKind.MentalHealthActAssessment)
+        {
+            return member.Role == StaffRole.Psychiatrist || TeamFor(task) == member.BaseRoomId || CoveredByEmergencyTeam(task, member);
         }
 
         if (task.Kind == TaskKind.OutreachReview)
@@ -80,6 +85,7 @@ public sealed partial class HospitalSimulation
                && (room.ReservedByStaffId is null || room.ReservedByStaffId == member.Id)
                && !_recovering.Values.Any(r => r.RoomId == room.Id)
                && DeliveryRoomFreeFor(room, task.PatientId)
+               && (room.Kind != CareSpaceKind.Section136Suite || room.OccupantId is null || room.OccupantId == task.PatientId)
                && (task.Kind != TaskKind.Surgery || kind != CareSpaceKind.Theatre
                    || (SurgeryDepartment(task.Detail) is { } dept && room.AllowedDepartments.Contains(dept) && FreeAnaesthetist(room) is not null && FreeScrubNurse(room) is not null && SessionTakes(room, task)));
     }

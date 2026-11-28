@@ -287,10 +287,12 @@ public static class ExampleHospital
 
     private static readonly Room[] ThirdFloor =
     {
-        // North row: the mental health ward, its roof garden and lounge.
+        // North row: the mental health ward, its roof garden and lounge, and the Section 136 suite.
         new("mental_health_ward", 6, NorthRowY, 34, NorthRowDepth, WallSide.South, "Willow ward"),
         new("mental_health_garden", 40, NorthRowY, 20, NorthRowDepth, WallSide.South, "Roof garden"),
         new("mental_health_lounge", 60, NorthRowY, 12, NorthRowDepth, WallSide.South, "Willow lounge"),
+        // The place of safety the police bring people to under Section 136.
+        new("section_136_suite", 72, NorthRowY + 4, 12, 12, WallSide.South, "Section 136 suite"),
     };
 
     // ------------------------------------------------------------------ helpers

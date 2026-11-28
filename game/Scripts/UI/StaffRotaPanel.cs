@@ -458,6 +458,8 @@ public partial class StaffRotaPanel : PanelContainer
                 ? new(room.Id, room.Name, "Surgeons, anaesthetists and scrub nurses", new[] { role, StaffRole.Anaesthetist, StaffRole.ScrubNurse })
                 : room.Kind == CareSpaceKind.MentalHealthAssessment
                 ? new(room.Id, room.Name, "Liaison team: mental health nurses and psychiatrists", new[] { role, StaffRole.Psychiatrist })
+                : room.Kind == CareSpaceKind.Section136Suite
+                ? new(room.Id, room.Name, "Mental health nurses", new[] { role })
                 : new(room.Id, room.Name, Capitalise(StaffGrades.RoleName(role, plural: true)), new[] { role }));
         }
 

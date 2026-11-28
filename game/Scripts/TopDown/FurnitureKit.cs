@@ -556,6 +556,29 @@ public static class FurnitureKit
                 p.Rect(l, t + Math.Max(d, 0.08) - 0.025, w, 0.025, C("#9E1F1B"));
                 return true;
 
+            // ---- Section 136 suite: a low padded bed and an observation window
+            case "safe_bed":
+            {
+                // A low, padded bed moulded in one piece: rounded corners, no rails or legs, a thick mattress and pillow.
+                p.Shadow(c => p.Round(l, t, w, d, 0.14, c), 0.04, 0.06);
+                p.Round(l, t, w, d, 0.14, Pen.Dark(colour, 0.08f), Pen.Outline(colour), 0.03);
+                p.Round(l + 0.07, t + 0.07, w - 0.14, d - 0.14, 0.1, C("#EEF3F4"), C("#C3CED3"), 0.02);
+                p.Round(l + 0.14, t + 0.12, w - 0.28, Math.Min(0.4, d * 0.2), 0.08, C("#FFFFFF"), C("#C9D3D8"), 0.02);
+                p.Round(l + 0.09, t + (d * 0.42), w - 0.18, d * 0.5, 0.08, Pen.Light(colour, 0.25f));
+                return true;
+            }
+
+            case "observation_window":
+                // A window in the wall with a blind between the panes, so staff can see in.
+                p.Rect(l, t, w, Math.Max(d, 0.12), C("#E9EEF1"));
+                p.Rect(l + 0.06, t + 0.025, w - 0.12, Math.Max(d, 0.12) - 0.05, C("#AFD3E2"));
+                for (var i = 1; i < 6; i++)
+                {
+                    p.Line(l + 0.06 + (i * (w - 0.12) / 6), t + 0.03, l + 0.06 + (i * (w - 0.12) / 6), t + Math.Max(d, 0.12) - 0.03, new Color("#7FA7B8", 0.7f), 0.012);
+                }
+
+                return true;
+
             // ---- mental health ward: single bedrooms, a lounge and a garden
             case "bedroom_wall":
             {

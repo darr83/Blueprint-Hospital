@@ -63,8 +63,8 @@ public sealed partial class HospitalSimulation
         StaffRole.OutreachNurse => new[] { CareSpaceKind.OutreachOffice },
         StaffRole.Midwife => new[] { CareSpaceKind.DeliveryRoom },
         StaffRole.PlaySpecialist => new[] { CareSpaceKind.PlayRoom },
-        StaffRole.MentalHealthNurse => new[] { CareSpaceKind.MentalHealthAssessment },
-        StaffRole.Psychiatrist => new[] { CareSpaceKind.MentalHealthAssessment },
+        StaffRole.MentalHealthNurse => new[] { CareSpaceKind.MentalHealthAssessment, CareSpaceKind.Section136Suite },
+        StaffRole.Psychiatrist => new[] { CareSpaceKind.MentalHealthAssessment, CareSpaceKind.Section136Suite },
         StaffRole.PalsOfficer => new[] { CareSpaceKind.PalsOffice },
         _ => Array.Empty<CareSpaceKind>(),
     };
@@ -82,7 +82,7 @@ public sealed partial class HospitalSimulation
         CareSpaceKind.PhysioGym => StaffRole.Physiotherapist,
         CareSpaceKind.OutreachOffice => StaffRole.OutreachNurse,
         CareSpaceKind.DeliveryRoom => StaffRole.Midwife,
-        CareSpaceKind.MentalHealthAssessment => StaffRole.MentalHealthNurse,
+        CareSpaceKind.MentalHealthAssessment or CareSpaceKind.Section136Suite => StaffRole.MentalHealthNurse,
         CareSpaceKind.PalsOffice => StaffRole.PalsOfficer,
         _ => StaffRole.Radiographer,
     };

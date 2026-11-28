@@ -48,6 +48,8 @@ public partial class PatientRecordPanel : PanelContainer
     private readonly PanelContainer _newsBar = new() { MouseFilter = MouseFilterEnum.Ignore };
     private readonly RichTextLabel _newsText = new() { BbcodeEnabled = true, FitContent = true, ScrollActive = false, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
     private readonly Label _newsTime = new() { VerticalAlignment = VerticalAlignment.Center };
+    private Button _outOfArea = null!;
+
     private readonly List<(Button Button, PanelIcon Icon, Label Text, PanelContainer Badge, Label BadgeText)> _tabs = new();
     private HospitalSimulation _sim = null!;
     private Patient? _patient;
@@ -119,6 +121,18 @@ public partial class PatientRecordPanel : PanelContainer
         _page.AddThemeConstantOverride("separation", 8);
         _scroll.AddChild(_page);
         column.AddChild(_scroll);
+
+        // No mental health bed: pay for one in another area rather than wait up to 12 hours in A&E.
+        _outOfArea = UiStyle.SecondaryButton($"Pay for an out-of-area bed (£{HospitalSimulation.OutOfAreaBedCost:N0})", () =>
+        {
+            if (_patient is not null && _sim.BuyOutOfAreaBed(_patient))
+            {
+                Refresh();
+            }
+        });
+        _outOfArea.TooltipText = "No mental health bed is free here. Pay for a bed in another area now, rather than let them wait up to 12 hours in A&E.";
+        _outOfArea.Visible = false;
+        column.AddChild(_outOfArea);
 
         var find = UiStyle.Button("Find on map", () =>
         {
@@ -366,6 +380,7 @@ public partial class PatientRecordPanel : PanelContainer
         RefreshJourney(p);
         RefreshVitals(p);
         RefreshBadges(p);
+        _outOfArea.Visible = _sim.CanBuyOutOfAreaBed(p);
 
         var cards = CurrentTab switch
         {
@@ -609,6 +624,13 @@ public partial class PatientRecordPanel : PanelContainer
                 : p.NextObsCheckAt is { } next ? $"next check {next:HH:mm}" : string.Empty;
             var where = _sim.DayRoomOf(p) is { } room ? $" · in {E(room.Name)}" : string.Empty;
             detail.Add($"Wellbeing: [color={colour}][b]{HospitalSimulation.WellbeingName(wellbeing)}[/b][/color] ({p.Wellbeing:P0}) · {char.ToUpperInvariant(level[0])}{level[1..]} observations" + (watch.Length > 0 ? $" · {watch}" : string.Empty) + where);
+        }
+
+        if (_sim.MentalHealthActLine(p) is { } act && p.IsInDepartment)
+        {
+            // Section 136, the Mental Health Act assessment, and the wait for a mental health bed.
+            var urgent = p.Section136Overran || (p.Stage == PatientStage.AwaitingBed && p.BedRequestedAt is { } asked && now - asked > TimeSpan.FromHours(8));
+            detail.Add(urgent ? $"[color={ClinicalText.RedHex}]{E(act)}[/color]" : E(act));
         }
 
         if (p.Stage == PatientStage.OnWard)

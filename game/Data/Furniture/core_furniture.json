@@ -834,5 +834,27 @@
    "colour": "#4E8A4A",
    "cost": 600,
    "is_equipment": false
+ },
+ {
+   "id": "safe_bed",
+   "name": "Low padded bed (anti-ligature)",
+   "width_m": 1.0,
+   "depth_m": 2.0,
+   "height_m": 0.35,
+   "style": "box",
+   "colour": "#7FB7BE",
+   "cost": 1200,
+   "is_equipment": false
+ },
+ {
+   "id": "observation_window",
+   "name": "Observation window",
+   "width_m": 1.2,
+   "depth_m": 0.15,
+   "height_m": 1.0,
+   "style": "box",
+   "colour": "#BFD9E0",
+   "cost": 900,
+   "is_equipment": false
  }
 ]

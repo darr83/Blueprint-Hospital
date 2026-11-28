@@ -56,12 +56,19 @@ public sealed partial class HospitalSimulation
                 if (task.SpaceId is { } procedureRoom && FindSpace(procedureRoom) is { IsServiceRoom: true } specialistRoom)
                 {
                     patient.Log(Now, $"{task.Label} done by {member.Name} in {specialistRoom.Name}.");
-                    if (specialistRoom.Kind == CareSpaceKind.MentalHealthAssessment)
+                    if (specialistRoom.Kind is CareSpaceKind.MentalHealthAssessment or CareSpaceKind.Section136Suite)
                     {
                         RecordLiaisonAssessment(patient, task);
                     }
 
-                    ReturnFromServiceRoom(patient);
+                    if (specialistRoom.Kind == CareSpaceKind.Section136Suite && patient.Section136)
+                    {
+                        StayInSection136Suite(patient, specialistRoom);
+                    }
+                    else
+                    {
+                        ReturnFromServiceRoom(patient);
+                    }
                 }
 
                 break;
@@ -115,6 +122,9 @@ public sealed partial class HospitalSimulation
                 break;
             case TaskKind.LiaisonReview:
                 CompleteLiaisonReview(member, patient);
+                break;
+            case TaskKind.MentalHealthActAssessment:
+                CompleteMentalHealthActAssessment(member, patient);
                 break;
         }
     }
@@ -336,7 +346,7 @@ public sealed partial class HospitalSimulation
                 var med = Database.Medications[step.Medication!];
                 AddTask(TaskKind.GiveMedication, StaffRole.Nurse, patient, 5, $"Give {med.Name.ToLowerInvariant()}", i.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
-            else if (step.Room is { } room && SpacesOfKind(room).Any(IsStaffed))
+            else if (Section136Room(patient, step.Room) is { } room && SpacesOfKind(room).Any(IsStaffed))
             {
                 // A specialist room does it (a plaster technician puts on a proper cast).
                 AddTask(TaskKind.Procedure, RoleForRoom(room), patient, step.Minutes, step.Name!, i.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -425,6 +435,9 @@ public sealed partial class HospitalSimulation
                 break;
 
             case Disposition.Admit when diagnosed.AmbulatoryHours is not null && patient.Triage != TriageCategory.Red && StartSameDayCare(patient, diagnosed):
+                break;
+
+            case Disposition.Admit when StartMentalHealthAct(patient):
                 break;
 
             case Disposition.Admit:
