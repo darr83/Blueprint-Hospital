@@ -41,7 +41,6 @@ public partial class MainHUD : CanvasLayer
     private IDisposable? _speedSubscription;
     private bool _routesShown;
     private bool _gridShown;
-    private bool _rosterShowsStaff;
 
     /// <summary>Raised when the player clicks the grid toggle.</summary>
     public event Action? GridToggled;
@@ -293,10 +292,9 @@ public partial class MainHUD : CanvasLayer
     /// <summary>Opens the patient or staff list, or closes it if that tab is already showing.</summary>
     public void ToggleRoster(bool staff)
     {
-        var show = !(Roster.Visible && _rosterShowsStaff == staff);
+        var show = !(Roster.Visible && Roster.ShowsStaff == staff);
         HideRightPanels();
         Roster.Visible = show;
-        _rosterShowsStaff = staff;
         Roster.ShowTab(staff);
     }
 
@@ -855,8 +853,8 @@ public partial class MainHUD : CanvasLayer
                 button.SetPressedNoSignal(mode == Mode);
             }
         }
-        Set("Patients", Roster.Visible && !_rosterShowsStaff);
-        Set("Staff", Rota.Visible || (Roster.Visible && _rosterShowsStaff));
+        Set("Patients", Roster.Visible && !Roster.ShowsStaff);
+        Set("Staff", Rota.Visible || (Roster.Visible && Roster.ShowsStaff));
         Set("Doctor", Doctors.Visible);
         Set("Surgery", Surgery.Visible);
         Set("Clinics", Clinics.Visible);

@@ -541,6 +541,8 @@ public partial class TutorialPanel : Control
 
         public bool ClockRunning => !_scene.Session.Clock.IsPaused;
 
+        public bool ClockFast => ClockRunning && _scene.Session.Clock.Speed >= SimulationSpeed.Fast;
+
         /// <summary>Notes the view having moved, zoomed or turned (once done, it stays done).</summary>
         public void Update()
         {

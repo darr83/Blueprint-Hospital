@@ -30,6 +30,8 @@ public sealed class TutorialTests
         public bool CameraTurned { get; set; }
 
         public bool ClockRunning { get; set; }
+
+        public bool ClockFast { get; set; }
     }
 
     private static SimulationHarness NewTutorial() =>
@@ -132,6 +134,9 @@ public sealed class TutorialTests
         screen.RecruitmentOpen = false;
         screen.ClockRunning = true;
         Expect("arrive");
+        Assert.Equal("speed:Fast", guide.Current.Pointer(sim, screen));
+        screen.ClockFast = true;
+        Assert.Null(guide.Current.Pointer(sim, screen));
 
         h.RunUntil(() => { guide.Update(screen); return guide.Current.Id == "record"; }, TimeSpan.FromHours(6), "the first patient to be triaged");
         var first = guide.FirstPatient!;

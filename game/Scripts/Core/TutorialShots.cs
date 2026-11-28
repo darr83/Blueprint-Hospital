@@ -176,7 +176,15 @@ public partial class TutorialShots : Node
         Then(80, () => { Expect("open"); Snap("open_doors"); });
         Then(1, () => { hud.HideRightPanels(); h.SetMode(GameMode.Play); });
         Then(10, () => Snap("open_play_mode"));
-        Then(1, () => h.Session.Clock.SetSpeed(SimulationSpeed.Fastest));
+        Then(1, () => h.Session.Clock.SetSpeed(SimulationSpeed.Normal));
+        Then(20, () => { Expect("arrive"); Snap("arrive_point_at_2x"); });
+        Then(1, () => h.Session.Clock.SetSpeed(SimulationSpeed.Fast));
+        Then(10, () => Snap("arrive_at_2x_no_hint"));
+        Then(1, () => { h.Session.Clock.SetSpeed(SimulationSpeed.Paused); hud.ToggleRoster(staff: true); });
+        Then(80, () => Snap("arrive_staff_tab"));
+        Then(1, () => hud.Roster.ShowTab(false));
+        Then(80, () => Snap("arrive_patients_tab"));
+        Then(1, () => { hud.HideRightPanels(); h.Session.Clock.SetSpeed(SimulationSpeed.Fastest); });
         Then(60, () => { });
         AwaitStep("record", 30000);
         Then(1, () =>
