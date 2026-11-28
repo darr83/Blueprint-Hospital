@@ -22,6 +22,9 @@ public partial class RosterPanel : PanelContainer
     private double _refresh;
     private string _signature = string.Empty;
 
+    /// <summary>True while the Staff tab is showing.</summary>
+    public bool ShowsStaff => _showStaff;
+
     public event Action<Patient>? PatientClicked;
 
     public event Action<StaffMember>? StaffClicked;
@@ -67,7 +70,8 @@ public partial class RosterPanel : PanelContainer
         _showStaff = staff;
         _patientsTab.SetPressedNoSignal(!staff);
         _staffTab.SetPressedNoSignal(staff);
-        _signature = string.Empty;
+        // Never matches a real list (an empty patient list's signature is ""), so the switch always redraws.
+        _signature = "\0";
         _refresh = 0;
     }
 
@@ -105,7 +109,7 @@ public partial class RosterPanel : PanelContainer
             .ToList();
 
         var rows = patients.Select(p => (Patient: p, Text: $"{p.FullName}, {p.Age}  ·  {(p.AdmissionType is { } type ? $"{type} {ClinicalText.Duration(p.LengthOfStay(now)!.Value)}" : ClinicalText.Duration(p.TimeInEmergency(now)))}\n{ClinicalText.Whereabouts(_sim, p)}")).ToList();
-        Rebuild(string.Join("|", rows.Select(r => r.Text)), () =>
+        Rebuild("P|" + string.Join("|", rows.Select(r => r.Text)), () =>
         {
             if (rows.Count == 0)
             {
@@ -127,7 +131,7 @@ public partial class RosterPanel : PanelContainer
             return (Member: m, Text: $"{m.Name}  ·  {m.Grade}\n{m.StatusText}  ·  {tired} ({m.Fatigue:P0})  ·  {m.TasksCompleted} tasks");
         }).ToList();
 
-        Rebuild(string.Join("|", rows.Select(r => r.Text)), () =>
+        Rebuild("S|" + string.Join("|", rows.Select(r => r.Text)), () =>
         {
             foreach (var (member, text) in rows)
             {

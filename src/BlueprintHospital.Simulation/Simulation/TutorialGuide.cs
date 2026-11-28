@@ -32,6 +32,9 @@ public interface ITutorialScreen
 
     /// <summary>The game clock is running.</summary>
     bool ClockRunning { get; }
+
+    /// <summary>The game clock is running at 2x or faster.</summary>
+    bool ClockFast { get; }
 }
 
 /// <summary>One thing to do within a tutorial step, ticked off when <see cref="Done"/> is true.</summary>
@@ -374,7 +377,7 @@ public sealed class TutorialGuide
                     new("They book in at reception", (sim, _) => FirstPatientOf(sim) is { Stage: not (PatientStage.WalkingIn or PatientStage.WaitingToRegister) }),
                     new("A nurse triages them", (sim, _) => FirstPatientOf(sim) is { Triage: not null }),
                 },
-                Pointer = (_, _) => "speed:Fast",
+                Pointer = (_, s) => s.ClockFast ? null : "speed:Fast",
             },
             new()
             {
@@ -392,7 +395,7 @@ public sealed class TutorialGuide
                     new("A doctor sees them", (sim, _) => FirstPatientOf(sim) is { } p && (p.FirstSeenByDoctorAt is not null || !p.IsInEmergency)),
                     new("They leave A&E", (sim, _) => FirstPatientOf(sim) is { IsInEmergency: false }),
                 },
-                Pointer = (_, _) => "speed:Fast",
+                Pointer = (_, s) => s.ClockFast ? null : "speed:Fast",
             },
             new()
             {
